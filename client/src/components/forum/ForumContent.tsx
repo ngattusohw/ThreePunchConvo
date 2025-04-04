@@ -2,9 +2,141 @@ import { useState } from "react";
 import { Link } from "wouter";
 import ThreadCard from "@/components/forum/ThreadCard";
 import { useQuery } from "@tanstack/react-query";
-import { ForumThread, ForumCategory } from "@/lib/types";
+import { ForumThread, ForumCategory, UserStatus } from "@/lib/types";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import CreatePostModal from "@/components/forum/CreatePostModal";
+import { formatDistanceToNow } from "date-fns";
+
+// Function to generate mock threads
+function generateMockThreads(currentCategory: any): ForumThread[] {
+  const mockAuthors = [
+    { id: 1, username: "UFCFanatic", avatarUrl: null, points: 3450, status: "HALL OF FAMER" },
+    { id: 2, username: "MMAExpert", avatarUrl: null, points: 2100, status: "CHAMPION" },
+    { id: 3, username: "FightScience", avatarUrl: null, points: 1850, status: "CONTENDER" },
+    { id: 4, username: "OctagonInsider", avatarUrl: null, points: 980, status: "AMATEUR" },
+    { id: 5, username: "KnockoutKing", avatarUrl: null, points: 1200, status: "COMPETITOR" }
+  ];
+  
+  const generateRandomDate = () => {
+    const now = Date.now();
+    const randomTime = Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000); // Random time within last month
+    return new Date(now - randomTime);
+  };
+  
+  const titles = {
+    general: [
+      "Welcome to 3 Punch Convo! Introduce yourself here",
+      "What got you into MMA? Share your story",
+      "Best way to watch fights - TV, Phone, or Live?",
+      "Who's the GOAT debate - let's settle this once and for all",
+      "Most anticipated fight of the year?"
+    ],
+    ufc: [
+      "UFC 300 card predictions and discussion",
+      "Jon Jones vs Stipe - Will it ever happen?",
+      "Dana White announces new UFC APEX expansion",
+      "Alex Pereira - Could he become double champ?",
+      "Sean O'Malley's next title defense - who's it going to be?"
+    ],
+    bellator: [
+      "Bellator-PFL merger: Good or bad for fighters?",
+      "Patricio Pitbull legacy discussion",
+      "Best Bellator event of all time?",
+      "Bellator's heavyweight division analysis",
+      "Ryan Bader vs Fedor - rematch possibility?"
+    ],
+    one: [
+      "ONE Championship expanding to US market",
+      "Rodtang vs Takeru - Who wins and how?",
+      "Stamp Fairtex impressive run as champion",
+      "Best Muay Thai fights in ONE history",
+      "Demetrious Johnson's career at ONE"
+    ],
+    pfl: [
+      "PFL $1M tournament format discussion",
+      "Kayla Harrison's dominance - good or bad for PFL?",
+      "PFL's new broadcast deal analysis",
+      "Best prospects to watch in this PFL season",
+      "Could the PFL champions compete in the UFC?"
+    ],
+    boxing: [
+      "Fury vs Usyk - unified heavyweight championship",
+      "Canelo's next opponent prediction thread",
+      "Ryan Garcia comeback strategy",
+      "Is Jake Paul good for boxing?",
+      "Women's boxing getting more spotlight - thoughts?"
+    ],
+    techniques: [
+      "Southpaw vs Orthodox - Best strategies",
+      "Takedown defense fundamentals - share your tips",
+      "Calf kick counter techniques - what works?",
+      "How to improve punching power - scientific approach",
+      "Best conditioning exercises for MMA fighters"
+    ],
+    offtopic: [
+      "MMA video games - which one is your favorite?",
+      "Favorite fighter entrances of all time",
+      "Share your home workout setup for MMA training",
+      "Sports betting strategies thread",
+      "Best MMA documentaries to watch"
+    ]
+  };
+  
+  const mockThreads: ForumThread[] = [];
+  
+  // Get the appropriate titles for the current category
+  const categoryTitles = titles[currentCategory.id as keyof typeof titles] || titles.general;
+  
+  for (let i = 0; i < 5; i++) {
+    const author = mockAuthors[i % mockAuthors.length];
+    const createdAt = generateRandomDate();
+    
+    mockThreads.push({
+      id: 1000 + i,
+      title: categoryTitles[i],
+      content: `This is a mock discussion about ${categoryTitles[i].toLowerCase()}. Join the conversation!`,
+      userId: author.id,
+      categoryId: currentCategory.id,
+      isPinned: i === 0,
+      isLocked: false,
+      viewCount: Math.floor(Math.random() * 1000) + 100,
+      repliesCount: Math.floor(Math.random() * 50) + 5,
+      lastActivityAt: new Date(),
+      createdAt,
+      updatedAt: createdAt,
+      isPotd: i === 1,
+      user: {
+        id: author.id,
+        username: author.username,
+        avatar: author.avatarUrl || undefined,
+        status: author.status as UserStatus,
+        isOnline: true,
+        postsCount: Math.floor(Math.random() * 100) + 10,
+        likesCount: Math.floor(Math.random() * 300) + 50,
+        potdCount: Math.floor(Math.random() * 5),
+        rank: i + 1,
+        followersCount: Math.floor(Math.random() * 50) + 10,
+        followingCount: Math.floor(Math.random() * 30) + 5,
+        role: i === 0 ? "ADMIN" : "USER",
+      },
+      poll: i === 1 ? {
+        id: 1,
+        threadId: 1000 + i,
+        question: "Who will win?",
+        options: [
+          { id: 1, pollId: 1, text: "Fighter A", votesCount: 24 },
+          { id: 2, pollId: 1, text: "Fighter B", votesCount: 18 }
+        ],
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        votesCount: 42
+      } : undefined,
+      likesCount: Math.floor(Math.random() * 30) + 5,
+      dislikesCount: Math.floor(Math.random() * 10)
+    });
+  }
+  
+  return mockThreads;
+}
 
 interface ForumContentProps {
   category?: string;
@@ -24,8 +156,8 @@ export default function ForumContent({ category = "general" }: ForumContentProps
     queryKey: [`/api/threads/${category}`, filterOption, timeRange],
   });
   
-  // Use threads from the API
-  const displayThreads = threads || [];
+  // Generate mock threads if none are returned from the API
+  const displayThreads = threads?.length ? threads : generateMockThreads(currentCategory);
 
   return (
     <div className="flex-grow">

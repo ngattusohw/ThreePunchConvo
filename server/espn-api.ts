@@ -92,7 +92,8 @@ function processESPNEvent(espnEvent: ESPNEvent): MMAEvent {
   if (!location) location = "TBA";
   
   // Create main card fights
-  const mainCard: Fight[] = [];
+  const mainCard: any[] = [];
+  const prelimCard: any[] = [];
   
   // In real implementation, we would fetch more detailed card info
   // For now we'll create a main event from the competitors if available
@@ -100,9 +101,9 @@ function processESPNEvent(espnEvent: ESPNEvent): MMAEvent {
     const fighter1: Fighter = {
       id: espnEvent.competitions[0].competitors[0].athlete.id,
       name: espnEvent.competitions[0].competitors[0].athlete.displayName,
-      imageUrl: espnEvent.competitions[0].competitors[0].athlete.headshot?.href,
-      nickname: undefined,
-      record: undefined,
+      imageUrl: espnEvent.competitions[0].competitors[0].athlete.headshot?.href || null,
+      nickname: null,
+      record: null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -110,9 +111,9 @@ function processESPNEvent(espnEvent: ESPNEvent): MMAEvent {
     const fighter2: Fighter = {
       id: espnEvent.competitions[0].competitors[1].athlete.id,
       name: espnEvent.competitions[0].competitors[1].athlete.displayName,
-      imageUrl: espnEvent.competitions[0].competitors[1].athlete.headshot?.href,
-      nickname: undefined,
-      record: undefined,
+      imageUrl: espnEvent.competitions[0].competitors[1].athlete.headshot?.href || null,
+      nickname: null,
+      record: null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -137,7 +138,7 @@ function processESPNEvent(espnEvent: ESPNEvent): MMAEvent {
                          espnEvent.name.includes("Title") || 
                          espnEvent.name.includes("Belt");
     
-    const mainFight: Fight = {
+    const mainFight = {
       id: espnEvent.competitions[0].id,
       eventId: espnEvent.id,
       fighter1Id: fighter1.id,
@@ -146,18 +147,15 @@ function processESPNEvent(espnEvent: ESPNEvent): MMAEvent {
       isTitleFight,
       isMainCard: true,
       order: 1,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    mainCard.push({
-      ...mainFight,
       fighter1,
       fighter2
-    } as any);
+    };
+    
+    mainCard.push(mainFight);
   }
   
-  return {
+  // Create a proper event object that matches our schema
+  const mmaEvent: MMAEvent = {
     id: espnEvent.id,
     name: espnEvent.name,
     shortName: espnEvent.shortName,
@@ -165,11 +163,12 @@ function processESPNEvent(espnEvent: ESPNEvent): MMAEvent {
     organization,
     venue,
     location,
-    imageUrl: undefined,
+    imageUrl: null,
     createdAt: new Date(),
-    updatedAt: new Date(),
-    mainCard
+    updatedAt: new Date()
   };
+  
+  return mmaEvent;
 }
 
 // Generate mock MMA events for development/fallback
@@ -183,36 +182,9 @@ function generateMockEvents(): MMAEvent[] {
       date: new Date(2024, 2, 9), // March 9, 2024
       venue: "Miami-Dade Arena",
       location: "Miami, FL",
+      imageUrl: null,
       createdAt: new Date(),
-      updatedAt: new Date(),
-      mainCard: [
-        {
-          id: "1-1",
-          eventId: "1",
-          fighter1Id: "f1",
-          fighter2Id: "f2",
-          weightClass: "Bantamweight",
-          isTitleFight: true,
-          isMainCard: true,
-          order: 1,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          fighter1: { 
-            id: "f1", 
-            name: "Sean O'Malley", 
-            record: "17-1-0",
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          fighter2: { 
-            id: "f2", 
-            name: "Merab Dvalishvili", 
-            record: "16-4-0",
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        },
-      ],
+      updatedAt: new Date()
     },
     {
       id: "2",
@@ -222,36 +194,9 @@ function generateMockEvents(): MMAEvent[] {
       date: new Date(2024, 2, 16), // March 16, 2024
       venue: "UFC APEX",
       location: "Las Vegas, NV",
+      imageUrl: null,
       createdAt: new Date(),
-      updatedAt: new Date(),
-      mainCard: [
-        {
-          id: "2-1",
-          eventId: "2",
-          fighter1Id: "f3",
-          fighter2Id: "f4",
-          weightClass: "Middleweight",
-          isTitleFight: false,
-          isMainCard: true,
-          order: 1,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          fighter1: { 
-            id: "f3", 
-            name: "Brendan Allen", 
-            record: "22-5-0",
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          fighter2: { 
-            id: "f4", 
-            name: "Chris Curtis", 
-            record: "30-10-0",
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        },
-      ],
+      updatedAt: new Date()
     },
     {
       id: "3",
@@ -261,36 +206,9 @@ function generateMockEvents(): MMAEvent[] {
       date: new Date(2024, 2, 22), // March 22, 2024
       venue: "Wintrust Arena",
       location: "Chicago, IL",
+      imageUrl: null,
       createdAt: new Date(),
-      updatedAt: new Date(),
-      mainCard: [
-        {
-          id: "3-1",
-          eventId: "3",
-          fighter1Id: "f5",
-          fighter2Id: "f6",
-          weightClass: "Bantamweight",
-          isTitleFight: true,
-          isMainCard: true,
-          order: 1,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          fighter1: { 
-            id: "f5", 
-            name: "Patchy Mix", 
-            record: "17-1-0",
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          fighter2: { 
-            id: "f6", 
-            name: "Magomed Magomedov", 
-            record: "15-2-0",
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        },
-      ],
+      updatedAt: new Date()
     },
     {
       id: "4",
@@ -300,36 +218,9 @@ function generateMockEvents(): MMAEvent[] {
       date: new Date(2024, 3, 13), // April 13, 2024
       venue: "T-Mobile Arena",
       location: "Las Vegas, NV",
+      imageUrl: null,
       createdAt: new Date(),
-      updatedAt: new Date(),
-      mainCard: [
-        {
-          id: "4-1",
-          eventId: "4",
-          fighter1Id: "f7",
-          fighter2Id: "f8",
-          weightClass: "Light Heavyweight",
-          isTitleFight: true,
-          isMainCard: true,
-          order: 1,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          fighter1: { 
-            id: "f7", 
-            name: "Alex Pereira", 
-            record: "9-2-0",
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          fighter2: { 
-            id: "f8", 
-            name: "Jamahal Hill", 
-            record: "12-1-0",
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-        },
-      ],
+      updatedAt: new Date()
     },
   ];
 }

@@ -42,14 +42,6 @@ export default function EventsSidebar() {
                 </div>
                 <h3 className="text-white font-medium mb-1">{event.name.includes(':') ? event.name.split(':')[1].trim() : event.shortName}</h3>
                 <p className="text-gray-400 text-sm">{event.venue} • {event.location}</p>
-                
-                {event.mainCard.length > 0 && event.mainCard[0].isTitleFight && (
-                  <div className="mt-2">
-                    <span className="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded">
-                      {event.mainCard[0].weightClass} {event.mainCard[0].isTitleFight ? "Title" : ""}
-                    </span>
-                  </div>
-                )}
               </li>
             ))}
           </ul>
@@ -74,15 +66,7 @@ function generateMockEvents(): MMAEvent[] {
       date: new Date(2024, 2, 9), // March 9, 2024
       venue: "Miami-Dade Arena",
       location: "Miami, FL",
-      mainCard: [
-        {
-          id: "1-1",
-          weightClass: "Bantamweight",
-          isTitleFight: true,
-          fighter1: { id: "f1", name: "Sean O'Malley", record: "17-1-0" },
-          fighter2: { id: "f2", name: "Merab Dvalishvili", record: "16-4-0" }
-        },
-      ],
+      imageUrl: null
     },
     {
       id: "2",
@@ -92,15 +76,7 @@ function generateMockEvents(): MMAEvent[] {
       date: new Date(2024, 2, 16), // March 16, 2024
       venue: "UFC APEX",
       location: "Las Vegas, NV",
-      mainCard: [
-        {
-          id: "2-1",
-          weightClass: "Middleweight",
-          isTitleFight: false,
-          fighter1: { id: "f3", name: "Brendan Allen", record: "22-5-0" },
-          fighter2: { id: "f4", name: "Chris Curtis", record: "30-10-0" }
-        },
-      ],
+      imageUrl: null
     },
     {
       id: "3",
@@ -110,15 +86,7 @@ function generateMockEvents(): MMAEvent[] {
       date: new Date(2024, 2, 22), // March 22, 2024
       venue: "Wintrust Arena",
       location: "Chicago, IL",
-      mainCard: [
-        {
-          id: "3-1",
-          weightClass: "Multiple Title Fights",
-          isTitleFight: true,
-          fighter1: { id: "f5", name: "Patchy Mix", record: "17-1-0" },
-          fighter2: { id: "f6", name: "Magomed Magomedov", record: "15-2-0" }
-        },
-      ],
+      imageUrl: null
     },
   ];
 }

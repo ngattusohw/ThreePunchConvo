@@ -156,9 +156,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/users/top', async (req: Request, res: Response) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 10;
+      const limit = parseInt(req.query.limit as string) || 20;
       
       const topUsers = await storage.getTopUsers(limit);
+      
+      if (!topUsers || topUsers.length === 0) {
+        return res.json([]); // Return empty array if no users found
+      }
       
       // Don't return passwords in response
       const usersWithoutPasswords = topUsers.map(user => {
@@ -175,8 +179,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return {
           position: user.rank || position,
           isTied,
-          points: user.points,
-          user
+          points: user.points || 0, // Default to 0 points if undefined
+          user: {
+            ...user,
+            postsCount: user.postsCount || 0,
+            likesCount: user.likesCount || 0,
+            potdCount: user.potdCount || 0,
+            status: user.status || 'AMATEUR'
+          }
         };
       });
       
@@ -830,96 +840,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If no events in storage, fetch from ESPN API
       if (events.length === 0) {
-        events = await fetchUpcomingEvents();
+        const apiEvents = await fetchUpcomingEvents();
         
-        // Save events to storage
-        for (const event of events) {
-          await storage.saveMMAEvent(event);
-          
-          // Save fighters and fights
-          if (event.mainCard) {
-            for (const fight of event.mainCard) {
-              if (fight.fighter1) {
-                await storage.saveFighter(fight.fighter1);
-              }
-              
-              if (fight.fighter2) {
-                await storage.saveFighter(fight.fighter2);
-              }
-              
-              await storage.saveFight({
-                ...fight,
-                eventId: event.id,
-                fighter1Id: fight.fighter1?.id,
-                fighter2Id: fight.fighter2?.id,
-                isMainCard: true,
-              });
-            }
-          }
-          
-          if (event.prelimCard) {
-            for (const fight of event.prelimCard) {
-              if (fight.fighter1) {
-                await storage.saveFighter(fight.fighter1);
-              }
-              
-              if (fight.fighter2) {
-                await storage.saveFighter(fight.fighter2);
-              }
-              
-              await storage.saveFight({
-                ...fight,
-                eventId: event.id,
-                fighter1Id: fight.fighter1?.id,
-                fighter2Id: fight.fighter2?.id,
-                isMainCard: false,
-              });
-            }
-          }
+        // Save each event to storage
+        for (const event of apiEvents) {
+          await storage.saveMMAEvent({
+            id: event.id,
+            name: event.name,
+            shortName: event.shortName,
+            date: event.date,
+            organization: event.organization,
+            venue: event.venue,
+            location: event.location,
+            imageUrl: event.imageUrl
+          });
         }
+        
+        // Fetch the newly saved events
+        events = await storage.getMMAEvents(limit, offset);
       }
       
-      // Enrich events with fights
-      const eventsWithFights = await Promise.all(
-        events.map(async (event) => {
-          const fights = await storage.getFights(event.id);
-          
-          // Group fights into main card and prelims
-          const mainCard = fights
-            .filter(fight => fight.isMainCard)
-            .map(async (fight) => {
-              const fighter1 = await storage.getMMAEvent(fight.fighter1Id);
-              const fighter2 = await storage.getMMAEvent(fight.fighter2Id);
-              
-              return {
-                ...fight,
-                fighter1,
-                fighter2
-              };
-            });
-          
-          const prelimCard = fights
-            .filter(fight => !fight.isMainCard)
-            .map(async (fight) => {
-              const fighter1 = await storage.getMMAEvent(fight.fighter1Id);
-              const fighter2 = await storage.getMMAEvent(fight.fighter2Id);
-              
-              return {
-                ...fight,
-                fighter1,
-                fighter2
-              };
-            });
-          
-          return {
-            ...event,
-            mainCard: await Promise.all(mainCard),
-            prelimCard: await Promise.all(prelimCard)
-          };
-        })
-      );
+      // Map events to a client-friendly format
+      const eventList = events.map(event => ({
+        id: event.id,
+        name: event.name,
+        shortName: event.shortName,
+        date: event.date,
+        organization: event.organization,
+        venue: event.venue,
+        location: event.location,
+        imageUrl: event.imageUrl
+      }));
       
-      res.json(eventsWithFights);
+      res.json(eventList);
     } catch (error) {
       console.error('Error fetching events:', error);
       res.status(500).json({ message: 'Failed to fetch MMA events' });
@@ -936,44 +889,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Event not found' });
       }
       
-      // Get fights for this event
-      const fights = await storage.getFights(eventId);
-      
-      // Group fights into main card and prelims
-      const mainCard = fights
-        .filter(fight => fight.isMainCard)
-        .map(async (fight) => {
-          const fighter1 = await storage.getMMAEvent(fight.fighter1Id);
-          const fighter2 = await storage.getMMAEvent(fight.fighter2Id);
-          
-          return {
-            ...fight,
-            fighter1,
-            fighter2
-          };
-        });
-      
-      const prelimCard = fights
-        .filter(fight => !fight.isMainCard)
-        .map(async (fight) => {
-          const fighter1 = await storage.getMMAEvent(fight.fighter1Id);
-          const fighter2 = await storage.getMMAEvent(fight.fighter2Id);
-          
-          return {
-            ...fight,
-            fighter1,
-            fighter2
-          };
-        });
-      
-      const eventWithFights = {
-        ...event,
-        mainCard: await Promise.all(mainCard),
-        prelimCard: await Promise.all(prelimCard)
-      };
-      
-      res.json(eventWithFights);
+      // Return the event details
+      res.json({
+        id: event.id,
+        name: event.name,
+        shortName: event.shortName,
+        date: event.date,
+        organization: event.organization,
+        venue: event.venue,
+        location: event.location,
+        imageUrl: event.imageUrl
+      });
     } catch (error) {
+      console.error('Error fetching event:', error);
       res.status(500).json({ message: 'Failed to fetch event' });
     }
   });

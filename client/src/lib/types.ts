@@ -116,7 +116,8 @@ export interface MMAEvent {
   organization: string;
   venue: string;
   location: string;
-  mainCard: Fight[];
+  imageUrl: string | null;
+  mainCard?: Fight[];
   prelimCard?: Fight[];
 }
 

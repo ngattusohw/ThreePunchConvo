@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { AuthUser } from "@/lib/types";
 
 interface UserAvatarProps {
-  user: AuthUser;
+  user?: AuthUser | null;
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;
 }
@@ -29,13 +29,26 @@ export default function UserAvatar({ user, size = "md", className }: UserAvatarP
     xl: "h-6 w-6 -bottom-1 -right-1",
   };
 
+  // Check if user is defined
+  if (!user) {
+    return (
+      <div className={cn("relative", className)}>
+        <div className={cn(sizeClasses[size], "rounded-full bg-gray-600 flex items-center justify-center text-gray-400")}>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-1/2 w-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+      </div>
+    );
+  }
+
   // For pro users with verified status
-  if (user.role === "PRO") {
+  if (user?.role === "PRO") {
     return (
       <div className={cn("relative", className)}>
         <img 
-          src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}&background=random`} 
-          alt={`${user.username}'s avatar`} 
+          src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.username || 'User'}&background=random`} 
+          alt={`${user?.username || 'User'}'s avatar`} 
           className={cn(sizeClasses[size], "rounded-full object-cover border-2 border-ufc-gold")}
         />
         <div className={cn(verifiedIndicatorSizeClasses[size], "absolute bg-ufc-gold text-ufc-black rounded-full border border-dark-gray flex items-center justify-center")}>
@@ -50,18 +63,18 @@ export default function UserAvatar({ user, size = "md", className }: UserAvatarP
   return (
     <div className={cn("relative", className)}>
       <img 
-        src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}&background=random`} 
-        alt={`${user.username}'s avatar`} 
+        src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.username || 'User'}&background=random`} 
+        alt={`${user?.username || 'User'}'s avatar`} 
         className={cn(
           sizeClasses[size], 
           "rounded-full object-cover", 
-          user.status === "HALL OF FAMER" || user.status === "CHAMPION" || user.status === "CONTENDER" 
+          user?.status === "HALL OF FAMER" || user?.status === "CHAMPION" || user?.status === "CONTENDER" 
             ? "border-2 border-ufc-gold" 
             : ""
         )}
       />
       
-      {user.isOnline && (
+      {user?.isOnline && (
         <div className={cn(indicatorSizeClasses[size], "absolute bg-green-500 rounded-full border border-dark-gray")}></div>
       )}
     </div>

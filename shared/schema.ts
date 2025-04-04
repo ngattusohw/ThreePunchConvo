@@ -160,6 +160,9 @@ export const mmaEvents = pgTable("mma_events", {
   imageUrl: text("image_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  // These fields are needed for our FE interface but managed in memory
+  // mainCard: text("main_card").array(),
+  // prelimCard: text("prelim_card").array(),
 });
 
 // MMA Fighters

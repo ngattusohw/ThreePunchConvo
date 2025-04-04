@@ -39,9 +39,9 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                 </span>
               )}
               
-              <StatusBadge status={thread.user.status} className="mr-2" />
+              {thread.user?.status && <StatusBadge status={thread.user.status} className="mr-2" />}
               
-              {thread.user.role === "PRO" && (
+              {thread.user?.role === "PRO" && (
                 <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-bold mr-2 flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -50,19 +50,19 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                 </span>
               )}
               
-              {thread.user.role === "ADMIN" && (
+              {thread.user?.role === "ADMIN" && (
                 <span className="bg-ufc-gold text-ufc-black text-xs px-2 py-0.5 rounded font-bold mr-2">
                   ADMIN
                 </span>
               )}
               
-              {thread.user.role === "MODERATOR" && (
+              {thread.user?.role === "MODERATOR" && (
                 <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded font-bold mr-2">
                   MOD
                 </span>
               )}
               
-              <span className="text-white font-medium">{thread.user.username}</span>
+              <span className="text-white font-medium">{thread.user?.username || "Unknown User"}</span>
               <span className="text-gray-400 text-sm ml-2">· {formatDate(thread.createdAt)}</span>
             </div>
             

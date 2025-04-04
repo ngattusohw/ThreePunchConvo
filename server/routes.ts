@@ -170,9 +170,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = usersWithoutPasswords.map((user, index) => {
         // Check for tied positions
         const isTied = index > 0 && user.points === topUsers[index - 1].points;
+        const position = index + 1; // Use index+1 as position if user.rank is not set
         
         return {
-          position: user.rank,
+          position: user.rank || position,
           isTied,
           points: user.points,
           user
@@ -181,6 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(result);
     } catch (error) {
+      console.error('Error fetching top users:', error);
       res.status(500).json({ message: 'Failed to fetch top users' });
     }
   });
@@ -619,7 +621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (media && Array.isArray(media)) {
         for (const mediaItem of media) {
           const mediaData = {
-            replyId: reply.id,
+            threadId: reply.threadId, // Use threadId since we don't have a specific reply media method
             type: mediaItem.type,
             url: mediaItem.url
           };

@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/App";
 
 interface CreatePostModalProps {
   onClose: () => void;
@@ -11,6 +12,8 @@ interface CreatePostModalProps {
 
 export default function CreatePostModal({ onClose, categoryId }: CreatePostModalProps) {
   const { toast } = useToast();
+  const { user } = useAuth(); // Get the currently authenticated user
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState(categoryId);
@@ -31,19 +34,27 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
         options: string[];
       }
     }) => {
+      if (!user) {
+        throw new Error("You must be logged in to create a post");
+      }
+      
       const response = await apiRequest("POST", "/api/threads", {
         title,
         content,
         categoryId,
+        userId: user.id, // Add the user ID to the request
         poll: includePoll ? poll : undefined
       });
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate the threads query to refetch the thread list
+      queryClient.invalidateQueries({ queryKey: [`/api/threads/${category}`] });
+      
       toast({
         title: "Success!",
         description: "Your post has been created.",
-        variant: "success"
+        variant: "default"
       });
       onClose();
     },

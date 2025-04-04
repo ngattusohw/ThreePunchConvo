@@ -1,0 +1,96 @@
+With Netlify, Vite and React, make a simple MVP of a website called 3 punch convo -- a place fans of UFC/MMA can go and chat, see latest news and schedules
+
+Forum functionality
+
+Users can make posts (start threads)
+
+Post can include text, emojis, images, gifs, and polls (no vids or voice notes)
+
+Users can reply to an initial post or a reply
+
+Users can like, dislike, quote reply, or POTD (post of the day, once a
+day per user) an original post
+
+Users can like, dislike, or quote reply to a reply to a post or a reply to
+a reply
+
+Post with most recent post time or reply time should appear at the top
+
+Users should get notifications when their original posts or post replies
+are replied to
+
+MMA schedule functionality
+
+Need to bring in MMA schedule from some aggregator site (not
+just for UFC but other MMA organizations as well). I think we
+can do this from espn.com
+
+Rankings functionality
+
+Users should be ranked and assigned a status based on the
+algorithm
+
+Status will update dynamically in real-time based on algorithm
+to assign individual users a status and ranking (numerical from
+1-x). There can be a tie if algorithm produces the same score
+for more than one user and it should display “4-T Albert Smith”
+
+Users should be able to scroll through rankings
+
+Statuses should be in decreasing order from best to worst – Hall
+of Famer, Champion, Contender, Ranked Poster, Competitor,
+Regional Poster, Amateur
+
+User profile and functionality
+
+Display and edit username
+and avatar photo
+
+Show total number of posts,
+likes, and POTD
+
+Show current rank and
+status
+
+DM inbox
+
+Show followers,
+
+Have follow button for
+others to follow
+
+Connect social media
+
+User types
+
+General users
+
+Moderators
+
+Can delete posts
+
+Can suspend users (user can take no action once suspended)
+
+Can delete post replies
+
+Admin
+
+Can do all that mods can do plus make pinned posts and delete users
+
+Pros
+
+Pro fighters, media, and MMA personalities that Admins can tag in their
+dashboard. These people need to have some kind of ”blue checkmark”
+validation and are automatically tagged w a status of Hall of Famer (they are
+also not a part of the rankings nor is the algorithm tracked for them)
+
+Dashboard functionality
+
+Can be accessed on the web if easier
+
+Admins and mods will need to have access
+
+Need to be able to execute on functionalities described in prior
+slide
+
+Admins need to be able to add advertisements to add carousel

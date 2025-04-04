@@ -1,0 +1,130 @@
+/* Custom theme styles for 3 Punch Convo */
+:root {
+  --ufc-red: #D20A0A;
+  --ufc-black: #121212;
+  --ufc-gold: #F5C518;
+  --dark-gray: #1E1E1E;
+  --light-gray: #F5F5F5;
+}
+
+/* Font family utilities */
+.font-heading {
+  font-family: 'Roboto Condensed', sans-serif;
+}
+
+.font-body {
+  font-family: 'Roboto', sans-serif;
+}
+
+.font-accent {
+  font-family: 'Oswald', sans-serif;
+}
+
+/* Status badges */
+.status-hof {
+  background: linear-gradient(90deg, #F5C518 0%, #E6A819 100%);
+  color: #121212;
+}
+
+.status-champion {
+  background: linear-gradient(90deg, #c0c0c0 0%, #e0e0e0 100%);
+  color: #121212;
+}
+
+.status-contender {
+  background: linear-gradient(90deg, #cd7f32 0%, #dda15e 100%);
+  color: #121212;
+}
+
+.status-ranked {
+  background-color: #3B82F6;
+  color: white;
+}
+
+.status-competitor {
+  background-color: #4B5563;
+  color: white;
+}
+
+.status-regional {
+  background-color: #6B7280;
+  color: white;
+}
+
+.status-amateur {
+  background-color: #9CA3AF;
+  color: white;
+}
+
+/* Custom scrollbar for the dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1E1E1E;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4B5563;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6B7280;
+}
+
+/* MMA theme colors */
+.bg-ufc-red {
+  background-color: var(--ufc-red);
+}
+
+.bg-ufc-black {
+  background-color: var(--ufc-black);
+}
+
+.bg-ufc-gold {
+  background-color: var(--ufc-gold);
+}
+
+.bg-dark-gray {
+  background-color: var(--dark-gray);
+}
+
+.bg-light-gray {
+  background-color: var(--light-gray);
+}
+
+.text-ufc-red {
+  color: var(--ufc-red);
+}
+
+.text-ufc-black {
+  color: var(--ufc-black);
+}
+
+.text-ufc-gold {
+  color: var(--ufc-gold);
+}
+
+.border-ufc-red {
+  border-color: var(--ufc-red);
+}
+
+.border-ufc-gold {
+  border-color: var(--ufc-gold);
+}
+
+/* Hover states */
+.hover\:bg-ufc-red:hover {
+  background-color: var(--ufc-red);
+}
+
+.hover\:bg-dark-gray:hover {
+  background-color: var(--dark-gray);
+}
+
+.hover\:text-ufc-red:hover {
+  color: var(--ufc-red);
+}

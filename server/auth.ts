@@ -8,13 +8,14 @@ import { User as UserType } from '@shared/schema';
 // Initialize Firebase Admin SDK with a default app
 // We're using a try-catch to handle potential re-initialization
 try {
-  // Since we don't have actual Firebase credentials yet, we'll use a mock approach for development
   initializeApp({
-    // This is just a placeholder that allows initialization without real credentials
-    // Will be replaced with actual credentials when they are provided
-    projectId: 'mock-project-id'
+    credential: cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    }),
   });
-  console.log("Firebase Admin initialized in development mode");
+  console.log("Firebase Admin initialized successfully");
 } catch (error) {
   console.error("Firebase admin initialization error:", error);
 }
@@ -85,33 +86,9 @@ export function setupAuth(app: Express) {
       // For development only - if we don't have Firebase properly set up yet,
       // we'll mock the token verification and just pass through
       // Remove this in production!
-      if (process.env.FIREBASE_PROJECT_ID) {
-        // Actual verification with Firebase Admin
-        const auth = getAuth();
-        const decodedToken = await auth.verifyIdToken(idToken) as DecodedIdToken;
-        (req as any).decodedToken = decodedToken;
-      } else {
-        console.warn("Firebase credentials not set. Using mock authentication for development.");
-        // Mock a decoded token - this is for development only
-        (req as any).decodedToken = {
-          email: "test@example.com",
-          email_verified: true,
-          uid: "mock-uid-123",
-          name: "Test User",
-          picture: "https://via.placeholder.com/150",
-          iss: "mock-issuer",
-          aud: "mock-audience",
-          auth_time: Date.now() / 1000,
-          user_id: "mock-user-id",
-          sub: "mock-sub",
-          iat: Date.now() / 1000,
-          exp: Date.now() / 1000 + 3600,
-          firebase: {
-            identities: {},
-            sign_in_provider: "google.com"
-          }
-        };
-      }
+      const auth = getAuth();
+      const decodedToken = await auth.verifyIdToken(idToken) as DecodedIdToken;
+      (req as any).decodedToken = decodedToken;
       next();
     } catch (error) {
       console.error("Token verification error:", error);

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/App";
 import NotificationModal from "@/components/notification/NotificationModal";
@@ -8,7 +9,7 @@ import { UserStatus } from "@/lib/types";
 
 export default function Header() {
   const [location] = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
@@ -93,7 +94,7 @@ export default function Header() {
                     </Link>
                     <div className="border-t border-gray-700 my-1"></div>
                     <button 
-                      onClick={() => {}} 
+                      onClick={() => logout()} 
                       className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
                       Sign out
                     </button>

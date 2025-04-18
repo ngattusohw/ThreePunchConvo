@@ -1,10 +1,9 @@
-import express, { type Express, Request, Response } from "express";
+import express, { type Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { fetchUpcomingEvents } from "./espn-api";
 import { z } from "zod";
 import { ZodError } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   insertThreadSchema,
   insertReplySchema,
@@ -13,9 +12,13 @@ import {
   insertMediaSchema,
   insertNotificationSchema
 } from "@shared/schema";
+import { setupAuth, authRequired, authorize } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+  
+  // Set up authentication
+  setupAuth(app);
 
   // Error handling middleware
   app.use((req: Request, res: Response, next: Function) => {

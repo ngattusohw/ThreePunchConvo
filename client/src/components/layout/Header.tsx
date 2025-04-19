@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { useAuth } from "@/App";
+import { useAuth } from "@/hooks/use-auth";
 import NotificationModal from "@/components/notification/NotificationModal";
 import MobileNavigation from "@/components/layout/MobileNavigation";
 import { formatUsername } from "@/lib/utils";
@@ -9,9 +8,29 @@ import { UserStatus } from "@/lib/types";
 
 export default function Header() {
   const [location] = useLocation();
-  const { user, logout } = useAuth();
+  const { currentUser: user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  
+  // Handle clicking outside of the user menu
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    
+    // Add the event listener
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Clean up
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <header className="bg-ufc-black border-b border-gray-800 sticky top-0 z-50">
@@ -63,7 +82,7 @@ export default function Header() {
                   </span>
                 </button>
                 
-                <div className="relative">
+                <div className="relative" ref={userMenuRef}>
                   <button 
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex items-center space-x-2"
@@ -77,7 +96,7 @@ export default function Header() {
                       <div className={`absolute -bottom-1 -right-1 ${user.isOnline ? 'bg-green-500' : 'bg-gray-500'} rounded-full h-3 w-3 border border-ufc-black`}></div>
                     </div>
                     <span className="text-white font-medium hidden md:block">{formatUsername(user.username)}</span>
-                    <span className={`hidden md:block ${getStatusClassForBadge(user.status)} text-xs px-2 py-0.5 rounded font-bold`}>
+                    <span className={`hidden md:block ${getStatusClassForBadge(user.status as UserStatus)} text-xs px-2 py-0.5 rounded font-bold`}>
                       {user.status}
                     </span>
                     <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 text-gray-400 hidden md:block transform transition-transform ${userMenuOpen ? 'rotate-180' : 'rotate-0'}`} viewBox="0 0 20 20" fill="currentColor">

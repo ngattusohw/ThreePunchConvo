@@ -18,19 +18,26 @@ export default function Header() {
   // Handle clicking outside of the user menu
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setUserMenuOpen(false);
+      // Only close if the menu is open
+      if (userMenuOpen && userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        // Use setTimeout to ensure the click event doesn't immediately close the menu
+        // This allows clicks on menu items to register before the menu closes
+        setTimeout(() => {
+          setUserMenuOpen(false);
+        }, 50);
       }
     }
     
     // Add the event listener
-    document.addEventListener('mousedown', handleClickOutside);
+    if (userMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
     
     // Clean up
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [userMenuOpen]); // Re-run effect when menu open state changes
 
   return (
     <header className="bg-ufc-black border-b border-gray-800 sticky top-0 z-50">
@@ -84,8 +91,11 @@ export default function Header() {
                 
                 <div className="relative" ref={userMenuRef}>
                   <button 
-                    onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center space-x-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setUserMenuOpen(!userMenuOpen);
+                    }}
+                    className={`flex items-center space-x-2 px-2 py-1 rounded transition-colors cursor-pointer ${userMenuOpen ? 'bg-gray-800' : 'hover:bg-gray-800'}`}
                   >
                     <div className="relative">
                       <img 
@@ -107,19 +117,52 @@ export default function Header() {
                   </button>
                   
                   {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-ufc-black border border-gray-700 rounded-md shadow-lg py-1 z-50">
-                      <Link href={`/user/${user.username}`} className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
+                    <div 
+                      className="absolute right-0 mt-2 w-48 bg-ufc-black border border-gray-700 rounded-md shadow-lg py-1 z-50"
+                      onClick={(e) => {
+                        // Prevent click event from bubbling up and triggering the outside click handler
+                        e.stopPropagation();
+                      }}
+                    >
+                      <Link 
+                        href={`/user/${user.username}`} 
+                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
+                        onClick={(e) => {
+                          // Don't close the menu immediately on click
+                          e.stopPropagation();
+                          // Close after navigation completes
+                          setTimeout(() => setUserMenuOpen(false), 100);
+                        }}
+                      >
                         Profile
                       </Link>
-                      <Link href="/settings" className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
+                      <Link 
+                        href="/settings" 
+                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTimeout(() => setUserMenuOpen(false), 100);
+                        }}
+                      >
                         Settings
                       </Link>
-                      <Link href="/messages" className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
+                      <Link 
+                        href="/messages" 
+                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTimeout(() => setUserMenuOpen(false), 100);
+                        }}
+                      >
                         Messages
                       </Link>
                       <div className="border-t border-gray-700 my-1"></div>
                       <button 
-                        onClick={() => logout()} 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          logout();
+                          setTimeout(() => setUserMenuOpen(false), 100);
+                        }} 
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
                         Sign out
                       </button>

@@ -63,8 +63,11 @@ export default function Header() {
                   </span>
                 </button>
                 
-                <div className="relative group">
-                  <button className="flex items-center space-x-2 group">
+                <div className="relative">
+                  <button 
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center space-x-2"
+                  >
                     <div className="relative">
                       <img 
                         src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}&background=random`} 
@@ -77,28 +80,30 @@ export default function Header() {
                     <span className={`hidden md:block ${getStatusClassForBadge(user.status)} text-xs px-2 py-0.5 rounded font-bold`}>
                       {user.status}
                     </span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 hidden md:block" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 text-gray-400 hidden md:block transform transition-transform ${userMenuOpen ? 'rotate-180' : 'rotate-0'}`} viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </button>
                   
-                  <div className="absolute right-0 mt-2 w-48 bg-ufc-black border border-gray-700 rounded-md shadow-lg py-1">
-                    <Link href={`/user/${user.username}`} className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
-                      Profile
-                    </Link>
-                    <Link href="/settings" className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
-                      Settings
-                    </Link>
-                    <Link href="/messages" className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
-                      Messages
-                    </Link>
-                    <div className="border-t border-gray-700 my-1"></div>
-                    <button 
-                      onClick={() => logout()} 
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
-                      Sign out
-                    </button>
-                  </div>
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-ufc-black border border-gray-700 rounded-md shadow-lg py-1 z-50">
+                      <Link href={`/user/${user.username}`} className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
+                        Profile
+                      </Link>
+                      <Link href="/settings" className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
+                        Settings
+                      </Link>
+                      <Link href="/messages" className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
+                        Messages
+                      </Link>
+                      <div className="border-t border-gray-700 my-1"></div>
+                      <button 
+                        onClick={() => logout()} 
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">
+                        Sign out
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             )}

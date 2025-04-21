@@ -221,7 +221,9 @@ export default function Header() {
                         onClick={(e) => {
                           e.stopPropagation();
                           logout();
-                          setTimeout(() => setUserMenuOpen(false), 100);
+                          setUserMenuOpen(false);
+                          // Force reload to clear all states after logout
+                          setTimeout(() => window.location.href = '/', 300);
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
                       >

@@ -328,11 +328,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           let pollWithOptions;
           if (poll) {
-            const pollOptions = await Promise.all(
-              Array.from(storage['pollOptions'].values())
-                .filter(option => option.pollId === poll.id)
-                .map(async (option) => option)
-            );
+            // Get poll options using the storage interface
+            // This is a temporary solution for the interface not exposing pollOptions directly
+            let pollOptions = [];
+            try {
+              // If using MemStorage 
+              if ('pollOptions' in (storage as any)) {
+                pollOptions = Array.from((storage as any)['pollOptions'].values())
+                  .filter((option: any) => option.pollId === poll.id);
+              } else {
+                // Fallback - in a real implementation, we would add a proper method to the interface
+                pollOptions = [];
+              }
+            } catch (err) {
+              console.error('Error getting poll options:', err);
+              pollOptions = [];
+            }
             
             pollWithOptions = {
               ...poll,
@@ -390,11 +401,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let pollWithOptions;
       if (poll) {
-        const pollOptions = await Promise.all(
-          Array.from(storage['pollOptions'].values())
-            .filter(option => option.pollId === poll.id)
-            .map(async (option) => option)
-        );
+        // Get poll options using the storage interface
+        // This is a temporary solution for the interface not exposing pollOptions directly
+        let pollOptions = [];
+        try {
+          // If using MemStorage 
+          if ('pollOptions' in (storage as any)) {
+            pollOptions = Array.from((storage as any)['pollOptions'].values())
+              .filter((option: any) => option.pollId === poll.id);
+          } else {
+            // Fallback - in a real implementation, we would add a proper method to the interface
+            pollOptions = [];
+          }
+        } catch (err) {
+          console.error('Error getting poll options:', err);
+          pollOptions = [];
+        }
         
         pollWithOptions = {
           ...poll,

@@ -7,6 +7,7 @@ import Schedule from "@/pages/Schedule";
 import Rankings from "@/pages/Rankings";
 import UserProfile from "@/pages/UserProfile";
 import Thread from "@/pages/Thread";
+import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -26,21 +27,8 @@ export const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 function App() {
-  // Mock authenticated user for demo purposes
-  const [user, setUser] = useState<AuthUser | null>({
-    id: 1,
-    username: "FighterFan84",
-    avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-    status: "CONTENDER",
-    isOnline: true,
-    postsCount: 157,
-    likesCount: 1203,
-    potdCount: 5,
-    rank: 17,
-    followersCount: 42,
-    followingCount: 63,
-    role: "USER",
-  });
+  // Start with null user (logged out state)
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   return (
     <AuthContext.Provider value={{ user, setUser }}>
@@ -49,6 +37,9 @@ function App() {
         <main className="flex-grow">
           <Switch>
             <Route path="/" component={Home} />
+            <Route path="/auth" component={AuthPage} />
+            <Route path="/login" component={AuthPage} />
+            <Route path="/register" component={AuthPage} />
             <Route path="/forum" component={Forum} />
             <Route path="/forum/:categoryId" component={Forum} />
             <Route path="/thread/:threadId" component={Thread} />

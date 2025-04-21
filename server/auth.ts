@@ -8,14 +8,27 @@ import { User as UserType } from '@shared/schema';
 // Initialize Firebase Admin SDK with a default app
 // We're using a try-catch to handle potential re-initialization
 try {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    }),
-  });
-  console.log("Firebase Admin initialized successfully");
+  // Check if we're in development mode
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  
+  if (isDevelopment) {
+    // In development, use a basic app configuration without credentials
+    // This allows the server to start, but Firebase auth verification will be mocked
+    initializeApp({
+      projectId: process.env.VITE_FIREBASE_PROJECT_ID || 'demo-project',
+    }, 'default');
+    console.log("Firebase Admin initialized in development mode");
+  } else {
+    // In production, use proper service account credentials
+    initializeApp({
+      credential: cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      }),
+    });
+    console.log("Firebase Admin initialized with credentials");
+  }
 } catch (error) {
   console.error("Firebase admin initialization error:", error);
 }
@@ -77,15 +90,38 @@ export function setupAuth(app: Express) {
   // Verify Firebase token middleware
   const verifyFirebaseToken = async (req: Request, res: Response, next: NextFunction) => {
     const idToken = req.headers.authorization?.split('Bearer ')[1];
+    const isDevelopment = process.env.NODE_ENV !== 'production';
     
     if (!idToken) {
       return res.status(401).json({ message: 'No token provided' });
     }
     
     try {
-      // For development only - if we don't have Firebase properly set up yet,
-      // we'll mock the token verification and just pass through
-      // Remove this in production!
+      if (isDevelopment && idToken === 'dev-mode-token') {
+        // For development only - allow a special token for testing
+        console.log("Using development mode auth");
+        (req as any).decodedToken = {
+          uid: 'dev-user-123',
+          email: 'dev@example.com',
+          email_verified: true,
+          name: 'Development User',
+          picture: 'https://ui-avatars.com/api/?name=Dev+User&background=random',
+          auth_time: Date.now() / 1000,
+          user_id: 'dev-user-123',
+          iss: 'https://securetoken.google.com/demo-project',
+          aud: 'demo-project',
+          iat: Date.now() / 1000,
+          exp: Date.now() / 1000 + 3600,
+          sub: 'dev-user-123',
+          firebase: {
+            identities: { email: ['dev@example.com'] },
+            sign_in_provider: 'password'
+          }
+        };
+        return next();
+      }
+      
+      // Standard token verification
       const auth = getAuth();
       const decodedToken = await auth.verifyIdToken(idToken) as DecodedIdToken;
       (req as any).decodedToken = decodedToken;

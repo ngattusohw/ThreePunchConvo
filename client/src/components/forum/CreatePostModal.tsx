@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/App";
+import { useAuth } from "@/hooks/use-auth";
 
 interface CreatePostModalProps {
   onClose: () => void;
@@ -12,7 +12,7 @@ interface CreatePostModalProps {
 
 export default function CreatePostModal({ onClose, categoryId }: CreatePostModalProps) {
   const { toast } = useToast();
-  const { user } = useAuth(); // Get the currently authenticated user
+  const { currentUser: user } = useAuth(); // Get the currently authenticated user
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");

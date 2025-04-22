@@ -69,7 +69,7 @@ export default function Header() {
             </button>
             <Link href="/" className="flex items-center">
               <span className="text-ufc-red font-accent font-bold text-2xl">
-                3
+                4
               </span>
               <span className="text-white font-accent font-bold text-2xl">
                 PUNCH
@@ -92,7 +92,7 @@ export default function Header() {
                 href="/schedule"
                 className={`font-heading font-medium ${location === "/schedule" ? "text-white" : "text-gray-400 hover:text-white"} transition`}
               >
-                SCHEDULE
+                SCHEDULEs
               </Link>
               <Link
                 href="/rankings"
@@ -219,15 +219,16 @@ export default function Header() {
                       <div className="border-t border-gray-700 my-1"></div>
                       <button
                         onClick={(e) => {
-                          e.stopPropagation();
+                          // e.stopPropagation();
+                          console.log("Sign out clicked");
                           logout();
                           setUserMenuOpen(false);
                           // Force reload to clear all states after logout
-                          setTimeout(() => window.location.href = '/', 300);
+                          setTimeout(() => (window.location.href = "/"), 300);
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
                       >
-                        Sign out
+                        Sign out!!!!
                       </button>
                     </div>
                   )}

@@ -11,7 +11,7 @@ import StatusBadge from "@/components/ui/status-badge";
 
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
-  const { user: currentUser } = useAuth();
+  const { currentUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [replyContent, setReplyContent] = useState("");

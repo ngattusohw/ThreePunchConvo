@@ -622,7 +622,7 @@ interface ReplyCardProps {
 }
 
 function ReplyCard({ reply, onQuote, onLike, onDislike }: ReplyCardProps) {
-  const { user: currentUser } = useAuth();
+  const { currentUser } = useAuth();
   
   // Calculate indentation level based on nested replies
   const indentationLevel = reply.parentReplyId ? 1 : 0;

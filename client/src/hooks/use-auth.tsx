@@ -71,18 +71,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      // Import the pre-configured Google provider
+      const { googleProvider } = await import('@/lib/firebase');
+      const result = await signInWithPopup(auth, googleProvider);
+      
+      // Log successful sign-in
+      console.log("Google sign-in successful:", result.user.displayName);
       
       toast({
         title: 'Welcome!',
         description: 'You have successfully signed in.',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Google sign-in error:', error);
+      // Log detailed error information
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      
       toast({
         title: 'Sign-in Error',
-        description: 'There was a problem signing in with Google.',
+        description: `There was a problem signing in with Google: ${error.message}`,
         variant: 'destructive'
       });
     } finally {

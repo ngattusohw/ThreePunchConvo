@@ -54,6 +54,7 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (process.env.NODE_ENV === "development") {
+    console.log('starting development server')
     await setupVite(app, server);
   } else {
     app.use(express.static(path.resolve(import.meta.dirname, "..", "dist", "public")));

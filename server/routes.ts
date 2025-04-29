@@ -12,13 +12,31 @@ import {
   insertMediaSchema,
   insertNotificationSchema
 } from "@shared/schema";
-import { setupAuth, authRequired, authorize } from "./auth";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   
   // Set up authentication
-  setupAuth(app);
+  await setupAuth(app);
+
+  // User auth endpoint
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Don't return password in response
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
 
   // Error handling middleware
   app.use((req: Request, res: Response, next: Function) => {

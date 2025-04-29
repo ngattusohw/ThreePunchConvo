@@ -91,10 +91,29 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
-    const user = {};
-    updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
-    verified(null, user);
+    const claims = tokens.claims();
+    const user = await storage.getUser(claims.sub);
+    
+    if (!user) {
+      // Create the user if they don't exist in our system
+      await upsertUser(claims);
+      const newUser = await storage.getUser(claims.sub);
+      if (newUser) {
+        const userObject = { ...newUser };
+        updateUserSession(userObject, tokens);
+        verified(null, userObject);
+        return;
+      }
+    } else {
+      // User exists, update their session
+      const userObject = { ...user };
+      updateUserSession(userObject, tokens);
+      verified(null, userObject);
+      return;
+    }
+    
+    // Fallback if something went wrong
+    verified(new Error("Failed to authenticate user"), null);
   };
 
   for (const domain of process.env

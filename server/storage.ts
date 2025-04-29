@@ -1363,7 +1363,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+  async updateUser(id: string, userData: Partial<User>): Promise<User | undefined> {
     const [updatedUser] = await db
       .update(users)
       .set({
@@ -1382,7 +1382,7 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
 
-  async deleteUser(id: number): Promise<boolean> {
+  async deleteUser(id: string): Promise<boolean> {
     await db.delete(users).where(eq(users.id, id));
     return true;
   }

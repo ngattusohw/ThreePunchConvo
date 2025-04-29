@@ -179,8 +179,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = parseInt(req.query.limit as string) || 20;
       
-      // Safely handle issues with the authentication system during development
-      // This prevents "Invalid user ID" errors from breaking the UI
       try {
         const topUsers = await storage.getTopUsers(limit);
         
@@ -190,7 +188,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Don't return passwords in response
         const usersWithoutPasswords = topUsers.map(user => {
-          const { password, ...userWithoutPassword } = user;
+          // If user has password (shouldn't happen with Replit Auth)
+          const userWithoutPassword = { ...user };
+          if ('password' in userWithoutPassword) {
+            delete userWithoutPassword.password;
+          }
           return userWithoutPassword;
         });
         

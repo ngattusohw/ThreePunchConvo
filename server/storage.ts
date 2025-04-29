@@ -1,6 +1,7 @@
 import { 
   User, 
-  InsertUser, 
+  InsertUser,
+  UpsertUser,
   Thread, 
   InsertThread, 
   Reply, 
@@ -17,17 +18,22 @@ import {
   Fighter,
   Fight
 } from "@shared/schema";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { pool, db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Session store
   sessionStore: any;
   
   // User management
-  getUser(id: number): Promise<User | undefined>;
+  getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
-  deleteUser(id: number): Promise<boolean>;
+  upsertUser(userData: UpsertUser): Promise<User>;
+  updateUser(id: string, userData: Partial<User>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
   getTopUsers(limit: number): Promise<User[]>;
   getAllUsers(): Promise<User[]>;
   
@@ -1323,8 +1329,27 @@ export class DatabaseStorage implements IStorage {
   }
   
   // User methods
-  async getUser(id: number): Promise<User | undefined> {
+  async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+  
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...userData,
+        updatedAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date()
+        }
+      })
+      .returning();
+    
     return user;
   }
 

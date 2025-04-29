@@ -1,17 +1,31 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, varchar, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
 // User table
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  email: text("email").notNull().unique(),
-  avatar: text("avatar"),
+  id: varchar("id").primaryKey().notNull(),  // Changed from serial to varchar for Replit Auth
+  username: varchar("username").unique().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  bio: text("bio"),
+  profileImageUrl: varchar("profile_image_url"),
   role: text("role").notNull().default("USER"), // USER, MODERATOR, ADMIN, PRO
   status: text("status").notNull().default("AMATEUR"), // AMATEUR, REGIONAL_POSTER, COMPETITOR, RANKED_POSTER, CONTENDER, CHAMPION, HALL_OF_FAMER
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
   isOnline: boolean("is_online").notNull().default(false),
   lastActive: timestamp("last_active"),
   points: integer("points").notNull().default(0),
@@ -37,7 +51,7 @@ export const threads = pgTable("threads", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   content: text("content").notNull(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   categoryId: text("category_id").notNull().references(() => categories.id),
   isPinned: boolean("is_pinned").notNull().default(false),
   isLocked: boolean("is_locked").notNull().default(false),
@@ -83,7 +97,7 @@ export const pollVotes = pgTable("poll_votes", {
   id: serial("id").primaryKey(),
   pollId: integer("poll_id").notNull().references(() => polls.id),
   pollOptionId: integer("poll_option_id").notNull().references(() => pollOptions.id),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -91,9 +105,9 @@ export const pollVotes = pgTable("poll_votes", {
 export const replies = pgTable("replies", {
   id: serial("id").primaryKey(),
   threadId: integer("thread_id").notNull().references(() => threads.id),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   content: text("content").notNull(),
-  parentReplyId: integer("parent_reply_id").references(() => replies.id),
+  parentReplyId: integer("parent_reply_id"), // Self-reference handled with a constraint in migration
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   likesCount: integer("likes_count").notNull().default(0),
@@ -113,7 +127,7 @@ export const replyMedia = pgTable("reply_media", {
 export const threadReactions = pgTable("thread_reactions", {
   id: serial("id").primaryKey(),
   threadId: integer("thread_id").notNull().references(() => threads.id),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // LIKE, DISLIKE, POTD
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -122,7 +136,7 @@ export const threadReactions = pgTable("thread_reactions", {
 export const replyReactions = pgTable("reply_reactions", {
   id: serial("id").primaryKey(),
   replyId: integer("reply_id").notNull().references(() => replies.id),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // LIKE, DISLIKE
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -130,17 +144,17 @@ export const replyReactions = pgTable("reply_reactions", {
 // User follows
 export const follows = pgTable("follows", {
   id: serial("id").primaryKey(),
-  followerId: integer("follower_id").notNull().references(() => users.id),
-  followingId: integer("following_id").notNull().references(() => users.id),
+  followerId: varchar("follower_id").notNull().references(() => users.id),
+  followingId: varchar("following_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Notifications
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // REPLY, MENTION, LIKE, SYSTEM, FOLLOW
-  relatedUserId: integer("related_user_id").references(() => users.id),
+  relatedUserId: varchar("related_user_id").references(() => users.id),
   threadId: integer("thread_id").references(() => threads.id),
   replyId: integer("reply_id").references(() => replies.id),
   message: text("message"),
@@ -194,6 +208,7 @@ export const fights = pgTable("fights", {
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
   points: true,
   rank: true,
   postsCount: true,
@@ -202,6 +217,8 @@ export const insertUserSchema = createInsertSchema(users).omit({
   followersCount: true,
   followingCount: true,
 });
+
+export const upsertUserSchema = createInsertSchema(users);
 
 export const insertThreadSchema = createInsertSchema(threads).omit({
   id: true,
@@ -248,6 +265,7 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = z.infer<typeof upsertUserSchema>;
 
 export type Thread = typeof threads.$inferSelect;
 export type InsertThread = z.infer<typeof insertThreadSchema>;

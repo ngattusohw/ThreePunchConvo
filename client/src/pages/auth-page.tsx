@@ -3,19 +3,19 @@ import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { FcGoogle } from 'react-icons/fc';
 import { GiBoxingGlove } from 'react-icons/gi';
+import { RiUserLine } from 'react-icons/ri';
 
 export default function AuthPage() {
-  const { currentUser, loading, signInWithGoogle } = useAuth();
+  const { user, loading, login } = useAuth();
   const [location, navigate] = useLocation();
 
   // Redirect to home if already logged in
   useEffect(() => {
-    if (currentUser && !loading) {
+    if (user && !loading) {
       navigate('/');
     }
-  }, [currentUser, loading, navigate]);
+  }, [user, loading, navigate]);
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
@@ -32,11 +32,11 @@ export default function AuthPage() {
             <Button 
               className="w-full flex items-center justify-center gap-2" 
               variant="outline"
-              onClick={signInWithGoogle}
+              onClick={login}
               disabled={loading}
             >
-              <FcGoogle className="h-5 w-5" />
-              Sign in with Google
+              <RiUserLine className="h-5 w-5" />
+              Sign in with Replit
             </Button>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">

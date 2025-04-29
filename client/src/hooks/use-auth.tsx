@@ -1,134 +1,76 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import {
-  User as FirebaseUser,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { User } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { useQuery } from '@tanstack/react-query';
 
 interface AuthContextType {
-  currentUser: User | null;
-  firebaseUser: FirebaseUser | null;
+  user: User | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
-  logout: () => Promise<void>;
+  login: () => void;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setFirebaseUser(user);
-      
-      if (user) {
-        try {
-          // Get ID token
-          const idToken = await user.getIdToken();
-          
-          // Send token to backend to verify and get/create user
-          const res = await apiRequest('POST', '/api/auth/google', null, {
-            headers: {
-              Authorization: `Bearer ${idToken}`
-            }
-          });
-          
-          if (res.ok) {
-            const userData = await res.json();
-            setCurrentUser(userData);
-          } else {
-            throw new Error('Failed to authenticate with server');
+  // Fetch user data from server
+  const { data: user, isLoading, error, refetch } = useQuery({
+    queryKey: ['/api/auth/user'],
+    queryFn: async () => {
+      try {
+        const res = await fetch('/api/auth/user', {
+          credentials: 'include'
+        });
+        
+        if (!res.ok) {
+          if (res.status === 401) {
+            // Not authenticated, but this is expected
+            return null;
           }
-        } catch (error) {
-          console.error('Auth error:', error);
-          toast({
-            title: 'Authentication Error',
-            description: 'There was a problem authenticating with the server.',
-            variant: 'destructive'
-          });
+          throw new Error('Failed to fetch user data');
         }
-      } else {
-        setCurrentUser(null);
+        
+        return res.json();
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        return null;
       }
-      
-      setLoading(false);
-    });
+    },
+    retry: false,
+    refetchOnWindowFocus: false
+  });
 
-    return () => unsubscribe();
-  }, [toast]);
-
-  // Sign in with Google
-  const signInWithGoogle = async () => {
-    try {
-      setLoading(true);
-      // Import the pre-configured Google provider
-      const { googleProvider } = await import('@/lib/firebase');
-      const result = await signInWithPopup(auth, googleProvider);
-      
-      // Log successful sign-in
-      console.log("Google sign-in successful:", result.user.displayName);
-      
+  useEffect(() => {
+    setLoading(isLoading);
+    
+    if (error) {
+      console.error('Auth error:', error);
       toast({
-        title: 'Welcome!',
-        description: 'You have successfully signed in.',
-      });
-    } catch (error: any) {
-      console.error('Google sign-in error:', error);
-      // Log detailed error information
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
-      
-      toast({
-        title: 'Sign-in Error',
-        description: `There was a problem signing in with Google: ${error.message}`,
+        title: 'Authentication Error',
+        description: 'There was a problem fetching user data.',
         variant: 'destructive'
       });
-    } finally {
-      setLoading(false);
     }
+  }, [isLoading, error, toast]);
+
+  // Login with Replit Auth
+  const login = () => {
+    window.location.href = '/api/login';
   };
 
   // Logout
-  const logout = async () => {
-    try {
-      setLoading(true);
-      await signOut(auth);
-      
-      // Call backend logout endpoint
-      await apiRequest('POST', '/api/auth/logout');
-      
-      setCurrentUser(null);
-      toast({
-        title: 'Logged Out',
-        description: 'You have been successfully logged out.',
-      });
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast({
-        title: 'Logout Error',
-        description: 'There was a problem logging out.',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
+  const logout = () => {
+    window.location.href = '/api/logout';
   };
 
   const value = {
-    currentUser,
-    firebaseUser,
+    user,
     loading,
-    signInWithGoogle,
+    login,
     logout
   };
 

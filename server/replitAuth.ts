@@ -57,14 +57,18 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
+  if (!claims || !claims.sub) {
+    throw new Error("Invalid claims data in upsertUser");
+  }
+  
   await storage.upsertUser({
-    id: claims["sub"],
-    username: claims["username"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    bio: claims["bio"],
-    profileImageUrl: claims["profile_image_url"],
+    id: claims.sub,
+    username: claims.username || `user_${claims.sub.substring(0, 8)}`,
+    email: claims.email,
+    firstName: claims.first_name,
+    lastName: claims.last_name,
+    bio: claims.bio,
+    profileImageUrl: claims.profile_image_url,
     role: "USER",
     status: "AMATEUR",
     isOnline: true,
@@ -92,6 +96,11 @@ export async function setupAuth(app: Express) {
     verified: passport.AuthenticateCallback
   ) => {
     const claims = tokens.claims();
+    if (!claims || !claims.sub) {
+      verified(new Error("Invalid claims data"), null);
+      return;
+    }
+    
     const user = await storage.getUser(claims.sub);
     
     if (!user) {

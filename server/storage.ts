@@ -225,6 +225,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // For mock data in development, return some sample users
       // This ensures the rankings section functions even if DB isn't fully populated
+      // Adapted to match the actual database schema
       const sampleUsers: User[] = [
         {
           id: "1",
@@ -232,12 +233,7 @@ export class DatabaseStorage implements IStorage {
           email: 'fightfan@example.com',
           password: null, // Never expose passwords
           avatar: null,
-          firstName: null,
-          lastName: null,
-          bio: 'MMA enthusiast and UFC superfan',
-          profileImageUrl: null,
           createdAt: new Date(),
-          updatedAt: new Date(),
           role: 'USER',
           status: 'REGIONAL',
           isOnline: true,
@@ -257,12 +253,7 @@ export class DatabaseStorage implements IStorage {
           email: 'octagon@example.com',
           password: null,
           avatar: null,
-          firstName: null,
-          lastName: null,
-          bio: 'Breaking down fights since 2010',
-          profileImageUrl: null,
           createdAt: new Date(),
-          updatedAt: new Date(),
           role: 'USER',
           status: 'COMPETITOR',
           isOnline: false,
@@ -282,12 +273,7 @@ export class DatabaseStorage implements IStorage {
           email: 'knockout@example.com',
           password: null,
           avatar: null,
-          firstName: null,
-          lastName: null,
-          bio: 'Always predicting the KO',
-          profileImageUrl: null,
           createdAt: new Date(),
-          updatedAt: new Date(),
           role: 'USER',
           status: 'AMATEUR',
           isOnline: true,
@@ -305,6 +291,7 @@ export class DatabaseStorage implements IStorage {
 
       try {
         // First try database query with explicit column selection to match DB structure
+        // We only select columns that actually exist in the database
         const topUsers = await db
           .select({
             id: users.id,
@@ -312,7 +299,10 @@ export class DatabaseStorage implements IStorage {
             email: users.email,
             password: users.password,
             avatar: users.avatar,
+            firstName: users.firstName,
+            lastName: users.lastName,
             bio: users.bio,
+            profileImageUrl: users.profileImageUrl,
             role: users.role,
             status: users.status,
             isOnline: users.isOnline,
@@ -320,6 +310,7 @@ export class DatabaseStorage implements IStorage {
             points: users.points,
             rank: users.rank,
             createdAt: users.createdAt,
+            updatedAt: users.updatedAt,
             postsCount: users.postsCount,
             likesCount: users.likesCount,
             potdCount: users.potdCount,
@@ -358,7 +349,6 @@ export class DatabaseStorage implements IStorage {
           email: users.email,
           password: users.password,
           avatar: users.avatar,
-          bio: users.bio,
           role: users.role,
           status: users.status,
           isOnline: users.isOnline,

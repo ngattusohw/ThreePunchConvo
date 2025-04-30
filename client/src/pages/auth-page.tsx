@@ -1,14 +1,41 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useLocation } from 'wouter';
+import { useLocation, useSearch } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { GiBoxingGlove } from 'react-icons/gi';
 import { RiUserLine } from 'react-icons/ri';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, Loader2 } from 'lucide-react';
 
 export default function AuthPage() {
   const { user, loading, login } = useAuth();
   const [location, navigate] = useLocation();
+  const search = useSearch();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Check for error parameters in the URL
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const error = params.get('error');
+    
+    if (error) {
+      switch(error) {
+        case 'authentication_failed':
+          setErrorMessage('Authentication failed. Please try again.');
+          break;
+        case 'no_user':
+          setErrorMessage('Unable to retrieve user information. Please try again.');
+          break;
+        case 'login_failed':
+          setErrorMessage('Login failed. Please try again later.');
+          break;
+        default:
+          setErrorMessage('An error occurred during authentication. Please try again.');
+      }
+    }
+  }, [search]);
 
   // Redirect to home if already logged in
   useEffect(() => {
@@ -16,6 +43,11 @@ export default function AuthPage() {
       navigate('/');
     }
   }, [user, loading, navigate]);
+
+  const handleLogin = () => {
+    setIsLoggingIn(true);
+    login();
+  };
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
@@ -29,14 +61,26 @@ export default function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {errorMessage && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
+            )}
+            
             <Button 
               className="w-full flex items-center justify-center gap-2" 
               variant="outline"
-              onClick={login}
-              disabled={loading}
+              onClick={handleLogin}
+              disabled={loading || isLoggingIn}
             >
-              <RiUserLine className="h-5 w-5" />
-              Sign in with Replit
+              {isLoggingIn ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RiUserLine className="h-5 w-5" />
+              )}
+              {isLoggingIn ? 'Signing in...' : 'Sign in with Replit'}
             </Button>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">

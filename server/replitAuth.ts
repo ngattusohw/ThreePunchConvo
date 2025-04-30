@@ -161,7 +161,7 @@ export async function setupAuth(app: Express) {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
       failWithError: true
-    }, (err, user, info) => {
+    }, (err: any, user: Express.User | false | null, info: { message: string } | undefined) => {
       if (err) {
         console.error("Passport authentication error:", err);
         return res.redirect("/auth?error=authentication_failed");
@@ -173,7 +173,7 @@ export async function setupAuth(app: Express) {
       }
       
       // Manually log in the user
-      req.login(user, (loginErr) => {
+      req.login(user, (loginErr: any) => {
         if (loginErr) {
           console.error("Login error:", loginErr);
           return res.redirect("/auth?error=login_failed");

@@ -132,19 +132,12 @@ export class DatabaseStorage implements IStorage {
   
   async createUser(userData: InsertUser): Promise<User> {
     try {
-      // Generate a UUID for the user ID
-      const userId = uuidv4();
-      
       const [user] = await db.insert(users)
         .values({
-          id: userId,
           username: userData.username,
           password: userData.password,
           email: userData.email || null,
-          firstName: userData.firstName || null,
-          lastName: userData.lastName || null,
-          bio: userData.bio || null,
-          profileImageUrl: userData.profileImageUrl || null,
+          avatar: userData.avatar || null,
           role: userData.role || 'USER',
           status: userData.status || 'AMATEUR',
           isOnline: userData.isOnline || false,

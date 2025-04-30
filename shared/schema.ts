@@ -15,18 +15,14 @@ export const sessions = pgTable(
 
 // User table
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().notNull(),  // Changed from serial to varchar for Replit Auth
-  username: varchar("username").unique().notNull(),
-  password: varchar("password"), // Added password field for local auth
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  bio: text("bio"),
-  profileImageUrl: varchar("profile_image_url"),
+  id: serial("id").primaryKey().notNull(),  // Using serial for integer ID
+  username: text("username").unique().notNull(),
+  password: text("password"), // Added password field for local auth
+  email: text("email").unique(),
+  avatar: text("avatar"),
   role: text("role").notNull().default("USER"), // USER, MODERATOR, ADMIN, PRO
   status: text("status").notNull().default("AMATEUR"), // AMATEUR, REGIONAL_POSTER, COMPETITOR, RANKED_POSTER, CONTENDER, CHAMPION, HALL_OF_FAMER
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
   isOnline: boolean("is_online").notNull().default(false),
   lastActive: timestamp("last_active"),
   points: integer("points").notNull().default(0),

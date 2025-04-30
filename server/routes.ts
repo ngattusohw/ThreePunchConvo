@@ -13,7 +13,7 @@ import {
   insertNotificationSchema,
   PollOption
 } from "@shared/schema";
-import { setupAuth } from "./auth";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);

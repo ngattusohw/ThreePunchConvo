@@ -112,15 +112,20 @@ export class DatabaseStorage implements IStorage {
   // User methods
   async getUser(id: number | string): Promise<User | undefined> {
     try {
-      // Ensure ID is a number for the query
-      const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
-      
-      if (isNaN(numericId)) {
-        console.error('Invalid user ID:', id);
+      if (id === undefined || id === null) {
+        console.error('Undefined or null user ID provided');
         return undefined;
       }
       
-      const [user] = await db.select().from(users).where(eq(users.id, numericId));
+      let userId = id;
+      
+      // For Replit Auth we'll use the string ID directly
+      // For non-Replit Auth we parse numeric strings
+      if (typeof id === 'string' && !isNaN(parseInt(id, 10)) && id.match(/^\d+$/)) {
+        userId = parseInt(id, 10);
+      }
+      
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
       return user;
     } catch (error) {
       console.error('Error getting user:', error);

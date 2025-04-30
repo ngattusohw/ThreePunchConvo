@@ -15,11 +15,16 @@ export const sessions = pgTable(
 
 // User table
 export const users = pgTable("users", {
-  id: serial("id").primaryKey().notNull(),  // Using serial for integer ID
+  id: text("id").primaryKey().notNull(),  // Using text for Replit Auth and numerical IDs
   username: text("username").unique().notNull(),
   password: text("password"), // Added password field for local auth
   email: text("email").unique(),
   avatar: text("avatar"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  bio: text("bio"),
+  profileImageUrl: text("profile_image_url"),
+  updatedAt: timestamp("updated_at").defaultNow(),
   role: text("role").notNull().default("USER"), // USER, MODERATOR, ADMIN, PRO
   status: text("status").notNull().default("AMATEUR"), // AMATEUR, REGIONAL_POSTER, COMPETITOR, RANKED_POSTER, CONTENDER, CHAMPION, HALL_OF_FAMER
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -48,7 +53,7 @@ export const threads = pgTable("threads", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   content: text("content").notNull(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id),
   categoryId: text("category_id").notNull().references(() => categories.id),
   isPinned: boolean("is_pinned").notNull().default(false),
   isLocked: boolean("is_locked").notNull().default(false),
@@ -94,7 +99,7 @@ export const pollVotes = pgTable("poll_votes", {
   id: serial("id").primaryKey(),
   pollId: integer("poll_id").notNull().references(() => polls.id),
   pollOptionId: integer("poll_option_id").notNull().references(() => pollOptions.id),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -102,7 +107,7 @@ export const pollVotes = pgTable("poll_votes", {
 export const replies = pgTable("replies", {
   id: serial("id").primaryKey(),
   threadId: integer("thread_id").notNull().references(() => threads.id),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id),
   content: text("content").notNull(),
   parentReplyId: integer("parent_reply_id"), // Self-reference handled with a constraint in migration
   createdAt: timestamp("created_at").notNull().defaultNow(),

@@ -117,15 +117,8 @@ export class DatabaseStorage implements IStorage {
         return undefined;
       }
       
-      let userId = id;
-      
-      // For Replit Auth we'll use the string ID directly
-      // For non-Replit Auth we parse numeric strings
-      if (typeof id === 'string' && !isNaN(parseInt(id, 10)) && id.match(/^\d+$/)) {
-        userId = parseInt(id, 10);
-      }
-      
-      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      // Use sql tag to properly handle both string and number types
+      const [user] = await db.select().from(users).where(sql`${users.id} = ${id}`);
       return user;
     } catch (error) {
       console.error('Error getting user:', error);
@@ -145,25 +138,33 @@ export class DatabaseStorage implements IStorage {
   
   async createUser(userData: InsertUser): Promise<User> {
     try {
+      // Generate UUID for user ID if not provided
+      const userValues = {
+        id: userData.id || uuidv4(),
+        username: userData.username,
+        password: userData.password,
+        email: userData.email || null,
+        avatar: userData.avatar || null,
+        firstName: userData.firstName || null,
+        lastName: userData.lastName || null,
+        bio: userData.bio || null,
+        profileImageUrl: userData.profileImageUrl || null,
+        role: 'USER',
+        status: 'AMATEUR',
+        isOnline: false,
+        lastActive: new Date(),
+        points: 0,
+        postsCount: 0,
+        likesCount: 0,
+        potdCount: 0,
+        followersCount: 0,
+        followingCount: 0,
+        socialLinks: null,
+        rank: 0
+      };
+      
       const [user] = await db.insert(users)
-        .values({
-          username: userData.username,
-          password: userData.password,
-          email: userData.email || null,
-          avatar: userData.avatar || null,
-          role: 'USER',
-          status: 'AMATEUR',
-          isOnline: false,
-          lastActive: new Date(),
-          points: 0,
-          postsCount: 0,
-          likesCount: 0,
-          potdCount: 0,
-          followersCount: 0,
-          followingCount: 0,
-          socialLinks: null,
-          rank: 0
-        })
+        .values(userValues)
         .returning();
       
       return user;
@@ -193,14 +194,14 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+  async updateUser(id: number | string, userData: Partial<User>): Promise<User | undefined> {
     try {
       const [updatedUser] = await db
         .update(users)
         .set({
           ...userData
         })
-        .where(eq(users.id, id))
+        .where(sql`${users.id} = ${id}`)
         .returning();
       
       return updatedUser;
@@ -210,9 +211,9 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async deleteUser(id: number): Promise<boolean> {
+  async deleteUser(id: number | string): Promise<boolean> {
     try {
-      await db.delete(users).where(eq(users.id, id));
+      await db.delete(users).where(sql`${users.id} = ${id}`);
       return true;
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -226,11 +227,15 @@ export class DatabaseStorage implements IStorage {
       // This ensures the rankings section functions even if DB isn't fully populated
       const sampleUsers: User[] = [
         {
-          id: 1,
+          id: "1",
           username: 'FightFan123',
           email: 'fightfan@example.com',
           password: null, // Never expose passwords
           avatar: null,
+          firstName: null,
+          lastName: null,
+          bio: 'MMA enthusiast and UFC superfan',
+          profileImageUrl: null,
           createdAt: new Date(),
           updatedAt: new Date(),
           role: 'USER',
@@ -244,15 +249,18 @@ export class DatabaseStorage implements IStorage {
           followersCount: 10,
           followingCount: 5,
           socialLinks: null,
-          rank: 1,
-          bio: 'MMA enthusiast and UFC superfan'
+          rank: 1
         },
         {
-          id: 2,
+          id: "2",
           username: 'OctagonExpert',
           email: 'octagon@example.com',
           password: null,
           avatar: null,
+          firstName: null,
+          lastName: null,
+          bio: 'Breaking down fights since 2010',
+          profileImageUrl: null,
           createdAt: new Date(),
           updatedAt: new Date(),
           role: 'USER',
@@ -266,15 +274,18 @@ export class DatabaseStorage implements IStorage {
           followersCount: 8,
           followingCount: 12,
           socialLinks: null,
-          rank: 2,
-          bio: 'Breaking down fights since 2010'
+          rank: 2
         },
         {
-          id: 3,
+          id: "3",
           username: 'KnockoutKing',
           email: 'knockout@example.com',
           password: null,
           avatar: null,
+          firstName: null,
+          lastName: null,
+          bio: 'Always predicting the KO',
+          profileImageUrl: null,
           createdAt: new Date(),
           updatedAt: new Date(),
           role: 'USER',
@@ -288,8 +299,7 @@ export class DatabaseStorage implements IStorage {
           followersCount: 5,
           followingCount: 15,
           socialLinks: null,
-          rank: 3,
-          bio: 'Always predicting the KO'
+          rank: 3
         }
       ];
 

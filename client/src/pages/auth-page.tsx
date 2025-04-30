@@ -1,54 +1,14 @@
-import { useState, useEffect } from 'react';
-import { useLocation, useSearch } from 'wouter';
+import { useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { GiBoxingGlove } from 'react-icons/gi';
-import { AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { apiRequest } from '@/lib/queryClient';
 
 export default function AuthPage() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, login } = useAuth();
   const [location, navigate] = useLocation();
-  const search = useSearch();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  // Form states
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState('login');
-  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
-  const [registerForm, setRegisterForm] = useState({ 
-    username: '',
-    password: '',
-    email: ''
-  });
-
-  // Check for error parameters in the URL
-  useEffect(() => {
-    const params = new URLSearchParams(search);
-    const error = params.get('error');
-    
-    if (error) {
-      switch(error) {
-        case 'authentication_failed':
-          setErrorMessage('Authentication failed. Please try again.');
-          break;
-        case 'no_user':
-          setErrorMessage('Unable to retrieve user information. Please try again.');
-          break;
-        case 'login_failed':
-          setErrorMessage('Login failed. Please try again later.');
-          break;
-        default:
-          setErrorMessage('An error occurred during authentication. Please try again.');
-      }
-    }
-  }, [search]);
-
   // Redirect to home if already logged in
   useEffect(() => {
     if (user && !isLoading) {
@@ -56,84 +16,9 @@ export default function AuthPage() {
     }
   }, [user, isLoading, navigate]);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setErrorMessage(null);
-    
-    try {
-      const response = await apiRequest('POST', '/api/auth/login', loginForm);
-      
-      if (!response.ok) {
-        const data = await response.json();
-        setErrorMessage(data.message || 'Failed to login. Please try again.');
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // Fetch user data again before redirecting
-      try {
-        const userResponse = await fetch('/api/auth/user', {
-          credentials: 'include'
-        });
-        if (userResponse.ok) {
-          // Navigation
-          window.location.href = '/';
-        } else {
-          console.error('Failed to get user after login:', await userResponse.text());
-          setErrorMessage('Failed to get user data after login. Please try again.');
-          setIsSubmitting(false);
-        }
-      } catch (fetchError) {
-        console.error('Error fetching user after login:', fetchError);
-        setErrorMessage('Error fetching user data. Please try again.');
-        setIsSubmitting(false);
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setErrorMessage('An error occurred during login. Please try again.');
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setErrorMessage(null);
-    
-    try {
-      const response = await apiRequest('POST', '/api/auth/register', registerForm);
-      
-      if (!response.ok) {
-        const data = await response.json();
-        setErrorMessage(data.message || 'Failed to register. Please try again.');
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // Fetch user data again before redirecting
-      try {
-        const userResponse = await fetch('/api/auth/user', {
-          credentials: 'include'
-        });
-        if (userResponse.ok) {
-          // Navigation
-          window.location.href = '/';
-        } else {
-          console.error('Failed to get user after registration:', await userResponse.text());
-          setErrorMessage('Failed to get user data after registration. Please try again.');
-          setIsSubmitting(false);
-        }
-      } catch (fetchError) {
-        console.error('Error fetching user after registration:', fetchError);
-        setErrorMessage('Error fetching user data. Please try again.');
-        setIsSubmitting(false);
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      setErrorMessage('An error occurred during registration. Please try again.');
-      setIsSubmitting(false);
-    }
+  // Function to handle login with Replit Auth
+  const handleLogin = () => {
+    login();
   };
 
   return (
@@ -147,121 +32,18 @@ export default function AuthPage() {
               Join the MMA discussion
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            {errorMessage && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{errorMessage}</AlertDescription>
-              </Alert>
-            )}
+          <CardContent className="flex flex-col items-center justify-center space-y-4">
+            <p className="text-center text-gray-500 mb-4">
+              Sign in with your Replit account to join the community.
+            </p>
             
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
-              </TabsList>
-              
-              {/* Login Tab */}
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-username">Username</Label>
-                    <Input 
-                      id="login-username"
-                      type="text"
-                      placeholder="Your username"
-                      value={loginForm.username}
-                      onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
-                      disabled={isSubmitting}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
-                    <Input 
-                      id="login-password"
-                      type="password"
-                      placeholder="Your password"
-                      value={loginForm.password}
-                      onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                      disabled={isSubmitting}
-                      required
-                    />
-                  </div>
-                  
-                  <Button 
-                    type="submit"
-                    className="w-full" 
-                    disabled={isSubmitting || isLoading}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Logging in...
-                      </>
-                    ) : 'Login'}
-                  </Button>
-                </form>
-              </TabsContent>
-              
-              {/* Register Tab */}
-              <TabsContent value="register">
-                <form onSubmit={handleRegister} className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="register-username">Username</Label>
-                    <Input 
-                      id="register-username"
-                      type="text"
-                      placeholder="Choose a username"
-                      value={registerForm.username}
-                      onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value })}
-                      disabled={isSubmitting}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email">Email</Label>
-                    <Input 
-                      id="register-email"
-                      type="email"
-                      placeholder="Your email"
-                      value={registerForm.email}
-                      onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password">Password</Label>
-                    <Input 
-                      id="register-password"
-                      type="password"
-                      placeholder="Choose a password"
-                      value={registerForm.password}
-                      onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
-                      disabled={isSubmitting}
-                      required
-                    />
-                  </div>
-                  
-                  <Button 
-                    type="submit"
-                    className="w-full" 
-                    disabled={isSubmitting || isLoading}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating account...
-                      </>
-                    ) : 'Register'}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+            <Button 
+              onClick={handleLogin}
+              className="w-full"
+              size="lg"
+            >
+              Sign in with Replit
+            </Button>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <div className="text-sm text-gray-500 text-center">

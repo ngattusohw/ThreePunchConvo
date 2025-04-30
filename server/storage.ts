@@ -304,9 +304,29 @@ export class DatabaseStorage implements IStorage {
       ];
 
       try {
-        // First try database query
+        // First try database query with explicit column selection to match DB structure
         const topUsers = await db
-          .select()
+          .select({
+            id: users.id,
+            username: users.username,
+            email: users.email,
+            password: users.password,
+            avatar: users.avatar,
+            bio: users.bio,
+            role: users.role,
+            status: users.status,
+            isOnline: users.isOnline,
+            lastActive: users.lastActive,
+            points: users.points,
+            rank: users.rank,
+            createdAt: users.createdAt,
+            postsCount: users.postsCount,
+            likesCount: users.likesCount,
+            potdCount: users.potdCount,
+            followersCount: users.followersCount,
+            followingCount: users.followingCount,
+            socialLinks: users.socialLinks
+          })
           .from(users)
           .orderBy(desc(users.points))
           .limit(limit);
@@ -331,7 +351,29 @@ export class DatabaseStorage implements IStorage {
   
   async getAllUsers(): Promise<User[]> {
     try {
-      return await db.select().from(users);
+      return await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          password: users.password,
+          avatar: users.avatar,
+          bio: users.bio,
+          role: users.role,
+          status: users.status,
+          isOnline: users.isOnline,
+          lastActive: users.lastActive,
+          points: users.points,
+          rank: users.rank,
+          createdAt: users.createdAt,
+          postsCount: users.postsCount,
+          likesCount: users.likesCount,
+          potdCount: users.potdCount,
+          followersCount: users.followersCount,
+          followingCount: users.followingCount,
+          socialLinks: users.socialLinks
+        })
+        .from(users);
     } catch (error) {
       console.error('Error getting all users:', error);
       return [];

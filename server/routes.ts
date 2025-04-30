@@ -336,8 +336,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               // If using MemStorage 
               if ('pollOptions' in (storage as any)) {
-                pollOptions = Array.from((storage as any)['pollOptions'].values())
-                  .filter((option: PollOption) => option.pollId === poll.id);
+                const values = Array.from((storage as any)['pollOptions'].values());
+                pollOptions = values
+                  .filter((option: any) => option.pollId === poll.id) as PollOption[];
               } else {
                 // Fallback - in a real implementation, we would add a proper method to the interface
                 pollOptions = [];
@@ -411,8 +412,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // If using MemStorage 
           if ('pollOptions' in (storage as any)) {
-            pollOptions = Array.from((storage as any)['pollOptions'].values())
-              .filter((option: PollOption) => option.pollId === poll.id);
+            const values = Array.from((storage as any)['pollOptions'].values());
+            pollOptions = values
+              .filter((option: any) => option.pollId === poll.id) as PollOption[];
           } else {
             // Fallback - in a real implementation, we would add a proper method to the interface
             pollOptions = [];

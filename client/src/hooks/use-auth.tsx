@@ -33,7 +33,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const {
-    data: user,
+    data: userData,
     error,
     isLoading,
     refetch
@@ -41,6 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["/api/auth/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
+  
+  // Ensure we have a consistent null instead of undefined
+  const user = userData || null;
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {

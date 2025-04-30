@@ -157,7 +157,10 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-    res.json(req.user);
+    
+    // Remove password before sending the user data
+    const { password, ...userWithoutPassword } = req.user as User;
+    res.json(userWithoutPassword);
   });
 }
 

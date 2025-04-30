@@ -71,8 +71,24 @@ export default function AuthPage() {
         return;
       }
       
-      // Redirect will happen automatically after the useAuth query refetches the user
-      window.location.href = '/';
+      // Fetch user data again before redirecting
+      try {
+        const userResponse = await fetch('/api/auth/user', {
+          credentials: 'include'
+        });
+        if (userResponse.ok) {
+          // Navigation
+          window.location.href = '/';
+        } else {
+          console.error('Failed to get user after login:', await userResponse.text());
+          setErrorMessage('Failed to get user data after login. Please try again.');
+          setIsSubmitting(false);
+        }
+      } catch (fetchError) {
+        console.error('Error fetching user after login:', fetchError);
+        setErrorMessage('Error fetching user data. Please try again.');
+        setIsSubmitting(false);
+      }
     } catch (error) {
       console.error('Login error:', error);
       setErrorMessage('An error occurred during login. Please try again.');
@@ -95,8 +111,24 @@ export default function AuthPage() {
         return;
       }
       
-      // Redirect will happen automatically after the useAuth query refetches the user
-      window.location.href = '/';
+      // Fetch user data again before redirecting
+      try {
+        const userResponse = await fetch('/api/auth/user', {
+          credentials: 'include'
+        });
+        if (userResponse.ok) {
+          // Navigation
+          window.location.href = '/';
+        } else {
+          console.error('Failed to get user after registration:', await userResponse.text());
+          setErrorMessage('Failed to get user data after registration. Please try again.');
+          setIsSubmitting(false);
+        }
+      } catch (fetchError) {
+        console.error('Error fetching user after registration:', fetchError);
+        setErrorMessage('Error fetching user data. Please try again.');
+        setIsSubmitting(false);
+      }
     } catch (error) {
       console.error('Registration error:', error);
       setErrorMessage('An error occurred during registration. Please try again.');

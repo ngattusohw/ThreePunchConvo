@@ -79,11 +79,21 @@ export function setupAuth(app: Express) {
     done(null, user.id);
   });
   
-  passport.deserializeUser(async (id: number, done) => {
+  passport.deserializeUser(async (id: number | string, done) => {
     try {
+      console.log('Deserializing user with ID:', id, 'Type:', typeof id);
       const user = await storage.getUser(id);
-      done(null, user);
+      
+      if (!user) {
+        console.error('User not found during deserialization, ID:', id);
+        return done(null, null);
+      }
+      
+      // Don't include password in the session
+      const { password, ...userWithoutPassword } = user;
+      done(null, userWithoutPassword);
     } catch (error) {
+      console.error('Error deserializing user:', error);
       done(error, null);
     }
   });
@@ -105,10 +115,13 @@ export function setupAuth(app: Express) {
         password: hashedPassword,
       });
       
+      // Remove password before sending to client
+      const { password, ...userWithoutPassword } = user;
+      
       // Log user in
       req.login(user, (err) => {
         if (err) return next(err);
-        return res.status(201).json(user);
+        return res.status(201).json(userWithoutPassword);
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -123,9 +136,12 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ message: info?.message || "Authentication failed" });
       }
       
+      // Remove password before sending to client
+      const { password, ...userWithoutPassword } = user;
+      
       req.login(user, (loginErr) => {
         if (loginErr) return next(loginErr);
-        return res.status(200).json(user);
+        return res.status(200).json(userWithoutPassword);
       });
     })(req, res, next);
   });

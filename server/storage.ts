@@ -110,9 +110,17 @@ export class DatabaseStorage implements IStorage {
   }
   
   // User methods
-  async getUser(id: number): Promise<User | undefined> {
+  async getUser(id: number | string): Promise<User | undefined> {
     try {
-      const [user] = await db.select().from(users).where(eq(users.id, id));
+      // Ensure ID is a number for the query
+      const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+      
+      if (isNaN(numericId)) {
+        console.error('Invalid user ID:', id);
+        return undefined;
+      }
+      
+      const [user] = await db.select().from(users).where(eq(users.id, numericId));
       return user;
     } catch (error) {
       console.error('Error getting user:', error);

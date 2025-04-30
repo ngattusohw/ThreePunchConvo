@@ -30,12 +30,12 @@ export interface IStorage {
   sessionStore: any;
   
   // User management
-  getUser(id: string): Promise<User | undefined>;
+  getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   upsertUser(userData: UpsertUser): Promise<User>;
-  updateUser(id: string, userData: Partial<User>): Promise<User | undefined>;
-  deleteUser(id: string): Promise<boolean>;
+  updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
   getTopUsers(limit: number): Promise<User[]>;
   getAllUsers(): Promise<User[]>;
   
@@ -110,7 +110,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   // User methods
-  async getUser(id: string): Promise<User | undefined> {
+  async getUser(id: number): Promise<User | undefined> {
     try {
       const [user] = await db.select().from(users).where(eq(users.id, id));
       return user;
@@ -167,8 +167,7 @@ export class DatabaseStorage implements IStorage {
         .onConflictDoUpdate({
           target: users.id,
           set: {
-            ...userData,
-            updatedAt: new Date()
+            ...userData
           }
         })
         .returning();
@@ -180,13 +179,12 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async updateUser(id: string, userData: Partial<User>): Promise<User | undefined> {
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
     try {
       const [updatedUser] = await db
         .update(users)
         .set({
-          ...userData,
-          updatedAt: new Date()
+          ...userData
         })
         .where(eq(users.id, id))
         .returning();
@@ -198,7 +196,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async deleteUser(id: string): Promise<boolean> {
+  async deleteUser(id: number): Promise<boolean> {
     try {
       await db.delete(users).where(eq(users.id, id));
       return true;

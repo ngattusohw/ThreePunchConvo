@@ -12,7 +12,7 @@ import {
   insertMediaSchema,
   insertNotificationSchema
 } from "@shared/schema";
-import { setupAuth, authRequired } from "./auth";
+import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);

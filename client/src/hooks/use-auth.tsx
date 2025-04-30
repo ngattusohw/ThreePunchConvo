@@ -3,11 +3,9 @@ import {
   useQuery,
   useMutation,
   UseMutationResult,
-  QueryClient,
-  useQueryClient
 } from "@tanstack/react-query";
 import { User } from "@shared/schema";
-import { apiRequest } from "../lib/queryClient";
+import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 type AuthContextType = {
@@ -34,30 +32,14 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
   const {
     data: user,
     error,
     isLoading,
+    refetch
   } = useQuery<User | null, Error>({
     queryKey: ["/api/auth/user"],
-    queryFn: async () => {
-      try {
-        const res = await apiRequest("GET", "/api/auth/user");
-        if (!res.ok) {
-          if (res.status === 401) {
-            return null;
-          }
-          throw new Error("Failed to fetch user data");
-        }
-        return await res.json();
-      } catch (err) {
-        console.error("Error fetching user:", err);
-        return null;
-      }
-    },
-    retry: false,
+    queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
   const loginMutation = useMutation({
@@ -65,13 +47,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/auth/login", credentials);
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "Failed to login");
+        throw new Error(error.message || "Login failed");
       }
       return await res.json();
     },
     onSuccess: () => {
-      // Invalidate the user query to refetch the user data
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      // Refetch the user data
+      refetch();
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -91,16 +73,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/auth/register", userData);
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "Failed to register");
+        throw new Error(error.message || "Registration failed");
       }
       return await res.json();
     },
     onSuccess: () => {
-      // Invalidate the user query to refetch the user data
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      // Refetch the user data
+      refetch();
       toast({
         title: "Registration successful",
-        description: "Your account has been created.",
+        description: "Welcome to 3 Punch Convo!",
       });
     },
     onError: (error: Error) => {
@@ -117,15 +99,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/auth/logout");
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "Failed to logout");
+        throw new Error(error.message || "Logout failed");
       }
     },
     onSuccess: () => {
-      // Clear the user data from the cache
+      // Set user to null in the cache
       queryClient.setQueryData(["/api/auth/user"], null);
       toast({
-        title: "Logout successful",
-        description: "You have been logged out.",
+        title: "Logged out",
+        description: "You have been logged out successfully.",
       });
     },
     onError: (error: Error) => {
@@ -140,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user: user ?? null,
+        user,
         isLoading,
         error,
         loginMutation,

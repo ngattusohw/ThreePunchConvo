@@ -112,52 +112,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User endpoints
-  app.get('/api/users/:id', async (req: Request, res: Response) => {
-    try {
-      const userId = parseInt(req.params.id);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: 'Invalid user ID' });
-      }
-      
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-      
-      // Don't return password in response
-      const { password, ...userWithoutPassword } = user;
-      
-      res.json(userWithoutPassword);
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch user' });
-    }
-  });
-
-  app.get('/api/users/username/:username', async (req: Request, res: Response) => {
-    try {
-      const username = req.params.username;
-      
-      if (!username) {
-        return res.status(400).json({ message: 'Username is required' });
-      }
-      
-      const user = await storage.getUserByUsername(username);
-      
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-      
-      // Don't return password in response
-      const { password, ...userWithoutPassword } = user;
-      
-      res.json(userWithoutPassword);
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch user' });
-    }
-  });
-
   app.get('/api/users/top', async (req: Request, res: Response) => {
     try {
       const limit = parseInt(req.query.limit as string) || 20;
@@ -210,6 +164,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error fetching top users:', error);
       // Return empty array instead of error to avoid breaking the UI
       return res.json([]);
+    }
+  });
+
+  app.get('/api/users/username/:username', async (req: Request, res: Response) => {
+    try {
+      const username = req.params.username;
+      
+      if (!username) {
+        return res.status(400).json({ message: 'Username is required' });
+      }
+      
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Don't return password in response
+      const { password, ...userWithoutPassword } = user;
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch user' });
+    }
+  });
+
+  app.get('/api/users/:id', async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      
+      // Directly use the ID string - our storage functions now handle both
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Don't return password in response
+      const { password, ...userWithoutPassword } = user;
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch user' });
     }
   });
 

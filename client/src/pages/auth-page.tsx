@@ -1,19 +1,18 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+import { useState, useEffect } from 'react';
 import { useLocation, useSearch } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { GiBoxingGlove } from 'react-icons/gi';
-import { RiUserLine } from 'react-icons/ri';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { apiRequest } from '@/lib/queryClient';
 
 export default function AuthPage() {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [location, navigate] = useLocation();
   const search = useSearch();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -52,10 +51,10 @@ export default function AuthPage() {
 
   // Redirect to home if already logged in
   useEffect(() => {
-    if (user && !loading) {
+    if (user && !isLoading) {
       navigate('/');
     }
-  }, [user, loading, navigate]);
+  }, [user, isLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,7 +162,7 @@ export default function AuthPage() {
                   <Button 
                     type="submit"
                     className="w-full" 
-                    disabled={isSubmitting || loading}
+                    disabled={isSubmitting || isLoading}
                   >
                     {isSubmitting ? (
                       <>
@@ -219,7 +218,7 @@ export default function AuthPage() {
                   <Button 
                     type="submit"
                     className="w-full" 
-                    disabled={isSubmitting || loading}
+                    disabled={isSubmitting || isLoading}
                   >
                     {isSubmitting ? (
                       <>

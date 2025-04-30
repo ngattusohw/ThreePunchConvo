@@ -7,13 +7,26 @@ import { GiBoxingGlove } from 'react-icons/gi';
 import { RiUserLine } from 'react-icons/ri';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { apiRequest } from '@/lib/queryClient';
 
 export default function AuthPage() {
-  const { user, loading, login } = useAuth();
+  const { user, loading } = useAuth();
   const [location, navigate] = useLocation();
   const search = useSearch();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
+  // Form states
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [registerForm, setRegisterForm] = useState({ 
+    username: '',
+    password: '',
+    email: ''
+  });
 
   // Check for error parameters in the URL
   useEffect(() => {
@@ -44,9 +57,52 @@ export default function AuthPage() {
     }
   }, [user, loading, navigate]);
 
-  const handleLogin = () => {
-    setIsLoggingIn(true);
-    login();
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    
+    try {
+      const response = await apiRequest('POST', '/api/auth/login', loginForm);
+      
+      if (!response.ok) {
+        const data = await response.json();
+        setErrorMessage(data.message || 'Failed to login. Please try again.');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Redirect will happen automatically after the useAuth query refetches the user
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Login error:', error);
+      setErrorMessage('An error occurred during login. Please try again.');
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    
+    try {
+      const response = await apiRequest('POST', '/api/auth/register', registerForm);
+      
+      if (!response.ok) {
+        const data = await response.json();
+        setErrorMessage(data.message || 'Failed to register. Please try again.');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Redirect will happen automatically after the useAuth query refetches the user
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Registration error:', error);
+      setErrorMessage('An error occurred during registration. Please try again.');
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -57,10 +113,10 @@ export default function AuthPage() {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">Welcome to 3 Punch Convo</CardTitle>
             <CardDescription className="text-center">
-              Sign in to join the MMA discussion
+              Join the MMA discussion
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             {errorMessage && (
               <Alert variant="destructive" className="mb-4">
                 <AlertCircle className="h-4 w-4" />
@@ -69,19 +125,112 @@ export default function AuthPage() {
               </Alert>
             )}
             
-            <Button 
-              className="w-full flex items-center justify-center gap-2" 
-              variant="outline"
-              onClick={handleLogin}
-              disabled={loading || isLoggingIn}
-            >
-              {isLoggingIn ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <RiUserLine className="h-5 w-5" />
-              )}
-              {isLoggingIn ? 'Signing in...' : 'Sign in with Replit'}
-            </Button>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="register">Register</TabsTrigger>
+              </TabsList>
+              
+              {/* Login Tab */}
+              <TabsContent value="login">
+                <form onSubmit={handleLogin} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-username">Username</Label>
+                    <Input 
+                      id="login-username"
+                      type="text"
+                      placeholder="Your username"
+                      value={loginForm.username}
+                      onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                      disabled={isSubmitting}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password">Password</Label>
+                    <Input 
+                      id="login-password"
+                      type="password"
+                      placeholder="Your password"
+                      value={loginForm.password}
+                      onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                      disabled={isSubmitting}
+                      required
+                    />
+                  </div>
+                  
+                  <Button 
+                    type="submit"
+                    className="w-full" 
+                    disabled={isSubmitting || loading}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Logging in...
+                      </>
+                    ) : 'Login'}
+                  </Button>
+                </form>
+              </TabsContent>
+              
+              {/* Register Tab */}
+              <TabsContent value="register">
+                <form onSubmit={handleRegister} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="register-username">Username</Label>
+                    <Input 
+                      id="register-username"
+                      type="text"
+                      placeholder="Choose a username"
+                      value={registerForm.username}
+                      onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value })}
+                      disabled={isSubmitting}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="register-email">Email</Label>
+                    <Input 
+                      id="register-email"
+                      type="email"
+                      placeholder="Your email"
+                      value={registerForm.email}
+                      onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="register-password">Password</Label>
+                    <Input 
+                      id="register-password"
+                      type="password"
+                      placeholder="Choose a password"
+                      value={registerForm.password}
+                      onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                      disabled={isSubmitting}
+                      required
+                    />
+                  </div>
+                  
+                  <Button 
+                    type="submit"
+                    className="w-full" 
+                    disabled={isSubmitting || loading}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating account...
+                      </>
+                    ) : 'Register'}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <div className="text-sm text-gray-500 text-center">

@@ -17,6 +17,7 @@ export const sessions = pgTable(
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),  // Changed from serial to varchar for Replit Auth
   username: varchar("username").unique().notNull(),
+  password: varchar("password"), // Added password field for local auth
   email: varchar("email").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),

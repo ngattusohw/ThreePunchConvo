@@ -118,7 +118,36 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Use sql tag to properly handle both string and number types
-      const [user] = await db.select().from(users).where(sql`${users.id} = ${id}`);
+      // Use explicit column selection to match schema
+      const [user] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          password: users.password,
+          avatar: users.avatar,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          bio: users.bio,
+          profileImageUrl: users.profileImageUrl,
+          role: users.role,
+          status: users.status,
+          isOnline: users.isOnline,
+          lastActive: users.lastActive,
+          points: users.points,
+          rank: users.rank,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+          postsCount: users.postsCount,
+          likesCount: users.likesCount,
+          potdCount: users.potdCount,
+          followersCount: users.followersCount,
+          followingCount: users.followingCount,
+          socialLinks: users.socialLinks
+        })
+        .from(users)
+        .where(sql`${users.id} = ${id}`);
+      
       return user;
     } catch (error) {
       console.error('Error getting user:', error);
@@ -128,7 +157,36 @@ export class DatabaseStorage implements IStorage {
   
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
-      const [user] = await db.select().from(users).where(eq(users.username, username));
+      // Use explicit column selection to match schema
+      const [user] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          password: users.password,
+          avatar: users.avatar,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          bio: users.bio,
+          profileImageUrl: users.profileImageUrl,
+          role: users.role,
+          status: users.status,
+          isOnline: users.isOnline,
+          lastActive: users.lastActive,
+          points: users.points,
+          rank: users.rank,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+          postsCount: users.postsCount,
+          likesCount: users.likesCount,
+          potdCount: users.potdCount,
+          followersCount: users.followersCount,
+          followingCount: users.followingCount,
+          socialLinks: users.socialLinks
+        })
+        .from(users)
+        .where(eq(users.username, username));
+      
       return user;
     } catch (error) {
       console.error('Error getting user by username:', error);
@@ -233,7 +291,12 @@ export class DatabaseStorage implements IStorage {
           email: 'fightfan@example.com',
           password: null, // Never expose passwords
           avatar: null,
+          firstName: 'Fight',
+          lastName: 'Fan',
+          bio: 'MMA enthusiast and UFC superfan',
+          profileImageUrl: null,
           createdAt: new Date(),
+          updatedAt: new Date(),
           role: 'USER',
           status: 'REGIONAL',
           isOnline: true,
@@ -253,7 +316,12 @@ export class DatabaseStorage implements IStorage {
           email: 'octagon@example.com',
           password: null,
           avatar: null,
+          firstName: 'Octagon',
+          lastName: 'Expert',
+          bio: 'Breaking down fights since 2010',
+          profileImageUrl: null,
           createdAt: new Date(),
+          updatedAt: new Date(),
           role: 'USER',
           status: 'COMPETITOR',
           isOnline: false,
@@ -273,7 +341,12 @@ export class DatabaseStorage implements IStorage {
           email: 'knockout@example.com',
           password: null,
           avatar: null,
+          firstName: 'Knockout',
+          lastName: 'King',
+          bio: 'Always predicting the KO',
+          profileImageUrl: null,
           createdAt: new Date(),
+          updatedAt: new Date(),
           role: 'USER',
           status: 'AMATEUR',
           isOnline: true,
@@ -349,6 +422,10 @@ export class DatabaseStorage implements IStorage {
           email: users.email,
           password: users.password,
           avatar: users.avatar,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          bio: users.bio,
+          profileImageUrl: users.profileImageUrl,
           role: users.role,
           status: users.status,
           isOnline: users.isOnline,
@@ -356,6 +433,7 @@ export class DatabaseStorage implements IStorage {
           points: users.points,
           rank: users.rank,
           createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
           postsCount: users.postsCount,
           likesCount: users.likesCount,
           potdCount: users.potdCount,

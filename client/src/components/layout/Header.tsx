@@ -8,7 +8,7 @@ import { UserStatus } from "@/lib/types";
 
 export default function Header() {
   const [location] = useLocation();
-  const { currentUser: user, logout } = useAuth();
+  const { currentUser: user, logout, login } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -238,18 +238,12 @@ export default function Header() {
 
             {!user && (
               <div className="flex space-x-2">
-                <Link
-                  href="/login"
+                <button
+                  onClick={() => login()}
                   className="text-white bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded text-sm"
                 >
                   Login
-                </Link>
-                <Link
-                  href="/register"
-                  className="text-white bg-ufc-red hover:bg-red-700 px-3 py-1 rounded text-sm"
-                >
-                  Register
-                </Link>
+                </button>
               </div>
             )}
           </div>

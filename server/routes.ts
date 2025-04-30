@@ -10,7 +10,8 @@ import {
   insertUserSchema,
   insertPollSchema,
   insertMediaSchema,
-  insertNotificationSchema
+  insertNotificationSchema,
+  PollOption
 } from "@shared/schema";
 import { setupAuth } from "./auth";
 
@@ -406,12 +407,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (poll) {
         // Get poll options using the storage interface
         // This is a temporary solution for the interface not exposing pollOptions directly
-        let pollOptions = [];
+        let pollOptions: PollOption[] = [];
         try {
           // If using MemStorage 
           if ('pollOptions' in (storage as any)) {
             pollOptions = Array.from((storage as any)['pollOptions'].values())
-              .filter((option: any) => option.pollId === poll.id);
+              .filter((option: PollOption) => option.pollId === poll.id);
           } else {
             // Fallback - in a real implementation, we would add a proper method to the interface
             pollOptions = [];

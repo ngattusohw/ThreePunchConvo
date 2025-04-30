@@ -138,9 +138,9 @@ export class DatabaseStorage implements IStorage {
           password: userData.password,
           email: userData.email || null,
           avatar: userData.avatar || null,
-          role: userData.role || 'USER',
-          status: userData.status || 'AMATEUR',
-          isOnline: userData.isOnline || false,
+          role: 'USER',
+          status: 'AMATEUR',
+          isOnline: false,
           lastActive: new Date(),
           points: 0,
           postsCount: 0,
@@ -148,7 +148,8 @@ export class DatabaseStorage implements IStorage {
           potdCount: 0,
           followersCount: 0,
           followingCount: 0,
-          socialLinks: userData.socialLinks || null
+          socialLinks: null,
+          rank: 0
         })
         .returning();
       

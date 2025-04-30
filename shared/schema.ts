@@ -94,7 +94,7 @@ export const pollVotes = pgTable("poll_votes", {
   id: serial("id").primaryKey(),
   pollId: integer("poll_id").notNull().references(() => polls.id),
   pollOptionId: integer("poll_option_id").notNull().references(() => pollOptions.id),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -102,7 +102,7 @@ export const pollVotes = pgTable("poll_votes", {
 export const replies = pgTable("replies", {
   id: serial("id").primaryKey(),
   threadId: integer("thread_id").notNull().references(() => threads.id),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   content: text("content").notNull(),
   parentReplyId: integer("parent_reply_id"), // Self-reference handled with a constraint in migration
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -124,7 +124,7 @@ export const replyMedia = pgTable("reply_media", {
 export const threadReactions = pgTable("thread_reactions", {
   id: serial("id").primaryKey(),
   threadId: integer("thread_id").notNull().references(() => threads.id),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // LIKE, DISLIKE, POTD
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -133,7 +133,7 @@ export const threadReactions = pgTable("thread_reactions", {
 export const replyReactions = pgTable("reply_reactions", {
   id: serial("id").primaryKey(),
   replyId: integer("reply_id").notNull().references(() => replies.id),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // LIKE, DISLIKE
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -141,17 +141,17 @@ export const replyReactions = pgTable("reply_reactions", {
 // User follows
 export const follows = pgTable("follows", {
   id: serial("id").primaryKey(),
-  followerId: varchar("follower_id").notNull().references(() => users.id),
-  followingId: varchar("following_id").notNull().references(() => users.id),
+  followerId: integer("follower_id").notNull().references(() => users.id),
+  followingId: integer("following_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Notifications
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // REPLY, MENTION, LIKE, SYSTEM, FOLLOW
-  relatedUserId: varchar("related_user_id").references(() => users.id),
+  relatedUserId: integer("related_user_id").references(() => users.id),
   threadId: integer("thread_id").references(() => threads.id),
   replyId: integer("reply_id").references(() => replies.id),
   message: text("message"),
@@ -202,10 +202,18 @@ export const fights = pgTable("fights", {
 });
 
 // Insert schemas
-export const insertUserSchema = createInsertSchema(users).omit({
+export const insertUserSchema = createInsertSchema(users, {
+  username: z.string().min(3).max(30),
+  password: z.string().min(6),
+  email: z.string().email().nullable().optional(),
+  avatar: z.string().nullable().optional(),
+}).omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
+  role: true,
+  status: true,
+  isOnline: true,
+  lastActive: true,
   points: true,
   rank: true,
   postsCount: true,
@@ -213,6 +221,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
   potdCount: true,
   followersCount: true,
   followingCount: true,
+  socialLinks: true,
 });
 
 export const upsertUserSchema = createInsertSchema(users);

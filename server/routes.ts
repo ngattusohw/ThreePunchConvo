@@ -170,11 +170,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Don't return passwords in response
         const usersWithoutPasswords = topUsers.map(user => {
-          // If user has password (shouldn't happen with Replit Auth)
-          const userWithoutPassword = { ...user };
-          if ('password' in userWithoutPassword) {
-            delete userWithoutPassword.password;
-          }
+          // Use destructuring to exclude password
+          const { password, ...userWithoutPassword } = user;
           return userWithoutPassword;
         });
         
@@ -313,7 +310,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch user for each thread
       const threadsWithUser = await Promise.all(
         threads.map(async (thread) => {
-          const user = await storage.getUser(thread.userId);
+          // Ensure userId is treated as a number
+          const userId = typeof thread.userId === 'string' ? parseInt(thread.userId, 10) : thread.userId;
+          const user = await storage.getUser(userId);
           
           if (!user) {
             return { ...thread, user: null };
@@ -332,12 +331,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (poll) {
             // Get poll options using the storage interface
             // This is a temporary solution for the interface not exposing pollOptions directly
-            let pollOptions = [];
+            let pollOptions: PollOption[] = [];
             try {
               // If using MemStorage 
               if ('pollOptions' in (storage as any)) {
                 pollOptions = Array.from((storage as any)['pollOptions'].values())
-                  .filter((option: any) => option.pollId === poll.id);
+                  .filter((option: PollOption) => option.pollId === poll.id);
               } else {
                 // Fallback - in a real implementation, we would add a proper method to the interface
                 pollOptions = [];
@@ -386,7 +385,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.incrementThreadView(threadId);
       
       // Get thread author
-      const user = await storage.getUser(thread.userId);
+      // Ensure userId is treated as a number
+      const userId = typeof thread.userId === 'string' ? parseInt(thread.userId, 10) : thread.userId;
+      const user = await storage.getUser(userId);
       
       if (!user) {
         return res.status(404).json({ message: 'Thread author not found' });
@@ -622,7 +623,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch user for each reply
       const repliesWithUser = await Promise.all(
         replies.map(async (reply) => {
-          const user = await storage.getUser(reply.userId);
+          // Ensure userId is treated as a number
+          const userId = typeof reply.userId === 'string' ? parseInt(reply.userId, 10) : reply.userId;
+          const user = await storage.getUser(userId);
           
           if (!user) {
             return { ...reply, user: null };
@@ -784,7 +787,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return notification;
           }
           
-          const relatedUser = await storage.getUser(notification.relatedUserId);
+          // Ensure relatedUserId is treated as a number
+          const relatedUserId = typeof notification.relatedUserId === 'string' 
+            ? parseInt(notification.relatedUserId, 10) 
+            : notification.relatedUserId;
+          const relatedUser = await storage.getUser(relatedUserId);
           
           if (!relatedUser) {
             return notification;

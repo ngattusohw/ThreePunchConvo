@@ -84,7 +84,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Mark user as online
-      await storage.updateUser(user.id, { isOnline: true, lastActive: new Date() });
+      await storage.updateUser(user.id.toString(), { isOnline: true, lastActive: new Date() });
       
       // Don't return password in response
       const { password: _, ...userWithoutPassword } = user;

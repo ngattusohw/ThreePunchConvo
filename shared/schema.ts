@@ -208,12 +208,12 @@ export const fights = pgTable("fights", {
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users, {
+  id: z.string().optional(),
   username: z.string().min(3).max(30),
   password: z.string().min(6),
   email: z.string().email().nullable().optional(),
   avatar: z.string().nullable().optional(),
 }).omit({
-  id: true,
   createdAt: true,
   role: true,
   status: true,

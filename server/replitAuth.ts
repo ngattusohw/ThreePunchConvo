@@ -27,10 +27,14 @@ export function getSession() {
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
+    createTableIfMissing: true, // Make sure table is created if missing
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  
+  // Determine if we're in production or development
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   return session({
     secret: process.env.SESSION_SECRET || "3punchconvosessiontopsecret",
     store: sessionStore,
@@ -38,8 +42,9 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: isProduction, // Only use secure in production
       maxAge: sessionTtl,
+      sameSite: 'lax' // Add sameSite for better cookie handling
     },
   });
 }
@@ -150,9 +155,33 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/callback", (req, res, next) => {
+    console.log("Callback received from Replit Auth");
+    
     passport.authenticate(`replitauth:${req.hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
+      failWithError: true
+    }, (err, user, info) => {
+      if (err) {
+        console.error("Passport authentication error:", err);
+        return res.redirect("/auth?error=authentication_failed");
+      }
+      
+      if (!user) {
+        console.error("No user returned from authentication:", info);
+        return res.redirect("/auth?error=no_user");
+      }
+      
+      // Manually log in the user
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error("Login error:", loginErr);
+          return res.redirect("/auth?error=login_failed");
+        }
+        
+        // Success! Redirect to home page
+        return res.redirect("/");
+      });
     })(req, res, next);
   });
 
@@ -169,28 +198,40 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  const user = req.user as any;
-
-  if (!req.isAuthenticated() || !user.expires_at) {
+  if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  const now = Math.floor(Date.now() / 1000);
-  if (now <= user.expires_at) {
-    return next();
+  const user = req.user as any;
+  
+  // If user has no claims or expires_at, they might not be properly authenticated
+  if (!user || !user.claims || !user.expires_at) {
+    console.log("User missing claims or expiration", user);
+    return res.status(401).json({ message: "Invalid session" });
   }
 
+  // Check if token is expired
+  const now = Math.floor(Date.now() / 1000);
+  if (now <= user.expires_at) {
+    return next(); // Token still valid
+  }
+
+  // Token expired, try to refresh
   const refreshToken = user.refresh_token;
   if (!refreshToken) {
-    return res.redirect("/api/login");
+    // No refresh token available
+    console.log("No refresh token available");
+    return res.status(401).json({ message: "Session expired" });
   }
 
   try {
+    // Try to refresh the token
     const config = await getOidcConfig();
     const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
     updateUserSession(user, tokenResponse);
     return next();
   } catch (error) {
-    return res.redirect("/api/login");
+    console.error("Failed to refresh token:", error);
+    return res.status(401).json({ message: "Authentication failed" });
   }
 };

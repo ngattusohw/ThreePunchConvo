@@ -18,9 +18,6 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   
-  // Set up authentication
-  setupAuth(app);
-
   // Error handling middleware
   app.use((req: Request, res: Response, next: Function) => {
     try {
@@ -38,8 +35,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+  
+  // Set up authentication - this must come after error handling middleware
+  await setupAuth(app);
 
   // Authentication endpoints
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+      
+      // If using Replit Auth
+      if (req.user.claims && req.user.claims.sub) {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // Don't return password in response
+        const { password, ...userWithoutPassword } = user;
+        return res.json(userWithoutPassword);
+      } 
+      // If using regular auth
+      else if (req.user.id) {
+        const { password, ...userWithoutPassword } = req.user;
+        return res.json(userWithoutPassword);
+      }
+      
+      return res.status(401).json({ message: 'Invalid user data' });
+    } catch (error) {
+      console.error('Error fetching authenticated user:', error);
+      res.status(500).json({ message: 'Failed to fetch user' });
+    }
+  });
   app.post('/api/auth/register', async (req: Request, res: Response) => {
     try {
       const userData = insertUserSchema.parse(req.body);

@@ -31,14 +31,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
   
-  // Function to redirect to login page (Replit Auth)
+  // Function to redirect to login page with Replit Auth
   const login = () => {
-    window.location.href = "/api/login";
+    // Production environment: Use Replit Auth
+    if (import.meta.env.PROD) {
+      window.location.href = "/api/login";
+    } else {
+      // In development, we can't use Replit Auth, so we'll redirect to auth page
+      // for local credentials
+      window.location.href = "/auth";
+    }
   };
 
-  // Function to logout (Replit Auth)
+  // Function to logout 
   const logout = () => {
-    window.location.href = "/api/logout";
+    // Use appropriate logout endpoint
+    if (import.meta.env.PROD) {
+      window.location.href = "/api/logout";
+    } else {
+      // In development, use the POST endpoint for regular auth
+      fetch("/api/auth/logout", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user?.id }) 
+      })
+      .then(() => {
+        // Force refresh the auth query
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        // Redirect to auth page
+        window.location.href = "/auth";
+      })
+      .catch(err => {
+        console.error("Logout error:", err);
+        // Fallback to auth page
+        window.location.href = "/auth";
+      });
+    }
   };
 
   return (

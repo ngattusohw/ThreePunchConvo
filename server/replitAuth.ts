@@ -181,11 +181,43 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      prompt: "login consent",
-      scope: ["openid", "email", "profile", "offline_access"],
-    })(req, res, next);
+    try {
+      passport.authenticate(`replitauth:${req.hostname}`, {
+        prompt: "login consent",
+        scope: ["openid", "email", "profile", "offline_access"],
+      })(req, res, next);
+    } catch (error) {
+      console.error("Error in /api/login route:", error);
+      // If in development, provide a useful error message
+      if (process.env.NODE_ENV === 'development') {
+        return res.status(401).json({ 
+          message: "Authentication error", 
+          details: "Cannot authenticate with Replit Auth in development environment. Try using /api/auth/login with username/password instead.",
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+      next(error);
+    }
   });
+  
+  // Add a development-only local login endpoint
+  if (process.env.NODE_ENV === 'development') {
+    app.post("/api/auth/login", (req, res, next) => {
+      try {
+        const { username, password } = req.body;
+        
+        if (!username || !password) {
+          return res.status(400).json({ message: 'Username and password are required' });
+        }
+        
+        // This will be handled by the local strategy in routes.ts
+        next();
+      } catch (error) {
+        console.error("Error in development login:", error);
+        res.status(500).json({ message: "Internal server error during login" });
+      }
+    });
+  }
 
   app.get("/api/callback", (req, res, next) => {
     console.log("Callback received from Replit Auth");

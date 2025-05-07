@@ -1,13 +1,23 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { GiBoxingGlove } from 'react-icons/gi';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 
 export default function AuthPage() {
   const { user, isLoading, login } = useAuth();
   const [location, navigate] = useLocation();
+  const { toast } = useToast();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   
   // Redirect to home if already logged in
   useEffect(() => {
@@ -17,8 +27,52 @@ export default function AuthPage() {
   }, [user, isLoading, navigate]);
 
   // Function to handle login with Replit Auth
-  const handleLogin = () => {
+  const handleReplitLogin = () => {
     login();
+  };
+  
+  // Function to handle development login
+  const handleDevLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!username || !password) {
+      toast({
+        title: "Missing fields",
+        description: "Please enter both username and password",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      const endpoint = activeTab === 'login' ? '/api/auth/login' : '/api/auth/register';
+      
+      const response = await apiRequest('POST', endpoint, {
+        username,
+        password,
+        email: `${username}@example.com` // For registration
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Authentication failed');
+      }
+      
+      // Successful login/registration
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      navigate('/');
+      
+    } catch (error) {
+      toast({
+        title: activeTab === 'login' ? "Login failed" : "Registration failed",
+        description: error instanceof Error ? error.message : 'An error occurred',
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -33,17 +87,101 @@ export default function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center space-y-4">
-            <p className="text-center text-gray-500 mb-4">
-              Sign in with your Replit account to join the community.
-            </p>
-            
-            <Button 
-              onClick={handleLogin}
-              className="w-full"
-              size="lg"
-            >
-              Sign in with Replit
-            </Button>
+            {/* In production, only show Replit login */}
+            {import.meta.env.PROD ? (
+              <>
+                <p className="text-center text-gray-500 mb-4">
+                  Sign in with your Replit account to join the community.
+                </p>
+                
+                <Button 
+                  onClick={handleReplitLogin}
+                  className="w-full"
+                  size="lg"
+                >
+                  Sign in with Replit
+                </Button>
+              </>
+            ) : (
+              /* In development, show a login/register form */
+              <Tabs defaultValue="login" className="w-full" onValueChange={(v) => setActiveTab(v as 'login' | 'register')}>
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="login">Login</TabsTrigger>
+                  <TabsTrigger value="register">Register</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="login">
+                  <form onSubmit={handleDevLogin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="username">Username</Label>
+                      <Input 
+                        id="username" 
+                        placeholder="username" 
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <Input 
+                        id="password" 
+                        type="password" 
+                        placeholder="********" 
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <Button 
+                      type="submit"
+                      className="w-full" 
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Logging in..." : "Login"}
+                    </Button>
+                  </form>
+                </TabsContent>
+                
+                <TabsContent value="register">
+                  <form onSubmit={handleDevLogin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="reg-username">Username</Label>
+                      <Input 
+                        id="reg-username" 
+                        placeholder="username" 
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="reg-password">Password</Label>
+                      <Input 
+                        id="reg-password" 
+                        type="password" 
+                        placeholder="********" 
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <Button 
+                      type="submit"
+                      className="w-full" 
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Creating account..." : "Register"}
+                    </Button>
+                  </form>
+                </TabsContent>
+                
+                <div className="mt-6 text-center text-sm text-gray-500">
+                  <p>Development mode authentication</p>
+                  <p>For testing only - not available in production</p>
+                </div>
+              </Tabs>
+            )}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <div className="text-sm text-gray-500 text-center">

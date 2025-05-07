@@ -1,170 +1,206 @@
 import request from 'supertest';
 import express from 'express';
-import session from 'express-session';
-import { createServer } from 'http';
+import { db } from '../server/db';
+import { users } from '../shared/schema';
+import { hashPassword } from '../server/auth';
+import { storage } from '../server/storage';
+import { sql } from 'drizzle-orm';
+
+const app = express();
+app.use(express.json());
+
+// Import routes setup function
 import { registerRoutes } from '../server/routes';
 
-// Mock storage methods
-jest.mock('../server/storage', () => {
-  // Actual mock implementation
-  return {
-    storage: {
-      getUser: jest.fn(),
-      getUserByUsername: jest.fn(),
-      createUser: jest.fn(),
-      upsertUser: jest.fn(),
-      updateUser: jest.fn(),
-      deleteUser: jest.fn(),
-      getTopUsers: jest.fn(),
-      getAllUsers: jest.fn(),
-      getThread: jest.fn(),
-      getThreadsByCategory: jest.fn(),
-      createThread: jest.fn(),
-      updateThread: jest.fn(),
-      deleteThread: jest.fn(),
-      incrementThreadView: jest.fn(),
-      getReply: jest.fn(),
-      getRepliesByThread: jest.fn(),
-      createReply: jest.fn(),
-      updateReply: jest.fn(),
-      deleteReply: jest.fn(),
-      getPoll: jest.fn(),
-      getPollByThread: jest.fn(),
-      createPoll: jest.fn(),
-      votePoll: jest.fn(),
-      getMedia: jest.fn(),
-      getMediaByThread: jest.fn(),
-      getMediaByReply: jest.fn(),
-      createThreadMedia: jest.fn(),
-      likeThread: jest.fn(),
-      dislikeThread: jest.fn(),
-      potdThread: jest.fn(),
-      likeReply: jest.fn(),
-      dislikeReply: jest.fn(),
-      removeThreadReaction: jest.fn(),
-      removeReplyReaction: jest.fn(),
-      followUser: jest.fn(),
-      unfollowUser: jest.fn(),
-      getFollowers: jest.fn(),
-      getFollowing: jest.fn(),
-      getNotifications: jest.fn(),
-      createNotification: jest.fn(),
-      markNotificationAsRead: jest.fn(),
-      markAllNotificationsAsRead: jest.fn(),
-      getMMAEvents: jest.fn(),
-      getMMAEvent: jest.fn(),
-      getFights: jest.fn(),
-      saveMMAEvent: jest.fn(),
-      saveFighter: jest.fn(),
-      saveFight: jest.fn(),
-      sessionStore: {
-        // Mock session store
-        all: jest.fn(),
-        destroy: jest.fn(),
-        clear: jest.fn(),
-        length: jest.fn(),
-        get: jest.fn(),
-        set: jest.fn(),
-        touch: jest.fn()
-      }
-    }
-  };
+// Setup for tests
+beforeAll(async () => {
+  // Register all routes
+  await registerRoutes(app);
+  
+  // Clean up database before tests
+  await db.delete(users);
 });
 
-// Mock Replit Auth
-jest.mock('../server/replitAuth', () => {
-  const originalModule = jest.requireActual('../server/replitAuth');
-  
-  return {
-    ...originalModule,
-    setupAuth: jest.fn(async (app) => {
-      // Simplified mock implementation for testing
-      app.get("/api/login", (req, res) => {
-        res.status(200).json({ message: 'Login route reachable' });
-      });
-      
-      app.get("/api/callback", (req, res) => {
-        res.status(200).json({ message: 'Callback route reachable' });
-      });
-      
-      app.get("/api/logout", (req, res) => {
-        res.status(200).json({ message: 'Logout route reachable' });
-      });
-      
-      // Simplified authentication check
-      app.get('/api/auth/user', (req, res) => {
-        // In tests we'll just return a test user or 401
-        if (req.headers['x-test-authenticated'] === 'true') {
-          return res.json({
-            id: '12345',
-            username: 'testuser',
-            email: 'test@example.com'
-          });
-        }
-        return res.status(401).json({ message: 'Not authenticated' });
-      });
-    }),
-    isAuthenticated: jest.fn((req, res, next) => {
-      if (req.headers['x-test-authenticated'] === 'true') {
-        return next();
-      }
-      return res.status(401).json({ message: 'Unauthorized' });
-    })
-  };
+// Clean up after tests
+afterAll(async () => {
+  await db.delete(users);
 });
 
-// Mock process.env
-process.env.SESSION_SECRET = 'test-secret';
-process.env.DATABASE_URL = 'mock-db-url';
-
-describe('Authentication Routes', () => {
-  let app: express.Express;
-  let server: any;
-  
-  beforeAll(async () => {
-    app = express();
-    app.use(express.json());
+describe('Authentication System', () => {
+  // Test registration
+  describe('User Registration', () => {
+    it('should register a new user with valid data', async () => {
+      const userData = {
+        username: 'testuser',
+        password: 'password123',
+        email: 'test@example.com'
+      };
+      
+      const response = await request(app)
+        .post('/api/dev/register')
+        .send(userData)
+        .expect(201);
+      
+      // Check response
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.username).toBe(userData.username);
+      expect(response.body.email).toBe(userData.email);
+      expect(response.body).not.toHaveProperty('password'); // Password should not be returned
+      
+      // Verify user exists in database
+      const dbUser = await storage.getUserByUsername(userData.username);
+      expect(dbUser).toBeTruthy();
+      expect(dbUser?.username).toBe(userData.username);
+    });
     
-    // Create a session middleware with a secret
-    app.use(
-      session({
-        secret: 'test-session-secret',
-        resave: false,
-        saveUninitialized: false,
-      })
-    );
+    it('should fail to register with missing required fields', async () => {
+      const invalidUserData = {
+        username: 'testuser2',
+        // Missing password
+      };
+      
+      await request(app)
+        .post('/api/dev/register')
+        .send(invalidUserData)
+        .expect(400);
+    });
     
-    server = await registerRoutes(app);
-  });
-  
-  afterAll(async () => {
-    await server.close();
-  });
-  
-  it('should have a working /api/login route', async () => {
-    const response = await request(app).get('/api/login');
-    expect(response.status).toBe(200);
-    expect(response.body.message).toBe('Login route reachable');
-  });
-  
-  it('should have a working /api/logout route', async () => {
-    const response = await request(app).get('/api/logout');
-    expect(response.status).toBe(200);
-    expect(response.body.message).toBe('Logout route reachable');
-  });
-  
-  it('should have a working /api/auth/user route', async () => {
-    const response = await request(app)
-      .get('/api/auth/user')
-      .set('x-test-authenticated', 'true');
+    it('should fail to register with duplicate username', async () => {
+      const existingUser = {
+        username: 'existinguser',
+        password: 'password123',
+        email: 'existing@example.com'
+      };
+      
+      // First create the user
+      await request(app)
+        .post('/api/dev/register')
+        .send(existingUser)
+        .expect(201);
+      
+      // Try to create again with same username
+      await request(app)
+        .post('/api/dev/register')
+        .send(existingUser)
+        .expect(400); // Should fail with 400 Bad Request
+    });
     
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('id');
-    expect(response.body).toHaveProperty('username');
+    it('should properly hash passwords during registration', async () => {
+      const userData = {
+        username: 'secureuser',
+        password: 'securepassword',
+        email: 'secure@example.com'
+      };
+      
+      await request(app)
+        .post('/api/dev/register')
+        .send(userData)
+        .expect(201);
+      
+      // Get user from database
+      const user = await storage.getUserByUsername(userData.username);
+      expect(user).toBeTruthy();
+      
+      // Check that password is hashed
+      expect(user?.password).not.toBe(userData.password);
+      expect(user?.password).toContain('.'); // Our hash format includes a dot separator
+    });
   });
   
-  it('should return 401 for unauthenticated requests to /api/auth/user', async () => {
-    const response = await request(app).get('/api/auth/user');
-    expect(response.status).toBe(401);
+  // Test login
+  describe('User Login', () => {
+    beforeEach(async () => {
+      // Create a test user for login tests
+      const hashedPassword = await hashPassword('loginpassword');
+      await storage.createUser({
+        id: 'test123',
+        username: 'loginuser',
+        password: hashedPassword,
+        email: 'login@example.com'
+      });
+    });
+    
+    it('should login successfully with correct credentials', async () => {
+      const loginData = {
+        username: 'loginuser',
+        password: 'loginpassword'
+      };
+      
+      const response = await request(app)
+        .post('/api/dev/login')
+        .send(loginData)
+        .expect(200);
+      
+      // Check response
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.username).toBe(loginData.username);
+      expect(response.body).not.toHaveProperty('password'); // Password should not be returned
+    });
+    
+    it('should fail to login with incorrect password', async () => {
+      const loginData = {
+        username: 'loginuser',
+        password: 'wrongpassword'
+      };
+      
+      await request(app)
+        .post('/api/dev/login')
+        .send(loginData)
+        .expect(401);
+    });
+    
+    it('should fail to login with non-existent username', async () => {
+      const loginData = {
+        username: 'nonexistentuser',
+        password: 'anypassword'
+      };
+      
+      await request(app)
+        .post('/api/dev/login')
+        .send(loginData)
+        .expect(401);
+    });
+  });
+  
+  // Test logout
+  describe('User Logout', () => {
+    it('should successfully log out a user', async () => {
+      // For this test, we need to create, login and get session cookie
+      const userData = {
+        username: 'logoutuser',
+        password: 'logoutpassword',
+        email: 'logout@example.com'
+      };
+      
+      // Register user
+      await request(app)
+        .post('/api/dev/register')
+        .send(userData)
+        .expect(201);
+      
+      // Login to get session
+      const loginResponse = await request(app)
+        .post('/api/dev/login')
+        .send({
+          username: userData.username,
+          password: userData.password
+        })
+        .expect(200);
+      
+      // Get session cookie
+      const cookies = loginResponse.headers['set-cookie'];
+      
+      // Logout with session cookie
+      await request(app)
+        .post('/api/dev/logout')
+        .set('Cookie', cookies)
+        .expect(200);
+      
+      // Try to access protected route, should fail now
+      await request(app)
+        .get('/api/auth/user')
+        .set('Cookie', cookies)
+        .expect(401);
+    });
   });
 });

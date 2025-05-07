@@ -15,7 +15,7 @@ export const sessions = pgTable(
 
 // User table
 export const users = pgTable("users", {
-  id: text("id").primaryKey().notNull(),  // Using text for Replit Auth and numerical IDs
+  id: integer("id").primaryKey().notNull(),  // Using integer to match existing DB schema
   username: text("username").unique().notNull(),
   password: text("password"), // Added password field for local auth
   email: text("email").unique(),
@@ -208,7 +208,7 @@ export const fights = pgTable("fights", {
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users, {
-  id: z.string().optional(),
+  id: z.number().optional(),
   username: z.string().min(3).max(30),
   password: z.string().min(6),
   email: z.string().email().nullable().optional(),

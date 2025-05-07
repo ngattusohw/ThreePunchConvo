@@ -196,13 +196,13 @@ export class DatabaseStorage implements IStorage {
   
   async createUser(userData: InsertUser): Promise<User> {
     try {
-      // Generate a string ID without needing uuid package
+      // Generating a numeric ID for DB compatibility
       const generateId = () => {
-        return 'user_' + Math.random().toString(36).substring(2, 15) + 
-               Math.random().toString(36).substring(2, 15);
+        // Use a timestamp-based numeric ID
+        return Math.floor(Date.now() / 1000);
       };
       
-      // Generate UUID for user ID if not provided
+      // Generate numeric ID for user if not provided
       const userValues = {
         id: userData.id || generateId(),
         username: userData.username,
@@ -297,7 +297,7 @@ export class DatabaseStorage implements IStorage {
       // Adapted to match the actual database schema
       const sampleUsers: User[] = [
         {
-          id: "1",
+          id: 1,
           username: 'FightFan123',
           email: 'fightfan@example.com',
           password: null, // Never expose passwords
@@ -322,7 +322,7 @@ export class DatabaseStorage implements IStorage {
           rank: 1
         },
         {
-          id: "2",
+          id: 2,
           username: 'OctagonExpert',
           email: 'octagon@example.com',
           password: null,

@@ -62,18 +62,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Create user with all required fields
+        // Generate a simple ID for the user
+        const generateId = () => {
+          return 'user_' + Math.random().toString(36).substring(2, 15) + 
+                 Math.random().toString(36).substring(2, 15);
+        };
+        
         const user = await storage.createUser({
           ...userData,
+          id: generateId(),
           password: hashedPassword,
           // Add default values for required fields that might be missing
           firstName: userData.firstName || null,
           lastName: userData.lastName || null,
           bio: userData.bio || null,
           profileImageUrl: userData.profileImageUrl || null,
-          points: 0,
           isOnline: true,
-          lastActive: new Date(),
-          status: 'AMATEUR'
+          lastActive: new Date()
         });
         
         // Log in the user automatically after registration

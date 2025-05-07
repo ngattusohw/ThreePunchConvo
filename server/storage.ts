@@ -196,9 +196,15 @@ export class DatabaseStorage implements IStorage {
   
   async createUser(userData: InsertUser): Promise<User> {
     try {
+      // Generate a string ID without needing uuid package
+      const generateId = () => {
+        return 'user_' + Math.random().toString(36).substring(2, 15) + 
+               Math.random().toString(36).substring(2, 15);
+      };
+      
       // Generate UUID for user ID if not provided
       const userValues = {
-        id: userData.id || uuidv4(),
+        id: userData.id || generateId(),
         username: userData.username,
         password: userData.password,
         email: userData.email || null,
@@ -220,6 +226,11 @@ export class DatabaseStorage implements IStorage {
         socialLinks: null,
         rank: 0
       };
+      
+      console.log('Creating user with values:', {
+        ...userValues,
+        password: userValues.password ? '*****' : null // Don't log the password
+      });
       
       const [user] = await db.insert(users)
         .values(userValues)

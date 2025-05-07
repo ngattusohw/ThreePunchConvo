@@ -130,6 +130,7 @@ export async function setupAuth(app: Express) {
     verified(new Error("Failed to authenticate user"), null);
   };
 
+  // Add domains from REPLIT_DOMAINS
   for (const domain of process.env
     .REPLIT_DOMAINS!.split(",")) {
     const strategy = new Strategy(
@@ -142,6 +143,38 @@ export async function setupAuth(app: Express) {
       verify,
     );
     passport.use(strategy);
+  }
+  
+  // Add support for localhost and other development hosts
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  if (isDevelopment) {
+    console.log('Adding development authentication strategy for localhost');
+    
+    // Register strategy for localhost
+    passport.use(
+      new Strategy(
+        {
+          name: `replitauth:localhost`,
+          config,
+          scope: "openid email profile offline_access",
+          callbackURL: `http://localhost:5000/api/callback`,
+        },
+        verify,
+      )
+    );
+    
+    // Also register a '127.0.0.1' strategy
+    passport.use(
+      new Strategy(
+        {
+          name: `replitauth:127.0.0.1`,
+          config,
+          scope: "openid email profile offline_access",
+          callbackURL: `http://127.0.0.1:5000/api/callback`,
+        },
+        verify,
+      )
+    );
   }
 
   passport.serializeUser((user: Express.User, cb) => cb(null, user));

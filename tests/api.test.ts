@@ -1,5 +1,6 @@
 import request from 'supertest';
 import express from 'express';
+import fetch from 'node-fetch';
 import { registerRoutes } from '../server/routes';
 
 // Mock environment variables

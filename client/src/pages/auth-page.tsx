@@ -47,13 +47,23 @@ export default function AuthPage() {
     setIsSubmitting(true);
     
     try {
-      const endpoint = activeTab === 'login' ? '/api/auth/login' : '/api/auth/register';
+      // Use development-specific endpoints
+      const endpoint = activeTab === 'login' ? '/api/dev/login' : '/api/dev/register';
       
-      const response = await apiRequest('POST', endpoint, {
+      const userData = {
         username,
         password,
-        email: `${username}@example.com` // For registration
-      });
+        // For registration, include additional fields
+        ...(activeTab === 'register' && {
+          email: `${username}@example.com`,
+          firstName: null,
+          lastName: null,
+          bio: null,
+          profileImageUrl: null
+        })
+      };
+      
+      const response = await apiRequest('POST', endpoint, userData);
       
       if (!response.ok) {
         const errorData = await response.json();

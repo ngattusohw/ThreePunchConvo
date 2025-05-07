@@ -38,6 +38,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up authentication - this must come after error handling middleware
   await setupAuth(app);
+  
+  // Add development-only authentication routes if needed
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Adding development authentication routes');
+    
+    // Development-only register with proper password hashing
+    app.post('/api/dev/register', async (req: Request, res: Response) => {
+      try {
+        const userData = insertUserSchema.parse(req.body);
+        
+        // Check if username already exists
+        const existingUser = await storage.getUserByUsername(userData.username);
+        if (existingUser) {
+          return res.status(400).json({ message: 'Username is already taken' });
+        }
+        
+        // Hash the password for secure storage
+        let hashedPassword = userData.password;
+        if (userData.password) {
+          const { hashPassword } = await import('./auth');
+          hashedPassword = await hashPassword(userData.password);
+        }
+        
+        // Create user with all required fields
+        const user = await storage.createUser({
+          ...userData,
+          password: hashedPassword,
+          // Add default values for required fields that might be missing
+          firstName: userData.firstName || null,
+          lastName: userData.lastName || null,
+          bio: userData.bio || null,
+          profileImageUrl: userData.profileImageUrl || null,
+          points: 0,
+          isOnline: true,
+          lastActive: new Date(),
+          status: 'AMATEUR'
+        });
+        
+        // Log in the user automatically after registration
+        req.login(user, (err) => {
+          if (err) {
+            console.error("Login error after registration:", err);
+            // Continue without login - at least the user was created
+            const { password, ...userWithoutPassword } = user;
+            return res.status(201).json({
+              ...userWithoutPassword,
+              warning: "User created but auto-login failed"
+            });
+          }
+          
+          // Don't return password in response
+          const { password, ...userWithoutPassword } = user;
+          return res.status(201).json(userWithoutPassword);
+        });
+      } catch (error) {
+        if (error instanceof ZodError) {
+          return res.status(400).json({
+            message: 'Validation error',
+            errors: error.errors
+          });
+        }
+        
+        console.error('Error creating user:', error);
+        res.status(500).json({ message: 'Failed to register user' });
+      }
+    });
+    
+    // Development-only login with proper password verification
+    app.post('/api/dev/login', async (req: Request, res: Response) => {
+      try {
+        const { username, password } = req.body;
+        
+        if (!username || !password) {
+          return res.status(400).json({ message: 'Username and password are required' });
+        }
+        
+        // Find the user
+        const user = await storage.getUserByUsername(username);
+        if (!user) {
+          return res.status(401).json({ message: 'Invalid username or password' });
+        }
+        
+        // Verify password
+        if (user.password) {
+          const { comparePasswords } = await import('./auth');
+          const isValid = await comparePasswords(password, user.password);
+          
+          if (!isValid) {
+            return res.status(401).json({ message: 'Invalid username or password' });
+          }
+        } else {
+          return res.status(401).json({ message: 'User has no password set' });
+        }
+        
+        // Mark user as online
+        await storage.updateUser(user.id.toString(), { isOnline: true, lastActive: new Date() });
+        
+        // Log the user in with session
+        req.login(user, (err) => {
+          if (err) {
+            console.error("Login error:", err);
+            return res.status(500).json({ message: "Failed to start session" });
+          }
+          
+          // Don't return password in response
+          const { password, ...userWithoutPassword } = user;
+          return res.json(userWithoutPassword);
+        });
+      } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ message: 'Failed to login' });
+      }
+    });
+    
+    // Development-only logout
+    app.post('/api/dev/logout', (req: Request, res: Response) => {
+      req.logout((err) => {
+        if (err) {
+          console.error("Logout error:", err);
+          return res.status(500).json({ message: "Failed to logout" });
+        }
+        
+        res.json({ message: 'Logged out successfully' });
+      });
+    });
+  }
 
   // Authentication endpoints
   app.get('/api/auth/user', isAuthenticated, async (req: any, res: Response) => {
@@ -110,18 +236,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.getUserByUsername(username);
       
-      if (!user || user.password !== password) {
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid username or password' });
+      }
+
+      // In development, use secure password comparison with hash
+      if (process.env.NODE_ENV === 'development' && user.password) {
+        const { comparePasswords } = await import('./auth');
+        const isValid = await comparePasswords(password, user.password);
+        
+        if (!isValid) {
+          return res.status(401).json({ message: 'Invalid username or password' });
+        }
+      } 
+      // In non-development or for testing (insecure, only for demo)
+      else if (user.password !== password) {
         return res.status(401).json({ message: 'Invalid username or password' });
       }
       
       // Mark user as online
       await storage.updateUser(user.id.toString(), { isOnline: true, lastActive: new Date() });
       
-      // Don't return password in response
-      const { password: _, ...userWithoutPassword } = user;
-      
-      res.json(userWithoutPassword);
+      // Log the user in with session
+      req.login(user, (err) => {
+        if (err) {
+          console.error("Login error:", err);
+          return res.status(500).json({ message: "Failed to start session" });
+        }
+        
+        // Don't return password in response
+        const { password: _, ...userWithoutPassword } = user;
+        return res.json(userWithoutPassword);
+      });
     } catch (error) {
+      console.error('Login error:', error);
       res.status(500).json({ message: 'Failed to login' });
     }
   });

@@ -49,11 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (import.meta.env.PROD) {
       window.location.href = "/api/logout";
     } else {
-      // In development, use the POST endpoint for regular auth
-      fetch("/api/auth/logout", { 
+      // In development, use the development logout endpoint
+      fetch("/api/dev/logout", { 
         method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user?.id }) 
+        headers: { 'Content-Type': 'application/json' }
       })
       .then(() => {
         // Force refresh the auth query

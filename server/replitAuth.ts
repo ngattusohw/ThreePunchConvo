@@ -8,7 +8,9 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+if (!isDevelopment && !process.env.REPLIT_DOMAINS) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
 }
 
@@ -27,13 +29,10 @@ export function getSession() {
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: true, // Make sure table is created if missing
+    createTableIfMissing: true,
     ttl: sessionTtl,
     tableName: "sessions",
   });
-  
-  // Determine if we're in production or development
-  const isProduction = process.env.NODE_ENV === 'production';
   
   return session({
     secret: process.env.SESSION_SECRET || "3punchconvosessiontopsecret",
@@ -42,9 +41,9 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: isProduction, // Only use secure in production
+      secure: !isDevelopment,
       maxAge: sessionTtl,
-      sameSite: 'lax' // Add sameSite for better cookie handling
+      sameSite: 'lax'
     },
   });
 }
@@ -94,177 +93,149 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  const config = await getOidcConfig();
-
-  const verify: VerifyFunction = async (
-    tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-    verified: passport.AuthenticateCallback
-  ) => {
-    const claims = tokens.claims();
-    if (!claims || !claims.sub) {
-      verified(new Error("Invalid claims data"), null);
-      return;
-    }
-    
-    const user = await storage.getUser(claims.sub);
-    
-    if (!user) {
-      // Create the user if they don't exist in our system
-      await upsertUser(claims);
-      const newUser = await storage.getUser(claims.sub);
-      if (newUser) {
-        const userObject = { ...newUser };
-        updateUserSession(userObject, tokens);
-        verified(null, userObject);
-        return;
-      }
-    } else {
-      // User exists, update their session
-      const userObject = { ...user };
-      updateUserSession(userObject, tokens);
-      verified(null, userObject);
-      return;
-    }
-    
-    // Fallback if something went wrong
-    verified(new Error("Failed to authenticate user"), null);
-  };
-
-  // Add domains from REPLIT_DOMAINS
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
-    const strategy = new Strategy(
-      {
-        name: `replitauth:${domain}`,
-        config,
-        scope: "openid email profile offline_access",
-        callbackURL: `https://${domain}/api/callback`,
-      },
-      verify,
-    );
-    passport.use(strategy);
-  }
-  
-  // Add support for localhost and other development hosts
-  const isDevelopment = process.env.NODE_ENV === 'development';
+  // Development mode authentication
   if (isDevelopment) {
-    console.log('Adding development authentication strategy for localhost');
-    
-    // Register strategy for localhost
-    passport.use(
-      new Strategy(
-        {
-          name: `replitauth:localhost`,
-          config,
-          scope: "openid email profile offline_access",
-          callbackURL: `http://localhost:5000/api/callback`,
-        },
-        verify,
-      )
-    );
-    
-    // Also register a '127.0.0.1' strategy
-    passport.use(
-      new Strategy(
-        {
-          name: `replitauth:127.0.0.1`,
-          config,
-          scope: "openid email profile offline_access",
-          callbackURL: `http://127.0.0.1:5000/api/callback`,
-        },
-        verify,
-      )
-    );
-  }
-
-  passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
-
-  app.get("/api/login", (req, res, next) => {
-    try {
-      passport.authenticate(`replitauth:${req.hostname}`, {
-        prompt: "login consent",
-        scope: ["openid", "email", "profile", "offline_access"],
-      })(req, res, next);
-    } catch (error) {
-      console.error("Error in /api/login route:", error);
-      // If in development, provide a useful error message
-      if (process.env.NODE_ENV === 'development') {
-        return res.status(401).json({ 
-          message: "Authentication error", 
-          details: "Cannot authenticate with Replit Auth in development environment. Try using /api/auth/login with username/password instead.",
-          error: error instanceof Error ? error.message : String(error)
-        });
-      }
-      next(error);
-    }
-  });
-  
-  // Add a development-only local login endpoint
-  if (process.env.NODE_ENV === 'development') {
-    app.post("/api/auth/login", (req, res, next) => {
+    // Add development-only local login endpoint
+    app.post("/api/auth/login", async (req, res) => {
       try {
-        const { username, password } = req.body;
+        const { username } = req.body;
         
-        if (!username || !password) {
-          return res.status(400).json({ message: 'Username and password are required' });
+        if (!username) {
+          return res.status(400).json({ message: 'Username is required' });
         }
         
-        // This will be handled by the local strategy in routes.ts
-        next();
+        // Create or get user
+        const user = await storage.upsertUser({
+          id: `dev_${username}`,
+          username,
+          email: null,
+          firstName: null,
+          lastName: null,
+          bio: null,
+          profileImageUrl: null,
+          role: "USER",
+          status: "AMATEUR",
+          isOnline: true,
+          points: 0,
+          rank: null,
+          postsCount: 0,
+          likesCount: 0,
+          potdCount: 0,
+          followersCount: 0,
+          followingCount: 0,
+          socialLinks: {},
+        });
+
+        // Log the user in
+        req.login(user, (err) => {
+          if (err) {
+            return res.status(500).json({ message: "Error logging in" });
+          }
+          return res.json({ user });
+        });
       } catch (error) {
         console.error("Error in development login:", error);
         res.status(500).json({ message: "Internal server error during login" });
       }
     });
+
+    app.get("/api/auth/logout", (req, res) => {
+      req.logout(() => {
+        res.json({ message: "Logged out successfully" });
+      });
+    });
   }
 
-  app.get("/api/callback", (req, res, next) => {
-    console.log("Callback received from Replit Auth");
-    
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
-      failWithError: true
-    }, (err: any, user: Express.User | false | null, info: { message: string } | undefined) => {
-      if (err) {
-        console.error("Passport authentication error:", err);
-        return res.redirect("/auth?error=authentication_failed");
+  // Production mode Replit authentication
+  if (!isDevelopment) {
+    const config = await getOidcConfig();
+
+    const verify: VerifyFunction = async (
+      tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
+      verified: passport.AuthenticateCallback
+    ) => {
+      const claims = tokens.claims();
+      if (!claims || !claims.sub) {
+        verified(new Error("Invalid claims data"), null);
+        return;
       }
+      
+      const user = await storage.getUser(claims.sub);
       
       if (!user) {
-        console.error("No user returned from authentication:", info);
-        return res.redirect("/auth?error=no_user");
+        // Create the user if they don't exist in our system
+        await upsertUser(claims);
+        const newUser = await storage.getUser(claims.sub);
+        if (newUser) {
+          const userObject = { ...newUser };
+          updateUserSession(userObject, tokens);
+          verified(null, userObject);
+          return;
+        }
+      } else {
+        // User exists, update their session
+        const userObject = { ...user };
+        updateUserSession(userObject, tokens);
+        verified(null, userObject);
+        return;
       }
       
-      // Manually log in the user
-      req.login(user, (loginErr: any) => {
-        if (loginErr) {
-          console.error("Login error:", loginErr);
-          return res.redirect("/auth?error=login_failed");
-        }
-        
-        // Success! Redirect to home page
-        return res.redirect("/");
-      });
-    })(req, res, next);
-  });
+      // Fallback if something went wrong
+      verified(new Error("Failed to authenticate user"), null);
+    };
 
-  app.get("/api/logout", (req, res) => {
-    req.logout(() => {
-      res.redirect(
-        client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href
+    // Add domains from REPLIT_DOMAINS
+    for (const domain of process.env.REPLIT_DOMAINS!.split(",")) {
+      const strategy = new Strategy(
+        {
+          name: `replitauth:${domain}`,
+          config,
+          scope: "openid email profile offline_access",
+          callbackURL: `https://${domain}/api/callback`,
+        },
+        verify,
       );
+      passport.use(strategy);
+    }
+
+    app.get("/api/login", (req, res, next) => {
+      passport.authenticate(`replitauth:${req.hostname}`, {
+        prompt: "login consent",
+        scope: ["openid", "email", "profile", "offline_access"],
+      })(req, res, next);
     });
-  });
+
+    app.get("/api/callback", (req, res, next) => {
+      passport.authenticate(`replitauth:${req.hostname}`, {
+        successReturnToOrRedirect: "/",
+        failureRedirect: "/api/login",
+        failWithError: true
+      })(req, res, next);
+    });
+
+    app.get("/api/logout", (req, res) => {
+      req.logout(() => {
+        res.redirect(
+          client.buildEndSessionUrl(config, {
+            client_id: process.env.REPL_ID!,
+            post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
+          }).href
+        );
+      });
+    });
+  }
+
+  passport.serializeUser((user: Express.User, cb) => cb(null, user));
+  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  if (isDevelopment) {
+    return next();
   }
 
   const user = req.user as any;

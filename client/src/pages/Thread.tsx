@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
+import { FORUM_CATEGORIES } from "@/lib/constants";
 
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
@@ -743,18 +744,8 @@ function ReplyCard({ reply, onQuote, onLike, onDislike }: ReplyCardProps) {
 
 // Helper function to get category name
 function getCategoryName(categoryId: string): string {
-  const categories: Record<string, string> = {
-    'general': 'General Discussion',
-    'ufc': 'UFC',
-    'bellator': 'Bellator',
-    'one': 'ONE Championship',
-    'pfl': 'PFL',
-    'boxing': 'Boxing',
-    'techniques': 'Fight Techniques',
-    'offtopic': 'Off Topic',
-  };
-  
-  return categories[categoryId] || 'Unknown Category';
+  const category = FORUM_CATEGORIES.find(cat => cat.id === categoryId);
+  return category?.name || 'Unknown Category';
 }
 
 // Helper function to generate a mock thread for demonstration

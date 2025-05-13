@@ -15,7 +15,7 @@ export const sessions = pgTable(
 
 // User table
 export const users = pgTable("users", {
-  id: integer("id").primaryKey().notNull(),  // Using integer to match existing DB schema
+  id: text("id").primaryKey().notNull(),  // Changed to text
   username: text("username").unique().notNull(),
   password: text("password"), // Added password field for local auth
   email: text("email").unique(),
@@ -129,7 +129,7 @@ export const replyMedia = pgTable("reply_media", {
 export const threadReactions = pgTable("thread_reactions", {
   id: serial("id").primaryKey(),
   threadId: integer("thread_id").notNull().references(() => threads.id),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // LIKE, DISLIKE, POTD
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -138,7 +138,7 @@ export const threadReactions = pgTable("thread_reactions", {
 export const replyReactions = pgTable("reply_reactions", {
   id: serial("id").primaryKey(),
   replyId: integer("reply_id").notNull().references(() => replies.id),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // LIKE, DISLIKE
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -146,17 +146,17 @@ export const replyReactions = pgTable("reply_reactions", {
 // User follows
 export const follows = pgTable("follows", {
   id: serial("id").primaryKey(),
-  followerId: integer("follower_id").notNull().references(() => users.id),
-  followingId: integer("following_id").notNull().references(() => users.id),
+  followerId: text("follower_id").notNull().references(() => users.id),
+  followingId: text("following_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Notifications
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // REPLY, MENTION, LIKE, SYSTEM, FOLLOW
-  relatedUserId: integer("related_user_id").references(() => users.id),
+  relatedUserId: text("related_user_id").references(() => users.id),
   threadId: integer("thread_id").references(() => threads.id),
   replyId: integer("reply_id").references(() => replies.id),
   message: text("message"),
@@ -208,7 +208,7 @@ export const fights = pgTable("fights", {
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users, {
-  id: z.number().optional(),
+  id: z.string().optional(),  // Changed to string
   username: z.string().min(3).max(30),
   password: z.string().min(6),
   email: z.string().email().nullable().optional(),

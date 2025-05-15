@@ -4,6 +4,10 @@ import { storage } from "./storage";
 import { fetchUpcomingEvents } from "./espn-api";
 import { z } from "zod";
 import { ZodError } from "zod";
+import multer from "multer";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { v4 as uuidv4 } from "uuid";
+import path from "path";
 import {
   insertThreadSchema,
   insertReplySchema,
@@ -14,6 +18,31 @@ import {
   PollOption
 } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+
+// Configure S3 client
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
+  }
+});
+
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  },
+  fileFilter: (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPEG, PNG and GIF are allowed.'));
+    }
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -1059,6 +1088,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching event:', error);
       res.status(500).json({ message: 'Failed to fetch event' });
+    }
+  });
+
+  // Image upload endpoint
+  app.post('/api/upload', upload.single('image'), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const file = req.file;
+      const fileExtension = path.extname(file.originalname);
+      const fileName = `${uuidv4()}${fileExtension}`;
+
+      // Upload to S3
+      const uploadParams = {
+        Bucket: process.env.AWS_S3_BUCKET || 'your-bucket-name',
+        Key: `uploads/${fileName}`,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+        ACL: 'public-read'
+      };
+
+      await s3Client.send(new PutObjectCommand(uploadParams));
+
+      // Generate the CDN URL
+      const cdnUrl = `${process.env.CDN_BASE_URL || `https://${uploadParams.Bucket}.s3.amazonaws.com`}/uploads/${fileName}`;
+      
+      res.json({ url: cdnUrl });
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      res.status(500).json({ message: 'Failed to upload file' });
     }
   });
 

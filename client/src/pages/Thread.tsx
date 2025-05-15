@@ -21,22 +21,33 @@ export default function Thread() {
   // Fetch thread data
   const { data: thread, isLoading: isThreadLoading, error: threadError } = useQuery<ForumThread>({
     queryKey: [`/api/threads/id/${threadId}`],
-    // In a real app, we would fetch from the API
+    queryFn: async () => {
+      const response = await fetch(`/api/threads/id/${threadId}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch thread: ${response.statusText}`);
+      }
+      return response.json();
+    },
+    enabled: !!threadId
   });
   
   // Fetch thread replies
   const { data: replies, isLoading: isRepliesLoading, error: repliesError } = useQuery<ThreadReply[]>({
     queryKey: [`/api/threads/${threadId}/replies`],
-    enabled: !!threadId,
-    // In a real app, we would fetch from the API
+    queryFn: async () => {
+      const response = await fetch(`/api/threads/${threadId}/replies`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch replies: ${response.statusText}`);
+      }
+      return response.json();
+    },
+    enabled: !!threadId
   });
   
-  // For demo purposes, create mock thread if none is returned from the API
-  const displayThread = thread || generateMockThread(parseInt(threadId || "1"));
-  
-  // For demo purposes, create mock replies if none are returned from the API
-  const displayReplies = replies?.length ? replies : generateMockReplies(parseInt(threadId || "1"));
-  
+  // Use the actual data from the API
+  const displayThread = thread;
+  const displayReplies = replies || [];
+
   // Handle liking a thread
   const likeThreadMutation = useMutation({
     mutationFn: async () => {
@@ -233,7 +244,18 @@ export default function Thread() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-red-900 bg-opacity-20 border border-red-500 rounded-lg p-4 text-center">
-          <p className="text-red-500">Error loading thread. Please try again later.</p>
+          <p className="text-red-500">Error loading thread: {threadError instanceof Error ? threadError.message : 'Please try again later.'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no thread data, show error
+  if (!thread) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-900 bg-opacity-20 border border-red-500 rounded-lg p-4 text-center">
+          <p className="text-red-500">Thread not found. Please check the URL and try again.</p>
         </div>
       </div>
     );
@@ -746,367 +768,4 @@ function ReplyCard({ reply, onQuote, onLike, onDislike }: ReplyCardProps) {
 function getCategoryName(categoryId: string): string {
   const category = FORUM_CATEGORIES.find(cat => cat.id === categoryId);
   return category?.name || 'Unknown Category';
-}
-
-// Helper function to generate a mock thread for demonstration
-function generateMockThread(threadId: number): ForumThread {
-  if (threadId === 2) {
-    // Jones vs Aspinall thread from design reference
-    return {
-      id: 2,
-      title: "Jones vs Aspinall: Who would win and why?",
-      content: "With Aspinall taking the interim title, a unification bout with Jones seems inevitable. Let's break down who would win this dream matchup and why. Personally, I think Aspinall's speed gives Jones problems but Jon's experience edge is significant.",
-      userId: "2",
-      user: {
-        id: "2",
-        username: "KnockoutKing",
-        avatar: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "CHAMPION",
-        isOnline: true,
-        postsCount: 94,
-        likesCount: 1203,
-        potdCount: 8,
-        rank: 2,
-        followersCount: 215,
-        followingCount: 44,
-        role: "USER",
-      },
-      categoryId: "ufc",
-      isPinned: false,
-      isLocked: false,
-      createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-      updatedAt: new Date(Date.now() - 4 * 60 * 60 * 1000),
-      lastActivityAt: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
-      viewCount: 1800,
-      likesCount: 324,
-      dislikesCount: 42,
-      repliesCount: 86,
-      isPotd: true,
-      poll: {
-        id: 1,
-        threadId: 2,
-        question: "Who wins this matchup?",
-        options: [
-          { id: 1, pollId: 1, text: "Jon Jones", votesCount: 156 },
-          { id: 2, pollId: 1, text: "Tom Aspinall", votesCount: 87 },
-        ],
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day from now
-        votesCount: 243,
-      },
-    };
-  } else {
-    // Default thread
-    return {
-      id: threadId,
-      title: "Welcome to 3 Punch Convo - Rules & Guidelines",
-      content: "Welcome to our community! Please read our rules before posting. We aim to keep discussions respectful and on-topic. Any violation may result in post removal or account suspension.\n\n1. Be respectful to fellow community members\n2. No hate speech or personal attacks\n3. Keep discussions relevant to MMA and combat sports\n4. No spam or excessive self-promotion\n5. No illegal streams or pirated content\n\nThank you for joining our community. Let's make this the best place for MMA fans to discuss the sport we all love!",
-      userId: "1",
-      user: {
-        id: "1",
-        username: "OctagonInsider",
-        avatar: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "HALL OF FAMER",
-        isOnline: true,
-        postsCount: 157,
-        likesCount: 3200,
-        potdCount: 12,
-        rank: 1,
-        followersCount: 420,
-        followingCount: 63,
-        role: "ADMIN",
-      },
-      categoryId: "general",
-      isPinned: true,
-      isLocked: false,
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      lastActivityAt: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-      viewCount: 3200,
-      likesCount: 147,
-      dislikesCount: 0,
-      repliesCount: 24,
-      isPotd: false,
-    };
-  }
-}
-
-// Helper function to generate mock replies for demonstration
-function generateMockReplies(threadId: number): ThreadReply[] {
-  if (threadId === 2) {
-    // Jones vs Aspinall thread replies
-    return [
-      {
-        id: 1,
-        threadId: 2,
-        userId: "4",
-        user: {
-          id: "4",
-          username: "MMAHistorian",
-          avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "RANKED POSTER",
-          isOnline: true,
-          postsCount: 152,
-          likesCount: 2700,
-          potdCount: 6,
-          rank: 5,
-          followersCount: 87,
-          followingCount: 113,
-          role: "USER",
-        },
-        content: "I disagree. Aspinall's ground game is underrated, but Jones has been taking down Olympic wrestlers his entire career. Jon would take him down at will and control him for 5 rounds. His fight IQ is just too high.",
-        createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
-        updatedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-        likesCount: 82,
-        dislikesCount: 17,
-      },
-      {
-        id: 2,
-        threadId: 2,
-        userId: "5",
-        user: {
-          id: "5",
-          username: "StrikingQueen",
-          avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "CONTENDER",
-          isOnline: true,
-          postsCount: 217,
-          likesCount: 3800,
-          potdCount: 12,
-          rank: 3,
-          followersCount: 148,
-          followingCount: 76,
-          role: "USER",
-        },
-        content: "This is a tough one. Jones has the experience and fight IQ, but Aspinall has youth, speed, and legitimate KO power. I think it comes down to whether Tom can keep it standing. If he can, I give him a good chance. If Jones gets him to the ground, it's Jon's fight to lose.",
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-        updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        likesCount: 65,
-        dislikesCount: 3,
-      },
-      {
-        id: 3,
-        threadId: 2,
-        userId: "3",
-        user: {
-          id: "3",
-          username: "DustinPoirier",
-          avatar: "https://images.unsplash.com/photo-1614632537197-38a17061c2bd?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "HALL OF FAMER",
-          isOnline: true,
-          postsCount: 73,
-          likesCount: 4120,
-          potdCount: 14,
-          rank: 1,
-          followersCount: 1200,
-          followingCount: 23,
-          role: "PRO",
-        },
-        content: "Speaking from experience, Jones is the most difficult fighter to game plan for. His reach and creativity make him unpredictable. But Aspinall has incredible speed for a heavyweight. I'd give a slight edge to Jones, but wouldn't be shocked if Aspinall caught him.",
-        createdAt: new Date(Date.now() - 90 * 60 * 1000), // 90 minutes ago
-        updatedAt: new Date(Date.now() - 90 * 60 * 1000),
-        likesCount: 241,
-        dislikesCount: 2,
-      },
-      {
-        id: 4,
-        threadId: 2,
-        userId: "2",
-        parentReplyId: 3,
-        user: {
-          id: "2",
-          username: "KnockoutKing",
-          avatar: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "CHAMPION",
-          isOnline: true,
-          postsCount: 94,
-          likesCount: 1203,
-          potdCount: 8,
-          rank: 2,
-          followersCount: 215,
-          followingCount: 44,
-          role: "USER",
-        },
-        content: "Thanks for weighing in, Dustin! Great to get a pro's perspective. Do you think the layoff might have affected Jones in any way?",
-        createdAt: new Date(Date.now() - 60 * 60 * 1000), // 60 minutes ago
-        updatedAt: new Date(Date.now() - 60 * 60 * 1000),
-        likesCount: 48,
-        dislikesCount: 0,
-      },
-      {
-        id: 5,
-        threadId: 2,
-        userId: "3",
-        parentReplyId: 4,
-        user: {
-          id: "3",
-          username: "DustinPoirier",
-          avatar: "https://images.unsplash.com/photo-1614632537197-38a17061c2bd?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "HALL OF FAMER",
-          isOnline: true,
-          postsCount: 73,
-          likesCount: 4120,
-          potdCount: 14,
-          rank: 1,
-          followersCount: 1200,
-          followingCount: 23,
-          role: "PRO",
-        },
-        content: "The layoff is definitely a factor. Sometimes it can be good to let your body recover, but timing and reaction speed can suffer. That said, Jones has always been a student of the game. I'm sure he's been studying and preparing even when not actively fighting.",
-        createdAt: new Date(Date.now() - 45 * 60 * 1000), // 45 minutes ago
-        updatedAt: new Date(Date.now() - 45 * 60 * 1000),
-        likesCount: 92,
-        dislikesCount: 1,
-      },
-      {
-        id: 6,
-        threadId: 2,
-        userId: "6",
-        user: {
-          id: "6",
-          username: "FighterFan84",
-          avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "CONTENDER",
-          isOnline: true,
-          postsCount: 157,
-          likesCount: 1203,
-          potdCount: 5,
-          rank: 17,
-          followersCount: 42,
-          followingCount: 63,
-          role: "USER",
-        },
-        content: "I think we're overlooking one big factor here - Jon hasn't really faced anyone with the combination of size, speed, and technique that Aspinall brings. Every heavyweight he's faced so far has been lacking in at least one of those areas.\n\nAspinall is legitimately as fast as a light heavyweight but with actual heavyweight power. I believe he presents problems Jon hasn't had to solve yet.",
-        createdAt: new Date(Date.now() - 20 * 60 * 1000), // 20 minutes ago
-        updatedAt: new Date(Date.now() - 20 * 60 * 1000),
-        likesCount: 37,
-        dislikesCount: 12,
-      },
-    ];
-  } else {
-    // Default thread replies
-    return [
-      {
-        id: 1,
-        threadId: 1,
-        userId: "2",
-        user: {
-          id: "2",
-          username: "KnockoutKing",
-          avatar: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "CHAMPION",
-          isOnline: true,
-          postsCount: 94,
-          likesCount: 1203,
-          potdCount: 8,
-          rank: 2,
-          followersCount: 215,
-          followingCount: 44,
-          role: "USER",
-        },
-        content: "Great rules! Thanks for creating this community. Looking forward to some awesome MMA discussions!",
-        createdAt: new Date(Date.now() - 110 * 60 * 1000), // 110 minutes ago
-        updatedAt: new Date(Date.now() - 110 * 60 * 1000),
-        likesCount: 32,
-        dislikesCount: 0,
-      },
-      {
-        id: 2,
-        threadId: 1,
-        userId: "4",
-        user: {
-          id: "4",
-          username: "GrappleGuru",
-          avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "RANKED POSTER",
-          isOnline: true,
-          postsCount: 178,
-          likesCount: 3100,
-          potdCount: 9,
-          rank: 4,
-          followersCount: 103,
-          followingCount: 89,
-          role: "USER",
-        },
-        content: "Question about rule #3 - does this mean we can't discuss boxing or other combat sports at all? Or just that we should keep it in the relevant sections?",
-        createdAt: new Date(Date.now() - 90 * 60 * 1000), // 90 minutes ago
-        updatedAt: new Date(Date.now() - 90 * 60 * 1000),
-        likesCount: 15,
-        dislikesCount: 0,
-      },
-      {
-        id: 3,
-        threadId: 1,
-        userId: "1",
-        parentReplyId: 2,
-        user: {
-          id: "1",
-          username: "OctagonInsider",
-          avatar: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "HALL OF FAMER",
-          isOnline: true,
-          postsCount: 157,
-          likesCount: 3200,
-          potdCount: 12,
-          rank: 1,
-          followersCount: 420,
-          followingCount: 63,
-          role: "ADMIN",
-        },
-        content: "Great question! Boxing and other combat sports are definitely welcome, but please use the appropriate categories. We have a dedicated boxing section, and if there's enough interest, we can add more specific categories for other combat sports.",
-        createdAt: new Date(Date.now() - 80 * 60 * 1000), // 80 minutes ago
-        updatedAt: new Date(Date.now() - 80 * 60 * 1000),
-        likesCount: 28,
-        dislikesCount: 0,
-      },
-      {
-        id: 4,
-        threadId: 1,
-        userId: "5",
-        user: {
-          id: "5",
-          username: "StrikingQueen",
-          avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "CONTENDER",
-          isOnline: true,
-          postsCount: 217,
-          likesCount: 3800,
-          potdCount: 12,
-          rank: 3,
-          followersCount: 148,
-          followingCount: 76,
-          role: "USER",
-        },
-        content: "Will there be any kind of verified status for fighters or industry professionals who join the community?",
-        createdAt: new Date(Date.now() - 60 * 60 * 1000), // 60 minutes ago
-        updatedAt: new Date(Date.now() - 60 * 60 * 1000),
-        likesCount: 41,
-        dislikesCount: 0,
-      },
-      {
-        id: 5,
-        threadId: 1,
-        userId: "1",
-        parentReplyId: 4,
-        user: {
-          id: "1",
-          username: "OctagonInsider",
-          avatar: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "HALL OF FAMER",
-          isOnline: true,
-          postsCount: 157,
-          likesCount: 3200,
-          potdCount: 12,
-          rank: 1,
-          followersCount: 420,
-          followingCount: 63,
-          role: "ADMIN",
-        },
-        content: "Yes, absolutely! We're implementing a verification process for fighters, coaches, journalists, and other industry professionals. They'll receive a verified badge and will be exempt from the normal ranking system.",
-        createdAt: new Date(Date.now() - 50 * 60 * 1000), // 50 minutes ago
-        updatedAt: new Date(Date.now() - 50 * 60 * 1000),
-        likesCount: 38,
-        dislikesCount: 0,
-      },
-    ];
-  }
 }

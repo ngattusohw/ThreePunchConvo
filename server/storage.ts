@@ -102,6 +102,15 @@ export interface IStorage {
   saveFight(fight: any): Promise<Fight>;
 }
 
+// Extended Thread type that includes associated data
+type ThreadWithAssociatedData = Thread & {
+  user: Omit<User, 'password'>;
+  media?: Media[];
+  poll?: Poll & {
+    options: PollOption[];
+  };
+};
+
 // Database implementation of the storage interface
 export class DatabaseStorage implements IStorage {
   sessionStore: any;
@@ -469,10 +478,85 @@ export class DatabaseStorage implements IStorage {
   // Placeholder implementations for other methods
   // These will be implemented as needed
   
-  async getThread(id: string): Promise<Thread | undefined> {
-    // Temporary stub
-    console.log('getThread not fully implemented', id);
-    return undefined;
+  async getThread(id: string): Promise<ThreadWithAssociatedData | undefined> {
+    try {
+      // Build query with explicit column selection
+      const [thread] = await db
+        .select({
+          id: threads.id,
+          title: threads.title,
+          content: threads.content,
+          userId: threads.userId,
+          categoryId: threads.categoryId,
+          isPinned: threads.isPinned,
+          isLocked: threads.isLocked,
+          createdAt: threads.createdAt,
+          updatedAt: threads.updatedAt,
+          lastActivityAt: threads.lastActivityAt,
+          viewCount: threads.viewCount,
+          likesCount: threads.likesCount,
+          dislikesCount: threads.dislikesCount,
+          repliesCount: threads.repliesCount,
+          isPotd: threads.isPotd
+        })
+        .from(threads)
+        .where(eq(threads.id, id));
+
+      if (!thread) {
+        return undefined;
+      }
+
+      // Get thread author
+      const user = await this.getUser(thread.userId);
+      if (!user) {
+        console.error(`User not found for thread ${id} with userId ${thread.userId}`);
+        return undefined;
+      }
+
+      // Get thread media
+      const media = await this.getMediaByThread(id);
+
+      // Get thread poll and its options
+      const poll = await this.getPollByThread(id);
+      const pollWithOptions = poll ? {
+        ...poll,
+        options: await this.getPollOptions(poll.id)
+      } : undefined;
+
+      // Return thread with associated data
+      return {
+        ...thread,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          avatar: user.avatar,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          bio: user.bio,
+          profileImageUrl: user.profileImageUrl,
+          updatedAt: user.updatedAt,
+          role: user.role,
+          status: user.status,
+          createdAt: user.createdAt,
+          isOnline: user.isOnline,
+          lastActive: user.lastActive,
+          points: user.points,
+          rank: user.rank,
+          postsCount: user.postsCount,
+          likesCount: user.likesCount,
+          potdCount: user.potdCount,
+          followersCount: user.followersCount,
+          followingCount: user.followingCount,
+          socialLinks: user.socialLinks
+        },
+        media: media || [],
+        poll: pollWithOptions
+      };
+    } catch (error) {
+      console.error('Error getting thread:', error);
+      return undefined;
+    }
   }
   
   async getThreadsByCategory(categoryId: string, sort: string, limit: number, offset: number): Promise<Thread[]> {
@@ -696,9 +780,24 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getPollByThread(threadId: string): Promise<Poll | undefined> {
-    // Temporary stub
-    console.log('getPollByThread not fully implemented', threadId);
-    return undefined;
+    try {
+      const [poll] = await db
+        .select({
+          id: polls.id,
+          threadId: polls.threadId,
+          question: polls.question,
+          expiresAt: polls.expiresAt,
+          createdAt: polls.createdAt,
+          votesCount: polls.votesCount
+        })
+        .from(polls)
+        .where(eq(polls.threadId, threadId));
+
+      return poll;
+    } catch (error) {
+      console.error('Error fetching poll for thread:', error);
+      return undefined;
+    }
   }
   
   async createPoll(poll: InsertPoll, options: string[]): Promise<Poll> {
@@ -749,9 +848,24 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getMediaByThread(threadId: string): Promise<Media[]> {
-    // Temporary stub
-    console.log('getMediaByThread not fully implemented', threadId);
-    return [];
+    try {
+      const media = await db
+        .select({
+          id: threadMedia.id,
+          threadId: threadMedia.threadId,
+          type: threadMedia.type,
+          url: threadMedia.url,
+          createdAt: threadMedia.createdAt
+        })
+        .from(threadMedia)
+        .where(eq(threadMedia.threadId, threadId))
+        .orderBy(threadMedia.createdAt);
+
+      return media;
+    } catch (error) {
+      console.error('Error fetching media for thread:', error);
+      return [];
+    }
   }
   
   async getMediaByReply(replyId: string): Promise<Media[]> {
@@ -951,6 +1065,26 @@ export class DatabaseStorage implements IStorage {
       }
     } catch (error) {
       console.error('Error recalculating rankings:', error);
+    }
+  }
+
+  async getPollOptions(pollId: string): Promise<PollOption[]> {
+    try {
+      const options = await db
+        .select({
+          id: pollOptions.id,
+          pollId: pollOptions.pollId,
+          text: pollOptions.text,
+          votesCount: pollOptions.votesCount
+        })
+        .from(pollOptions)
+        .where(eq(pollOptions.pollId, pollId))
+        .orderBy(pollOptions.id);
+
+      return options;
+    } catch (error) {
+      console.error('Error getting poll options:', error);
+      return [];
     }
   }
 }

@@ -536,9 +536,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/threads/id/:id', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
+      const threadId = req.params.id;
       
-      if (isNaN(threadId)) {
+      if (!threadId) {
         return res.status(400).json({ message: 'Invalid thread ID' });
       }
       
@@ -651,10 +651,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/threads/:id', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
+      const threadId = req.params.id;
       const { userId, role } = req.body;
       
-      if (isNaN(threadId)) {
+      if (!threadId) {
         return res.status(400).json({ message: 'Invalid thread ID' });
       }
       
@@ -683,10 +683,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/threads/:id/like', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
+      const threadId = req.params.id;
       const { userId } = req.body;
       
-      if (isNaN(threadId) || !userId) {
+      if (!threadId || !userId) {
         return res.status(400).json({ message: 'Thread ID and user ID are required' });
       }
       
@@ -704,10 +704,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/threads/:id/dislike', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
+      const threadId = req.params.id;
       const { userId } = req.body;
       
-      if (isNaN(threadId) || !userId) {
+      if (!threadId || !userId) {
         return res.status(400).json({ message: 'Thread ID and user ID are required' });
       }
       
@@ -725,10 +725,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/threads/:id/potd', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
+      const threadId = req.params.id;
       const { userId } = req.body;
       
-      if (isNaN(threadId) || !userId) {
+      if (!threadId || !userId) {
         return res.status(400).json({ message: 'Thread ID and user ID are required' });
       }
       
@@ -746,11 +746,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/threads/:id/poll/:optionId/vote', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
-      const optionId = parseInt(req.params.optionId);
+      const threadId = req.params.id;
+      const optionId = req.params.optionId;
       const { userId } = req.body;
       
-      if (isNaN(threadId) || isNaN(optionId) || !userId) {
+      if (!threadId || !optionId || !userId) {
         return res.status(400).json({ message: 'Thread ID, option ID, and user ID are required' });
       }
       
@@ -776,9 +776,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reply endpoints
   app.get('/api/threads/:id/replies', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
+      const threadId = req.params.id;
       
-      if (isNaN(threadId)) {
+      if (!threadId) {
         return res.status(400).json({ message: 'Invalid thread ID' });
       }
       
@@ -787,8 +787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch user for each reply
       const repliesWithUser = await Promise.all(
         replies.map(async (reply) => {
-          // Ensure userId is treated as a string
-          const userId = typeof reply.userId === 'string' ? reply.userId : (reply.userId as number).toString();
+          const userId = reply.userId;
           const user = await storage.getUser(userId);
           
           if (!user) {
@@ -817,9 +816,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/threads/:id/replies', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
+      const threadId = req.params.id;
       
-      if (isNaN(threadId)) {
+      if (!threadId) {
         return res.status(400).json({ message: 'Invalid thread ID' });
       }
       
@@ -837,7 +836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (media && Array.isArray(media)) {
         for (const mediaItem of media) {
           const mediaData = {
-            threadId: reply.threadId, // Use threadId since we don't have a specific reply media method
+            threadId: reply.threadId,
             type: mediaItem.type,
             url: mediaItem.url
           };
@@ -861,10 +860,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/replies/:id', async (req: Request, res: Response) => {
     try {
-      const replyId = parseInt(req.params.id);
+      const replyId = req.params.id;
       const { userId, role } = req.body;
       
-      if (isNaN(replyId)) {
+      if (!replyId) {
         return res.status(400).json({ message: 'Invalid reply ID' });
       }
       
@@ -893,10 +892,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/replies/:id/like', async (req: Request, res: Response) => {
     try {
-      const replyId = parseInt(req.params.id);
+      const replyId = req.params.id;
       const { userId } = req.body;
       
-      if (isNaN(replyId) || !userId) {
+      if (!replyId || !userId) {
         return res.status(400).json({ message: 'Reply ID and user ID are required' });
       }
       
@@ -914,10 +913,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/replies/:id/dislike', async (req: Request, res: Response) => {
     try {
-      const replyId = parseInt(req.params.id);
+      const replyId = req.params.id;
       const { userId } = req.body;
       
-      if (isNaN(replyId) || !userId) {
+      if (!replyId || !userId) {
         return res.status(400).json({ message: 'Reply ID and user ID are required' });
       }
       
@@ -997,9 +996,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/notifications/read/:id', async (req: Request, res: Response) => {
     try {
-      const notificationId = parseInt(req.params.id);
+      const notificationId = req.params.id;
       
-      if (isNaN(notificationId)) {
+      if (!notificationId) {
         return res.status(400).json({ message: 'Invalid notification ID' });
       }
       

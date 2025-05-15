@@ -10,11 +10,11 @@ import { formatDistanceToNow } from "date-fns";
 // Function to generate mock threads
 function generateMockThreads(currentCategory: any): ForumThread[] {
   const mockAuthors = [
-    { id: 1, username: "UFCFanatic", avatarUrl: null, points: 3450, status: "HALL OF FAMER" },
-    { id: 2, username: "MMAExpert", avatarUrl: null, points: 2100, status: "CHAMPION" },
-    { id: 3, username: "FightScience", avatarUrl: null, points: 1850, status: "CONTENDER" },
-    { id: 4, username: "OctagonInsider", avatarUrl: null, points: 980, status: "AMATEUR" },
-    { id: 5, username: "KnockoutKing", avatarUrl: null, points: 1200, status: "COMPETITOR" }
+    { id: "1", username: "UFCFanatic", avatarUrl: null, points: 3450, status: "HALL OF FAMER" },
+    { id: "2", username: "MMAExpert", avatarUrl: null, points: 2100, status: "CHAMPION" },
+    { id: "3", username: "FightScience", avatarUrl: null, points: 1850, status: "CONTENDER" },
+    { id: "4", username: "OctagonInsider", avatarUrl: null, points: 980, status: "AMATEUR" },
+    { id: "5", username: "KnockoutKing", avatarUrl: null, points: 1200, status: "COMPETITOR" }
   ];
   
   const generateRandomDate = () => {
@@ -92,7 +92,7 @@ function generateMockThreads(currentCategory: any): ForumThread[] {
     const createdAt = generateRandomDate();
     
     mockThreads.push({
-      id: 1000 + i,
+      id: `mock_${1000 + i}`,
       title: categoryTitles[i],
       content: `This is a mock discussion about ${categoryTitles[i].toLowerCase()}. Join the conversation!`,
       userId: author.id,
@@ -120,12 +120,12 @@ function generateMockThreads(currentCategory: any): ForumThread[] {
         role: i === 0 ? "ADMIN" : "USER",
       },
       poll: i === 1 ? {
-        id: 1,
-        threadId: 1000 + i,
+        id: "mock_poll_1",
+        threadId: `mock_${1000 + i}`,
         question: "Who will win?",
         options: [
-          { id: 1, pollId: 1, text: "Fighter A", votesCount: 24 },
-          { id: 2, pollId: 1, text: "Fighter B", votesCount: 18 }
+          { id: "1", pollId: "mock_poll_1", text: "Fighter A", votesCount: 24 },
+          { id: "2", pollId: "mock_poll_1", text: "Fighter B", votesCount: 18 }
         ],
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         votesCount: 42

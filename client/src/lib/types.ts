@@ -34,7 +34,7 @@ export interface ForumCategory {
 }
 
 export interface ForumThread {
-  id: number;
+  id: string;
   title: string;
   content: string;
   userId: string;
@@ -55,15 +55,15 @@ export interface ForumThread {
 }
 
 export interface ThreadMedia {
-  id: number;
-  threadId: number;
+  id: string;
+  threadId: string;
   type: "IMAGE" | "GIF";
   url: string;
 }
 
 export interface Poll {
-  id: number;
-  threadId: number;
+  id: string;
+  threadId: string;
   question: string;
   options: PollOption[];
   expiresAt: Date;
@@ -71,21 +71,21 @@ export interface Poll {
 }
 
 export interface PollOption {
-  id: number;
-  pollId: number;
+  id: string;
+  pollId: string;
   text: string;
   votesCount: number;
 }
 
 export interface ThreadReply {
-  id: number;
-  threadId: number;
+  id: string;
+  threadId: string;
   userId: string;
   user: AuthUser;
   content: string;
   createdAt: Date;
   updatedAt: Date;
-  parentReplyId?: number;
+  parentReplyId?: string;
   likesCount: number;
   dislikesCount: number;
   media?: ThreadMedia[];
@@ -93,14 +93,14 @@ export interface ThreadReply {
 
 // Notification types
 export interface Notification {
-  id: number;
+  id: string;
   userId: string;
   type: "REPLY" | "MENTION" | "LIKE" | "SYSTEM" | "FOLLOW";
   relatedUserId?: string;
   relatedUser?: AuthUser;
-  threadId?: number;
+  threadId?: string;
   threadTitle?: string;
-  replyId?: number;
+  replyId?: string;
   replyPreview?: string;
   message?: string;
   isRead: boolean;

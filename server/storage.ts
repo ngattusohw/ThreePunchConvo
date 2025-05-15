@@ -23,7 +23,8 @@ import {
   polls,
   pollOptions,
   threadMedia,
-  notifications
+  notifications,
+  threadReactions
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -937,9 +938,71 @@ export class DatabaseStorage implements IStorage {
   }
   
   async likeThread(threadId: string, userId: string): Promise<boolean> {
-    // Temporary stub
-    console.log('likeThread not fully implemented', threadId, userId);
-    return false;
+    try {
+      // Start a transaction
+      return await db.transaction(async (tx) => {
+        // Check if user has already liked this thread
+        const existingReaction = await tx.query.threadReactions.findFirst({
+          where: and(
+            eq(threadReactions.threadId, threadId),
+            eq(threadReactions.userId, userId),
+            eq(threadReactions.type, 'LIKE')
+          )
+        });
+
+        if (existingReaction) {
+          return false; // User has already liked this thread
+        }
+
+        // Get the thread to check if it exists and get the owner's ID
+        const thread = await tx.query.threads.findFirst({
+          where: eq(threads.id, threadId),
+          columns: {
+            userId: true
+          }
+        });
+
+        if (!thread) {
+          return false; // Thread doesn't exist
+        }
+
+        // Create the reaction
+        await tx.insert(threadReactions).values({
+          id: uuidv4(),
+          threadId,
+          userId,
+          type: 'LIKE',
+          createdAt: new Date()
+        });
+
+        // Update thread likes count
+        await tx.update(threads)
+          .set({
+            likesCount: sql`${threads.likesCount} + 1`
+          })
+          .where(eq(threads.id, threadId));
+
+        // Create notification for thread owner
+        // Don't notify if the user is liking their own thread
+        if (thread.userId !== userId) {
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: thread.userId,
+            type: 'LIKE',
+            relatedUserId: userId,
+            threadId,
+            message: 'liked your thread',
+            isRead: false,
+            createdAt: new Date()
+          });
+        }
+
+        return true;
+      });
+    } catch (error) {
+      console.error('Error liking thread:', error);
+      return false;
+    }
   }
   
   async dislikeThread(threadId: string, userId: string): Promise<boolean> {

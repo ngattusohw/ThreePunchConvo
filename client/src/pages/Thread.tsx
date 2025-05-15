@@ -16,7 +16,7 @@ export default function Thread() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [replyContent, setReplyContent] = useState("");
-  const [replyingTo, setReplyingTo] = useState<{ id: number, username: string } | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{ id: string, username: string } | null>(null);
   
   // Fetch thread data
   const { data: thread, isLoading: isThreadLoading, error: threadError } = useQuery<ForumThread>({
@@ -197,8 +197,7 @@ export default function Thread() {
   
   // Handle quoting a reply
   const handleQuoteReply = (reply: ThreadReply) => {
-    setReplyingTo({ id: reply.id, username: reply.user.username });
-    setReplyContent(`> ${reply.user.username} said: ${reply.content.substring(0, 100)}${reply.content.length > 100 ? '...' : ''}\n\n`);
+    setReplyingTo({ id: reply.id.toString(), username: reply.user.username });
     
     // Scroll to reply form
     document.getElementById('reply-form')?.scrollIntoView({ behavior: 'smooth' });

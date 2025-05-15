@@ -52,6 +52,7 @@ export interface ForumThread {
   isPotd: boolean;
   media?: ThreadMedia[];
   poll?: Poll;
+  hasLiked?: boolean;
 }
 
 export interface ThreadMedia {

@@ -47,7 +47,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   
   // Thread management
-  getThread(id: string): Promise<Thread | undefined>;
+  getThread(id: string, currentUserId?: string): Promise<ThreadWithAssociatedData | undefined>;
   getThreadsByCategory(categoryId: string, sort: string, limit: number, offset: number): Promise<Thread[]>;
   createThread(thread: InsertThread): Promise<Thread>;
   updateThread(id: string, threadData: Partial<Thread>): Promise<Thread | undefined>;
@@ -110,6 +110,7 @@ type ThreadWithAssociatedData = Thread & {
   poll?: Poll & {
     options: PollOption[];
   };
+  hasLiked: boolean;
 };
 
 // Database implementation of the storage interface
@@ -479,7 +480,7 @@ export class DatabaseStorage implements IStorage {
   // Placeholder implementations for other methods
   // These will be implemented as needed
   
-  async getThread(id: string): Promise<ThreadWithAssociatedData | undefined> {
+  async getThread(id: string, currentUserId?: string): Promise<ThreadWithAssociatedData | undefined> {
     try {
       // Build query with explicit column selection
       const [thread] = await db
@@ -524,6 +525,19 @@ export class DatabaseStorage implements IStorage {
         options: await this.getPollOptions(poll.id)
       } : undefined;
 
+      // Check if the current user has liked this thread
+      let hasLiked = false;
+      if (currentUserId) {
+        const existingReaction = await db.query.threadReactions.findFirst({
+          where: and(
+            eq(threadReactions.threadId, id),
+            eq(threadReactions.userId, currentUserId),
+            eq(threadReactions.type, 'LIKE')
+          )
+        });
+        hasLiked = !!existingReaction;
+      }
+
       // Return thread with associated data
       return {
         ...thread,
@@ -552,7 +566,8 @@ export class DatabaseStorage implements IStorage {
           socialLinks: user.socialLinks
         },
         media: media || [],
-        poll: pollWithOptions
+        poll: pollWithOptions,
+        hasLiked
       };
     } catch (error) {
       console.error('Error getting thread:', error);
@@ -950,10 +965,6 @@ export class DatabaseStorage implements IStorage {
           )
         });
 
-        if (existingReaction) {
-          return false; // User has already liked this thread
-        }
-
         // Get the thread to check if it exists and get the owner's ID
         const thread = await tx.query.threads.findFirst({
           where: eq(threads.id, threadId),
@@ -966,7 +977,26 @@ export class DatabaseStorage implements IStorage {
           return false; // Thread doesn't exist
         }
 
-        // Create the reaction
+        if (existingReaction) {
+          // User has already liked this thread - remove the like
+          await tx.delete(threadReactions)
+            .where(and(
+              eq(threadReactions.threadId, threadId),
+              eq(threadReactions.userId, userId),
+              eq(threadReactions.type, 'LIKE')
+            ));
+
+          // Decrease thread likes count
+          await tx.update(threads)
+            .set({
+              likesCount: sql`${threads.likesCount} - 1`
+            })
+            .where(eq(threads.id, threadId));
+
+          return true;
+        }
+
+        // Create new like reaction
         await tx.insert(threadReactions).values({
           id: uuidv4(),
           threadId,

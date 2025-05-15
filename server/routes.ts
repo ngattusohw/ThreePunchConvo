@@ -537,68 +537,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/threads/id/:id', async (req: Request, res: Response) => {
     try {
       const threadId = req.params.id;
+      const userId = req.query.userId as string | undefined;
       
       if (!threadId) {
         return res.status(400).json({ message: 'Invalid thread ID' });
       }
       
-      const thread = await storage.getThread(threadId);
+      const thread = await storage.getThread(threadId, userId);
       
       if (!thread) {
         return res.status(404).json({ message: 'Thread not found' });
       }
       
-      // Increment view count
-      await storage.incrementThreadView(threadId);
-      
-      // Get thread author
-      const user = await storage.getUser(thread.userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: 'Thread author not found' });
-      }
-      
-      // Don't return user password
-      const { password, ...userWithoutPassword } = user;
-      
-      // Get thread media
-      const media = await storage.getMediaByThread(threadId);
-      
-      // Get thread poll
-      const poll = await storage.getPollByThread(threadId);
-      
-      let pollWithOptions;
-      if (poll) {
-        // Get poll options using the storage interface
-        // This is a temporary solution for the interface not exposing pollOptions directly
-        let pollOptions: PollOption[] = [];
-        try {
-          // If using MemStorage 
-          if ('pollOptions' in (storage as any)) {
-            const values = Array.from((storage as any)['pollOptions'].values());
-            pollOptions = values
-              .filter((option: any) => option.pollId === poll.id) as PollOption[];
-          } else {
-            // Fallback - in a real implementation, we would add a proper method to the interface
-            pollOptions = [];
-          }
-        } catch (err) {
-          console.error('Error getting poll options:', err);
-          pollOptions = [];
-        }
-        
-        pollWithOptions = {
-          ...poll,
-          options: pollOptions
-        };
-      }
-      
-      res.json({
-        ...thread,
-        user: userWithoutPassword,
-        media: media || [],
-        poll: pollWithOptions
-      });
+      res.json(thread);
     } catch (error) {
       res.status(500).json({ message: 'Failed to fetch thread' });
     }

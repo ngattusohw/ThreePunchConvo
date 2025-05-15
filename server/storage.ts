@@ -589,9 +589,67 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getRepliesByThread(threadId: string): Promise<Reply[]> {
-    // Temporary stub
-    console.log('getRepliesByThread not fully implemented', threadId);
-    return [];
+    try {
+      // Build query with explicit column selection
+      const threadReplies = await db
+        .select({
+          id: replies.id,
+          threadId: replies.threadId,
+          userId: replies.userId,
+          content: replies.content,
+          parentReplyId: replies.parentReplyId,
+          createdAt: replies.createdAt,
+          updatedAt: replies.updatedAt,
+          likesCount: replies.likesCount,
+          dislikesCount: replies.dislikesCount
+        })
+        .from(replies)
+        .where(eq(replies.threadId, threadId))
+        .orderBy(replies.createdAt);
+
+      return threadReplies;
+    } catch (error) {
+      // Log the specific error for debugging
+      console.error('Error fetching replies for thread:', {
+        threadId,
+        errorCode: (error as any)?.code,
+        errorMessage: (error as Error)?.message
+      });
+
+      // If it's a connection error (57P01), let's try to reconnect
+      if ((error as any)?.code === '57P01') {
+        console.log('Attempting to reconnect to database...');
+        try {
+          // Import and reconnect using your db configuration
+          const { db: freshDb } = await import('./db');
+          
+          // Retry the query with the fresh connection
+          const threadReplies = await freshDb
+            .select({
+              id: replies.id,
+              threadId: replies.threadId,
+              userId: replies.userId,
+              content: replies.content,
+              parentReplyId: replies.parentReplyId,
+              createdAt: replies.createdAt,
+              updatedAt: replies.updatedAt,
+              likesCount: replies.likesCount,
+              dislikesCount: replies.dislikesCount
+            })
+            .from(replies)
+            .where(eq(replies.threadId, threadId))
+            .orderBy(replies.createdAt);
+
+          return threadReplies;
+        } catch (retryError) {
+          console.error('Failed to reconnect and retry query:', retryError);
+          return [];
+        }
+      }
+
+      // For other errors, return empty array
+      return [];
+    }
   }
   
   async createReply(reply: InsertReply): Promise<Reply> {

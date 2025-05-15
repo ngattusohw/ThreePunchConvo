@@ -161,12 +161,20 @@ export default function ForumContent({ category = "general" }: ForumContentProps
         limit: '10',
         offset: '0'
       });
-      const response = await fetch(`/api/threads/${category}?${params}`);
+      const response = await fetch(`/api/threads/${category}?${params}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch threads');
       }
       return response.json();
-    }
+    },
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true
   });
   
   // Generate mock threads if none are returned from the API

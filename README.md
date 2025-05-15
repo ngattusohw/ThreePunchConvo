@@ -46,14 +46,31 @@ DATABASE_URL=postgres://localhost:5432/threepunchconvo
 npm install
 ```
 
-4. Run database migrations:
+4. Run database setup:
 ```bash
+# First create tables without foreign key constraints
 npm run db:push
+
+# Then add foreign key constraints
+# If using local database:
+psql -d threepunchconvo -f migrations/004_add_foreign_keys.sql
+# If using Neon:
+psql "your_neon_connection_string" -f migrations/004_add_foreign_keys.sql
 ```
 
 5. Initialize forum categories:
 ```bash
+# If using local database:
 psql -d threepunchconvo -c "INSERT INTO categories (id, name, description, count) VALUES 
+('ufc', 'UFC', 'Ultimate Fighting Championship discussions', 0),
+('general', 'General', 'General MMA discussions', 0),
+('boxing', 'Boxing', 'Boxing discussions', 0),
+('bellator', 'Bellator', 'Bellator MMA discussions', 0),
+('pfl', 'PFL', 'Professional Fighters League discussions', 0),
+('one', 'ONE', 'ONE Championship discussions', 0);"
+
+# If using Neon:
+psql "your_neon_connection_string" -c "INSERT INTO categories (id, name, description, count) VALUES 
 ('ufc', 'UFC', 'Ultimate Fighting Championship discussions', 0),
 ('general', 'General', 'General MMA discussions', 0),
 ('boxing', 'Boxing', 'Boxing discussions', 0),
@@ -66,7 +83,7 @@ psql -d threepunchconvo -c "INSERT INTO categories (id, name, description, count
 
 1. Sign up at [neon.tech](https://neon.tech)
 2. Create a new project
-3. Copy your connection string from the dashboard
+3. Copy your connection string from the dashboard (it should look like: `postgresql://user:password@hostname/dbname?sslmode=require`)
 4. Add it to your `.env` file:
 ```bash
 DATABASE_URL=your_neon_connection_string
@@ -77,12 +94,16 @@ DATABASE_URL=your_neon_connection_string
 npm install
 ```
 
-6. Run database migrations:
+6. Run database setup:
 ```bash
+# First create tables without foreign key constraints
 npm run db:push
+
+# Then add foreign key constraints
+psql "your_neon_connection_string" -f migrations/004_add_foreign_keys.sql
 ```
 
-7. Initialize forum categories (replace `your_neon_connection_string` with your actual connection string):
+7. Initialize forum categories:
 ```bash
 psql "your_neon_connection_string" -c "INSERT INTO categories (id, name, description, count) VALUES 
 ('ufc', 'UFC', 'Ultimate Fighting Championship discussions', 0),
@@ -91,6 +112,11 @@ psql "your_neon_connection_string" -c "INSERT INTO categories (id, name, descrip
 ('bellator', 'Bellator', 'Bellator MMA discussions', 0),
 ('pfl', 'PFL', 'Professional Fighters League discussions', 0),
 ('one', 'ONE', 'ONE Championship discussions', 0);"
+```
+
+Note: Replace `your_neon_connection_string` with your actual Neon database connection string. It should look something like:
+```
+postgresql://user:password@hostname/dbname?sslmode=require
 ```
 
 ### Starting the Application

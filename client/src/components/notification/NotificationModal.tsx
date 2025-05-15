@@ -173,11 +173,11 @@ function generateMockNotifications(): Notification[] {
   return [
     {
       id: 1,
-      userId: 1,
+      userId: "1",
       type: "REPLY",
-      relatedUserId: 4,
+      relatedUserId: "4",
       relatedUser: {
-        id: 4,
+        id: "4",
         username: "MMAHistorian",
         avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
         status: "RANKED POSTER",
@@ -199,11 +199,11 @@ function generateMockNotifications(): Notification[] {
     },
     {
       id: 2,
-      userId: 1,
+      userId: "1",
       type: "MENTION",
-      relatedUserId: 3,
+      relatedUserId: "3",
       relatedUser: {
-        id: 3,
+        id: "3",
         username: "DustinPoirier",
         avatar: "https://images.unsplash.com/photo-1614632537197-38a17061c2bd?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
         status: "HALL OF FAMER",
@@ -224,7 +224,7 @@ function generateMockNotifications(): Notification[] {
     },
     {
       id: 3,
-      userId: 1,
+      userId: "1",
       type: "SYSTEM",
       message: "Your status has been updated to CONTENDER",
       isRead: false,

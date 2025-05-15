@@ -756,9 +756,9 @@ function generateMockThread(threadId: number): ForumThread {
       id: 2,
       title: "Jones vs Aspinall: Who would win and why?",
       content: "With Aspinall taking the interim title, a unification bout with Jones seems inevitable. Let's break down who would win this dream matchup and why. Personally, I think Aspinall's speed gives Jones problems but Jon's experience edge is significant.",
-      userId: 2,
+      userId: "2",
       user: {
-        id: 2,
+        id: "2",
         username: "KnockoutKing",
         avatar: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
         status: "CHAMPION",
@@ -800,9 +800,9 @@ function generateMockThread(threadId: number): ForumThread {
       id: threadId,
       title: "Welcome to 3 Punch Convo - Rules & Guidelines",
       content: "Welcome to our community! Please read our rules before posting. We aim to keep discussions respectful and on-topic. Any violation may result in post removal or account suspension.\n\n1. Be respectful to fellow community members\n2. No hate speech or personal attacks\n3. Keep discussions relevant to MMA and combat sports\n4. No spam or excessive self-promotion\n5. No illegal streams or pirated content\n\nThank you for joining our community. Let's make this the best place for MMA fans to discuss the sport we all love!",
-      userId: 1,
+      userId: "1",
       user: {
-        id: 1,
+        id: "1",
         username: "OctagonInsider",
         avatar: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
         status: "HALL OF FAMER",
@@ -838,9 +838,9 @@ function generateMockReplies(threadId: number): ThreadReply[] {
       {
         id: 1,
         threadId: 2,
-        userId: 4,
+        userId: "4",
         user: {
-          id: 4,
+          id: "4",
           username: "MMAHistorian",
           avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
           status: "RANKED POSTER",
@@ -862,9 +862,9 @@ function generateMockReplies(threadId: number): ThreadReply[] {
       {
         id: 2,
         threadId: 2,
-        userId: 5,
+        userId: "5",
         user: {
-          id: 5,
+          id: "5",
           username: "StrikingQueen",
           avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
           status: "CONTENDER",
@@ -886,9 +886,9 @@ function generateMockReplies(threadId: number): ThreadReply[] {
       {
         id: 3,
         threadId: 2,
-        userId: 3,
+        userId: "3",
         user: {
-          id: 3,
+          id: "3",
           username: "DustinPoirier",
           avatar: "https://images.unsplash.com/photo-1614632537197-38a17061c2bd?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
           status: "HALL OF FAMER",
@@ -910,10 +910,10 @@ function generateMockReplies(threadId: number): ThreadReply[] {
       {
         id: 4,
         threadId: 2,
-        userId: 2,
+        userId: "2",
         parentReplyId: 3,
         user: {
-          id: 2,
+          id: "2",
           username: "KnockoutKing",
           avatar: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
           status: "CHAMPION",
@@ -935,10 +935,10 @@ function generateMockReplies(threadId: number): ThreadReply[] {
       {
         id: 5,
         threadId: 2,
-        userId: 3,
+        userId: "3",
         parentReplyId: 4,
         user: {
-          id: 3,
+          id: "3",
           username: "DustinPoirier",
           avatar: "https://images.unsplash.com/photo-1614632537197-38a17061c2bd?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
           status: "HALL OF FAMER",
@@ -960,9 +960,9 @@ function generateMockReplies(threadId: number): ThreadReply[] {
       {
         id: 6,
         threadId: 2,
-        userId: 6,
+        userId: "6",
         user: {
-          id: 6,
+          id: "6",
           username: "FighterFan84",
           avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
           status: "CONTENDER",
@@ -988,9 +988,9 @@ function generateMockReplies(threadId: number): ThreadReply[] {
       {
         id: 1,
         threadId: 1,
-        userId: 2,
+        userId: "2",
         user: {
-          id: 2,
+          id: "2",
           username: "KnockoutKing",
           avatar: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
           status: "CHAMPION",
@@ -1012,9 +1012,9 @@ function generateMockReplies(threadId: number): ThreadReply[] {
       {
         id: 2,
         threadId: 1,
-        userId: 4,
+        userId: "4",
         user: {
-          id: 4,
+          id: "4",
           username: "GrappleGuru",
           avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
           status: "RANKED POSTER",
@@ -1036,10 +1036,10 @@ function generateMockReplies(threadId: number): ThreadReply[] {
       {
         id: 3,
         threadId: 1,
-        userId: 1,
+        userId: "1",
         parentReplyId: 2,
         user: {
-          id: 1,
+          id: "1",
           username: "OctagonInsider",
           avatar: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
           status: "HALL OF FAMER",
@@ -1061,9 +1061,9 @@ function generateMockReplies(threadId: number): ThreadReply[] {
       {
         id: 4,
         threadId: 1,
-        userId: 5,
+        userId: "5",
         user: {
-          id: 5,
+          id: "5",
           username: "StrikingQueen",
           avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
           status: "CONTENDER",
@@ -1085,10 +1085,10 @@ function generateMockReplies(threadId: number): ThreadReply[] {
       {
         id: 5,
         threadId: 1,
-        userId: 1,
+        userId: "1",
         parentReplyId: 4,
         user: {
-          id: 1,
+          id: "1",
           username: "OctagonInsider",
           avatar: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
           status: "HALL OF FAMER",

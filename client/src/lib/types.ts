@@ -3,7 +3,7 @@ export type UserRole = "ADMIN" | "MODERATOR" | "PRO" | "USER";
 export type UserStatus = "HALL OF FAMER" | "CHAMPION" | "CONTENDER" | "RANKED POSTER" | "COMPETITOR" | "REGIONAL POSTER" | "AMATEUR";
 
 export interface AuthUser {
-  id: number;
+  id: string;
   username: string;
   avatar?: string;
   status: UserStatus;
@@ -37,7 +37,7 @@ export interface ForumThread {
   id: number;
   title: string;
   content: string;
-  userId: number;
+  userId: string;
   user: AuthUser;
   categoryId: string;
   isPinned: boolean;
@@ -80,7 +80,7 @@ export interface PollOption {
 export interface ThreadReply {
   id: number;
   threadId: number;
-  userId: number;
+  userId: string;
   user: AuthUser;
   content: string;
   createdAt: Date;
@@ -94,9 +94,9 @@ export interface ThreadReply {
 // Notification types
 export interface Notification {
   id: number;
-  userId: number;
+  userId: string;
   type: "REPLY" | "MENTION" | "LIKE" | "SYSTEM" | "FOLLOW";
-  relatedUserId?: number;
+  relatedUserId?: string;
   relatedUser?: AuthUser;
   threadId?: number;
   threadTitle?: string;

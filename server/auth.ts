@@ -11,7 +11,7 @@ declare global {
   namespace Express {
     // Extending the User interface to include our User type
     interface User {
-      id: number;
+      id: string;
       username: string;
       password?: string | null;
       email?: string | null;
@@ -79,7 +79,7 @@ export function setupAuth(app: Express) {
     done(null, user.id);
   });
   
-  passport.deserializeUser(async (id: number | string, done) => {
+  passport.deserializeUser(async (id: string, done) => {
     try {
       console.log('Deserializing user with ID:', id, 'Type:', typeof id);
       const user = await storage.getUser(id);

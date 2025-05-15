@@ -42,7 +42,7 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
         title,
         content,
         categoryId,
-        userId: user.id, // Add the user ID to the request
+        userId: user.id.toString(), // Convert user ID to string
         poll: includePoll ? poll : undefined
       });
       return response.json();

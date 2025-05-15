@@ -352,7 +352,7 @@ export default function UserProfile() {
 // Helper function to generate a mock user for demonstration
 function generateMockUser(username: string): AuthUser {
   return {
-    id: 13,
+    id: "13",
     username: username || "FighterFan84",
     avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
     status: "CONTENDER",

@@ -44,7 +44,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('Adding development authentication routes');
     
     // Development-only register with proper password hashing
-    app.post('/api/dev/register', async (req: Request, res: Response) => {
+    app.post('/api/dev/register', async (req: Request, res: Response, next: NextFunction) => {
       try {
         const userData = insertUserSchema.parse(req.body);
         
@@ -76,37 +76,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName: userData.firstName || null,
           lastName: userData.lastName || null,
           bio: userData.bio || null,
-          profileImageUrl: userData.profileImageUrl || null,
-          isOnline: true,
-          lastActive: new Date()
+          profileImageUrl: userData.profileImageUrl || null
         });
         
-        // Log in the user automatically after registration
+        // Remove password before sending to client
+        const { password, ...userWithoutPassword } = user;
+        
+        // Log user in
         req.login(user, (err) => {
-          if (err) {
-            console.error("Login error after registration:", err);
-            // Continue without login - at least the user was created
-            const { password, ...userWithoutPassword } = user;
-            return res.status(201).json({
-              ...userWithoutPassword,
-              warning: "User created but auto-login failed"
-            });
-          }
-          
-          // Don't return password in response
-          const { password, ...userWithoutPassword } = user;
+          if (err) return next(err);
           return res.status(201).json(userWithoutPassword);
         });
       } catch (error) {
-        if (error instanceof ZodError) {
-          return res.status(400).json({
-            message: 'Validation error',
-            errors: error.errors
-          });
-        }
-        
-        console.error('Error creating user:', error);
-        res.status(500).json({ message: 'Failed to register user' });
+        console.error("Registration error:", error);
+        return res.status(500).json({ message: "Failed to register" });
       }
     });
     
@@ -245,17 +228,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Invalid username or password' });
       }
 
-      // In development, use secure password comparison with hash
-      if (process.env.NODE_ENV === 'development' && user.password) {
-        const { comparePasswords } = await import('./auth');
-        const isValid = await comparePasswords(password, user.password);
-        
-        if (!isValid) {
-          return res.status(401).json({ message: 'Invalid username or password' });
-        }
-      } 
-      // In non-development or for testing (insecure, only for demo)
-      else if (user.password !== password) {
+      // Always use secure password comparison
+      const { comparePasswords } = await import('./auth');
+      const isValid = await comparePasswords(password, user.password || '');
+      
+      if (!isValid) {
         return res.status(401).json({ message: 'Invalid username or password' });
       }
       
@@ -396,9 +373,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/users/:id/followers', async (req: Request, res: Response) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       
-      if (isNaN(userId)) {
+      if (!userId) {
         return res.status(400).json({ message: 'Invalid user ID' });
       }
       
@@ -418,9 +395,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/users/:id/following', async (req: Request, res: Response) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       
-      if (isNaN(userId)) {
+      if (!userId) {
         return res.status(400).json({ message: 'Invalid user ID' });
       }
       
@@ -440,10 +417,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/users/:id/follow', async (req: Request, res: Response) => {
     try {
-      const followingId = parseInt(req.params.id);
+      const followingId = req.params.id;
       const { followerId } = req.body;
       
-      if (isNaN(followingId) || !followerId) {
+      if (!followingId || !followerId) {
         return res.status(400).json({ message: 'Both follower ID and following ID are required' });
       }
       
@@ -461,10 +438,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/users/:id/unfollow', async (req: Request, res: Response) => {
     try {
-      const followingId = parseInt(req.params.id);
+      const followingId = req.params.id;
       const { followerId } = req.body;
       
-      if (isNaN(followingId) || !followerId) {
+      if (!followingId || !followerId) {
         return res.status(400).json({ message: 'Both follower ID and following ID are required' });
       }
       
@@ -493,9 +470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch user for each thread
       const threadsWithUser = await Promise.all(
         threads.map(async (thread) => {
-          // Ensure userId is treated as a number
-          const userId = typeof thread.userId === 'string' ? parseInt(thread.userId, 10) : thread.userId;
-          const user = await storage.getUser(userId);
+          const user = await storage.getUser(thread.userId);
           
           if (!user) {
             return { ...thread, user: null };
@@ -539,8 +514,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return {
             ...thread,
             user: userWithoutPassword,
-            media: media.length > 0 ? media : undefined,
-            poll: poll ? pollWithOptions : undefined
+            media: media || [],
+            poll: pollWithOptions
           };
         })
       );
@@ -569,9 +544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.incrementThreadView(threadId);
       
       // Get thread author
-      // Ensure userId is treated as a number
-      const userId = typeof thread.userId === 'string' ? parseInt(thread.userId, 10) : thread.userId;
-      const user = await storage.getUser(userId);
+      const user = await storage.getUser(thread.userId);
       
       if (!user) {
         return res.status(404).json({ message: 'Thread author not found' });
@@ -612,14 +585,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }
       
-      const threadWithDetails = {
+      res.json({
         ...thread,
         user: userWithoutPassword,
-        media: media.length > 0 ? media : undefined,
-        poll: poll ? pollWithOptions : undefined
-      };
-      
-      res.json(threadWithDetails);
+        media: media || [],
+        poll: pollWithOptions
+      });
     } catch (error) {
       res.status(500).json({ message: 'Failed to fetch thread' });
     }
@@ -808,8 +779,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch user for each reply
       const repliesWithUser = await Promise.all(
         replies.map(async (reply) => {
-          // Ensure userId is treated as a number
-          const userId = typeof reply.userId === 'string' ? parseInt(reply.userId, 10) : reply.userId;
+          // Ensure userId is treated as a string
+          const userId = typeof reply.userId === 'string' ? reply.userId : (reply.userId as number).toString();
           const user = await storage.getUser(userId);
           
           if (!user) {
@@ -957,9 +928,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notification endpoints
   app.get('/api/notifications', async (req: Request, res: Response) => {
     try {
-      const userId = parseInt(req.query.userId as string);
+      const userId = req.query.userId as string;
       
-      if (isNaN(userId)) {
+      if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
       }
       
@@ -972,11 +943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return notification;
           }
           
-          // Ensure relatedUserId is treated as a number
-          const relatedUserId = typeof notification.relatedUserId === 'string' 
-            ? parseInt(notification.relatedUserId, 10) 
-            : notification.relatedUserId;
-          const relatedUser = await storage.getUser(relatedUserId);
+          const relatedUser = await storage.getUser(notification.relatedUserId);
           
           if (!relatedUser) {
             return notification;

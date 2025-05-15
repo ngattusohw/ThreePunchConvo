@@ -17,7 +17,13 @@ import {
   MMAEvent,
   Fighter,
   Fight,
-  users
+  users,
+  threads,
+  replies,
+  polls,
+  pollOptions,
+  threadMedia,
+  notifications
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -30,62 +36,62 @@ export interface IStorage {
   sessionStore: any;
   
   // User management
-  getUser(id: number): Promise<User | undefined>;
+  getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   upsertUser(userData: UpsertUser): Promise<User>;
-  updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
-  deleteUser(id: number): Promise<boolean>;
+  updateUser(id: string, userData: Partial<User>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
   getTopUsers(limit: number): Promise<User[]>;
   getAllUsers(): Promise<User[]>;
   
   // Thread management
-  getThread(id: number): Promise<Thread | undefined>;
+  getThread(id: string): Promise<Thread | undefined>;
   getThreadsByCategory(categoryId: string, sort: string, limit: number, offset: number): Promise<Thread[]>;
   createThread(thread: InsertThread): Promise<Thread>;
-  updateThread(id: number, threadData: Partial<Thread>): Promise<Thread | undefined>;
-  deleteThread(id: number): Promise<boolean>;
-  incrementThreadView(id: number): Promise<boolean>;
+  updateThread(id: string, threadData: Partial<Thread>): Promise<Thread | undefined>;
+  deleteThread(id: string): Promise<boolean>;
+  incrementThreadView(id: string): Promise<boolean>;
   
   // Reply management
-  getReply(id: number): Promise<Reply | undefined>;
-  getRepliesByThread(threadId: number): Promise<Reply[]>;
+  getReply(id: string): Promise<Reply | undefined>;
+  getRepliesByThread(threadId: string): Promise<Reply[]>;
   createReply(reply: InsertReply): Promise<Reply>;
-  updateReply(id: number, replyData: Partial<Reply>): Promise<Reply | undefined>;
-  deleteReply(id: number): Promise<boolean>;
+  updateReply(id: string, replyData: Partial<Reply>): Promise<Reply | undefined>;
+  deleteReply(id: string): Promise<boolean>;
   
   // Poll management
-  getPoll(id: number): Promise<Poll | undefined>;
-  getPollByThread(threadId: number): Promise<Poll | undefined>;
+  getPoll(id: string): Promise<Poll | undefined>;
+  getPollByThread(threadId: string): Promise<Poll | undefined>;
   createPoll(poll: InsertPoll, options: string[]): Promise<Poll>;
-  votePoll(pollId: number, optionId: number, userId: number): Promise<boolean>;
+  votePoll(pollId: string, optionId: string, userId: string): Promise<boolean>;
   
   // Media management
-  getMedia(id: number): Promise<Media | undefined>;
-  getMediaByThread(threadId: number): Promise<Media[]>;
-  getMediaByReply(replyId: number): Promise<Media[]>;
+  getMedia(id: string): Promise<Media | undefined>;
+  getMediaByThread(threadId: string): Promise<Media[]>;
+  getMediaByReply(replyId: string): Promise<Media[]>;
   createThreadMedia(media: InsertMedia): Promise<Media>;
   
   // Reaction management
-  likeThread(threadId: number, userId: number): Promise<boolean>;
-  dislikeThread(threadId: number, userId: number): Promise<boolean>;
-  potdThread(threadId: number, userId: number): Promise<boolean>;
-  likeReply(replyId: number, userId: number): Promise<boolean>;
-  dislikeReply(replyId: number, userId: number): Promise<boolean>;
-  removeThreadReaction(threadId: number, userId: number, type: string): Promise<boolean>;
-  removeReplyReaction(replyId: number, userId: number, type: string): Promise<boolean>;
+  likeThread(threadId: string, userId: string): Promise<boolean>;
+  dislikeThread(threadId: string, userId: string): Promise<boolean>;
+  potdThread(threadId: string, userId: string): Promise<boolean>;
+  likeReply(replyId: string, userId: string): Promise<boolean>;
+  dislikeReply(replyId: string, userId: string): Promise<boolean>;
+  removeThreadReaction(threadId: string, userId: string, type: string): Promise<boolean>;
+  removeReplyReaction(replyId: string, userId: string, type: string): Promise<boolean>;
   
   // Follow management
-  followUser(followerId: number, followingId: number): Promise<boolean>;
-  unfollowUser(followerId: number, followingId: number): Promise<boolean>;
-  getFollowers(userId: number): Promise<User[]>;
-  getFollowing(userId: number): Promise<User[]>;
+  followUser(followerId: string, followingId: string): Promise<boolean>;
+  unfollowUser(followerId: string, followingId: string): Promise<boolean>;
+  getFollowers(userId: string): Promise<User[]>;
+  getFollowing(userId: string): Promise<User[]>;
   
   // Notification management
-  getNotifications(userId: number): Promise<Notification[]>;
+  getNotifications(userId: string): Promise<Notification[]>;
   createNotification(notification: InsertNotification): Promise<Notification>;
-  markNotificationAsRead(id: number): Promise<boolean>;
-  markAllNotificationsAsRead(userId: number): Promise<boolean>;
+  markNotificationAsRead(id: string): Promise<boolean>;
+  markAllNotificationsAsRead(userId: string): Promise<boolean>;
   
   // MMA Schedule management
   getMMAEvents(limit: number, offset: number): Promise<MMAEvent[]>;
@@ -110,7 +116,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   // User methods
-  async getUser(id: number | string): Promise<User | undefined> {
+  async getUser(id: string): Promise<User | undefined> {
     try {
       if (id === undefined || id === null) {
         console.error('Undefined or null user ID provided');
@@ -196,15 +202,16 @@ export class DatabaseStorage implements IStorage {
   
   async createUser(userData: InsertUser): Promise<User> {
     try {
-      // Generating a numeric ID for DB compatibility
+      // Generate a numeric ID using timestamp and random number
       const generateId = () => {
-        // Use a timestamp-based numeric ID
-        return Math.floor(Date.now() / 1000);
+        const timestamp = Date.now();
+        const random = Math.floor(Math.random() * 1000);
+        return Math.floor(timestamp / 1000) + random;
       };
       
       // Generate numeric ID for user if not provided
       const userValues = {
-        id: userData.id || generateId(),
+        id: String(generateId()), // Convert to string since schema expects string
         username: userData.username,
         password: userData.password,
         email: userData.email || null,
@@ -263,7 +270,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async updateUser(id: number | string, userData: Partial<User>): Promise<User | undefined> {
+  async updateUser(id: string, userData: Partial<User>): Promise<User | undefined> {
     try {
       const [updatedUser] = await db
         .update(users)
@@ -280,7 +287,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async deleteUser(id: number | string): Promise<boolean> {
+  async deleteUser(id: string): Promise<boolean> {
     try {
       await db.delete(users).where(sql`${users.id} = ${id}`);
       return true;
@@ -297,7 +304,7 @@ export class DatabaseStorage implements IStorage {
       // Adapted to match the actual database schema
       const sampleUsers: User[] = [
         {
-          id: 1,
+          id: "1",
           username: 'FightFan123',
           email: 'fightfan@example.com',
           password: null, // Never expose passwords
@@ -322,7 +329,7 @@ export class DatabaseStorage implements IStorage {
           rank: 1
         },
         {
-          id: 2,
+          id: "2",
           username: 'OctagonExpert',
           email: 'octagon@example.com',
           password: null,
@@ -462,7 +469,7 @@ export class DatabaseStorage implements IStorage {
   // Placeholder implementations for other methods
   // These will be implemented as needed
   
-  async getThread(id: number): Promise<Thread | undefined> {
+  async getThread(id: string): Promise<Thread | undefined> {
     // Temporary stub
     console.log('getThread not fully implemented', id);
     return undefined;
@@ -475,192 +482,299 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createThread(thread: InsertThread): Promise<Thread> {
-    // Temporary stub
-    console.log('createThread not fully implemented', thread);
-    throw new Error('Not implemented');
+    try {
+      const threadValues = {
+        id: uuidv4(), // Use UUID for thread ID
+        title: thread.title,
+        content: thread.content,
+        userId: thread.userId,
+        categoryId: thread.categoryId,
+        isPinned: false,
+        isLocked: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastActivityAt: new Date(),
+        viewCount: 0,
+        likesCount: 0,
+        dislikesCount: 0,
+        repliesCount: 0,
+        isPotd: false
+      };
+      
+      const [newThread] = await db.insert(threads)
+        .values(threadValues)
+        .returning();
+      
+      return newThread;
+    } catch (error) {
+      console.error('Error creating thread:', error);
+      throw new Error('Failed to create thread');
+    }
   }
   
-  async updateThread(id: number, threadData: Partial<Thread>): Promise<Thread | undefined> {
+  async updateThread(id: string, threadData: Partial<Thread>): Promise<Thread | undefined> {
     // Temporary stub
     console.log('updateThread not fully implemented', id, threadData);
     return undefined;
   }
   
-  async deleteThread(id: number): Promise<boolean> {
+  async deleteThread(id: string): Promise<boolean> {
     // Temporary stub
     console.log('deleteThread not fully implemented', id);
     return false;
   }
   
-  async incrementThreadView(id: number): Promise<boolean> {
+  async incrementThreadView(id: string): Promise<boolean> {
     // Temporary stub
     console.log('incrementThreadView not fully implemented', id);
     return false;
   }
   
-  async getReply(id: number): Promise<Reply | undefined> {
+  async getReply(id: string): Promise<Reply | undefined> {
     // Temporary stub
     console.log('getReply not fully implemented', id);
     return undefined;
   }
   
-  async getRepliesByThread(threadId: number): Promise<Reply[]> {
+  async getRepliesByThread(threadId: string): Promise<Reply[]> {
     // Temporary stub
     console.log('getRepliesByThread not fully implemented', threadId);
     return [];
   }
   
   async createReply(reply: InsertReply): Promise<Reply> {
-    // Temporary stub
-    console.log('createReply not fully implemented', reply);
-    throw new Error('Not implemented');
+    try {
+      const replyValues = {
+        id: uuidv4(), // Use UUID for reply ID
+        threadId: reply.threadId,
+        userId: reply.userId,
+        content: reply.content,
+        parentReplyId: reply.parentReplyId || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        likesCount: 0,
+        dislikesCount: 0
+      };
+      
+      const [newReply] = await db.insert(replies)
+        .values(replyValues)
+        .returning();
+      
+      return newReply;
+    } catch (error) {
+      console.error('Error creating reply:', error);
+      throw new Error('Failed to create reply');
+    }
   }
   
-  async updateReply(id: number, replyData: Partial<Reply>): Promise<Reply | undefined> {
+  async updateReply(id: string, replyData: Partial<Reply>): Promise<Reply | undefined> {
     // Temporary stub
     console.log('updateReply not fully implemented', id, replyData);
     return undefined;
   }
   
-  async deleteReply(id: number): Promise<boolean> {
+  async deleteReply(id: string): Promise<boolean> {
     // Temporary stub
     console.log('deleteReply not fully implemented', id);
     return false;
   }
   
-  async getPoll(id: number): Promise<Poll | undefined> {
+  async getPoll(id: string): Promise<Poll | undefined> {
     // Temporary stub
     console.log('getPoll not fully implemented', id);
     return undefined;
   }
   
-  async getPollByThread(threadId: number): Promise<Poll | undefined> {
+  async getPollByThread(threadId: string): Promise<Poll | undefined> {
     // Temporary stub
     console.log('getPollByThread not fully implemented', threadId);
     return undefined;
   }
   
   async createPoll(poll: InsertPoll, options: string[]): Promise<Poll> {
-    // Temporary stub
-    console.log('createPoll not fully implemented', poll, options);
-    throw new Error('Not implemented');
+    try {
+      const pollId = uuidv4(); // Use UUID for poll ID
+      
+      const pollValues = {
+        id: pollId,
+        threadId: poll.threadId,
+        question: poll.question,
+        expiresAt: poll.expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7 days
+        createdAt: new Date(),
+        votesCount: 0
+      };
+      
+      const [newPoll] = await db.insert(polls)
+        .values(pollValues)
+        .returning();
+      
+      // Create poll options
+      for (const optionText of options) {
+        await db.insert(pollOptions)
+          .values({
+            id: uuidv4(), // Use UUID for option ID
+            pollId,
+            text: optionText,
+            votesCount: 0
+          });
+      }
+      
+      return newPoll;
+    } catch (error) {
+      console.error('Error creating poll:', error);
+      throw new Error('Failed to create poll');
+    }
   }
   
-  async votePoll(pollId: number, optionId: number, userId: number): Promise<boolean> {
+  async votePoll(pollId: string, optionId: string, userId: string): Promise<boolean> {
     // Temporary stub
     console.log('votePoll not fully implemented', pollId, optionId, userId);
     return false;
   }
   
-  async getMedia(id: number): Promise<Media | undefined> {
+  async getMedia(id: string): Promise<Media | undefined> {
     // Temporary stub
     console.log('getMedia not fully implemented', id);
     return undefined;
   }
   
-  async getMediaByThread(threadId: number): Promise<Media[]> {
+  async getMediaByThread(threadId: string): Promise<Media[]> {
     // Temporary stub
     console.log('getMediaByThread not fully implemented', threadId);
     return [];
   }
   
-  async getMediaByReply(replyId: number): Promise<Media[]> {
+  async getMediaByReply(replyId: string): Promise<Media[]> {
     // Temporary stub
     console.log('getMediaByReply not fully implemented', replyId);
     return [];
   }
   
   async createThreadMedia(media: InsertMedia): Promise<Media> {
-    // Temporary stub
-    console.log('createThreadMedia not fully implemented', media);
-    throw new Error('Not implemented');
+    try {
+      const mediaValues = {
+        id: uuidv4(), // Use UUID for media ID
+        threadId: media.threadId,
+        type: media.type,
+        url: media.url,
+        createdAt: new Date()
+      };
+      
+      const [newMedia] = await db.insert(threadMedia)
+        .values(mediaValues)
+        .returning();
+      
+      return newMedia;
+    } catch (error) {
+      console.error('Error creating media:', error);
+      throw new Error('Failed to create media');
+    }
   }
   
-  async likeThread(threadId: number, userId: number): Promise<boolean> {
+  async likeThread(threadId: string, userId: string): Promise<boolean> {
     // Temporary stub
     console.log('likeThread not fully implemented', threadId, userId);
     return false;
   }
   
-  async dislikeThread(threadId: number, userId: number): Promise<boolean> {
+  async dislikeThread(threadId: string, userId: string): Promise<boolean> {
     // Temporary stub
     console.log('dislikeThread not fully implemented', threadId, userId);
     return false;
   }
   
-  async potdThread(threadId: number, userId: number): Promise<boolean> {
+  async potdThread(threadId: string, userId: string): Promise<boolean> {
     // Temporary stub
     console.log('potdThread not fully implemented', threadId, userId);
     return false;
   }
   
-  async likeReply(replyId: number, userId: number): Promise<boolean> {
+  async likeReply(replyId: string, userId: string): Promise<boolean> {
     // Temporary stub
     console.log('likeReply not fully implemented', replyId, userId);
     return false;
   }
   
-  async dislikeReply(replyId: number, userId: number): Promise<boolean> {
+  async dislikeReply(replyId: string, userId: string): Promise<boolean> {
     // Temporary stub
     console.log('dislikeReply not fully implemented', replyId, userId);
     return false;
   }
   
-  async removeThreadReaction(threadId: number, userId: number, type: string): Promise<boolean> {
+  async removeThreadReaction(threadId: string, userId: string, type: string): Promise<boolean> {
     // Temporary stub
     console.log('removeThreadReaction not fully implemented', threadId, userId, type);
     return false;
   }
   
-  async removeReplyReaction(replyId: number, userId: number, type: string): Promise<boolean> {
+  async removeReplyReaction(replyId: string, userId: string, type: string): Promise<boolean> {
     // Temporary stub
     console.log('removeReplyReaction not fully implemented', replyId, userId, type);
     return false;
   }
   
-  async followUser(followerId: number, followingId: number): Promise<boolean> {
+  async followUser(followerId: string, followingId: string): Promise<boolean> {
     // Temporary stub
     console.log('followUser not fully implemented', followerId, followingId);
     return false;
   }
   
-  async unfollowUser(followerId: number, followingId: number): Promise<boolean> {
+  async unfollowUser(followerId: string, followingId: string): Promise<boolean> {
     // Temporary stub
     console.log('unfollowUser not fully implemented', followerId, followingId);
     return false;
   }
   
-  async getFollowers(userId: number): Promise<User[]> {
+  async getFollowers(userId: string): Promise<User[]> {
     // Temporary stub
     console.log('getFollowers not fully implemented', userId);
     return [];
   }
   
-  async getFollowing(userId: number): Promise<User[]> {
+  async getFollowing(userId: string): Promise<User[]> {
     // Temporary stub
     console.log('getFollowing not fully implemented', userId);
     return [];
   }
   
-  async getNotifications(userId: number): Promise<Notification[]> {
+  async getNotifications(userId: string): Promise<Notification[]> {
     // Temporary stub
     console.log('getNotifications not fully implemented', userId);
     return [];
   }
   
   async createNotification(notification: InsertNotification): Promise<Notification> {
-    // Temporary stub
-    console.log('createNotification not fully implemented', notification);
-    throw new Error('Not implemented');
+    try {
+      const notificationValues = {
+        id: uuidv4(), // Use UUID for notification ID
+        userId: notification.userId,
+        type: notification.type,
+        relatedUserId: notification.relatedUserId || null,
+        threadId: notification.threadId || null,
+        replyId: notification.replyId || null,
+        message: notification.message || null,
+        isRead: false,
+        createdAt: new Date()
+      };
+      
+      const [newNotification] = await db.insert(notifications)
+        .values(notificationValues)
+        .returning();
+      
+      return newNotification;
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      throw new Error('Failed to create notification');
+    }
   }
   
-  async markNotificationAsRead(id: number): Promise<boolean> {
+  async markNotificationAsRead(id: string): Promise<boolean> {
     // Temporary stub
     console.log('markNotificationAsRead not fully implemented', id);
     return false;
   }
   
-  async markAllNotificationsAsRead(userId: number): Promise<boolean> {
+  async markAllNotificationsAsRead(userId: string): Promise<boolean> {
     // Temporary stub
     console.log('markAllNotificationsAsRead not fully implemented', userId);
     return false;

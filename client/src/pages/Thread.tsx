@@ -384,9 +384,9 @@ export default function Thread() {
                       
                       <p className="text-gray-400 text-xs mt-4">
                         {displayThread.poll.votesCount} votes • 
-                        {new Date() > displayThread.poll.expiresAt 
+                        {new Date() > new Date(displayThread.poll.expiresAt) 
                           ? ' Poll ended' 
-                          : ` ${Math.ceil((displayThread.poll.expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`}
+                          : ` ${Math.ceil((new Date(displayThread.poll.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`}
                       </p>
                       
                       {!currentUser && (

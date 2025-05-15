@@ -108,10 +108,10 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                 )}
                 
                 <p className="text-gray-400 text-xs mt-2">
-                  {thread.poll.votesCount} votes • 
-                  {new Date() > thread.poll.expiresAt 
+                  {thread.poll.votesCount ==1 ? "1 vote" : `${thread.poll.votesCount} votes`} • 
+                  {new Date() > new Date(thread.poll.expiresAt) 
                     ? ' Ended' 
-                    : ` ${Math.ceil((thread.poll.expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`}
+                    : ` ${Math.ceil((new Date(thread.poll.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`}
                 </p>
               </div>
             )}

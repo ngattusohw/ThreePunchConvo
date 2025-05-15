@@ -24,7 +24,8 @@ import {
   pollOptions,
   threadMedia,
   notifications,
-  threadReactions
+  threadReactions,
+  pollVotes
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -893,9 +894,70 @@ export class DatabaseStorage implements IStorage {
   }
   
   async votePoll(pollId: string, optionId: string, userId: string): Promise<boolean> {
-    // Temporary stub
-    console.log('votePoll not fully implemented', pollId, optionId, userId);
-    return false;
+    try {
+      // Start a transaction
+      return await db.transaction(async (tx) => {
+        // Check if user has already voted in this poll
+        const existingVote = await tx.query.pollVotes.findFirst({
+          where: and(
+            eq(pollVotes.pollId, pollId),
+            eq(pollVotes.userId, userId)
+          )
+        });
+
+        if (existingVote) {
+          return false; // User has already voted
+        }
+
+        // Check if poll and option exist
+        const poll = await tx.query.polls.findFirst({
+          where: eq(polls.id, pollId)
+        });
+
+        const option = await tx.query.pollOptions.findFirst({
+          where: eq(pollOptions.id, optionId)
+        });
+
+        if (!poll || !option) {
+          return false; // Poll or option doesn't exist
+        }
+
+        // Check if poll has expired
+        if (poll.expiresAt && new Date() > poll.expiresAt) {
+          return false; // Poll has expired
+        }
+
+        // Record the vote
+        await tx.insert(pollVotes).values({
+          id: uuidv4(),
+          pollId,
+          pollOptionId: optionId,
+          userId,
+          createdAt: new Date()
+        });
+
+        // Increment the vote count for the chosen option
+        await tx
+          .update(pollOptions)
+          .set({
+            votesCount: sql`${pollOptions.votesCount} + 1`
+          })
+          .where(eq(pollOptions.id, optionId));
+
+        // Increment the total votes count for the poll
+        await tx
+          .update(polls)
+          .set({
+            votesCount: sql`${polls.votesCount} + 1`
+          })
+          .where(eq(polls.id, pollId));
+
+        return true;
+      });
+    } catch (error) {
+      console.error('Error voting in poll:', error);
+      return false;
+    }
   }
   
   async getMedia(id: string): Promise<Media | undefined> {

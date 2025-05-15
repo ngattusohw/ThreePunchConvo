@@ -1042,9 +1042,80 @@ export class DatabaseStorage implements IStorage {
   }
   
   async potdThread(threadId: string, userId: string): Promise<boolean> {
-    // Temporary stub
-    console.log('potdThread not fully implemented', threadId, userId);
-    return false;
+    try {
+      // Start a transaction
+      return await db.transaction(async (tx) => {
+        // Check if user has already marked this thread as POTD
+        const existingReaction = await tx.query.threadReactions.findFirst({
+          where: and(
+            eq(threadReactions.threadId, threadId),
+            eq(threadReactions.userId, userId),
+            eq(threadReactions.type, 'POTD')
+          )
+        });
+
+        // Get the thread to check if it exists
+        const thread = await tx.query.threads.findFirst({
+          where: eq(threads.id, threadId),
+          columns: {
+            userId: true,
+            isPotd: true
+          }
+        });
+
+        if (!thread) {
+          return false; // Thread doesn't exist
+        }
+
+        // If user has already marked as POTD, remove the POTD status
+        if (existingReaction) {
+          // Delete the POTD reaction
+          await tx.delete(threadReactions)
+            .where(and(
+              eq(threadReactions.threadId, threadId),
+              eq(threadReactions.userId, userId),
+              eq(threadReactions.type, 'POTD')
+            ));
+
+          // Update thread isPotd status
+          await tx.update(threads)
+            .set({ isPotd: false })
+            .where(eq(threads.id, threadId));
+
+          // Update user's POTD count
+          await tx.update(users)
+            .set({ potdCount: sql`${users.potdCount} - 1` })
+            .where(eq(users.id, thread.userId));
+
+          return true;
+        }
+
+        // Add new POTD reaction
+        await tx.insert(threadReactions)
+          .values({
+            id: uuidv4(),
+            threadId,
+            userId,
+            type: 'POTD',
+            createdAt: new Date()
+          });
+
+        // Update thread isPotd status
+        await tx.update(threads)
+          .set({ isPotd: true })
+          .where(eq(threads.id, threadId));
+
+        // Update user's POTD count
+        await tx.update(users)
+          .set({ potdCount: sql`${users.potdCount} + 1` })
+          .where(eq(users.id, thread.userId));
+
+        return true;
+      });
+    } catch (error) {
+      console.error('Error in potdThread:', error);
+      return false;
+    }
   }
   
   async likeReply(replyId: string, userId: string): Promise<boolean> {

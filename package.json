@@ -10,7 +10,8 @@
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
-    "db:reset": "drizzle-kit drop && drizzle-kit push"
+    "db:reset": "drizzle-kit drop && drizzle-kit push",
+    "migrate": "ts-node server/migrate.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

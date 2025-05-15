@@ -154,6 +154,19 @@ export default function ForumContent({ category = "general" }: ForumContentProps
   // Fetch threads for the current category
   const { data: threads, isLoading, error } = useQuery<ForumThread[]>({
     queryKey: [`/api/threads/${category}`, filterOption, timeRange],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        sort: filterOption,
+        timeRange: timeRange,
+        limit: '10',
+        offset: '0'
+      });
+      const response = await fetch(`/api/threads/${category}?${params}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch threads');
+      }
+      return response.json();
+    }
   });
   
   // Generate mock threads if none are returned from the API

@@ -476,9 +476,61 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getThreadsByCategory(categoryId: string, sort: string, limit: number, offset: number): Promise<Thread[]> {
-    // Temporary stub
-    console.log('getThreadsByCategory not fully implemented', categoryId, sort, limit, offset);
-    return [];
+    try {
+      // Build the base query with explicit column selection
+      let baseQuery = db
+        .select({
+          id: threads.id,
+          title: threads.title,
+          content: threads.content,
+          userId: threads.userId,
+          categoryId: threads.categoryId,
+          isPinned: threads.isPinned,
+          isLocked: threads.isLocked,
+          createdAt: threads.createdAt,
+          updatedAt: threads.updatedAt,
+          lastActivityAt: threads.lastActivityAt,
+          viewCount: threads.viewCount,
+          likesCount: threads.likesCount,
+          dislikesCount: threads.dislikesCount,
+          repliesCount: threads.repliesCount,
+          isPotd: threads.isPotd
+        })
+        .from(threads)
+        .where(eq(threads.categoryId, categoryId));
+
+      // Add sorting based on the sort parameter
+      const sortedQuery = (() => {
+        switch (sort) {
+          case 'recent':
+            return baseQuery.orderBy(desc(threads.lastActivityAt));
+          case 'popular':
+            return baseQuery.orderBy(desc(threads.viewCount));
+          case 'new':
+            return baseQuery.orderBy(desc(threads.createdAt));
+          case 'likes':
+            return baseQuery.orderBy(desc(threads.likesCount));
+          case 'replies':
+            return baseQuery.orderBy(desc(threads.repliesCount));
+          default:
+            return baseQuery.orderBy(desc(threads.lastActivityAt));
+        }
+      })();
+
+      // Add pagination
+      const results = await sortedQuery.limit(limit).offset(offset);
+
+      // If no results, return empty array
+      if (!results || results.length === 0) {
+        return [];
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Error fetching threads by category:', error);
+      // Return empty array instead of throwing to prevent UI breaks
+      return [];
+    }
   }
   
   async createThread(thread: InsertThread): Promise<Thread> {

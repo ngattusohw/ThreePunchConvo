@@ -750,9 +750,23 @@ export class DatabaseStorage implements IStorage {
         dislikesCount: 0
       };
       
-      const [newReply] = await db.insert(replies)
-        .values(replyValues)
-        .returning();
+      // Start a transaction
+      const [newReply] = await db.transaction(async (tx) => {
+        // Create the reply
+        const [reply] = await tx.insert(replies)
+          .values(replyValues)
+          .returning();
+        
+        // Update the thread's repliesCount and lastActivityAt
+        await tx.update(threads)
+          .set({
+            repliesCount: sql`${threads.repliesCount} + 1`,
+            lastActivityAt: new Date()
+          })
+          .where(eq(threads.id, replyValues.threadId));
+        
+        return [reply];
+      });
       
       return newReply;
     } catch (error) {
@@ -768,9 +782,36 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteReply(id: string): Promise<boolean> {
-    // Temporary stub
-    console.log('deleteReply not fully implemented', id);
-    return false;
+    try {
+      // Get the reply to find its threadId
+      const [reply] = await db
+        .select()
+        .from(replies)
+        .where(eq(replies.id, id));
+
+      if (!reply) {
+        return false;
+      }
+
+      // Start a transaction
+      await db.transaction(async (tx) => {
+        // Delete the reply
+        await tx.delete(replies)
+          .where(eq(replies.id, id));
+        
+        // Update the thread's repliesCount
+        await tx.update(threads)
+          .set({
+            repliesCount: sql`${threads.repliesCount} - 1`
+          })
+          .where(eq(threads.id, reply.threadId));
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting reply:', error);
+      return false;
+    }
   }
   
   async getPoll(id: string): Promise<Poll | undefined> {

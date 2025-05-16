@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { GiBoxingGlove } from 'react-icons/gi';
 import { useAuth } from '@/hooks/use-auth';
@@ -8,38 +8,35 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { apiRequest, queryClient } from '@/lib/queryClient';
 
 export default function AuthPage() {
-  const { user, isLoading, login } = useAuth();
-  const [location, navigate] = useLocation();
+  const { user, isLoading, login, register, refetchUser } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
-  
-  // Redirect to home if already logged in
-  useEffect(() => {
-    if (user && !isLoading) {
-      navigate('/');
-    }
-  }, [user, isLoading, navigate]);
 
-  // Function to handle login with Replit Auth
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      setLocation('/');
+    }
+  }, [user, setLocation]);
+
   const handleReplitLogin = () => {
     login();
   };
-  
-  // Function to handle development login
+
   const handleDevLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!username || !password) {
       toast({
-        title: "Missing fields",
+        title: "Error",
         description: "Please enter both username and password",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -47,43 +44,44 @@ export default function AuthPage() {
     setIsSubmitting(true);
     
     try {
-      // Use development-specific endpoints
-      const endpoint = activeTab === 'login' ? '/api/dev/login' : '/api/dev/register';
-      
-      const userData = {
-        username,
-        password,
-        // For registration, include additional fields
-        ...(activeTab === 'register' && {
-          email: `${username}@example.com`,
-          firstName: null,
-          lastName: null,
-          bio: null,
-          profileImageUrl: null
-        })
-      };
-      
-      const response = await apiRequest('POST', endpoint, userData);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Authentication failed');
-      }
-      
-      // Successful login/registration
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      navigate('/');
-      
+      await login(username, password);
+      // The login function will handle the redirect
     } catch (error) {
-      toast({
-        title: activeTab === 'login' ? "Login failed" : "Registration failed",
-        description: error instanceof Error ? error.message : 'An error occurred',
-        variant: "destructive",
-      });
-    } finally {
+      // Error is already handled by the login function
       setIsSubmitting(false);
     }
   };
+
+  const handleDevRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!username || !password) {
+      toast({
+        title: "Error",
+        description: "Please enter both username and password",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      await register(username, password);
+      // The register function will handle the login and redirect
+    } catch (error) {
+      // Error is already handled by the register function
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-red"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
@@ -148,13 +146,13 @@ export default function AuthPage() {
                       className="w-full" 
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? "Logging in..." : "Login"}
+                      {isSubmitting ? 'Logging in...' : 'Login'}
                     </Button>
                   </form>
                 </TabsContent>
                 
                 <TabsContent value="register">
-                  <form onSubmit={handleDevLogin} className="space-y-4">
+                  <form onSubmit={handleDevRegister} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="reg-username">Username</Label>
                       <Input 
@@ -181,7 +179,7 @@ export default function AuthPage() {
                       className="w-full" 
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? "Creating account..." : "Register"}
+                      {isSubmitting ? 'Registering...' : 'Register'}
                     </Button>
                   </form>
                 </TabsContent>

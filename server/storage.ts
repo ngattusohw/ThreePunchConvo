@@ -123,7 +123,10 @@ export class DatabaseStorage implements IStorage {
     const PostgresStore = connectPg(session);
     this.sessionStore = new PostgresStore({
       pool,
-      createTableIfMissing: true
+      // Don't try to create the table automatically
+      createTableIfMissing: false,
+      // Use a custom table name to avoid conflicts
+      tableName: 'user_sessions'
     });
   }
   
@@ -223,7 +226,7 @@ export class DatabaseStorage implements IStorage {
       
       // Generate numeric ID for user if not provided
       const userValues = {
-        id: String(generateId()), // Convert to string since schema expects string
+        id: userData.id || String(generateId()), // Convert to string since schema expects string
         username: userData.username,
         password: userData.password,
         email: userData.email || null,
@@ -232,33 +235,37 @@ export class DatabaseStorage implements IStorage {
         lastName: userData.lastName || null,
         bio: userData.bio || null,
         profileImageUrl: userData.profileImageUrl || null,
-        role: 'USER',
-        status: 'AMATEUR',
-        isOnline: false,
+        role: userData.role || 'USER',
+        status: userData.status || 'AMATEUR',
+        isOnline: userData.isOnline || false,
         lastActive: new Date(),
-        points: 0,
-        postsCount: 0,
-        likesCount: 0,
-        potdCount: 0,
-        followersCount: 0,
-        followingCount: 0,
-        socialLinks: null,
-        rank: 0
+        points: userData.points || 0,
+        postsCount: userData.postsCount || 0,
+        likesCount: userData.likesCount || 0,
+        potdCount: userData.potdCount || 0,
+        followersCount: userData.followersCount || 0,
+        followingCount: userData.followingCount || 0,
+        socialLinks: userData.socialLinks || {},
+        rank: userData.rank || 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
       console.log('Creating user with values:', {
         ...userValues,
-        password: userValues.password ? '*****' : null // Don't log the password
+        password: '[REDACTED]' // Don't log the password
       });
       
-      const [user] = await db.insert(users)
-        .values(userValues)
-        .returning();
+      const [user] = await db.insert(users).values(userValues).returning();
+      
+      if (!user) {
+        throw new Error('Failed to create user');
+      }
       
       return user;
     } catch (error) {
       console.error('Error creating user:', error);
-      throw new Error('Failed to create user');
+      throw error;
     }
   }
   

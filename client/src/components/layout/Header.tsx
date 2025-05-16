@@ -218,17 +218,18 @@ export default function Header() {
                       </Link>
                       <div className="border-t border-gray-700 my-1"></div>
                       <button
-                        onClick={(e) => {
-                          // e.stopPropagation();
-                          console.log("Sign out clicked");
-                          logout();
+                        onClick={async (e) => {
+                          e.stopPropagation();
                           setUserMenuOpen(false);
-                          // Force reload to clear all states after logout
-                          setTimeout(() => (window.location.href = "/"), 300);
+                          try {
+                            await logout();
+                          } catch (error) {
+                            console.error('Logout failed:', error);
+                          }
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
                       >
-                        Sign out!!!!
+                        Sign out
                       </button>
                     </div>
                   )}

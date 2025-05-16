@@ -1,5 +1,6 @@
 import * as client from "openid-client";
-import { Strategy, type VerifyFunction } from "openid-client/passport";
+import { Strategy } from "openid-client/build/passport";
+import type { VerifyFunction } from "openid-client/build/passport";
 
 import passport from "passport";
 import session from "express-session";
@@ -7,6 +8,15 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
+import type { User } from "@shared/schema";
+
+// Extend User type with Replit-specific fields
+interface ReplitUser extends User {
+  claims?: any;
+  access_token?: string;
+  refresh_token?: string;
+  expires_at?: number;
+}
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 
@@ -49,7 +59,7 @@ export function getSession() {
 }
 
 function updateUserSession(
-  user: any,
+  user: ReplitUser,
   tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers
 ) {
   user.claims = tokens.claims();
@@ -93,60 +103,7 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Development mode authentication
-  if (isDevelopment) {
-    // Add development-only local login endpoint
-    app.post("/api/auth/login", async (req, res) => {
-      try {
-        const { username } = req.body;
-        
-        if (!username) {
-          return res.status(400).json({ message: 'Username is required' });
-        }
-        
-        // Create or get user
-        const user = await storage.upsertUser({
-          id: `dev_${username}`,
-          username,
-          email: null,
-          firstName: null,
-          lastName: null,
-          bio: null,
-          profileImageUrl: null,
-          role: "USER",
-          status: "AMATEUR",
-          isOnline: true,
-          points: 0,
-          rank: null,
-          postsCount: 0,
-          likesCount: 0,
-          potdCount: 0,
-          followersCount: 0,
-          followingCount: 0,
-          socialLinks: {},
-        });
-
-        // Log the user in
-        req.login(user, (err) => {
-          if (err) {
-            return res.status(500).json({ message: "Error logging in" });
-          }
-          return res.json({ user });
-        });
-      } catch (error) {
-        console.error("Error in development login:", error);
-        res.status(500).json({ message: "Internal server error during login" });
-      }
-    });
-
-    app.get("/api/auth/logout", (req, res) => {
-      req.logout(() => {
-        res.json({ message: "Logged out successfully" });
-      });
-    });
-  }
-
-  // Production mode Replit authentication
+  // Only set up Replit authentication in production
   if (!isDevelopment) {
     const config = await getOidcConfig();
 
@@ -233,41 +190,5 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-
-  if (isDevelopment) {
-    return next();
-  }
-
-  const user = req.user as any;
-  
-  // If user has no claims or expires_at, they might not be properly authenticated
-  if (!user || !user.claims || !user.expires_at) {
-    console.log("User missing claims or expiration", user);
-    return res.status(401).json({ message: "Invalid session" });
-  }
-
-  // Check if token is expired
-  const now = Math.floor(Date.now() / 1000);
-  if (now <= user.expires_at) {
-    return next(); // Token still valid
-  }
-
-  // Token expired, try to refresh
-  const refreshToken = user.refresh_token;
-  if (!refreshToken) {
-    // No refresh token available
-    console.log("No refresh token available");
-    return res.status(401).json({ message: "Session expired" });
-  }
-
-  try {
-    // Try to refresh the token
-    const config = await getOidcConfig();
-    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-    updateUserSession(user, tokenResponse);
-    return next();
-  } catch (error) {
-    console.error("Failed to refresh token:", error);
-    return res.status(401).json({ message: "Authentication failed" });
-  }
+  next();
 };

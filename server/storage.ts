@@ -672,9 +672,45 @@ export class DatabaseStorage implements IStorage {
   }
   
   async deleteThread(id: string): Promise<boolean> {
-    // Temporary stub
-    console.log('deleteThread not fully implemented', id);
-    return false;
+    try {
+      // Start a transaction to delete the thread and all associated data
+      await db.transaction(async (tx) => {
+        // Delete all thread reactions
+        await tx.delete(threadReactions)
+          .where(eq(threadReactions.threadId, id));
+        
+        // Delete all poll votes and options if the thread has a poll
+        const poll = await tx.query.polls.findFirst({
+          where: eq(polls.threadId, id)
+        });
+        
+        if (poll) {
+          await tx.delete(pollVotes)
+            .where(eq(pollVotes.pollId, poll.id));
+          await tx.delete(pollOptions)
+            .where(eq(pollOptions.pollId, poll.id));
+          await tx.delete(polls)
+            .where(eq(polls.threadId, id));
+        }
+        
+        // Delete all thread media
+        await tx.delete(threadMedia)
+          .where(eq(threadMedia.threadId, id));
+        
+        // Delete all thread replies
+        await tx.delete(replies)
+          .where(eq(replies.threadId, id));
+        
+        // Finally, delete the thread itself
+        await tx.delete(threads)
+          .where(eq(threads.id, id));
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting thread:', error);
+      return false;
+    }
   }
   
   async incrementThreadView(id: string): Promise<boolean> {

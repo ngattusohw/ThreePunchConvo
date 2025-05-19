@@ -299,7 +299,9 @@ export default function UserProfile() {
                   <span className="text-gray-400 text-xs">Community Rank</span>
                 </div>
                 <div className="bg-gray-800 px-3 py-2 rounded-lg">
-                  <StatusBadge status={displayUser.status} className="mb-1" />
+                  <div className="block mb-1">
+                    <StatusBadge status={displayUser.status} />
+                  </div>
                   <span className="text-gray-400 text-xs">Current Status</span>
                 </div>
               </div>

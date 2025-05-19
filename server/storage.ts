@@ -659,10 +659,72 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  // TODO test
   async updateThread(id: string, threadData: Partial<Thread>): Promise<Thread | undefined> {
-    // Temporary stub
-    console.log('updateThread not fully implemented', id, threadData);
-    return undefined;
+    try {
+      // Get current thread data to check if it exists and compare changes
+      const currentThread = await db.query.threads.findFirst({
+        where: eq(threads.id, id)
+      });
+
+      if (!currentThread) {
+        return undefined;
+      }
+
+      // Prepare update data with updatedAt timestamp
+      const updateData = {
+        ...threadData,
+        updatedAt: new Date()
+      };
+
+      // If content or title is updated, also update lastActivityAt
+      if (threadData.content || threadData.title) {
+        updateData.lastActivityAt = new Date();
+      }
+
+      // Start a transaction for the update
+      const [updatedThread] = await db.transaction(async (tx) => {
+        // Update the thread
+        const [thread] = await tx
+          .update(threads)
+          .set(updateData)
+          .where(eq(threads.id, id))
+          .returning();
+
+        // If thread is being locked/unlocked, create a notification for the thread owner
+        if (threadData.isLocked !== undefined && threadData.isLocked !== currentThread.isLocked) {
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: currentThread.userId,
+            type: threadData.isLocked ? 'THREAD_LOCKED' : 'THREAD_UNLOCKED',
+            threadId: id,
+            message: threadData.isLocked ? 'Your thread has been locked' : 'Your thread has been unlocked',
+            isRead: false,
+            createdAt: new Date()
+          });
+        }
+
+        // If thread is being pinned/unpinned, create a notification for the thread owner
+        if (threadData.isPinned !== undefined && threadData.isPinned !== currentThread.isPinned) {
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: currentThread.userId,
+            type: threadData.isPinned ? 'THREAD_PINNED' : 'THREAD_UNPINNED',
+            threadId: id,
+            message: threadData.isPinned ? 'Your thread has been pinned' : 'Your thread has been unpinned',
+            isRead: false,
+            createdAt: new Date()
+          });
+        }
+
+        return [thread];
+      });
+
+      return updatedThread;
+    } catch (error) {
+      console.error('Error updating thread:', error);
+      return undefined;
+    }
   }
   
   async deleteThread(id: string): Promise<boolean> {
@@ -728,16 +790,61 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  // TODO test
   async incrementThreadView(id: string): Promise<boolean> {
-    // Temporary stub
-    console.log('incrementThreadView not fully implemented', id);
-    return false;
+    try {
+      // Check if thread exists first
+      const thread = await db.query.threads.findFirst({
+        where: eq(threads.id, id)
+      });
+
+      if (!thread) {
+        return false;
+      }
+
+      // Increment the view count
+      await db
+        .update(threads)
+        .set({
+          viewCount: sql`${threads.viewCount} + 1`,
+          lastActivityAt: new Date() // Update last activity time on view
+        })
+        .where(eq(threads.id, id));
+
+      return true;
+    } catch (error) {
+      console.error('Error incrementing thread view:', error);
+      return false;
+    }
   }
   
   async getReply(id: string): Promise<Reply | undefined> {
-    // Temporary stub
-    console.log('getReply not fully implemented', id);
-    return undefined;
+    try {
+      // Get reply with explicit column selection
+      const [reply] = await db
+        .select({
+          id: replies.id,
+          threadId: replies.threadId,
+          userId: replies.userId,
+          content: replies.content,
+          parentReplyId: replies.parentReplyId,
+          createdAt: replies.createdAt,
+          updatedAt: replies.updatedAt,
+          likesCount: replies.likesCount,
+          dislikesCount: replies.dislikesCount
+        })
+        .from(replies)
+        .where(eq(replies.id, id));
+
+      if (!reply) {
+        return undefined;
+      }
+
+      return reply;
+    } catch (error) {
+      console.error('Error getting reply:', error);
+      return undefined;
+    }
   }
   
   async getRepliesByThread(threadId: string): Promise<Reply[]> {

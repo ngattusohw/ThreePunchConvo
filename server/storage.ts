@@ -318,132 +318,72 @@ export class DatabaseStorage implements IStorage {
   
   async getTopUsers(limit: number): Promise<User[]> {
     try {
-      // For mock data in development, return some sample users
-      // This ensures the rankings section functions even if DB isn't fully populated
-      // Adapted to match the actual database schema
-      const sampleUsers: User[] = [
-        {
-          id: "1",
-          username: 'FightFan123',
-          email: 'fightfan@example.com',
-          password: null, // Never expose passwords
-          avatar: null,
-          firstName: 'Fight',
-          lastName: 'Fan',
-          bio: 'MMA enthusiast and UFC superfan',
-          profileImageUrl: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          role: 'USER',
-          status: 'REGIONAL',
-          isOnline: true,
-          lastActive: new Date(),
-          points: 1250,
-          postsCount: 25,
-          likesCount: 150,
-          potdCount: 3,
-          followersCount: 10,
-          followingCount: 5,
-          socialLinks: null,
-          rank: 1
-        },
-        {
-          id: "2",
-          username: 'OctagonExpert',
-          email: 'octagon@example.com',
-          password: null,
-          avatar: null,
-          firstName: 'Octagon',
-          lastName: 'Expert',
-          bio: 'Breaking down fights since 2010',
-          profileImageUrl: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          role: 'USER',
-          status: 'COMPETITOR',
-          isOnline: false,
-          lastActive: new Date(),
-          points: 980,
-          postsCount: 18,
-          likesCount: 110,
-          potdCount: 2,
-          followersCount: 8,
-          followingCount: 12,
-          socialLinks: null,
-          rank: 2
-        },
-        {
-          id: "3",
-          username: 'KnockoutKing',
-          email: 'knockout@example.com',
-          password: null,
-          avatar: null,
-          firstName: 'Knockout',
-          lastName: 'King',
-          bio: 'Always predicting the KO',
-          profileImageUrl: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          role: 'USER',
-          status: 'AMATEUR',
-          isOnline: true,
-          lastActive: new Date(),
-          points: 750,
-          postsCount: 12,
-          likesCount: 85,
-          potdCount: 1,
-          followersCount: 5,
-          followingCount: 15,
-          socialLinks: null,
-          rank: 3
-        }
-      ];
+      // Query database for top users ordered by points
+      const userResults = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          password: users.password,
+          avatar: users.avatar,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          bio: users.bio,
+          profileImageUrl: users.profileImageUrl,
+          role: users.role,
+          status: users.status,
+          isOnline: users.isOnline,
+          lastActive: users.lastActive,
+          points: users.points,
+          rank: users.rank,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+          postsCount: users.postsCount,
+          likesCount: users.likesCount,
+          potdCount: users.potdCount,
+          followersCount: users.followersCount,
+          followingCount: users.followingCount,
+          socialLinks: users.socialLinks
+        })
+        .from(users)
+        .orderBy(desc(users.points))
+        .limit(limit);
 
-      try {
-        // First try database query with explicit column selection to match DB structure
-        // We only select columns that actually exist in the database
-        const topUsers = await db
-          .select({
-            id: users.id,
-            username: users.username,
-            email: users.email,
-            password: users.password,
-            avatar: users.avatar,
-            firstName: users.firstName,
-            lastName: users.lastName,
-            bio: users.bio,
-            profileImageUrl: users.profileImageUrl,
-            role: users.role,
-            status: users.status,
-            isOnline: users.isOnline,
-            lastActive: users.lastActive,
-            points: users.points,
-            rank: users.rank,
-            createdAt: users.createdAt,
-            updatedAt: users.updatedAt,
-            postsCount: users.postsCount,
-            likesCount: users.likesCount,
-            potdCount: users.potdCount,
-            followersCount: users.followersCount,
-            followingCount: users.followingCount,
-            socialLinks: users.socialLinks
-          })
-          .from(users)
-          .orderBy(desc(users.points))
-          .limit(limit);
-        
-        if (topUsers && topUsers.length > 0) {
-          return topUsers;
+      // Process users to handle ties correctly
+      let currentRank = 1;
+      let currentPoints = -1;
+      let usersAtCurrentRank = 0;
+
+      // First pass: identify ties and assign ranks
+      const processedUsers = userResults.map((user, index) => {
+        // If this is a new points value, update the rank
+        if (user.points !== currentPoints) {
+          // The new rank should be the position after all previous users
+          currentRank = index + 1;
+          currentPoints = user.points;
+          usersAtCurrentRank = 1;
         } else {
-          // If no users in DB, return sample users for development
-          console.log('No users found in database, using sample data for development');
-          return sampleUsers.slice(0, limit);
+          // Same points as previous user, keep the same rank
+          usersAtCurrentRank++;
         }
-      } catch (dbError) {
-        console.error('Database error getting top users:', dbError);
-        // If DB query fails, return sample data in development
-        return sampleUsers.slice(0, limit);
-      }
+
+        // Return user with updated rank
+        return {
+          ...user,
+          rank: currentRank
+        };
+      });
+
+      // Update ranks in database
+      await Promise.all(
+        processedUsers.map(user =>
+          db.update(users)
+            .set({ rank: user.rank })
+            .where(eq(users.id, user.id))
+        )
+      );
+
+      return processedUsers;
     } catch (error) {
       console.error('Error getting top users:', error);
       return [];
@@ -661,9 +601,23 @@ export class DatabaseStorage implements IStorage {
         isPotd: false
       };
       
-      const [newThread] = await db.insert(threads)
-        .values(threadValues)
-        .returning();
+      // Start a transaction to create thread and update user points
+      const [newThread] = await db.transaction(async (tx) => {
+        // Create the thread
+        const [thread] = await tx.insert(threads)
+          .values(threadValues)
+          .returning();
+        
+        // Update user's points and posts count
+        await tx.update(users)
+          .set({
+            points: sql`${users.points} + 1`,
+            postsCount: sql`${users.postsCount} + 1`
+          })
+          .where(eq(users.id, thread.userId));
+        
+        return [thread];
+      });
       
       return newThread;
     } catch (error) {
@@ -682,6 +636,27 @@ export class DatabaseStorage implements IStorage {
     try {
       // Start a transaction to delete the thread and all associated data
       await db.transaction(async (tx) => {
+        // Get the thread first to get the userId and likes count
+        const thread = await tx.query.threads.findFirst({
+          where: eq(threads.id, id),
+          columns: {
+            userId: true,
+            likesCount: true
+          }
+        });
+
+        if (!thread) {
+          return false;
+        }
+
+        // Update user's counts before deleting thread data
+        await tx.update(users)
+          .set({
+            postsCount: sql`${users.postsCount} - 1`,
+            likesCount: sql`${users.likesCount} - ${thread.likesCount}` // Remove all likes from user's total
+          })
+          .where(eq(users.id, thread.userId));
+
         // Delete all thread reactions
         await tx.delete(threadReactions)
           .where(eq(threadReactions.threadId, id));
@@ -1098,6 +1073,16 @@ export class DatabaseStorage implements IStorage {
             })
             .where(eq(threads.id, threadId));
 
+          // Remove points and decrement likesCount from thread owner (if not liking their own thread)
+          if (thread.userId !== userId) {
+            await tx.update(users)
+              .set({
+                points: sql`${users.points} - 2`,
+                likesCount: sql`${users.likesCount} - 1` // Track total likes received
+              })
+              .where(eq(users.id, thread.userId));
+          }
+
           return true;
         }
 
@@ -1117,9 +1102,16 @@ export class DatabaseStorage implements IStorage {
           })
           .where(eq(threads.id, threadId));
 
-        // Create notification for thread owner
-        // Don't notify if the user is liking their own thread
+        // Add points and increment likesCount for thread owner (if not liking their own thread)
         if (thread.userId !== userId) {
+          await tx.update(users)
+            .set({
+              points: sql`${users.points} + 2`,
+              likesCount: sql`${users.likesCount} + 1` // Track total likes received
+            })
+            .where(eq(users.id, thread.userId));
+
+          // Create notification for thread owner
           await tx.insert(notifications).values({
             id: uuidv4(),
             userId: thread.userId,
@@ -1187,9 +1179,12 @@ export class DatabaseStorage implements IStorage {
             .set({ isPotd: false })
             .where(eq(threads.id, threadId));
 
-          // Update user's POTD count
+          // Update user's POTD count only, keep the points
           await tx.update(users)
-            .set({ potdCount: sql`${users.potdCount} - 1` })
+            .set({ 
+              potdCount: sql`${users.potdCount} - 1`
+              // Points are not removed since POTD is a rotating feature
+            })
             .where(eq(users.id, thread.userId));
 
           return true;
@@ -1205,15 +1200,35 @@ export class DatabaseStorage implements IStorage {
             createdAt: new Date()
           });
 
-        // Update thread isPotd status
-        await tx.update(threads)
-          .set({ isPotd: true })
-          .where(eq(threads.id, threadId));
+        // Update thread isPotd status and increment user points
+        await Promise.all([
+          // Update thread status
+          tx.update(threads)
+            .set({ isPotd: true })
+            .where(eq(threads.id, threadId)),
+          
+          // Update user's points and POTD count
+          tx.update(users)
+            .set({ 
+              potdCount: sql`${users.potdCount} + 1`,
+              points: sql`${users.points} + 40` // Add 40 points for POTD
+            })
+            .where(eq(users.id, thread.userId))
+        ]);
 
-        // Update user's POTD count
-        await tx.update(users)
-          .set({ potdCount: sql`${users.potdCount} + 1` })
-          .where(eq(users.id, thread.userId));
+        // Create notification for thread owner if it's not their own thread
+        if (thread.userId !== userId) {
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: thread.userId,
+            type: 'POTD',
+            relatedUserId: userId,
+            threadId,
+            message: 'selected your thread as Post of the Day!',
+            isRead: false,
+            createdAt: new Date()
+          });
+        }
 
         return true;
       });

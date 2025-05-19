@@ -23,11 +23,30 @@ export default function Rankings() {
   const allRankedUsers =
     rankedUsers?.length && !error ? rankedUsers : generateMockRankedUsers();
 
+  // Process users to handle ties
+  const processedUsers = allRankedUsers.reduce((acc, user, index, array) => {
+    // Find all users with the same points (including current user)
+    const tiedUsers = array.filter(u => u.points === user.points);
+    const isTied = tiedUsers.length > 1;
+    
+    // Calculate position based on how many users with higher points exist
+    const usersWithHigherPoints = array.filter(u => u.points > user.points);
+    const position = usersWithHigherPoints.length + 1;
+    
+    acc.push({
+      ...user,
+      position,
+      isTied
+    });
+    
+    return acc;
+  }, [] as typeof allRankedUsers);
+
   // Filter users by status if needed
   const filteredUsers =
     rankingFilter === "all"
-      ? allRankedUsers
-      : allRankedUsers.filter((user) =>
+      ? processedUsers
+      : processedUsers.filter((user) =>
           user.user.status.toLowerCase().includes(rankingFilter.toLowerCase()),
         );
 

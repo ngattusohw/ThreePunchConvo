@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from "wouter";
 import ForumCategories from "@/components/forum/ForumCategories";
 import ForumContent from "@/components/forum/ForumContent";
@@ -6,7 +7,7 @@ import TopUsersSidebar from "@/components/sidebar/TopUsersSidebar";
 
 export default function Home() {
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div className="flex flex-col md:flex-row md:space-x-6">
         {/* Left Sidebar - Categories */}
         <ForumCategories />
@@ -15,7 +16,7 @@ export default function Home() {
         <ForumContent category="general" />
 
         {/* Right Sidebar - Schedule and Rankings */}
-        <aside className="hidden lg:block w-80 flex-shrink-0 space-y-6">
+        <aside className="hidden sidebar:block w-96 flex-shrink-0 space-y-6">
           {/* Upcoming Events */}
           <EventsSidebar />
           
@@ -30,7 +31,7 @@ export default function Home() {
               <a href="https://discord.gg/3punchconvo" target="_blank" rel="noopener noreferrer" className="block bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded text-center text-sm transition">
                 Join Community
               </a>
-              <p className="text-gray-500 text-xs mt-2 text-center">5,400+ members online now</p>
+              {/* <p className="text-gray-500 text-xs mt-2 text-center">5,400+ members online now</p> */}
             </div>
           </div>
         </aside>

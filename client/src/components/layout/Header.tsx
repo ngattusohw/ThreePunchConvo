@@ -92,7 +92,7 @@ export default function Header() {
                 href="/schedule"
                 className={`font-heading font-medium ${location === "/schedule" ? "text-white" : "text-gray-400 hover:text-white"} transition`}
               >
-                SCHEDULEs
+                SCHEDULES
               </Link>
               <Link
                 href="/rankings"
@@ -106,6 +106,7 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             {user && (
               <>
+                {/* TODO notifications
                 <button
                   onClick={() => setNotificationsOpen(true)}
                   className="text-gray-400 hover:text-white relative"
@@ -127,7 +128,7 @@ export default function Header() {
                   <span className="absolute -top-1 -right-1 bg-ufc-red text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
                     3
                   </span>
-                </button>
+                </button> */}
 
                 <div className="relative" ref={userMenuRef}>
                   <button
@@ -195,26 +196,6 @@ export default function Header() {
                         }}
                       >
                         Profile
-                      </Link>
-                      <Link
-                        href="/settings"
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTimeout(() => setUserMenuOpen(false), 1000);
-                        }}
-                      >
-                        Settings
-                      </Link>
-                      <Link
-                        href="/messages"
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTimeout(() => setUserMenuOpen(false), 100);
-                        }}
-                      >
-                        Messages
                       </Link>
                       <div className="border-t border-gray-700 my-1"></div>
                       <button

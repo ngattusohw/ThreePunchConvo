@@ -328,7 +328,7 @@ export default function UserProfile() {
               </div>
             </div>
             
-            {/* Social Media */}
+            {/* Social Media  TODO implement */}
             {displayUser.socialLinks && Object.keys(displayUser.socialLinks).length > 0 && (
               <div>
                 <h3 className="text-gray-400 font-medium mb-2">Connect with {displayUser.username}</h3>

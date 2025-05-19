@@ -12,9 +12,9 @@ export default function TopUsersSidebar() {
   });
 
   // For demo purposes, create mock users if none are returned from the API
-  const displayUsers = topUsers?.length ? topUsers : generateMockTopUsers();
+  const displayUsers =  topUsers;
 
-  return (
+  return topUsers?.length && (
     <div className="bg-dark-gray rounded-lg overflow-hidden">
       <div className="bg-ufc-black p-4 border-b border-gray-800">
         <h2 className="font-heading text-lg font-bold text-white">Top Users</h2>
@@ -34,7 +34,7 @@ export default function TopUsersSidebar() {
           <ul className="space-y-3">
             {displayUsers.slice(0, 5).map((rankedUser) => (
               <li key={rankedUser.user.id} className="flex items-center py-2 hover:bg-gray-800 rounded-lg px-2 transition">
-                <span className="text-gray-400 font-accent font-bold w-6">
+                <span className="text-gray-400 font-accent font-bold w-10 whitespace-nowrap">
                   #{rankedUser.position}{rankedUser.isTied ? "-T" : ""}
                 </span>
                 <UserAvatar user={rankedUser.user} size="sm" className="mr-3" />
@@ -71,105 +71,4 @@ function formatLikesCount(count: number): string {
     return (count / 1000).toFixed(1) + 'k';
   }
   return count.toString();
-}
-
-// Helper function to generate mock top users for demonstration
-function generateMockTopUsers(): RankedUser[] {
-  return [
-    {
-      position: 1,
-      isTied: false,
-      points: 8700,
-      user: {
-        id: 2,
-        username: "KnockoutKing",
-        avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "CHAMPION",
-        isOnline: true,
-        postsCount: 342,
-        likesCount: 4300,
-        potdCount: 18,
-        rank: 1,
-        followersCount: 247,
-        followingCount: 63,
-        role: "USER",
-      }
-    },
-    {
-      position: 2,
-      isTied: false,
-      points: 6300,
-      user: {
-        id: 5,
-        username: "StrikingQueen",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "CONTENDER",
-        isOnline: true,
-        postsCount: 217,
-        likesCount: 3800,
-        potdCount: 12,
-        rank: 2,
-        followersCount: 148,
-        followingCount: 76,
-        role: "USER",
-      }
-    },
-    {
-      position: 3,
-      isTied: false,
-      points: 4500,
-      user: {
-        id: 4,
-        username: "GrappleGuru",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "RANKED POSTER",
-        isOnline: true,
-        postsCount: 178,
-        likesCount: 3100,
-        potdCount: 9,
-        rank: 3,
-        followersCount: 103,
-        followingCount: 89,
-        role: "USER",
-      }
-    },
-    {
-      position: 4,
-      isTied: false,
-      points: 3700,
-      user: {
-        id: 6,
-        username: "MMAHistorian",
-        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "RANKED POSTER",
-        isOnline: true,
-        postsCount: 152,
-        likesCount: 2700,
-        potdCount: 6,
-        rank: 4,
-        followersCount: 87,
-        followingCount: 113,
-        role: "USER",
-      }
-    },
-    {
-      position: 5,
-      isTied: false,
-      points: 2900,
-      user: {
-        id: 7,
-        username: "JiuJitsuJane",
-        avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "COMPETITOR",
-        isOnline: true,
-        postsCount: 98,
-        likesCount: 2200,
-        potdCount: 4,
-        rank: 5,
-        followersCount: 62,
-        followingCount: 74,
-        role: "USER",
-      }
-    },
-  ];
 }

@@ -50,6 +50,7 @@ export interface IStorage {
   // Thread management
   getThread(id: string, currentUserId?: string): Promise<ThreadWithAssociatedData | undefined>;
   getThreadsByCategory(categoryId: string, sort: string, limit: number, offset: number): Promise<Thread[]>;
+  getThreadsByUser(userId: string): Promise<Thread[]>;
   createThread(thread: InsertThread): Promise<Thread>;
   updateThread(id: string, threadData: Partial<Thread>): Promise<Thread | undefined>;
   deleteThread(id: string): Promise<boolean>;
@@ -577,6 +578,38 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error fetching threads by category:', error);
       // Return empty array instead of throwing to prevent UI breaks
+      return [];
+    }
+  }
+  
+  async getThreadsByUser(userId: string): Promise<Thread[]> {
+    try {
+      // Build query with explicit column selection
+      const userThreads = await db
+        .select({
+          id: threads.id,
+          title: threads.title,
+          content: threads.content,
+          userId: threads.userId,
+          categoryId: threads.categoryId,
+          isPinned: threads.isPinned,
+          isLocked: threads.isLocked,
+          createdAt: threads.createdAt,
+          updatedAt: threads.updatedAt,
+          lastActivityAt: threads.lastActivityAt,
+          viewCount: threads.viewCount,
+          likesCount: threads.likesCount,
+          dislikesCount: threads.dislikesCount,
+          repliesCount: threads.repliesCount,
+          isPotd: threads.isPotd
+        })
+        .from(threads)
+        .where(eq(threads.userId, userId))
+        .orderBy(desc(threads.createdAt));
+
+      return userThreads;
+    } catch (error) {
+      console.error('Error fetching threads for user:', error);
       return [];
     }
   }

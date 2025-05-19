@@ -234,17 +234,25 @@ export function setupAuth(app: Express) {
       return res.status(401).json({ message: "Not authenticated" });
     }
     
-    req.logout((err) => {
-      if (err) return next(err);
-      req.session.destroy((err) => {
-        if (err) {
-          console.error('Error destroying session:', err);
-          return res.status(500).json({ message: "Failed to logout" });
-        }
-        res.clearCookie('connect.sid'); // Clear the session cookie
-        res.status(200).json({ message: "Logged out successfully" });
+    // Set user as offline before logging out
+    storage.updateUser(req.user.id, { isOnline: false })
+      .then(() => {
+        req.logout((err) => {
+          if (err) return next(err);
+          req.session.destroy((err) => {
+            if (err) {
+              console.error('Error destroying session:', err);
+              return res.status(500).json({ message: "Failed to logout" });
+            }
+            res.clearCookie('connect.sid'); // Clear the session cookie
+            res.status(200).json({ message: "Logged out successfully" });
+          });
+        });
+      })
+      .catch(error => {
+        console.error('Error updating user online status:', error);
+        return res.status(500).json({ message: "Failed to update online status" });
       });
-    });
   });
 
   app.get("/api/auth/user", (req, res) => {

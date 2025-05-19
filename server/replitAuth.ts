@@ -171,14 +171,34 @@ export async function setupAuth(app: Express) {
     });
 
     app.get("/api/logout", (req, res) => {
-      req.logout(() => {
-        res.redirect(
-          client.buildEndSessionUrl(config, {
-            client_id: process.env.REPL_ID!,
-            post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-          }).href
-        );
-      });
+      if (req.user) {
+        storage.updateUser(req.user.id, { isOnline: false })
+          .then(() => {
+            req.logout(() => {
+              res.redirect(
+                client.buildEndSessionUrl(config, {
+                  client_id: process.env.REPL_ID!,
+                  post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
+                }).href
+              );
+            });
+          })
+          .catch(error => {
+            console.error('Error updating user online status:', error);
+            // Still proceed with logout even if status update fails
+            req.logout(() => {
+              res.redirect(
+                client.buildEndSessionUrl(config, {
+                  client_id: process.env.REPL_ID!,
+                  post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
+                }).href
+              );
+            });
+          });
+      } else {
+        // If no user is logged in, just redirect
+        res.redirect('/');
+      }
     });
   }
 

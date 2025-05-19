@@ -25,65 +25,86 @@ export default function UserProfile() {
   // Fetch user's posts
   const { data: userPosts, isLoading: isPostsLoading, error: postsError } = useQuery<ForumThread[]>({
     queryKey: [`/api/users/${user?.id}/posts`],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      try {
+        const response = await apiRequest('GET', `/api/users/${user.id}/posts`);
+        if (response instanceof Response) {
+          const data = await response.json();
+          console.log("user posts data:", data);
+          if (!Array.isArray(data)) {
+            throw new Error('Invalid response format from server');
+          }
+          return data;
+        }
+        if (!Array.isArray(response)) {
+          console.error('Invalid response format:', response);
+          throw new Error('Invalid response format from server');
+        }
+        return response;
+      } catch (error) {
+        console.error('Error fetching user posts:', error);
+        throw error;
+      }
+    },
     enabled: !!user?.id,
-    // In a real app, we would fetch from the API
   });
   
   // Check if current user follows this user
-  useEffect(() => {
-    if (currentUser && user) {
-      // In a real app, we would check this via API
-      setIsFollowing(Math.random() > 0.5); // Mock implementation
-    }
-  }, [currentUser, user]);
+  // useEffect(() => {
+  //   if (currentUser && user) {
+  //     // In a real app, we would check this via API
+  //     setIsFollowing(Math.random() > 0.5); // Mock implementation
+  //   }
+  // }, [currentUser, user]);
   
   // For demo purposes, create mock user if none is returned from the API
-  const displayUser = user || generateMockUser(username);
+  const displayUser = user;
   
-  // For demo purposes, create mock posts if none are returned from the API
-  const displayPosts = userPosts?.length ? userPosts : generateMockPosts(displayUser);
+  // Use actual posts data or empty array if no posts
+  const displayPosts = userPosts || [];
   
   // Handle follow/unfollow
-  const handleFollowToggle = async () => {
-    if (!currentUser) {
-      toast({
-        title: "Authentication Required",
-        description: "You must be logged in to follow users.",
-        variant: "destructive"
-      });
-      return;
-    }
+  // const handleFollowToggle = async () => {
+  //   if (!currentUser) {
+  //     toast({
+  //       title: "Authentication Required",
+  //       description: "You must be logged in to follow users.",
+  //       variant: "destructive"
+  //     });
+  //     return;
+  //   }
     
-    try {
-      if (isFollowing) {
-        // Unfollow user
-        await apiRequest("POST", `/api/users/${displayUser.id}/unfollow`, {
-          followerId: currentUser.id
-        });
-        setIsFollowing(false);
-        toast({
-          title: "Success",
-          description: `You have unfollowed ${displayUser.username}.`,
-        });
-      } else {
-        // Follow user
-        await apiRequest("POST", `/api/users/${displayUser.id}/follow`, {
-          followerId: currentUser.id
-        });
-        setIsFollowing(true);
-        toast({
-          title: "Success",
-          description: `You are now following ${displayUser.username}.`,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update follow status. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
+  //   try {
+  //     if (isFollowing) {
+  //       // Unfollow user
+  //       await apiRequest("POST", `/api/users/${displayUser.id}/unfollow`, {
+  //         followerId: currentUser.id
+  //       });
+  //       setIsFollowing(false);
+  //       toast({
+  //         title: "Success",
+  //         description: `You have unfollowed ${displayUser.username}.`,
+  //       });
+  //     } else {
+  //       // Follow user
+  //       await apiRequest("POST", `/api/users/${displayUser.id}/follow`, {
+  //         followerId: currentUser.id
+  //       });
+  //       setIsFollowing(true);
+  //       toast({
+  //         title: "Success",
+  //         description: `You are now following ${displayUser.username}.`,
+  //       });
+  //     }
+  //   } catch (error) {
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to update follow status. Please try again.",
+  //       variant: "destructive"
+  //     });
+  //   }
+  // };
 
   // Loading state
   if (isUserLoading) {
@@ -166,24 +187,24 @@ export default function UserProfile() {
               </div>
             </div>
             
-            <div className="flex items-center space-x-4 mt-2 text-sm">
+            {/* <div className="flex items-center space-x-4 mt-2 text-sm">
               <button 
                 className="text-ufc-red hover:underline"
-                onClick={() => {/* Open followers modal */}}
+                onClick={() => 
               >
                 <span className="font-bold">{displayUser.followersCount}</span> followers
               </button>
               <button 
                 className="text-ufc-red hover:underline"
-                onClick={() => {/* Open following modal */}}
+                onClick={() =>
               >
                 <span className="font-bold">{displayUser.followingCount}</span> following
               </button>
-            </div>
+            </div> */}
           </div>
           
           <div className="mt-4 md:mt-0 flex space-x-3">
-            {currentUser && currentUser.id !== displayUser.id && (
+            {/* {currentUser && currentUser.id !== displayUser.id && (
               <button 
                 onClick={handleFollowToggle}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
@@ -200,13 +221,14 @@ export default function UserProfile() {
               <button className="bg-dark-gray border border-gray-700 hover:bg-gray-800 text-white font-medium px-4 py-2 rounded-lg text-sm transition">
                 Message
               </button>
-            )}
+            )} */}
             
-            {currentUser && currentUser.id === displayUser.id && (
+            {/* Edit Profile */}
+            {/* {currentUser && currentUser.id === displayUser.id && (
               <button className="bg-dark-gray border border-gray-700 hover:bg-gray-800 text-white font-medium px-4 py-2 rounded-lg text-sm transition">
                 Edit Profile
               </button>
-            )}
+            )} */}
           </div>
         </div>
       </div>
@@ -299,10 +321,10 @@ export default function UserProfile() {
                   <span className="block text-ufc-red font-bold text-xl">{displayUser.potdCount}</span>
                   <span className="text-gray-400 text-sm">Post of the Day</span>
                 </div>
-                <div className="bg-gray-800 p-3 rounded-lg text-center">
+                {/* <div className="bg-gray-800 p-3 rounded-lg text-center">
                   <span className="block text-ufc-red font-bold text-xl">{displayUser.followersCount}</span>
                   <span className="text-gray-400 text-sm">Followers</span>
-                </div>
+                </div> */}
               </div>
             </div>
             
@@ -347,105 +369,4 @@ export default function UserProfile() {
       </div>
     </div>
   );
-}
-
-// Helper function to generate a mock user for demonstration
-function generateMockUser(username: string): AuthUser {
-  return {
-    id: "13",
-    username: username || "FighterFan84",
-    avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-    status: "CONTENDER",
-    isOnline: true,
-    postsCount: 157,
-    likesCount: 1203,
-    potdCount: 5,
-    rank: 17,
-    followersCount: 42,
-    followingCount: 63,
-    role: "USER",
-    socialLinks: {
-      twitter: "https://twitter.com/username",
-      instagram: "https://instagram.com/username",
-      youtube: "https://youtube.com/username",
-    }
-  };
-}
-
-// Helper function to generate mock posts for demonstration
-function generateMockPosts(user: AuthUser): ForumThread[] {
-  return [
-    {
-      id: 101,
-      title: "What's your take on the new UFC gloves design?",
-      content: "I've noticed the UFC has been testing new glove designs that might reduce eye pokes. What are your thoughts on this? Will it significantly change the fighting style of certain fighters who rely on an extended guard?",
-      userId: user.id,
-      user: user,
-      categoryId: "general",
-      isPinned: false,
-      isLocked: false,
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-      updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      lastActivityAt: new Date(Date.now() - 18 * 60 * 60 * 1000), // 18 hours ago
-      viewCount: 345,
-      likesCount: 42,
-      dislikesCount: 3,
-      repliesCount: 28,
-      isPotd: false,
-    },
-    {
-      id: 102,
-      title: "Unpopular Opinion: Wrestling is becoming too dominant in MMA",
-      content: "Don't get me wrong, I respect the skill, but I feel like the evolution of wrestling in MMA has made some fights less entertaining. Too many fighters are winning by control time without doing significant damage. Should the scoring system be revised to emphasize damage over control?",
-      userId: user.id,
-      user: user,
-      categoryId: "ufc",
-      isPinned: false,
-      isLocked: false,
-      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
-      updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-      lastActivityAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-      viewCount: 687,
-      likesCount: 89,
-      dislikesCount: 51,
-      repliesCount: 74,
-      isPotd: true,
-    },
-    {
-      id: 103,
-      title: "Anyone going to the Fight Night in Vegas next month?",
-      content: "I managed to get tickets for the upcoming Fight Night in Vegas. Anyone else planning to be there? Maybe we could organize a small meetup of forum members before the event?",
-      userId: user.id,
-      user: user,
-      categoryId: "general",
-      isPinned: false,
-      isLocked: false,
-      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-      updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      lastActivityAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-      viewCount: 219,
-      likesCount: 35,
-      dislikesCount: 0,
-      repliesCount: 22,
-      isPotd: false,
-    },
-    {
-      id: 104,
-      title: "How to improve my leg kick defense?",
-      content: "Been training MMA for about a year now and while I'm comfortable with my boxing, my leg kick defense is terrible. Any tips or drills that helped you guys improve in this area? My lead leg is constantly getting chewed up in sparring.",
-      userId: user.id,
-      user: user,
-      categoryId: "techniques",
-      isPinned: false,
-      isLocked: false,
-      createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000), // 20 days ago
-      updatedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-      lastActivityAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
-      viewCount: 432,
-      likesCount: 68,
-      dislikesCount: 2,
-      repliesCount: 41,
-      isPotd: false,
-    }
-  ];
 }

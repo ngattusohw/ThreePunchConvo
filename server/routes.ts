@@ -192,6 +192,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/users/:id/posts', async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      
+      if (!userId) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+      
+      const threads = await storage.getThreadsByUser(userId);
+      
+      // Fetch user and additional data for each thread
+      const threadsWithData = await Promise.all(
+        threads.map(async (thread) => {
+          const user = await storage.getUser(thread.userId);
+          
+          if (!user) {
+            return { ...thread, user: null };
+          }
+          
+          // Don't return user password
+          const { password, ...userWithoutPassword } = user;
+          
+          // Get thread media
+          const media = await storage.getMediaByThread(thread.id);
+          
+          // Get thread poll
+          const poll = await storage.getPollByThread(thread.id);
+          
+          let pollWithOptions;
+          if (poll) {
+            const options = await storage.getPollOptions(poll.id);
+            pollWithOptions = {
+              ...poll,
+              options
+            };
+          }
+          
+          return {
+            ...thread,
+            user: userWithoutPassword,
+            media: media || [],
+            poll: pollWithOptions
+          };
+        })
+      );
+      
+      res.json(threadsWithData);
+    } catch (error) {
+      console.error('Error fetching user posts:', error);
+      res.status(500).json({ message: 'Failed to fetch user posts' });
+    }
+  });
+
   app.get('/api/users/:id/following', async (req: Request, res: Response) => {
     try {
       const userId = req.params.id;

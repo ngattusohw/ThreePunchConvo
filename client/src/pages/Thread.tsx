@@ -603,11 +603,11 @@ export default function Thread() {
                   <button 
                     type="submit"
                     disabled={submitReplyMutation.isPending || !replyContent.trim()}
-                    className={`bg-ufc-blue hover:bg-ufc-blue-dark text-black font-medium px-4 py-2 rounded-lg text-sm transition ${
-                      submitReplyMutation.isPending || !replyContent.trim() ? 'opacity-50 cursor-not-allowed' : ''
+                    className={`font-medium px-4 py-2 rounded-lg text-sm transition ${
+                      submitReplyMutation.isPending || !replyContent.trim() ? 'bg-gray-700 opacity-50 cursor-not-allowed text-white' : 'bg-ufc-blue hover:bg-ufc-blue-dark text-black'
                     }`}
                   >
-                    {submitReplyMutation.isPending ? 'Posting...' : 'Post Reply'}
+                    {submitReplyMutation.isPending ? 'Posting...' : 'Post reply'}
                   </button>
                 </div>
               </form>

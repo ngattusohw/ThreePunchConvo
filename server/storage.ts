@@ -25,7 +25,8 @@ import {
   threadMedia,
   notifications,
   threadReactions,
-  pollVotes
+  pollVotes,
+  replyReactions
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -81,8 +82,6 @@ export interface IStorage {
   potdThread(threadId: string, userId: string): Promise<boolean>;
   likeReply(replyId: string, userId: string): Promise<boolean>;
   dislikeReply(replyId: string, userId: string): Promise<boolean>;
-  removeThreadReaction(threadId: string, userId: string, type: string): Promise<boolean>;
-  removeReplyReaction(replyId: string, userId: string, type: string): Promise<boolean>;
   
   // Follow management
   followUser(followerId: string, followingId: string): Promise<boolean>;
@@ -465,7 +464,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Get thread media
-      const media = await this.getMediaByThread(id);
+      // const media = await this.getMediaByThread(id);
 
       // Get thread poll and its options
       const poll = await this.getPollByThread(id);
@@ -514,7 +513,7 @@ export class DatabaseStorage implements IStorage {
           followingCount: user.followingCount,
           socialLinks: user.socialLinks
         },
-        media: media || [],
+        media: [],//media || [],
         poll: pollWithOptions,
         hasLiked
       };
@@ -950,10 +949,48 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  // T
   async updateReply(id: string, replyData: Partial<Reply>): Promise<Reply | undefined> {
-    // Temporary stub
-    console.log('updateReply not fully implemented', id, replyData);
-    return undefined;
+    try {
+      // Get current reply data to check if it exists
+      const currentReply = await db.query.replies.findFirst({
+        where: eq(replies.id, id)
+      });
+
+      if (!currentReply) {
+        return undefined;
+      }
+
+      // Prepare update data with updatedAt timestamp
+      const updateData = {
+        ...replyData,
+        updatedAt: new Date()
+      };
+
+      // Start a transaction for the update
+      const [updatedReply] = await db.transaction(async (tx) => {
+        // Update the reply
+        const [reply] = await tx
+          .update(replies)
+          .set(updateData)
+          .where(eq(replies.id, id))
+          .returning();
+
+        // Update the thread's lastActivityAt to show recent activity
+        if (replyData.content) {
+          await tx.update(threads)
+            .set({ lastActivityAt: new Date() })
+            .where(eq(threads.id, currentReply.threadId));
+        }
+
+        return [reply];
+      });
+
+      return updatedReply;
+    } catch (error) {
+      console.error('Error updating reply:', error);
+      return undefined;
+    }
   }
   
   async deleteReply(id: string): Promise<boolean> {
@@ -989,10 +1026,31 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  // TODO test
   async getPoll(id: string): Promise<Poll | undefined> {
-    // Temporary stub
-    console.log('getPoll not fully implemented', id);
-    return undefined;
+    try {
+      // Build query with explicit column selection
+      const [poll] = await db
+        .select({
+          id: polls.id,
+          threadId: polls.threadId,
+          question: polls.question,
+          expiresAt: polls.expiresAt,
+          createdAt: polls.createdAt,
+          votesCount: polls.votesCount
+        })
+        .from(polls)
+        .where(eq(polls.id, id));
+
+      if (!poll) {
+        return undefined;
+      }
+
+      return poll;
+    } catch (error) {
+      console.error('Error getting poll:', error);
+      return undefined;
+    }
   }
   
   async getPollByThread(threadId: string): Promise<Poll | undefined> {
@@ -1272,10 +1330,87 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  // TODO test
   async dislikeThread(threadId: string, userId: string): Promise<boolean> {
-    // Temporary stub
-    console.log('dislikeThread not fully implemented', threadId, userId);
-    return false;
+    try {
+      // Start a transaction
+      return await db.transaction(async (tx) => {
+        // Check if user has already disliked this thread
+        const existingReaction = await tx.query.threadReactions.findFirst({
+          where: and(
+            eq(threadReactions.threadId, threadId),
+            eq(threadReactions.userId, userId),
+            eq(threadReactions.type, 'DISLIKE')
+          )
+        });
+
+        // Get the thread to check if it exists and get the owner's ID
+        const thread = await tx.query.threads.findFirst({
+          where: eq(threads.id, threadId),
+          columns: {
+            userId: true
+          }
+        });
+
+        if (!thread) {
+          return false; // Thread doesn't exist
+        }
+
+        if (existingReaction) {
+          // User has already disliked this thread - remove the dislike
+          await tx.delete(threadReactions)
+            .where(and(
+              eq(threadReactions.threadId, threadId),
+              eq(threadReactions.userId, userId),
+              eq(threadReactions.type, 'DISLIKE')
+            ));
+
+          // Decrease thread dislikes count
+          await tx.update(threads)
+            .set({
+              dislikesCount: sql`${threads.dislikesCount} - 1`
+            })
+            .where(eq(threads.id, threadId));
+
+          return true;
+        }
+
+        // Create new dislike reaction
+        await tx.insert(threadReactions).values({
+          id: uuidv4(),
+          threadId,
+          userId,
+          type: 'DISLIKE',
+          createdAt: new Date()
+        });
+
+        // Update thread dislikes count
+        await tx.update(threads)
+          .set({
+            dislikesCount: sql`${threads.dislikesCount} + 1`
+          })
+          .where(eq(threads.id, threadId));
+
+        // Create notification for thread owner (if not disliking their own thread)
+        if (thread.userId !== userId) {
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: thread.userId,
+            type: 'DISLIKE',
+            relatedUserId: userId,
+            threadId,
+            message: 'disliked your thread',
+            isRead: false,
+            createdAt: new Date()
+          });
+        }
+
+        return true;
+      });
+    } catch (error) {
+      console.error('Error disliking thread:', error);
+      return false;
+    }
   }
   
   async potdThread(threadId: string, userId: string): Promise<boolean> {
@@ -1379,27 +1514,187 @@ export class DatabaseStorage implements IStorage {
   }
   
   async likeReply(replyId: string, userId: string): Promise<boolean> {
-    // Temporary stub
-    console.log('likeReply not fully implemented', replyId, userId);
-    return false;
+    try {
+      // Start a transaction
+      return await db.transaction(async (tx) => {
+        // Check if user has already liked this reply
+        const existingReaction = await tx.query.replyReactions.findFirst({
+          where: and(
+            eq(replyReactions.replyId, replyId),
+            eq(replyReactions.userId, userId),
+            eq(replyReactions.type, 'LIKE')
+          )
+        });
+
+        // Get the reply to check if it exists and get the owner's ID
+        const reply = await tx.query.replies.findFirst({
+          where: eq(replies.id, replyId),
+          columns: {
+            userId: true,
+            threadId: true
+          }
+        });
+
+        if (!reply) {
+          return false; // Reply doesn't exist
+        }
+
+        if (existingReaction) {
+          // User has already liked this reply - remove the like
+          await tx.delete(replyReactions)
+            .where(and(
+              eq(replyReactions.replyId, replyId),
+              eq(replyReactions.userId, userId),
+              eq(replyReactions.type, 'LIKE')
+            ));
+
+          // Decrease reply likes count
+          await tx.update(replies)
+            .set({
+              likesCount: sql`${replies.likesCount} - 1`
+            })
+            .where(eq(replies.id, replyId));
+
+          // Remove points from reply owner (if not liking their own reply)
+          if (reply.userId !== userId) {
+            await tx.update(users)
+              .set({
+                points: sql`${users.points} - 1` // 1 point for a reply like
+              })
+              .where(eq(users.id, reply.userId));
+          }
+
+          return true;
+        }
+
+        // Create new like reaction
+        await tx.insert(replyReactions).values({
+          id: uuidv4(),
+          replyId,
+          userId,
+          type: 'LIKE',
+          createdAt: new Date()
+        });
+
+        // Update reply likes count
+        await tx.update(replies)
+          .set({
+            likesCount: sql`${replies.likesCount} + 1`
+          })
+          .where(eq(replies.id, replyId));
+
+        // Add points for reply owner (if not liking their own reply)
+        if (reply.userId !== userId) {
+          await tx.update(users)
+            .set({
+              points: sql`${users.points} + 1` // 1 point for a reply like
+            })
+            .where(eq(users.id, reply.userId));
+
+          // Create notification for reply owner
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: reply.userId,
+            type: 'LIKE_REPLY',
+            relatedUserId: userId,
+            threadId: reply.threadId,
+            replyId,
+            message: 'liked your reply',
+            isRead: false,
+            createdAt: new Date()
+          });
+        }
+
+        return true;
+      });
+    } catch (error) {
+      console.error('Error liking reply:', error);
+      return false;
+    }
   }
   
   async dislikeReply(replyId: string, userId: string): Promise<boolean> {
-    // Temporary stub
-    console.log('dislikeReply not fully implemented', replyId, userId);
-    return false;
-  }
-  
-  async removeThreadReaction(threadId: string, userId: string, type: string): Promise<boolean> {
-    // Temporary stub
-    console.log('removeThreadReaction not fully implemented', threadId, userId, type);
-    return false;
-  }
-  
-  async removeReplyReaction(replyId: string, userId: string, type: string): Promise<boolean> {
-    // Temporary stub
-    console.log('removeReplyReaction not fully implemented', replyId, userId, type);
-    return false;
+    try {
+      // Start a transaction
+      return await db.transaction(async (tx) => {
+        // Check if user has already disliked this reply
+        const existingReaction = await tx.query.replyReactions.findFirst({
+          where: and(
+            eq(replyReactions.replyId, replyId),
+            eq(replyReactions.userId, userId),
+            eq(replyReactions.type, 'DISLIKE')
+          )
+        });
+
+        // Get the reply to check if it exists and get the owner's ID
+        const reply = await tx.query.replies.findFirst({
+          where: eq(replies.id, replyId),
+          columns: {
+            userId: true,
+            threadId: true
+          }
+        });
+
+        if (!reply) {
+          return false; // Reply doesn't exist
+        }
+
+        if (existingReaction) {
+          // User has already disliked this reply - remove the dislike
+          await tx.delete(replyReactions)
+            .where(and(
+              eq(replyReactions.replyId, replyId),
+              eq(replyReactions.userId, userId),
+              eq(replyReactions.type, 'DISLIKE')
+            ));
+
+          // Decrease reply dislikes count
+          await tx.update(replies)
+            .set({
+              dislikesCount: sql`${replies.dislikesCount} - 1`
+            })
+            .where(eq(replies.id, replyId));
+
+          return true;
+        }
+
+        // Create new dislike reaction
+        await tx.insert(replyReactions).values({
+          id: uuidv4(),
+          replyId,
+          userId,
+          type: 'DISLIKE',
+          createdAt: new Date()
+        });
+
+        // Update reply dislikes count
+        await tx.update(replies)
+          .set({
+            dislikesCount: sql`${replies.dislikesCount} + 1`
+          })
+          .where(eq(replies.id, replyId));
+
+        // Create notification for reply owner (if not disliking their own reply)
+        if (reply.userId !== userId) {
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: reply.userId,
+            type: 'DISLIKE_REPLY',
+            relatedUserId: userId,
+            threadId: reply.threadId,
+            replyId,
+            message: 'disliked your reply',
+            isRead: false,
+            createdAt: new Date()
+          });
+        }
+
+        return true;
+      });
+    } catch (error) {
+      console.error('Error disliking reply:', error);
+      return false;
+    }
   }
   
   async followUser(followerId: string, followingId: string): Promise<boolean> {

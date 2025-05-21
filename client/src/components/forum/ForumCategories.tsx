@@ -18,7 +18,7 @@ export default function ForumCategories() {
                 href={`/forum/${category.id}`}
                 className={`flex items-center justify-between px-3 py-2 rounded-md 
                   ${category.id === currentCategory 
-                    ? 'bg-ufc-blue bg-opacity-10 text-ufc-blue' 
+                    ? 'bg-ufc-blue bg-opacity-10 text-black' 
                     : 'hover:bg-gray-800 text-gray-300'} font-medium`}
               >
                 <span>{category.name}</span>

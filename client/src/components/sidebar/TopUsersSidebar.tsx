@@ -23,7 +23,7 @@ export default function TopUsersSidebar() {
       <div className="p-4">
         {isLoading ? (
           <div className="py-4 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-ufc-red mx-auto"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>
             <p className="mt-2 text-gray-400 text-sm">Loading rankings...</p>
           </div>
         ) : error ? (
@@ -39,7 +39,7 @@ export default function TopUsersSidebar() {
                 </span>
                 <UserAvatar user={rankedUser.user} size="sm" className="mr-3" />
                 <div className="flex-grow">
-                  <Link href={`/user/${rankedUser.user.username}`} className="text-white font-medium block leading-tight hover:text-ufc-red transition">
+                  <Link href={`/user/${rankedUser.user.username}`} className="text-white font-medium block leading-tight hover:text-ufc-blue transition">
                     {rankedUser.user.username}
                   </Link>
                   <StatusBadge status={rankedUser.user.status} />
@@ -57,7 +57,7 @@ export default function TopUsersSidebar() {
           </ul>
         )}
         
-        <Link href="/rankings" className="block text-center text-ufc-red font-medium text-sm mt-4 hover:underline">
+        <Link href="/rankings" className="block text-center text-ufc-blue font-medium text-sm mt-4 hover:underline">
           View Full Rankings →
         </Link>
       </div>

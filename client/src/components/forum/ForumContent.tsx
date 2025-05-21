@@ -63,7 +63,7 @@ export default function ForumContent({ category = "general" }: ForumContentProps
               placeholder="Search discussions..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-dark-gray border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300 w-full md:w-64 focus:outline-none focus:ring-1 focus:ring-ufc-red"
+              className="bg-dark-gray border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300 w-full md:w-64 focus:outline-none focus:ring-1 focus:ring-ufc-blue"
             />
             <button className="absolute right-2 top-2 text-gray-400">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -74,7 +74,7 @@ export default function ForumContent({ category = "general" }: ForumContentProps
           
           <button 
             onClick={() => setCreatePostModalOpen(true)}
-            className="bg-ufc-red hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg text-sm flex items-center transition"
+            className="bg-ufc-blue hover:bg-ufc-blue-dark text-black font-medium px-4 py-2 rounded-lg text-sm flex items-center transition"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -91,7 +91,7 @@ export default function ForumContent({ category = "general" }: ForumContentProps
           onChange={(e) => {
             window.location.href = `/forum/${e.target.value}`;
           }}
-          className="bg-dark-gray border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300 w-full focus:outline-none focus:ring-1 focus:ring-ufc-red"
+          className="bg-dark-gray border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300 w-full focus:outline-none focus:ring-1 focus:ring-ufc-blue"
         >
           {FORUM_CATEGORIES.map((cat) => (
             <option key={cat.id} value={cat.id}>
@@ -106,19 +106,19 @@ export default function ForumContent({ category = "general" }: ForumContentProps
         <div className="flex space-x-4">
           <button 
             onClick={() => setFilterOption("recent")}
-            className={`font-medium text-sm pb-1 ${filterOption === "recent" ? "text-white border-b-2 border-ufc-red" : "text-gray-400 hover:text-white"}`}
+            className={`font-medium text-sm pb-1 ${filterOption === "recent" ? "text-white border-b-2 border-ufc-blue" : "text-gray-400 hover:text-white"}`}
           >
             Recent Activity
           </button>
           <button 
             onClick={() => setFilterOption("popular")}
-            className={`font-medium text-sm pb-1 ${filterOption === "popular" ? "text-white border-b-2 border-ufc-red" : "text-gray-400 hover:text-white"}`}
+            className={`font-medium text-sm pb-1 ${filterOption === "popular" ? "text-white border-b-2 border-ufc-blue" : "text-gray-400 hover:text-white"}`}
           >
             Most Popular
           </button>
           <button 
             onClick={() => setFilterOption("new")}
-            className={`font-medium text-sm pb-1 hidden md:block ${filterOption === "new" ? "text-white border-b-2 border-ufc-red" : "text-gray-400 hover:text-white"}`}
+            className={`font-medium text-sm pb-1 hidden md:block ${filterOption === "new" ? "text-white border-b-2 border-ufc-blue" : "text-gray-400 hover:text-white"}`}
           >
             New Posts
           </button>
@@ -128,7 +128,7 @@ export default function ForumContent({ category = "general" }: ForumContentProps
           <select 
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value as any)}
-            className="bg-dark-gray text-gray-300 text-sm border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ufc-red"
+            className="bg-dark-gray text-gray-300 text-sm border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ufc-blue"
           >
             <option value="all">All Time</option>
             <option value="week">This Week</option>
@@ -141,7 +141,7 @@ export default function ForumContent({ category = "general" }: ForumContentProps
       {/* Loading State */}
       {isLoading && (
         <div className="py-20 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-red mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>
           <p className="mt-4 text-gray-400">Loading discussions...</p>
         </div>
       )}
@@ -174,7 +174,7 @@ export default function ForumContent({ category = "general" }: ForumContentProps
               <p className="text-gray-400">No discussions found in this category.</p>
               <button 
                 onClick={() => setCreatePostModalOpen(true)}
-                className="mt-4 bg-ufc-red hover:bg-red-700 text-white font-medium px-6 py-3 rounded-lg text-sm transition"
+                className="mt-4 bg-ufc-blue hover:bg-ufc-blue-dark text-black font-medium px-6 py-3 rounded-lg text-sm transition"
               >
                 Start a New Discussion
               </button>

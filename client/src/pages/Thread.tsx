@@ -288,7 +288,7 @@ export default function Thread() {
   if (isThreadLoading) {
     return (
       <div className="container mx-auto px-4 py-12 flex justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-red"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-blue"></div>
       </div>
     );
   }
@@ -332,7 +332,7 @@ export default function Thread() {
           </div>
           
           {/* Thread Card */}
-          <div className={`bg-dark-gray ${displayThread.isPotd ? 'border-l-4 border-ufc-red' : ''} rounded-lg overflow-hidden shadow-lg mb-6`}>
+          <div className={`bg-dark-gray ${displayThread.isPotd ? 'border-l-4 border-ufc-blue' : ''} rounded-lg overflow-hidden shadow-lg mb-6`}>
             <div className="p-5">
               {/* Thread Header */}
               <div className="flex items-start">
@@ -349,7 +349,7 @@ export default function Thread() {
                     )}
                     
                     {displayThread.isPotd && (
-                      <span className="bg-ufc-red text-white text-xs px-2 py-0.5 rounded font-bold">
+                      <span className="bg-ufc-blue text-black text-xs px-2 py-0.5 rounded font-bold">
                         POTD
                       </span>
                     )}
@@ -377,7 +377,7 @@ export default function Thread() {
                       </span>
                     )}
                     
-                    <Link href={`/user/${displayThread.user.username}`} className="text-white font-medium hover:text-ufc-red transition">
+                    <Link href={`/user/${displayThread.user.username}`} className="text-white font-medium hover:text-ufc-blue transition">
                       {displayThread.user.username}
                     </Link>
                     
@@ -512,7 +512,7 @@ export default function Thread() {
             
             {isRepliesLoading ? (
               <div className="py-12 text-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ufc-red mx-auto"></div>
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>
                 <p className="mt-4 text-gray-400">Loading replies...</p>
               </div>
             ) : repliesError ? (
@@ -548,7 +548,7 @@ export default function Thread() {
             {!currentUser ? (
               <div className="bg-gray-800 p-4 rounded-lg text-center">
                 <p className="text-gray-300 mb-3">You need to be logged in to reply</p>
-                <Link href="/login" className="inline-block bg-ufc-red hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition">
+                <Link href="/login" className="inline-block bg-ufc-blue hover:bg-ufc-blue-dark text-white font-medium px-4 py-2 rounded-lg text-sm transition">
                   Log In
                 </Link>
               </div>
@@ -560,7 +560,7 @@ export default function Thread() {
                 {replyingTo && (
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-gray-400">
-                      Replying to <span className="text-ufc-red">{replyingTo.username}</span>
+                      Replying to <span className="text-ufc-blue">{replyingTo.username}</span>
                     </span>
                     <button 
                       type="button"
@@ -580,7 +580,7 @@ export default function Thread() {
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
                   placeholder="Write your reply here..."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-gray-300 min-h-[150px] focus:outline-none focus:ring-1 focus:ring-ufc-red"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-gray-300 min-h-[150px] focus:outline-none focus:ring-1 focus:ring-ufc-blue"
                   required
                 />
                 
@@ -603,7 +603,7 @@ export default function Thread() {
                   <button 
                     type="submit"
                     disabled={submitReplyMutation.isPending || !replyContent.trim()}
-                    className={`bg-ufc-red hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition ${
+                    className={`bg-ufc-blue hover:bg-ufc-blue-dark text-black font-medium px-4 py-2 rounded-lg text-sm transition ${
                       submitReplyMutation.isPending || !replyContent.trim() ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
@@ -624,7 +624,7 @@ export default function Thread() {
               <p className="text-gray-400 text-sm mb-1">Posted by</p>
               <div className="flex items-center">
                 <UserAvatar user={displayThread.user} size="sm" className="mr-2" />
-                <Link href={`/user/${displayThread.user.username}`} className="text-white hover:text-ufc-red transition">
+                <Link href={`/user/${displayThread.user.username}`} className="text-white hover:text-ufc-blue transition">
                   {displayThread.user.username}
                 </Link>
               </div>
@@ -632,7 +632,7 @@ export default function Thread() {
             
             <div className="mb-4">
               <p className="text-gray-400 text-sm mb-1">Category</p>
-              <Link href={`/forum/${displayThread.categoryId}`} className="text-ufc-red hover:underline">
+              <Link href={`/forum/${displayThread.categoryId}`} className="text-ufc-blue hover:underline">
                 {getCategoryName(displayThread.categoryId)}
               </Link>
             </div>
@@ -646,11 +646,11 @@ export default function Thread() {
               <p className="text-gray-400 text-sm mb-1">Stats</p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-gray-800 p-2 rounded-lg text-center">
-                  <span className="block text-ufc-red font-bold">{displayThread.viewCount}</span>
+                  <span className="block text-ufc-blue font-bold">{displayThread.viewCount}</span>
                   <span className="text-gray-400 text-xs">Views</span>
                 </div>
                 <div className="bg-gray-800 p-2 rounded-lg text-center">
-                  <span className="block text-ufc-red font-bold">{displayThread.repliesCount}</span>
+                  <span className="block text-ufc-blue font-bold">{displayThread.repliesCount}</span>
                   <span className="text-gray-400 text-xs">Replies</span>
                 </div>
               </div>
@@ -658,7 +658,7 @@ export default function Thread() {
             
             {displayThread.isPotd && (
               <div className="bg-gray-800 p-3 rounded-lg mb-4">
-                <div className="flex items-center text-ufc-red mb-1">
+                <div className="flex items-center text-ufc-blue mb-1">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                   </svg>
@@ -684,7 +684,7 @@ export default function Thread() {
                     </svg>
                     {displayThread.isPinned ? 'Unpin Thread' : 'Pin Thread'}
                   </button>
-                  <button className="w-full bg-red-900 hover:bg-red-800 text-white px-3 py-2 rounded-lg text-sm transition flex items-center justify-center">
+                  <button className="w-full bg-ufc-blue hover:bg-ufc-blue-dark text-black px-3 py-2 rounded-lg text-sm transition flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
@@ -754,7 +754,7 @@ function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardPro
                 </span>
               )}
               
-              <Link href={`/user/${reply.user.username}`} className="text-white font-medium hover:text-ufc-red transition">
+              <Link href={`/user/${reply.user.username}`} className="text-white font-medium hover:text-ufc-blue transition">
                 {reply.user.username}
               </Link>
               

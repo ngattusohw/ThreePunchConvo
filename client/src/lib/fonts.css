@@ -1,7 +1,8 @@
 /* Custom theme styles for 3 Punch Convo */
 :root {
-  --ufc-red: #D20A0A;
-  --ufc-black: #121212;
+  --ufc-blue: #25C3EC;
+  --ufc-blue-hover: #23afd1;
+  --ufc-black: #0E0E0E;
   --ufc-gold: #F5C518;
   --dark-gray: #1E1E1E;
   --light-gray: #F5F5F5;
@@ -76,8 +77,8 @@
 }
 
 /* MMA theme colors */
-.bg-ufc-red {
-  background-color: var(--ufc-red);
+.bg-ufc-blue {
+  background-color: var(--ufc-blue);
 }
 
 .bg-ufc-black {
@@ -96,8 +97,8 @@
   background-color: var(--light-gray);
 }
 
-.text-ufc-red {
-  color: var(--ufc-red);
+.text-ufc-blue {
+  color: var(--ufc-blue);
 }
 
 .text-ufc-black {
@@ -108,8 +109,8 @@
   color: var(--ufc-gold);
 }
 
-.border-ufc-red {
-  border-color: var(--ufc-red);
+.border-ufc-blue {
+  border-color: var(--ufc-blue);
 }
 
 .border-ufc-gold {
@@ -117,14 +118,18 @@
 }
 
 /* Hover states */
-.hover\:bg-ufc-red:hover {
-  background-color: var(--ufc-red);
+.hover\:bg-ufc-blue:hover {
+  background-color: var(--ufc-blue);
 }
 
 .hover\:bg-dark-gray:hover {
   background-color: var(--dark-gray);
 }
 
-.hover\:text-ufc-red:hover {
-  color: var(--ufc-red);
+.hover\:text-ufc-blue:hover {
+  color: var(--ufc-blue);
+}
+
+.hover\:bg-ufc-blue-dark:hover {
+  background-color: var(--ufc-blue-hover);
 }

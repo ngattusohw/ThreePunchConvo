@@ -165,7 +165,7 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
                 placeholder="What's your topic about?" 
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-red"
+                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-blue"
               />
             </div>
             
@@ -175,7 +175,7 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
                 id="post-category" 
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-red"
+                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-blue"
               >
                 {FORUM_CATEGORIES.map((cat) => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -191,7 +191,7 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
                 placeholder="Share your thoughts..." 
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-red"
+                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-blue"
               />
             </div>
             
@@ -205,7 +205,7 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
                     placeholder="Ask a question..." 
                     value={pollQuestion}
                     onChange={(e) => setPollQuestion(e.target.value)}
-                    className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-red"
+                    className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-blue"
                   />
                 </div>
                 
@@ -218,13 +218,13 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
                         placeholder={`Option ${index + 1}`} 
                         value={option}
                         onChange={(e) => handlePollOptionChange(index, e.target.value)}
-                        className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white flex-grow focus:outline-none focus:ring-1 focus:ring-ufc-red"
+                        className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white flex-grow focus:outline-none focus:ring-1 focus:ring-ufc-blue"
                       />
                       {pollOptions.length > 2 && (
                         <button 
                           type="button"
                           onClick={() => handleRemovePollOption(index)}
-                          className="text-gray-400 hover:text-red-500"
+                          className="text-gray-400 hover:bg-ufc-blue-dark"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -237,7 +237,7 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
                   <button 
                     type="button"
                     onClick={handleAddPollOption}
-                    className="flex items-center text-ufc-red hover:text-red-400 text-sm font-medium mt-2"
+                    className="flex items-center text-ufc-blue hover:bg-ufc-blue-dark text-sm font-medium mt-2"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
@@ -268,7 +268,7 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
                 <button 
                   type="button" 
                   onClick={() => setIncludePoll(!includePoll)}
-                  className={`flex items-center ${includePoll ? 'text-ufc-red' : 'text-gray-300 hover:text-white'}`}
+                  className={`flex items-center ${includePoll ? 'text-ufc-blue' : 'text-gray-300 hover:text-white'}`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
@@ -289,7 +289,7 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
               <button 
                 type="submit"
                 disabled={createPostMutation.isPending}
-                className={`px-4 py-2 bg-ufc-red hover:bg-red-700 text-white rounded-lg text-sm transition ${createPostMutation.isPending ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`px-4 py-2 bg-ufc-blue hover:bg-ufc-blue-dark text-black rounded-lg text-sm transition ${createPostMutation.isPending ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 {createPostMutation.isPending ? (
                   <span className="flex items-center">

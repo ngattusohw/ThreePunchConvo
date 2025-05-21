@@ -18,12 +18,12 @@ export default function ForumCategories() {
                 href={`/forum/${category.id}`}
                 className={`flex items-center justify-between px-3 py-2 rounded-md 
                   ${category.id === currentCategory 
-                    ? 'bg-ufc-red bg-opacity-10 text-ufc-red' 
+                    ? 'bg-ufc-blue bg-opacity-10 text-ufc-blue' 
                     : 'hover:bg-gray-800 text-gray-300'} font-medium`}
               >
                 <span>{category.name}</span>
                 <span className={`${category.id === currentCategory 
-                  ? 'bg-ufc-red text-white' 
+                  ? 'bg-ufc-blue text-black' 
                   : 'bg-gray-700 text-gray-300'} text-xs rounded-full px-2 py-0.5`}
                 >
                   {category.count}

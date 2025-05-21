@@ -74,7 +74,7 @@ export default function NotificationModal({ onClose }: NotificationModalProps) {
         <div className="max-h-96 overflow-y-auto p-4">
           {isLoading ? (
             <div className="py-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-ufc-red mx-auto"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>
               <p className="mt-2 text-gray-400 text-sm">Loading notifications...</p>
             </div>
           ) : error ? (
@@ -116,7 +116,7 @@ function NotificationItem({ notification }: NotificationItemProps) {
   return (
     <li className={`flex items-start p-3 ${notification.isRead ? 'bg-gray-800 bg-opacity-30' : 'bg-gray-800 bg-opacity-50'} rounded-lg`}>
       {notification.type === "SYSTEM" ? (
-        <div className="h-10 w-10 rounded-full bg-ufc-red flex items-center justify-center text-white font-bold mr-3 flex-shrink-0">
+        <div className="h-10 w-10 rounded-full bg-ufc-blue flex items-center justify-center text-black font-bold mr-3 flex-shrink-0">
           3PC
         </div>
       ) : notification.relatedUser ? (
@@ -130,19 +130,19 @@ function NotificationItem({ notification }: NotificationItemProps) {
       <div>
         {notification.type === "REPLY" && notification.relatedUser && notification.threadTitle && (
           <p className="text-gray-300">
-            <span className="font-medium text-white">{notification.relatedUser.username}</span> replied to your post <Link href={`/thread/${notification.threadId}`} className="text-ufc-red hover:underline">"{notification.threadTitle}"</Link>
+            <span className="font-medium text-white">{notification.relatedUser.username}</span> replied to your post <Link href={`/thread/${notification.threadId}`} className="text-ufc-blue hover:underline">"{notification.threadTitle}"</Link>
           </p>
         )}
         
         {notification.type === "MENTION" && notification.relatedUser && notification.threadTitle && (
           <p className="text-gray-300">
-            <span className="font-medium text-white">{notification.relatedUser.username}</span> mentioned you in a post <Link href={`/thread/${notification.threadId}`} className="text-ufc-red hover:underline">"{notification.threadTitle}"</Link>
+            <span className="font-medium text-white">{notification.relatedUser.username}</span> mentioned you in a post <Link href={`/thread/${notification.threadId}`} className="text-ufc-blue hover:underline">"{notification.threadTitle}"</Link>
           </p>
         )}
         
         {notification.type === "LIKE" && notification.relatedUser && notification.threadTitle && (
           <p className="text-gray-300">
-            <span className="font-medium text-white">{notification.relatedUser.username}</span> liked your post <Link href={`/thread/${notification.threadId}`} className="text-ufc-red hover:underline">"{notification.threadTitle}"</Link>
+            <span className="font-medium text-white">{notification.relatedUser.username}</span> liked your post <Link href={`/thread/${notification.threadId}`} className="text-ufc-blue hover:underline">"{notification.threadTitle}"</Link>
           </p>
         )}
         

@@ -62,7 +62,7 @@ export default function Rankings() {
           onClick={() => setRankingFilter("all")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
             rankingFilter === "all"
-              ? "bg-ufc-red text-white"
+              ? "bg-ufc-blue text-black"
               : "bg-dark-gray text-gray-300 hover:bg-gray-800"
           }`}
         >
@@ -125,7 +125,7 @@ export default function Rankings() {
       {/* Loading State */}
       {isLoading && (
         <div className="py-20 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-red mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>
           <p className="mt-4 text-gray-400">Loading rankings...</p>
         </div>
       )}
@@ -181,7 +181,7 @@ export default function Rankings() {
                     <div>
                       <Link
                         href={`/user/${rankedUser.user.username}`}
-                        className="text-white font-medium hover:text-ufc-red transition"
+                        className="text-white font-medium hover:text-ufc-blue transition"
                       >
                         {rankedUser.user.username}
                       </Link>
@@ -258,7 +258,7 @@ export default function Rankings() {
                     </span>
                   </div>
                   <div className="hidden md:block w-24 text-center">
-                    <span className="text-ufc-red font-bold">
+                    <span className="text-ufc-blue font-bold">
                       {shortenNumber(rankedUser.points)}
                     </span>
                   </div>

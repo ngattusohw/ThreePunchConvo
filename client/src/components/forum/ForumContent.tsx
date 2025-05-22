@@ -87,8 +87,11 @@ export default function ForumContent({ category = "general" }: ForumContentProps
   
   // Update allRegularThreads when regularThreads changes
   useEffect(() => {
+    if (!regularThreads || isRegularLoading) return;
     if (regularThreads) {
+      console.log("in use effect check for reg threads")
       if (page === 0) {
+        console.log("in use effect check for page 0")
         // Replace all threads when filters change (page is reset to 0)
         setAllRegularThreads(regularThreads);
       } else {

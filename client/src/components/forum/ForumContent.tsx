@@ -225,7 +225,7 @@ export default function ForumContent({ category = "general" }: ForumContentProps
       </div>
 
       {/* Forum Filter Options */}
-      <div className="flex items-center justify-between mb-4 bg-dark-gray p-3 rounded-lg">
+      {/* <div className="flex items-center justify-between mb-4 bg-dark-gray p-3 rounded-lg">
         <div className="flex space-x-4">
           <button 
             onClick={() => handleFilterChange("recent")}
@@ -261,7 +261,7 @@ export default function ForumContent({ category = "general" }: ForumContentProps
             <option value="year">This Year</option>
           </select>
         </div>
-      </div>
+      </div> */}
 
       {/* Loading State - Initial Page Load */}
       {isLoading && page === 0 && allRegularThreads.length === 0 && (

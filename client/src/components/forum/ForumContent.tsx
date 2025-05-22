@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import ThreadCard from "@/components/forum/ThreadCard";
 import { useQuery } from "@tanstack/react-query";
@@ -17,6 +17,9 @@ export default function ForumContent({ category = "general" }: ForumContentProps
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
+  const [allRegularThreads, setAllRegularThreads] = useState<ForumThread[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   const limit = 10;
   
   // Get the current category info
@@ -78,15 +81,85 @@ export default function ForumContent({ category = "general" }: ForumContentProps
     },
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
-    refetchOnReconnect: true
+    refetchOnReconnect: true,
+    staleTime: 0, // Consider data always stale to force refetch
   });
   
-  // Combine POTD and regular threads
-  const threads = [...potdThreads, ...regularThreads];
+  // Update allRegularThreads when regularThreads changes
+  useEffect(() => {
+    if (regularThreads) {
+      if (page === 0) {
+        // Replace all threads when filters change (page is reset to 0)
+        setAllRegularThreads(regularThreads);
+      } else {
+        // Append new threads when loading more
+        setAllRegularThreads(prev => [...prev, ...regularThreads]);
+      }
+
+      // Check if we have more threads to load
+      setHasMore(regularThreads.length >= limit);
+    }
+  }, [regularThreads, page, limit]);
+
+  // Reset pagination and force refetch when filter options change
+  useEffect(() => {
+    const resetAndRefetch = async () => {
+      setPage(0);
+      setAllRegularThreads([]);
+      setHasMore(true); // Reset the hasMore flag to enable loading
+      await refetchRegularThreads(); // Force a refetch when filter changes
+    };
+    
+    resetAndRefetch();
+  }, [filterOption, timeRange, category, refetchRegularThreads]);
+  
+  // Scroll to the loading area when new content is loaded
+  useEffect(() => {
+    if (page > 0 && regularThreads.length > 0 && loadMoreRef.current) {
+      const previousHeight = loadMoreRef.current.offsetTop - window.innerHeight / 2;
+      window.scrollTo({
+        top: previousHeight,
+        behavior: 'auto'
+      });
+    }
+  }, [regularThreads, page]);
+  
   const isLoading = isPotdLoading || isRegularLoading;
   
   const loadMore = () => {
-    setPage(prevPage => prevPage + 1);
+    if (hasMore && !isRegularLoading) {
+      setPage(prevPage => prevPage + 1);
+    }
+  };
+
+  // Helper function to handle filter changes
+  const handleFilterChange = (newFilter: "recent" | "popular" | "new") => {
+    if (newFilter === filterOption) {
+      // If clicking the same filter, force a refresh
+      setAllRegularThreads([]);
+      setPage(0);
+      setHasMore(true);
+      setTimeout(() => {
+        refetchRegularThreads();
+      }, 0);
+    } else {
+      setFilterOption(newFilter);
+    }
+  };
+
+  // Helper function to handle time range changes
+  const handleTimeRangeChange = (newTimeRange: "all" | "week" | "month" | "year") => {
+    if (newTimeRange === timeRange) {
+      // If selecting the same time range, force a refresh
+      setAllRegularThreads([]);
+      setPage(0);
+      setHasMore(true);
+      setTimeout(() => {
+        refetchRegularThreads();
+      }, 0);
+    } else {
+      setTimeRange(newTimeRange as any);
+    }
   };
 
   return (
@@ -148,28 +221,19 @@ export default function ForumContent({ category = "general" }: ForumContentProps
       <div className="flex items-center justify-between mb-4 bg-dark-gray p-3 rounded-lg">
         <div className="flex space-x-4">
           <button 
-            onClick={() => {
-              setFilterOption("recent");
-              setPage(0); // Reset page on filter change
-            }}
+            onClick={() => handleFilterChange("recent")}
             className={`font-medium text-sm pb-1 ${filterOption === "recent" ? "text-white border-b-2 border-ufc-blue" : "text-gray-400 hover:text-white"}`}
           >
             Recent Activity
           </button>
           <button 
-            onClick={() => {
-              setFilterOption("popular");
-              setPage(0); // Reset page on filter change
-            }}
+            onClick={() => handleFilterChange("popular")}
             className={`font-medium text-sm pb-1 ${filterOption === "popular" ? "text-white border-b-2 border-ufc-blue" : "text-gray-400 hover:text-white"}`}
           >
             Most Popular
           </button>
           <button 
-            onClick={() => {
-              setFilterOption("new");
-              setPage(0); // Reset page on filter change
-            }}
+            onClick={() => handleFilterChange("new")}
             className={`font-medium text-sm pb-1 hidden md:block ${filterOption === "new" ? "text-white border-b-2 border-ufc-blue" : "text-gray-400 hover:text-white"}`}
           >
             New Posts
@@ -180,8 +244,7 @@ export default function ForumContent({ category = "general" }: ForumContentProps
           <select 
             value={timeRange}
             onChange={(e) => {
-              setTimeRange(e.target.value as any);
-              setPage(0); // Reset page on time range change
+              handleTimeRangeChange(e.target.value as any);
             }}
             className="bg-dark-gray text-gray-300 text-sm border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ufc-blue"
           >
@@ -193,8 +256,8 @@ export default function ForumContent({ category = "general" }: ForumContentProps
         </div>
       </div>
 
-      {/* Loading State */}
-      {isLoading && (
+      {/* Loading State - Initial Page Load */}
+      {isLoading && page === 0 && allRegularThreads.length === 0 && (
         <div className="py-20 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>
           <p className="mt-4 text-gray-400">Loading discussions...</p>
@@ -209,11 +272,11 @@ export default function ForumContent({ category = "general" }: ForumContentProps
       )}
 
       {/* Forum Thread List */}
-      {!isLoading && !error && (
+      {(!isLoading || page > 0 || allRegularThreads.length > 0) && !error && (
         <div className="space-y-4">
-          {threads.length > 0 ? (
+          {(potdThreads.length > 0 || allRegularThreads.length > 0) ? (
             <div>
-              {/* POTD Section */}
+              {/* POTD Section - only shown once at the top */}
               {potdThreads.length > 0 && (
                 <div className="mb-6">
                   <div className="text-sm font-medium text-ufc-blue mb-2">Posts of the Day</div>
@@ -225,23 +288,39 @@ export default function ForumContent({ category = "general" }: ForumContentProps
                 </div>
               )}
               
-              {/* Regular Threads Section */}
-              {regularThreads.length > 0 && (
+              {/* Regular Threads Section - grows with infinite scrolling */}
+              {allRegularThreads.length > 0 ? (
                 <div className="space-y-4">
-                  {regularThreads.map(thread => (
+                  {allRegularThreads.map(thread => (
                     <ThreadCard key={thread.id} thread={thread} />
                   ))}
                 </div>
+              ) : (
+                !isRegularLoading && page === 0 && (
+                  <div className="text-center py-6">
+                    <p className="text-gray-400">No threads found with the current filters.</p>
+                  </div>
+                )
               )}
               
-              {/* Load More Button */}
+              {/* Reference point for scroll position */}
+              <div ref={loadMoreRef}></div>
+              
+              {/* Load More Button with loading state */}
               <div className="mt-6 text-center">
-                <button 
-                  onClick={loadMore}
-                  className="bg-gray-800 hover:bg-gray-700 text-white font-medium px-6 py-3 rounded-lg text-sm transition"
-                >
-                  Load More Discussions
-                </button>
+                {isRegularLoading && page > 0 ? (
+                  <div className="py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={loadMore}
+                    className={`bg-gray-800 hover:bg-gray-700 text-white font-medium px-6 py-3 rounded-lg text-sm transition ${!hasMore ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={!hasMore || isRegularLoading}
+                  >
+                    {!hasMore ? "No More Discussions" : "Load More Discussions"}
+                  </button>
+                )}
               </div>
             </div>
           ) : (

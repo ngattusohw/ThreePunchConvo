@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import ThreadCard from "@/components/forum/ThreadCard";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ForumThread, ForumCategory, UserStatus } from "@/lib/types";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import CreatePostModal from "@/components/forum/CreatePostModal";
@@ -12,6 +12,7 @@ interface ForumContentProps {
 }
 
 export default function ForumContent({ category = "general" }: ForumContentProps) {
+  const queryClient = useQueryClient();
   const [filterOption, setFilterOption] = useState<"recent" | "popular" | "new">("recent");
   const [timeRange, setTimeRange] = useState<"all" | "week" | "month" | "year">("all");
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
@@ -89,9 +90,9 @@ export default function ForumContent({ category = "general" }: ForumContentProps
   useEffect(() => {
     if (!regularThreads || isRegularLoading) return;
     if (regularThreads) {
-      console.log("in use effect check for reg threads")
+      console.log("in use effect check for reg threads", regularThreads)
       if (page === 0) {
-        console.log("in use effect check for page 0")
+        console.log("in use effect check for page 0, ", regularThreads)
         // Replace all threads when filters change (page is reset to 0)
         setAllRegularThreads(regularThreads);
       } else {
@@ -105,16 +106,17 @@ export default function ForumContent({ category = "general" }: ForumContentProps
   }, [regularThreads, page, limit]);
 
   // Reset pagination and force refetch when filter options change
-  useEffect(() => {
-    const resetAndRefetch = async () => {
-      setPage(0);
-      setAllRegularThreads([]);
-      setHasMore(true); // Reset the hasMore flag to enable loading
-      await refetchRegularThreads(); // Force a refetch when filter changes
-    };
+  // useEffect(() => {
+  //   const resetAndRefetch = async () => {
+  //     setPage(0);
+  //     console.log("help me, im here resetting")
+  //     setAllRegularThreads([]);
+  //     setHasMore(true); // Reset the hasMore flag to enable loading
+  //     await refetchRegularThreads(); // Force a refetch when filter changes
+  //   };
     
-    resetAndRefetch();
-  }, [filterOption, timeRange, category, refetchRegularThreads]);
+  //   resetAndRefetch();
+  // }, [filterOption, timeRange, category, refetchRegularThreads]);
   
   // Scroll to the loading area when new content is loaded
   useEffect(() => {
@@ -164,6 +166,8 @@ export default function ForumContent({ category = "general" }: ForumContentProps
       setTimeRange(newTimeRange as any);
     }
   };
+
+  console.log("allRegularThreads: ", allRegularThreads);
 
   return (
     <div className="flex-grow">

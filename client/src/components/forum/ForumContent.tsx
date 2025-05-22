@@ -103,7 +103,7 @@ export default function ForumContent({ category = "general" }: ForumContentProps
       // Check if we have more threads to load
       setHasMore(regularThreads.length >= limit);
     }
-  }, [regularThreads, page, limit]);
+  }, [regularThreads, page, limit, category]);
 
   // Reset pagination and force refetch when filter options change
   // useEffect(() => {

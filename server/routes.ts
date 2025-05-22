@@ -316,6 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sort = req.query.sort as string || 'recent';
       const limit = parseInt(req.query.limit as string) || 10;
       const offset = parseInt(req.query.offset as string) || 0;
+      const potdFilter = req.query.potdFilter as string || 'include'; // 'only', 'exclude', or 'include'
       
       // Set cache control headers
       res.set({
@@ -325,11 +326,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Surrogate-Control': 'no-store'
       });
       
-      const threads = await storage.getThreadsByCategory(categoryId, sort, limit, offset);
+      // Get threads with more buffer if we need to filter
+      const fetchLimit = potdFilter !== 'include' ? limit + 20 : limit;
+      const threads = await storage.getThreadsByCategory(categoryId, sort, fetchLimit, offset);
+      
+      // Filter threads based on POTD status
+      let filteredThreads = threads;
+      if (potdFilter === 'only') {
+        filteredThreads = threads.filter(thread => thread.isPotd);
+      } else if (potdFilter === 'exclude') {
+        filteredThreads = threads.filter(thread => !thread.isPotd);
+      }
+      
+      // Apply limit if we've filtered
+      if (potdFilter !== 'include' && filteredThreads.length > limit) {
+        filteredThreads = filteredThreads.slice(0, limit);
+      }
       
       // Fetch user for each thread
       const threadsWithUser = await Promise.all(
-        threads.map(async (thread) => {
+        filteredThreads.map(async (thread) => {
           const user = await storage.getUser(thread.userId);
           
           if (!user) {
@@ -347,27 +363,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           let pollWithOptions;
           if (poll) {
-            // Get poll options using the storage interface
-            // This is a temporary solution for the interface not exposing pollOptions directly
-            let pollOptions: PollOption[] = [];
-            try {
-              // If using MemStorage 
-              if ('pollOptions' in (storage as any)) {
-                const values = Array.from((storage as any)['pollOptions'].values());
-                pollOptions = values
-                  .filter((option: any) => option.pollId === poll.id) as PollOption[];
-              } else {
-                // Fallback - in a real implementation, we would add a proper method to the interface
-                pollOptions = [];
-              }
-            } catch (err) {
-              console.error('Error getting poll options:', err);
-              pollOptions = [];
-            }
-            
+            // Get poll options
+            const options = await storage.getPollOptions(poll.id);
             pollWithOptions = {
               ...poll,
-              options: pollOptions
+              options
             };
           }
           
@@ -382,6 +382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(threadsWithUser);
     } catch (error) {
+      console.error('Error fetching threads:', error);
       res.status(500).json({ message: 'Failed to fetch threads' });
     }
   });

@@ -218,7 +218,8 @@ export default function ForumContent({ category = "general" }: ForumContentProps
         >
           {FORUM_CATEGORIES.map((cat) => (
             <option key={cat.id} value={cat.id}>
-              {cat.name} ({cat.count})
+              {cat.name}
+               {/* ({cat.count}) */}
             </option>
           ))}
         </select>

@@ -899,6 +899,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User role update endpoint
+  app.put('/api/users/:id/role', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      const { role, updatedBy } = req.body;
+      
+      // Validate input
+      if (!userId || !role) {
+        return res.status(400).json({ message: 'User ID and role are required' });
+      }
+      
+      // Validate role value
+      const validRoles = [
+        'ADMIN', 
+        'MODERATOR', 
+        'PRO', 
+        'USER',
+        'PREMIUM_USER'
+      ];
+      
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ 
+          message: 'Invalid role value', 
+          validRoles 
+        });
+      }
+      
+      // Get the user performing the update - only admins can update roles
+      const admin = await storage.getUser(updatedBy);
+      if (!admin || admin.role !== 'ADMIN') {
+        return res.status(403).json({ message: 'Only administrators can update user roles' });
+      }
+      
+      // Get the user being updated to ensure they exist
+      const userToUpdate = await storage.getUser(userId);
+      if (!userToUpdate) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // If trying to set another user as ADMIN, require extra confirmation
+      if (role === 'ADMIN' && updatedBy !== userId) {
+        const { confirmAdminPromotion } = req.body;
+        if (!confirmAdminPromotion) {
+          return res.status(400).json({ 
+            message: 'Admin promotion requires confirmation',
+            requiresConfirmation: true
+          });
+        }
+      }
+      
+      // Update the user's role
+      const updatedUser = await storage.updateUser(userId, { role });
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: 'Failed to update user role' });
+      }
+      
+      // Log the role change for audit purposes
+      console.log(`User role updated: ${userToUpdate.username} (${userId}) from ${userToUpdate.role} to ${role} by admin ${admin.username} (${updatedBy})`);
+      
+      // Don't return password in response
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      res.json({
+        message: 'User role updated successfully',
+        previousRole: userToUpdate.role,
+        newRole: role,
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      res.status(500).json({ message: 'Failed to update user role' });
+    }
+  });
+
   // Auto-calculate user status endpoint
   app.post('/api/users/:id/recalculate-status', isAuthenticated, async (req: Request, res: Response) => {
     try {

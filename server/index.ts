@@ -4,10 +4,14 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ensureConnection } from "./db";
 import { setupCronJobs } from "./cron-jobs";
+import { clerkMiddleware } from '@clerk/express';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Add Clerk middleware
+app.use(clerkMiddleware());
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -64,9 +68,9 @@ app.use((req, res, next) => {
       console.log('starting development server')
       await setupVite(app, server);
     } else {
-      app.use(express.static(path.resolve(import.meta.dirname, "..", "dist", "public")));
+      app.use(express.static(path.resolve(__dirname, "..", "dist", "public")));
       app.get("*", (_req, res) => {
-        res.sendFile(path.resolve(import.meta.dirname, "..", "dist", "public", "index.html"));
+        res.sendFile(path.resolve(__dirname, "..", "dist", "public", "index.html"));
       });
     }
 

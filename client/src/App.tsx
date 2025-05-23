@@ -10,12 +10,17 @@ import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import { AuthProvider } from "@/hooks/use-auth";
+import { ClerkProvider } from '@clerk/clerk-react'
 import { ProtectedRoute } from "@/lib/protected-route";
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+
+if (!PUBLISHABLE_KEY) {
+  throw new Error('Missing Publishable Key')
+}
 
 function App() {
   return (
-    <AuthProvider>
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl='/'>
       <div className="flex flex-col min-h-screen bg-ufc-black text-light-gray">
         <Header />
         <main className="flex-grow">
@@ -37,7 +42,7 @@ function App() {
         <Footer />
       </div>
       <Toaster />
-    </AuthProvider>
+    </ClerkProvider>
   );
 }
 

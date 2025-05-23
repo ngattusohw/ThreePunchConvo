@@ -17,7 +17,7 @@ import {
   insertNotificationSchema,
   PollOption
 } from "@shared/schema";
-import { setupAuth, isAuthenticated } from "./auth";
+import { requireAuth } from '@clerk/express'
 
 // Configure S3 client
 const s3Client = new S3Client({
@@ -65,11 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Set up authentication - this must come after error handling middleware
-  await setupAuth(app);
-
-  // Authentication endpoints are now handled by auth.ts
-  // Remove duplicate routes and continue with other API endpoints...
+  // Authentication endpoints are now handled by Clerk
 
   // User endpoints
   app.get('/api/users/top', async (req: Request, res: Response) => {
@@ -839,7 +835,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User status update endpoint
-  app.put('/api/users/:id/status', isAuthenticated, async (req: Request, res: Response) => {
+  app.put('/api/users/:id/status', requireAuth(), async (req: Request, res: Response) => {
     try {
       const userId = req.params.id;
       const { status, updatedBy } = req.body;
@@ -900,7 +896,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User role update endpoint
-  app.put('/api/users/:id/role', isAuthenticated, async (req: Request, res: Response) => {
+  app.put('/api/users/:id/role', requireAuth(), async (req: Request, res: Response) => {
     try {
       const userId = req.params.id;
       const { role, updatedBy } = req.body;
@@ -975,7 +971,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auto-calculate user status endpoint
-  app.post('/api/users/:id/recalculate-status', isAuthenticated, async (req: Request, res: Response) => {
+  app.post('/api/users/:id/recalculate-status', requireAuth(), async (req: Request, res: Response) => {
     try {
       const userId = req.params.id;
       const { requestedBy } = req.body;
@@ -1029,7 +1025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin endpoint to recalculate all user statuses
-  app.post('/api/admin/recalculate-all-statuses', isAuthenticated, async (req: Request, res: Response) => {
+  app.post('/api/admin/recalculate-all-statuses', requireAuth(), async (req: Request, res: Response) => {
     try {
       const { adminId } = req.body;
       
@@ -1162,7 +1158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         Key: `uploads/${fileName}`,
         Body: file.buffer,
         ContentType: file.mimetype,
-        ACL: 'public-read'
+        ACL: 'public-read' as const
       };
 
       await s3Client.send(new PutObjectCommand(uploadParams));

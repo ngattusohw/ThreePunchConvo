@@ -157,3 +157,69 @@ If you encounter errors about missing tables or foreign key constraints:
 1. Make sure you've run `npm run db:push` to create all database tables
 2. Make sure you've initialized the categories using the SQL command above
 3. Make sure you've registered and logged in before trying to create threads
+
+# 3 Punch Convo
+
+An MMA community forum app with Clerk authentication.
+
+## Setting Up Authentication with Clerk
+
+This application uses Clerk for authentication. Follow these steps to set it up:
+
+1. **Create a Clerk account**:
+   - Go to [clerk.com](https://clerk.com) and sign up for an account
+   - Create a new application in your Clerk dashboard
+
+2. **Configure your Clerk application**:
+   - Set up the authentication methods you want to support (email/password, social logins, etc.)
+   - Configure your application's URLs (add your app's domain)
+   - In your Clerk application settings, find your API keys
+
+3. **Set up environment variables**:
+   - Create a `.env` file in the root directory of this project
+   - Add the following environment variables:
+   ```
+   VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+   CLERK_SECRET_KEY=your_clerk_secret_key
+   ```
+
+4. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+5. **Run the application**:
+   ```bash
+   npm run dev
+   ```
+
+## Development
+
+This is a full-stack application with:
+- React frontend with Clerk authentication
+- Express backend with Clerk middleware for API protection
+- Database integration for user data
+
+## Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```
+# Database connection
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/threepunchconvo
+
+# Clerk authentication
+VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+CLERK_SECRET_KEY=your_clerk_secret_key
+
+# AWS S3 configuration for file uploads
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+AWS_S3_BUCKET=your-bucket-name
+CDN_BASE_URL=https://your-bucket-name.s3.amazonaws.com
+
+# Server configuration
+PORT=5000
+NODE_ENV=development
+```

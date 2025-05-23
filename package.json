@@ -8,7 +8,10 @@
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:reset": "drizzle-kit drop && drizzle-kit push",
+    "migrate": "tsx server/migrate.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -50,6 +53,7 @@
     "cmdk": "^1.0.0",
     "connect-pg-simple": "^10.0.0",
     "date-fns": "^3.6.0",
+    "dotenv": "^16.5.0",
     "drizzle-orm": "^0.39.3",
     "drizzle-zod": "^0.7.0",
     "embla-carousel-react": "^8.3.0",
@@ -63,6 +67,8 @@
     "lucide-react": "^0.453.0",
     "memoizee": "^0.4.17",
     "memorystore": "^1.6.7",
+    "multer": "^1.4.5-lts.2",
+    "node-cron": "^4.0.7",
     "node-fetch": "^3.3.2",
     "openid-client": "^6.4.2",
     "passport": "^0.7.0",
@@ -86,13 +92,16 @@
     "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.810.0",
     "@replit/vite-plugin-cartographer": "^0.0.11",
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
     "@tailwindcss/typography": "^0.5.15",
     "@types/connect-pg-simple": "^7.0.3",
     "@types/express": "4.17.21",
     "@types/express-session": "^1.18.0",
+    "@types/multer": "^1.4.12",
     "@types/node": "20.16.11",
+    "@types/node-cron": "^3.0.11",
     "@types/passport": "^1.0.16",
     "@types/passport-local": "^1.0.38",
     "@types/react": "^18.3.11",
@@ -104,7 +113,7 @@
     "esbuild": "^0.25.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
-    "tsx": "^4.19.1",
+    "tsx": "^4.19.4",
     "typescript": "5.6.3",
     "vite": "^5.4.14"
   },

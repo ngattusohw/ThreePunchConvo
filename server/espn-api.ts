@@ -2,7 +2,7 @@ import fetch from "node-fetch";
 import { MMAEvent, Fighter, Fight } from "@shared/schema";
 
 // ESPN API endpoint for MMA events
-const ESPN_API_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/mma";
+export const ESPN_API_BASE_URL = process.env.ESPN_API_BASE_URL || "https://site.api.espn.com/apis/site/v2/sports/mma";
 
 interface ESPNEvent {
   id: string;

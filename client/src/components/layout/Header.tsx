@@ -5,6 +5,8 @@ import NotificationModal from "@/components/notification/NotificationModal";
 import MobileNavigation from "@/components/layout/MobileNavigation";
 import { formatUsername } from "@/lib/utils";
 import { UserStatus } from "@/lib/types";
+import StatusBadge from "@/components/ui/status-badge";
+import logoImage from "@/assets/3PC-Logo-FullColor-RGB.png";
 
 export default function Header() {
   const [location] = useLocation();
@@ -68,15 +70,7 @@ export default function Header() {
               </svg>
             </button>
             <Link href="/" className="flex items-center">
-              <span className="text-ufc-red font-accent font-bold text-2xl">
-                4
-              </span>
-              <span className="text-white font-accent font-bold text-2xl">
-                PUNCH
-              </span>
-              <span className="text-ufc-gold font-accent font-bold text-2xl ml-1">
-                CONVO
-              </span>
+              <img src={logoImage} alt="4PUNCH CONVO" className="h-8" />
             </Link>
           </div>
 
@@ -88,12 +82,12 @@ export default function Header() {
               >
                 FORUM
               </Link>
-              <Link
+              {/* <Link
                 href="/schedule"
                 className={`font-heading font-medium ${location === "/schedule" ? "text-white" : "text-gray-400 hover:text-white"} transition`}
               >
-                SCHEDULEs
-              </Link>
+                SCHEDULES
+              </Link> */}
               <Link
                 href="/rankings"
                 className={`font-heading font-medium ${location === "/rankings" ? "text-white" : "text-gray-400 hover:text-white"} transition`}
@@ -106,6 +100,7 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             {user && (
               <>
+                {/* TODO notifications
                 <button
                   onClick={() => setNotificationsOpen(true)}
                   className="text-gray-400 hover:text-white relative"
@@ -124,10 +119,10 @@ export default function Header() {
                       d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                     />
                   </svg>
-                  <span className="absolute -top-1 -right-1 bg-ufc-red text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-ufc-blue text-black text-xs rounded-full h-4 w-4 flex items-center justify-center">
                     3
                   </span>
-                </button>
+                </button> */}
 
                 <div className="relative" ref={userMenuRef}>
                   <button
@@ -156,9 +151,9 @@ export default function Header() {
                     </span>
                     {user.status && (
                       <span
-                        className={`hidden md:block ${getStatusClassForBadge(user.status as UserStatus)} text-xs px-2 py-0.5 rounded font-bold`}
+                        className="hidden md:block"
                       >
-                        {user.status}
+                        <StatusBadge status={user.status} />
                       </span>
                     )}
                     <svg
@@ -196,39 +191,20 @@ export default function Header() {
                       >
                         Profile
                       </Link>
-                      <Link
-                        href="/settings"
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTimeout(() => setUserMenuOpen(false), 1000);
-                        }}
-                      >
-                        Settings
-                      </Link>
-                      <Link
-                        href="/messages"
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTimeout(() => setUserMenuOpen(false), 100);
-                        }}
-                      >
-                        Messages
-                      </Link>
                       <div className="border-t border-gray-700 my-1"></div>
                       <button
-                        onClick={(e) => {
-                          // e.stopPropagation();
-                          console.log("Sign out clicked");
-                          logout();
+                        onClick={async (e) => {
+                          e.stopPropagation();
                           setUserMenuOpen(false);
-                          // Force reload to clear all states after logout
-                          setTimeout(() => (window.location.href = "/"), 300);
+                          try {
+                            await logout();
+                          } catch (error) {
+                            console.error('Logout failed:', error);
+                          }
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800"
                       >
-                        Sign out!!!!
+                        Sign out
                       </button>
                     </div>
                   )}
@@ -258,25 +234,4 @@ export default function Header() {
       )}
     </header>
   );
-}
-
-function getStatusClassForBadge(status: UserStatus): string {
-  switch (status) {
-    case "HALL OF FAMER":
-      return "status-hof";
-    case "CHAMPION":
-      return "status-champion";
-    case "CONTENDER":
-      return "status-contender";
-    case "RANKED POSTER":
-      return "status-ranked";
-    case "COMPETITOR":
-      return "status-competitor";
-    case "REGIONAL POSTER":
-      return "status-regional";
-    case "AMATEUR":
-      return "status-amateur";
-    default:
-      return "status-amateur";
-  }
 }

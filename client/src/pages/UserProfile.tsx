@@ -25,71 +25,92 @@ export default function UserProfile() {
   // Fetch user's posts
   const { data: userPosts, isLoading: isPostsLoading, error: postsError } = useQuery<ForumThread[]>({
     queryKey: [`/api/users/${user?.id}/posts`],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      try {
+        const response = await apiRequest('GET', `/api/users/${user.id}/posts`);
+        if (response instanceof Response) {
+          const data = await response.json();
+          console.log("user posts data:", data);
+          if (!Array.isArray(data)) {
+            throw new Error('Invalid response format from server');
+          }
+          return data;
+        }
+        if (!Array.isArray(response)) {
+          console.error('Invalid response format:', response);
+          throw new Error('Invalid response format from server');
+        }
+        return response;
+      } catch (error) {
+        console.error('Error fetching user posts:', error);
+        throw error;
+      }
+    },
     enabled: !!user?.id,
-    // In a real app, we would fetch from the API
   });
   
   // Check if current user follows this user
-  useEffect(() => {
-    if (currentUser && user) {
-      // In a real app, we would check this via API
-      setIsFollowing(Math.random() > 0.5); // Mock implementation
-    }
-  }, [currentUser, user]);
+  // useEffect(() => {
+  //   if (currentUser && user) {
+  //     // In a real app, we would check this via API
+  //     setIsFollowing(Math.random() > 0.5); // Mock implementation
+  //   }
+  // }, [currentUser, user]);
   
   // For demo purposes, create mock user if none is returned from the API
-  const displayUser = user || generateMockUser(username);
+  const displayUser = user;
   
-  // For demo purposes, create mock posts if none are returned from the API
-  const displayPosts = userPosts?.length ? userPosts : generateMockPosts(displayUser);
+  // Use actual posts data or empty array if no posts
+  const displayPosts = userPosts || [];
   
   // Handle follow/unfollow
-  const handleFollowToggle = async () => {
-    if (!currentUser) {
-      toast({
-        title: "Authentication Required",
-        description: "You must be logged in to follow users.",
-        variant: "destructive"
-      });
-      return;
-    }
+  // const handleFollowToggle = async () => {
+  //   if (!currentUser) {
+  //     toast({
+  //       title: "Authentication Required",
+  //       description: "You must be logged in to follow users.",
+  //       variant: "destructive"
+  //     });
+  //     return;
+  //   }
     
-    try {
-      if (isFollowing) {
-        // Unfollow user
-        await apiRequest("POST", `/api/users/${displayUser.id}/unfollow`, {
-          followerId: currentUser.id
-        });
-        setIsFollowing(false);
-        toast({
-          title: "Success",
-          description: `You have unfollowed ${displayUser.username}.`,
-        });
-      } else {
-        // Follow user
-        await apiRequest("POST", `/api/users/${displayUser.id}/follow`, {
-          followerId: currentUser.id
-        });
-        setIsFollowing(true);
-        toast({
-          title: "Success",
-          description: `You are now following ${displayUser.username}.`,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update follow status. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
+  //   try {
+  //     if (isFollowing) {
+  //       // Unfollow user
+  //       await apiRequest("POST", `/api/users/${displayUser.id}/unfollow`, {
+  //         followerId: currentUser.id
+  //       });
+  //       setIsFollowing(false);
+  //       toast({
+  //         title: "Success",
+  //         description: `You have unfollowed ${displayUser.username}.`,
+  //       });
+  //     } else {
+  //       // Follow user
+  //       await apiRequest("POST", `/api/users/${displayUser.id}/follow`, {
+  //         followerId: currentUser.id
+  //       });
+  //       setIsFollowing(true);
+  //       toast({
+  //         title: "Success",
+  //         description: `You are now following ${displayUser.username}.`,
+  //       });
+  //     }
+  //   } catch (error) {
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to update follow status. Please try again.",
+  //       variant: "destructive"
+  //     });
+  //   }
+  // };
 
   // Loading state
   if (isUserLoading) {
     return (
       <div className="container mx-auto px-4 py-12 flex justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-red"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-blue"></div>
       </div>
     );
   }
@@ -109,7 +130,7 @@ export default function UserProfile() {
     <div className="container mx-auto px-4 py-6">
       <div className="bg-dark-gray rounded-lg overflow-hidden shadow-lg">
         {/* Banner and Avatar */}
-        <div className="h-32 md:h-48 bg-gradient-to-r from-ufc-black to-ufc-red relative">
+        <div className="h-32 md:h-48 bg-gradient-to-r from-ufc-black to-ufc-blue relative">
           <div className="absolute -bottom-12 left-4 md:left-8">
             <UserAvatar user={displayUser} size="xl" />
           </div>
@@ -159,37 +180,37 @@ export default function UserProfile() {
                 {displayUser.likesCount} likes
               </div>
               <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-ufc-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-ufc-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                 </svg>
                 {displayUser.potdCount} POTD
               </div>
             </div>
             
-            <div className="flex items-center space-x-4 mt-2 text-sm">
+            {/* <div className="flex items-center space-x-4 mt-2 text-sm">
               <button 
-                className="text-ufc-red hover:underline"
-                onClick={() => {/* Open followers modal */}}
+                className="text-ufc-blue hover:underline"
+                onClick={() => 
               >
                 <span className="font-bold">{displayUser.followersCount}</span> followers
               </button>
               <button 
-                className="text-ufc-red hover:underline"
-                onClick={() => {/* Open following modal */}}
+                className="text-ufc-blue hover:underline"
+                onClick={() =>
               >
                 <span className="font-bold">{displayUser.followingCount}</span> following
               </button>
-            </div>
+            </div> */}
           </div>
           
           <div className="mt-4 md:mt-0 flex space-x-3">
-            {currentUser && currentUser.id !== displayUser.id && (
+            {/* {currentUser && currentUser.id !== displayUser.id && (
               <button 
                 onClick={handleFollowToggle}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
                   isFollowing 
                     ? "bg-gray-700 text-white hover:bg-gray-600" 
-                    : "bg-ufc-red text-white hover:bg-red-700"
+                    : "bg-ufc-blue text-black hover:bg-ufc-blue-dark"
                 }`}
               >
                 {isFollowing ? "Following" : "Follow"}
@@ -200,13 +221,14 @@ export default function UserProfile() {
               <button className="bg-dark-gray border border-gray-700 hover:bg-gray-800 text-white font-medium px-4 py-2 rounded-lg text-sm transition">
                 Message
               </button>
-            )}
+            )} */}
             
-            {currentUser && currentUser.id === displayUser.id && (
+            {/* Edit Profile */}
+            {/* {currentUser && currentUser.id === displayUser.id && (
               <button className="bg-dark-gray border border-gray-700 hover:bg-gray-800 text-white font-medium px-4 py-2 rounded-lg text-sm transition">
                 Edit Profile
               </button>
-            )}
+            )} */}
           </div>
         </div>
       </div>
@@ -218,7 +240,7 @@ export default function UserProfile() {
             onClick={() => setActiveTab("posts")}
             className={`pb-4 font-medium text-sm transition ${
               activeTab === "posts" 
-                ? "text-white border-b-2 border-ufc-red" 
+                ? "text-white border-b-2 border-ufc-blue" 
                 : "text-gray-400 hover:text-white"
             }`}
           >
@@ -228,7 +250,7 @@ export default function UserProfile() {
             onClick={() => setActiveTab("about")}
             className={`pb-4 font-medium text-sm transition ${
               activeTab === "about" 
-                ? "text-white border-b-2 border-ufc-red" 
+                ? "text-white border-b-2 border-ufc-blue" 
                 : "text-gray-400 hover:text-white"
             }`}
           >
@@ -243,7 +265,7 @@ export default function UserProfile() {
           <>
             {isPostsLoading ? (
               <div className="py-12 text-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ufc-red mx-auto"></div>
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>
                 <p className="mt-4 text-gray-400">Loading posts...</p>
               </div>
             ) : postsError ? (
@@ -277,7 +299,9 @@ export default function UserProfile() {
                   <span className="text-gray-400 text-xs">Community Rank</span>
                 </div>
                 <div className="bg-gray-800 px-3 py-2 rounded-lg">
-                  <StatusBadge status={displayUser.status} className="mb-1" />
+                  <div className="block mb-1">
+                    <StatusBadge status={displayUser.status} />
+                  </div>
                   <span className="text-gray-400 text-xs">Current Status</span>
                 </div>
               </div>
@@ -288,25 +312,25 @@ export default function UserProfile() {
               <h3 className="text-gray-400 font-medium mb-2">Activity Stats</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-gray-800 p-3 rounded-lg text-center">
-                  <span className="block text-ufc-red font-bold text-xl">{displayUser.postsCount}</span>
+                  <span className="block text-ufc-blue font-bold text-xl">{displayUser.postsCount}</span>
                   <span className="text-gray-400 text-sm">Posts</span>
                 </div>
                 <div className="bg-gray-800 p-3 rounded-lg text-center">
-                  <span className="block text-ufc-red font-bold text-xl">{displayUser.likesCount}</span>
+                  <span className="block text-ufc-blue font-bold text-xl">{displayUser.likesCount}</span>
                   <span className="text-gray-400 text-sm">Likes Received</span>
                 </div>
                 <div className="bg-gray-800 p-3 rounded-lg text-center">
-                  <span className="block text-ufc-red font-bold text-xl">{displayUser.potdCount}</span>
+                  <span className="block text-ufc-blue font-bold text-xl">{displayUser.potdCount}</span>
                   <span className="text-gray-400 text-sm">Post of the Day</span>
                 </div>
-                <div className="bg-gray-800 p-3 rounded-lg text-center">
-                  <span className="block text-ufc-red font-bold text-xl">{displayUser.followersCount}</span>
+                {/* <div className="bg-gray-800 p-3 rounded-lg text-center">
+                  <span className="block text-ufc-blue font-bold text-xl">{displayUser.followersCount}</span>
                   <span className="text-gray-400 text-sm">Followers</span>
-                </div>
+                </div> */}
               </div>
             </div>
             
-            {/* Social Media */}
+            {/* Social Media  TODO implement */}
             {displayUser.socialLinks && Object.keys(displayUser.socialLinks).length > 0 && (
               <div>
                 <h3 className="text-gray-400 font-medium mb-2">Connect with {displayUser.username}</h3>
@@ -347,105 +371,4 @@ export default function UserProfile() {
       </div>
     </div>
   );
-}
-
-// Helper function to generate a mock user for demonstration
-function generateMockUser(username: string): AuthUser {
-  return {
-    id: 13,
-    username: username || "FighterFan84",
-    avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-    status: "CONTENDER",
-    isOnline: true,
-    postsCount: 157,
-    likesCount: 1203,
-    potdCount: 5,
-    rank: 17,
-    followersCount: 42,
-    followingCount: 63,
-    role: "USER",
-    socialLinks: {
-      twitter: "https://twitter.com/username",
-      instagram: "https://instagram.com/username",
-      youtube: "https://youtube.com/username",
-    }
-  };
-}
-
-// Helper function to generate mock posts for demonstration
-function generateMockPosts(user: AuthUser): ForumThread[] {
-  return [
-    {
-      id: 101,
-      title: "What's your take on the new UFC gloves design?",
-      content: "I've noticed the UFC has been testing new glove designs that might reduce eye pokes. What are your thoughts on this? Will it significantly change the fighting style of certain fighters who rely on an extended guard?",
-      userId: user.id,
-      user: user,
-      categoryId: "general",
-      isPinned: false,
-      isLocked: false,
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-      updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      lastActivityAt: new Date(Date.now() - 18 * 60 * 60 * 1000), // 18 hours ago
-      viewCount: 345,
-      likesCount: 42,
-      dislikesCount: 3,
-      repliesCount: 28,
-      isPotd: false,
-    },
-    {
-      id: 102,
-      title: "Unpopular Opinion: Wrestling is becoming too dominant in MMA",
-      content: "Don't get me wrong, I respect the skill, but I feel like the evolution of wrestling in MMA has made some fights less entertaining. Too many fighters are winning by control time without doing significant damage. Should the scoring system be revised to emphasize damage over control?",
-      userId: user.id,
-      user: user,
-      categoryId: "ufc",
-      isPinned: false,
-      isLocked: false,
-      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
-      updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-      lastActivityAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-      viewCount: 687,
-      likesCount: 89,
-      dislikesCount: 51,
-      repliesCount: 74,
-      isPotd: true,
-    },
-    {
-      id: 103,
-      title: "Anyone going to the Fight Night in Vegas next month?",
-      content: "I managed to get tickets for the upcoming Fight Night in Vegas. Anyone else planning to be there? Maybe we could organize a small meetup of forum members before the event?",
-      userId: user.id,
-      user: user,
-      categoryId: "general",
-      isPinned: false,
-      isLocked: false,
-      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-      updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      lastActivityAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-      viewCount: 219,
-      likesCount: 35,
-      dislikesCount: 0,
-      repliesCount: 22,
-      isPotd: false,
-    },
-    {
-      id: 104,
-      title: "How to improve my leg kick defense?",
-      content: "Been training MMA for about a year now and while I'm comfortable with my boxing, my leg kick defense is terrible. Any tips or drills that helped you guys improve in this area? My lead leg is constantly getting chewed up in sparring.",
-      userId: user.id,
-      user: user,
-      categoryId: "techniques",
-      isPinned: false,
-      isLocked: false,
-      createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000), // 20 days ago
-      updatedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-      lastActivityAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
-      viewCount: 432,
-      likesCount: 68,
-      dislikesCount: 2,
-      repliesCount: 41,
-      isPotd: false,
-    }
-  ];
 }

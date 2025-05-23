@@ -15,7 +15,7 @@ export const sessions = pgTable(
 
 // User table
 export const users = pgTable("users", {
-  id: integer("id").primaryKey().notNull(),  // Using integer to match existing DB schema
+  id: text("id").primaryKey().notNull(),  // Changed to text
   username: text("username").unique().notNull(),
   password: text("password"), // Added password field for local auth
   email: text("email").unique(),
@@ -25,7 +25,7 @@ export const users = pgTable("users", {
   bio: text("bio"),
   profileImageUrl: text("profile_image_url"),
   updatedAt: timestamp("updated_at").defaultNow(),
-  role: text("role").notNull().default("USER"), // USER, MODERATOR, ADMIN, PRO
+  role: text("role").notNull().default("USER"), // USER, MODERATOR, ADMIN, PRO, PREMIUM_USER
   status: text("status").notNull().default("AMATEUR"), // AMATEUR, REGIONAL_POSTER, COMPETITOR, RANKED_POSTER, CONTENDER, CHAMPION, HALL_OF_FAMER
   createdAt: timestamp("created_at").notNull().defaultNow(),
   isOnline: boolean("is_online").notNull().default(false),
@@ -50,7 +50,7 @@ export const categories = pgTable("categories", {
 
 // Forum threads
 export const threads = pgTable("threads", {
-  id: serial("id").primaryKey(),
+  id: text("id").primaryKey(),
   title: text("title").notNull(),
   content: text("content").notNull(),
   userId: text("user_id").notNull().references(() => users.id),
@@ -69,8 +69,8 @@ export const threads = pgTable("threads", {
 
 // Thread media
 export const threadMedia = pgTable("thread_media", {
-  id: serial("id").primaryKey(),
-  threadId: integer("thread_id").notNull().references(() => threads.id),
+  id: text("id").primaryKey(),
+  threadId: text("thread_id").notNull().references(() => threads.id),
   type: text("type").notNull(), // IMAGE, GIF
   url: text("url").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -78,8 +78,8 @@ export const threadMedia = pgTable("thread_media", {
 
 // Polls
 export const polls = pgTable("polls", {
-  id: serial("id").primaryKey(),
-  threadId: integer("thread_id").notNull().references(() => threads.id),
+  id: text("id").primaryKey(),
+  threadId: text("thread_id").notNull().references(() => threads.id),
   question: text("question").notNull(),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -88,28 +88,28 @@ export const polls = pgTable("polls", {
 
 // Poll options
 export const pollOptions = pgTable("poll_options", {
-  id: serial("id").primaryKey(),
-  pollId: integer("poll_id").notNull().references(() => polls.id),
+  id: text("id").primaryKey(),
+  pollId: text("poll_id").notNull().references(() => polls.id),
   text: text("text").notNull(),
   votesCount: integer("votes_count").notNull().default(0),
 });
 
 // Poll votes
 export const pollVotes = pgTable("poll_votes", {
-  id: serial("id").primaryKey(),
-  pollId: integer("poll_id").notNull().references(() => polls.id),
-  pollOptionId: integer("poll_option_id").notNull().references(() => pollOptions.id),
+  id: text("id").primaryKey(),
+  pollId: text("poll_id").notNull().references(() => polls.id),
+  pollOptionId: text("poll_option_id").notNull().references(() => pollOptions.id),
   userId: text("user_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Thread replies
 export const replies = pgTable("replies", {
-  id: serial("id").primaryKey(),
-  threadId: integer("thread_id").notNull().references(() => threads.id),
+  id: text("id").primaryKey(),
+  threadId: text("thread_id").notNull().references(() => threads.id),
   userId: text("user_id").notNull().references(() => users.id),
   content: text("content").notNull(),
-  parentReplyId: integer("parent_reply_id"), // Self-reference handled with a constraint in migration
+  parentReplyId: text("parent_reply_id"), // Self-reference handled with a constraint in migration
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   likesCount: integer("likes_count").notNull().default(0),
@@ -118,8 +118,8 @@ export const replies = pgTable("replies", {
 
 // Reply media
 export const replyMedia = pgTable("reply_media", {
-  id: serial("id").primaryKey(),
-  replyId: integer("reply_id").notNull().references(() => replies.id),
+  id: text("id").primaryKey(),
+  replyId: text("reply_id").notNull().references(() => replies.id),
   type: text("type").notNull(), // IMAGE, GIF
   url: text("url").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -127,38 +127,38 @@ export const replyMedia = pgTable("reply_media", {
 
 // Thread reactions (likes, dislikes, POTD)
 export const threadReactions = pgTable("thread_reactions", {
-  id: serial("id").primaryKey(),
-  threadId: integer("thread_id").notNull().references(() => threads.id),
-  userId: integer("user_id").notNull().references(() => users.id),
+  id: text("id").primaryKey(),
+  threadId: text("thread_id").notNull().references(() => threads.id),
+  userId: text("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // LIKE, DISLIKE, POTD
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Reply reactions (likes, dislikes)
 export const replyReactions = pgTable("reply_reactions", {
-  id: serial("id").primaryKey(),
-  replyId: integer("reply_id").notNull().references(() => replies.id),
-  userId: integer("user_id").notNull().references(() => users.id),
+  id: text("id").primaryKey(),
+  replyId: text("reply_id").notNull().references(() => replies.id),
+  userId: text("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // LIKE, DISLIKE
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // User follows
 export const follows = pgTable("follows", {
-  id: serial("id").primaryKey(),
-  followerId: integer("follower_id").notNull().references(() => users.id),
-  followingId: integer("following_id").notNull().references(() => users.id),
+  id: text("id").primaryKey(),
+  followerId: text("follower_id").notNull().references(() => users.id),
+  followingId: text("following_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Notifications
 export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // REPLY, MENTION, LIKE, SYSTEM, FOLLOW
-  relatedUserId: integer("related_user_id").references(() => users.id),
-  threadId: integer("thread_id").references(() => threads.id),
-  replyId: integer("reply_id").references(() => replies.id),
+  relatedUserId: text("related_user_id").references(() => users.id),
+  threadId: text("thread_id").references(() => threads.id),
+  replyId: text("reply_id").references(() => replies.id),
   message: text("message"),
   isRead: boolean("is_read").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -208,30 +208,38 @@ export const fights = pgTable("fights", {
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users, {
-  id: z.number().optional(),
+  id: z.string().optional(),  // Changed to string
   username: z.string().min(3).max(30),
   password: z.string().min(6),
   email: z.string().email().nullable().optional(),
   avatar: z.string().nullable().optional(),
+  firstName: z.string().nullable().optional(),
+  lastName: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
+  profileImageUrl: z.string().nullable().optional(),
+  role: z.string().optional(),
+  status: z.string().optional(),
+  isOnline: z.boolean().optional(),
+  lastActive: z.date().optional(),
+  points: z.number().optional(),
+  rank: z.number().optional(),
+  postsCount: z.number().optional(),
+  likesCount: z.number().optional(),
+  potdCount: z.number().optional(),
+  followersCount: z.number().optional(),
+  followingCount: z.number().optional(),
+  socialLinks: z.record(z.string()).optional(),
 }).omit({
   createdAt: true,
-  role: true,
-  status: true,
-  isOnline: true,
-  lastActive: true,
-  points: true,
-  rank: true,
-  postsCount: true,
-  likesCount: true,
-  potdCount: true,
-  followersCount: true,
-  followingCount: true,
-  socialLinks: true,
+  updatedAt: true
 });
 
 export const upsertUserSchema = createInsertSchema(users);
 
-export const insertThreadSchema = createInsertSchema(threads).omit({
+export const insertThreadSchema = createInsertSchema(threads, {
+  userId: z.string(),
+  categoryId: z.string(),
+}).omit({
   id: true,
   createdAt: true,
   updatedAt: true,

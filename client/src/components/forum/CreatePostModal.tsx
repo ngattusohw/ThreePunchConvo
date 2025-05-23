@@ -42,7 +42,7 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
         title,
         content,
         categoryId,
-        userId: user.id, // Add the user ID to the request
+        userId: user.id.toString(), // Convert user ID to string
         poll: includePoll ? poll : undefined
       });
       return response.json();
@@ -165,7 +165,7 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
                 placeholder="What's your topic about?" 
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-red"
+                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-blue"
               />
             </div>
             
@@ -175,7 +175,7 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
                 id="post-category" 
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-red"
+                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-blue"
               >
                 {FORUM_CATEGORIES.map((cat) => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -191,21 +191,32 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
                 placeholder="Share your thoughts..." 
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-red"
+                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-blue"
               />
             </div>
             
             {includePoll && (
               <div className="mb-4 bg-gray-800 p-4 rounded-lg">
+                <div className="flex justify-between items-center mb-3">
+                  <label htmlFor="poll-question" className="block text-gray-300 font-medium">Poll Question</label>
+                  <button 
+                    type="button"
+                    onClick={() => setIncludePoll(false)}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
                 <div className="mb-3">
-                  <label htmlFor="poll-question" className="block text-gray-300 mb-2 font-medium">Poll Question</label>
                   <input 
                     type="text" 
                     id="poll-question" 
                     placeholder="Ask a question..." 
                     value={pollQuestion}
                     onChange={(e) => setPollQuestion(e.target.value)}
-                    className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-red"
+                    className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-blue"
                   />
                 </div>
                 
@@ -218,13 +229,13 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
                         placeholder={`Option ${index + 1}`} 
                         value={option}
                         onChange={(e) => handlePollOptionChange(index, e.target.value)}
-                        className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white flex-grow focus:outline-none focus:ring-1 focus:ring-ufc-red"
+                        className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white flex-grow focus:outline-none focus:ring-1 focus:ring-ufc-blue"
                       />
                       {pollOptions.length > 2 && (
                         <button 
                           type="button"
                           onClick={() => handleRemovePollOption(index)}
-                          className="text-gray-400 hover:text-red-500"
+                          className="text-gray-400 hover:bg-ufc-blue-dark"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -237,7 +248,7 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
                   <button 
                     type="button"
                     onClick={handleAddPollOption}
-                    className="flex items-center text-ufc-red hover:text-red-400 text-sm font-medium mt-2"
+                    className="flex items-center text-ufc-blue hover:text-white text-sm font-medium mt-2"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
@@ -250,24 +261,25 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
             
             <div className="mb-4">
               <div className="flex space-x-4">
-                <button type="button" className="flex items-center text-gray-300 hover:text-white">
+                {/* TODO add back in later */}
+                {/* <button type="button" className="flex items-center text-gray-300 hover:text-white">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   Add Image
-                </button>
+                </button> */}
                 
-                <button type="button" className="flex items-center text-gray-300 hover:text-white">
+                {/* <button type="button" className="flex items-center text-gray-300 hover:text-white">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Add Emoji
-                </button>
+                </button> */}
                 
                 <button 
                   type="button" 
                   onClick={() => setIncludePoll(!includePoll)}
-                  className={`flex items-center ${includePoll ? 'text-ufc-red' : 'text-gray-300 hover:text-white'}`}
+                  className={`flex items-center ${includePoll ? 'text-ufc-blue' : 'text-gray-300 hover:text-white'}`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
@@ -288,7 +300,7 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
               <button 
                 type="submit"
                 disabled={createPostMutation.isPending}
-                className={`px-4 py-2 bg-ufc-red hover:bg-red-700 text-white rounded-lg text-sm transition ${createPostMutation.isPending ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`px-4 py-2 bg-ufc-blue hover:bg-ufc-blue-dark text-black rounded-lg text-sm transition ${createPostMutation.isPending ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 {createPostMutation.isPending ? (
                   <span className="flex items-center">

@@ -12,7 +12,7 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
   const borderColor = thread.isPinned
     ? "border-ufc-gold"
     : thread.isPotd
-    ? "border-ufc-red"
+    ? "border-ufc-blue"
     : "";
 
   return (
@@ -34,7 +34,7 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
               )}
               
               {thread.isPotd && (
-                <span className="bg-ufc-red text-white text-xs px-2 py-0.5 rounded font-bold mr-2">
+                <span className="bg-ufc-blue text-black text-xs px-2 py-0.5 rounded font-bold mr-2">
                   POTD
                 </span>
               )}
@@ -42,7 +42,7 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
               {thread.user?.status && <StatusBadge status={thread.user.status} className="mr-2" />}
               
               {thread.user?.role === "PRO" && (
-                <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-bold mr-2 flex items-center">
+                <span className="bg-blue-500 text-black text-xs px-2 py-0.5 rounded-full font-bold mr-2 flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
@@ -67,7 +67,7 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
             </div>
             
             <Link href={`/thread/${thread.id}`}>
-              <h3 className="text-white font-bold text-lg mb-2 hover:text-ufc-red transition">
+              <h3 className="text-white font-bold text-lg mb-2 hover:text-ufc-blue transition">
                 {thread.title}
               </h3>
             </Link>
@@ -108,10 +108,10 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                 )}
                 
                 <p className="text-gray-400 text-xs mt-2">
-                  {thread.poll.votesCount} votes • 
-                  {new Date() > thread.poll.expiresAt 
+                  {thread.poll.votesCount ==1 ? "1 vote" : `${thread.poll.votesCount} votes`} • 
+                  {new Date() > new Date(thread.poll.expiresAt) 
                     ? ' Ended' 
-                    : ` ${Math.ceil((thread.poll.expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`}
+                    : ` ${Math.ceil((new Date(thread.poll.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`}
                 </p>
               </div>
             )}
@@ -152,13 +152,6 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                 </div>
               )}
               
-              <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                {thread.viewCount} views
-              </div>
             </div>
           </div>
         </div>

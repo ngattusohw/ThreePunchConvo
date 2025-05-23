@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ForumThread, ThreadReply } from "@/lib/types";
 import { useAuth } from "@/hooks/use-auth";
@@ -8,34 +8,47 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
+import { FORUM_CATEGORIES } from "@/lib/constants";
 
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [replyContent, setReplyContent] = useState("");
-  const [replyingTo, setReplyingTo] = useState<{ id: number, username: string } | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{ id: string, username: string } | null>(null);
   
   // Fetch thread data
   const { data: thread, isLoading: isThreadLoading, error: threadError } = useQuery<ForumThread>({
-    queryKey: [`/api/threads/id/${threadId}`],
-    // In a real app, we would fetch from the API
+    queryKey: [`/api/threads/id/${threadId}`, currentUser?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/threads/id/${threadId}${currentUser ? `?userId=${currentUser.id}` : ''}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch thread: ${response.statusText}`);
+      }
+      return response.json();
+    },
+    enabled: !!threadId
   });
   
   // Fetch thread replies
   const { data: replies, isLoading: isRepliesLoading, error: repliesError } = useQuery<ThreadReply[]>({
     queryKey: [`/api/threads/${threadId}/replies`],
-    enabled: !!threadId,
-    // In a real app, we would fetch from the API
+    queryFn: async () => {
+      const response = await fetch(`/api/threads/${threadId}/replies`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch replies: ${response.statusText}`);
+      }
+      return response.json();
+    },
+    enabled: !!threadId
   });
   
-  // For demo purposes, create mock thread if none is returned from the API
-  const displayThread = thread || generateMockThread(parseInt(threadId || "1"));
-  
-  // For demo purposes, create mock replies if none are returned from the API
-  const displayReplies = replies?.length ? replies : generateMockReplies(parseInt(threadId || "1"));
-  
+  // Use the actual data from the API
+  const displayThread = thread;
+  const displayReplies = replies || [];
+
   // Handle liking a thread
   const likeThreadMutation = useMutation({
     mutationFn: async () => {
@@ -46,10 +59,11 @@ export default function Thread() {
       });
     },
     onSuccess: () => {
+      const wasLiked = displayThread?.hasLiked;
       queryClient.invalidateQueries({ queryKey: [`/api/threads/id/${threadId}`] });
       toast({
         title: "Success",
-        description: "You liked this post",
+        description: wasLiked ? "You unliked this post" : "You liked this post",
       });
     },
     onError: (error: Error) => {
@@ -185,8 +199,7 @@ export default function Thread() {
   
   // Handle quoting a reply
   const handleQuoteReply = (reply: ThreadReply) => {
-    setReplyingTo({ id: reply.id, username: reply.user.username });
-    setReplyContent(`> ${reply.user.username} said: ${reply.content.substring(0, 100)}${reply.content.length > 100 ? '...' : ''}\n\n`);
+    setReplyingTo({ id: reply.id.toString(), username: reply.user.username });
     
     // Scroll to reply form
     document.getElementById('reply-form')?.scrollIntoView({ behavior: 'smooth' });
@@ -218,11 +231,64 @@ export default function Thread() {
     }
   });
   
+  // Add delete thread mutation
+  const deleteThreadMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentUser) throw new Error("You must be logged in to delete this thread");
+      
+      return apiRequest("DELETE", `/api/threads/${threadId}`, {
+        userId: currentUser.id,
+        role: currentUser.role
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Thread deleted successfully",
+      });
+      // Redirect to the forum category page
+      setLocation(`/forum/${thread?.categoryId}`);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete thread",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Add delete reply mutation
+  const deleteReplyMutation = useMutation({
+    mutationFn: async (replyId: string) => {
+      if (!currentUser) throw new Error("You must be logged in to delete this reply");
+      
+      return apiRequest("DELETE", `/api/replies/${replyId}`, {
+        userId: currentUser.id,
+        role: currentUser.role
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/threads/${threadId}/replies`] });
+      toast({
+        title: "Success",
+        description: "Reply deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete reply",
+        variant: "destructive"
+      });
+    }
+  });
+  
   // Loading state
   if (isThreadLoading) {
     return (
       <div className="container mx-auto px-4 py-12 flex justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-red"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-blue"></div>
       </div>
     );
   }
@@ -232,7 +298,18 @@ export default function Thread() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-red-900 bg-opacity-20 border border-red-500 rounded-lg p-4 text-center">
-          <p className="text-red-500">Error loading thread. Please try again later.</p>
+          <p className="text-red-500">Error loading thread: {threadError instanceof Error ? threadError.message : 'Please try again later.'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no thread data, show error
+  if (!thread) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-900 bg-opacity-20 border border-red-500 rounded-lg p-4 text-center">
+          <p className="text-red-500">Thread not found. Please check the URL and try again.</p>
         </div>
       </div>
     );
@@ -255,7 +332,7 @@ export default function Thread() {
           </div>
           
           {/* Thread Card */}
-          <div className={`bg-dark-gray ${displayThread.isPotd ? 'border-l-4 border-ufc-red' : ''} rounded-lg overflow-hidden shadow-lg mb-6`}>
+          <div className={`bg-dark-gray ${displayThread.isPotd ? 'border-l-4 border-ufc-blue' : ''} rounded-lg overflow-hidden shadow-lg mb-6`}>
             <div className="p-5">
               {/* Thread Header */}
               <div className="flex items-start">
@@ -272,7 +349,7 @@ export default function Thread() {
                     )}
                     
                     {displayThread.isPotd && (
-                      <span className="bg-ufc-red text-white text-xs px-2 py-0.5 rounded font-bold">
+                      <span className="bg-ufc-blue text-black text-xs px-2 py-0.5 rounded font-bold">
                         POTD
                       </span>
                     )}
@@ -300,7 +377,7 @@ export default function Thread() {
                       </span>
                     )}
                     
-                    <Link href={`/user/${displayThread.user.username}`} className="text-white font-medium hover:text-ufc-red transition">
+                    <Link href={`/user/${displayThread.user.username}`} className="text-white font-medium hover:text-ufc-blue transition">
                       {displayThread.user.username}
                     </Link>
                     
@@ -361,9 +438,9 @@ export default function Thread() {
                       
                       <p className="text-gray-400 text-xs mt-4">
                         {displayThread.poll.votesCount} votes • 
-                        {new Date() > displayThread.poll.expiresAt 
+                        {new Date() > new Date(displayThread.poll.expiresAt) 
                           ? ' Poll ended' 
-                          : ` ${Math.ceil((displayThread.poll.expiresAt.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`}
+                          : ` ${Math.ceil((new Date(displayThread.poll.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`}
                       </p>
                       
                       {!currentUser && (
@@ -373,49 +450,56 @@ export default function Thread() {
                   )}
                   
                   {/* Thread Actions */}
-                  <div className="border-t border-gray-800 pt-4 mt-4 flex items-center flex-wrap gap-4">
+                  <div className="flex items-center space-x-4 mb-6">
                     <button 
                       onClick={() => likeThreadMutation.mutate()}
-                      disabled={!currentUser || likeThreadMutation.isPending}
+                      disabled={!currentUser}
                       className="flex items-center text-gray-400 hover:text-green-500 transition"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                       </svg>
-                      <span className="font-medium">{displayThread.likesCount}</span>
+                      <span className="font-medium">{displayThread?.likesCount}</span>
                     </button>
                     
                     <button 
                       onClick={() => dislikeThreadMutation.mutate()}
-                      disabled={!currentUser || dislikeThreadMutation.isPending}
+                      disabled={!currentUser}
                       className="flex items-center text-gray-400 hover:text-red-500 transition"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2" />
                       </svg>
-                      <span className="font-medium">{displayThread.dislikesCount}</span>
+                      <span className="font-medium">{displayThread?.dislikesCount}</span>
                     </button>
                     
                     <button 
                       onClick={() => potdThreadMutation.mutate()}
-                      disabled={!currentUser || potdThreadMutation.isPending || displayThread.isPotd}
-                      className={`flex items-center ${displayThread.isPotd ? 'text-ufc-red' : 'text-gray-400 hover:text-ufc-red'} transition`}
+                      disabled={!currentUser}
+                      className="flex items-center text-gray-400 hover:text-yellow-500 transition"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                       </svg>
-                      <span className="font-medium">POTD</span>
+                      <span className="font-medium">{displayThread?.potdCount}</span>
                     </button>
-                    
-                    <button
-                      onClick={() => document.getElementById('reply-form')?.scrollIntoView({ behavior: 'smooth' })} 
-                      className="flex items-center text-gray-400 hover:text-white transition ml-auto"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                      </svg>
-                      <span className="font-medium">Reply</span>
-                    </button>
+
+                    {/* Add delete button if user is author or has permission */}
+                    {currentUser && (currentUser.id === displayThread?.userId || currentUser.role === "ADMIN" || currentUser.role === "MODERATOR") && (
+                      <button 
+                        onClick={() => {
+                          if (window.confirm("Are you sure you want to delete this thread? This action cannot be undone.")) {
+                            deleteThreadMutation.mutate();
+                          }
+                        }}
+                        className="flex items-center text-gray-400 hover:text-red-500 transition ml-auto"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete Thread
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -428,7 +512,7 @@ export default function Thread() {
             
             {isRepliesLoading ? (
               <div className="py-12 text-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ufc-red mx-auto"></div>
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>
                 <p className="mt-4 text-gray-400">Loading replies...</p>
               </div>
             ) : repliesError ? (
@@ -448,6 +532,7 @@ export default function Thread() {
                     onQuote={handleQuoteReply}
                     onLike={() => likeReplyMutation.mutate(reply.id)}
                     onDislike={() => dislikeReplyMutation.mutate(reply.id)}
+                    onDelete={() => deleteReplyMutation.mutate(reply.id.toString())}
                   />
                 ))}
               </div>
@@ -463,7 +548,7 @@ export default function Thread() {
             {!currentUser ? (
               <div className="bg-gray-800 p-4 rounded-lg text-center">
                 <p className="text-gray-300 mb-3">You need to be logged in to reply</p>
-                <Link href="/login" className="inline-block bg-ufc-red hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition">
+                <Link href="/login" className="inline-block bg-ufc-blue hover:bg-ufc-blue-dark text-white font-medium px-4 py-2 rounded-lg text-sm transition">
                   Log In
                 </Link>
               </div>
@@ -475,7 +560,7 @@ export default function Thread() {
                 {replyingTo && (
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-gray-400">
-                      Replying to <span className="text-ufc-red">{replyingTo.username}</span>
+                      Replying to <span className="text-ufc-blue">{replyingTo.username}</span>
                     </span>
                     <button 
                       type="button"
@@ -491,16 +576,17 @@ export default function Thread() {
                 )}
                 
                 <textarea 
+                  id="reply-input"
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
                   placeholder="Write your reply here..."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-gray-300 min-h-[150px] focus:outline-none focus:ring-1 focus:ring-ufc-red"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-gray-300 min-h-[150px] focus:outline-none focus:ring-1 focus:ring-ufc-blue"
                   required
                 />
                 
                 <div className="flex justify-between items-center mt-4">
                   <div className="flex space-x-3">
-                    <button type="button" className="text-gray-400 hover:text-white flex items-center">
+                    {/* <button type="button" className="text-gray-400 hover:text-white flex items-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -511,17 +597,17 @@ export default function Thread() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Emoji
-                    </button>
+                    </button> */}
                   </div>
                   
                   <button 
                     type="submit"
                     disabled={submitReplyMutation.isPending || !replyContent.trim()}
-                    className={`bg-ufc-red hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition ${
-                      submitReplyMutation.isPending || !replyContent.trim() ? 'opacity-50 cursor-not-allowed' : ''
+                    className={`font-medium px-4 py-2 rounded-lg text-sm transition ${
+                      submitReplyMutation.isPending || !replyContent.trim() ? 'bg-gray-700 opacity-50 cursor-not-allowed text-white' : 'bg-ufc-blue hover:bg-ufc-blue-dark text-black'
                     }`}
                   >
-                    {submitReplyMutation.isPending ? 'Posting...' : 'Post Reply'}
+                    {submitReplyMutation.isPending ? 'Posting...' : 'Post reply'}
                   </button>
                 </div>
               </form>
@@ -538,7 +624,7 @@ export default function Thread() {
               <p className="text-gray-400 text-sm mb-1">Posted by</p>
               <div className="flex items-center">
                 <UserAvatar user={displayThread.user} size="sm" className="mr-2" />
-                <Link href={`/user/${displayThread.user.username}`} className="text-white hover:text-ufc-red transition">
+                <Link href={`/user/${displayThread.user.username}`} className="text-white hover:text-ufc-blue transition">
                   {displayThread.user.username}
                 </Link>
               </div>
@@ -546,7 +632,7 @@ export default function Thread() {
             
             <div className="mb-4">
               <p className="text-gray-400 text-sm mb-1">Category</p>
-              <Link href={`/forum/${displayThread.categoryId}`} className="text-ufc-red hover:underline">
+              <Link href={`/forum/${displayThread.categoryId}`} className="text-ufc-blue hover:underline">
                 {getCategoryName(displayThread.categoryId)}
               </Link>
             </div>
@@ -560,11 +646,11 @@ export default function Thread() {
               <p className="text-gray-400 text-sm mb-1">Stats</p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-gray-800 p-2 rounded-lg text-center">
-                  <span className="block text-ufc-red font-bold">{displayThread.viewCount}</span>
+                  <span className="block text-ufc-blue font-bold">{displayThread.viewCount}</span>
                   <span className="text-gray-400 text-xs">Views</span>
                 </div>
                 <div className="bg-gray-800 p-2 rounded-lg text-center">
-                  <span className="block text-ufc-red font-bold">{displayThread.repliesCount}</span>
+                  <span className="block text-ufc-blue font-bold">{displayThread.repliesCount}</span>
                   <span className="text-gray-400 text-xs">Replies</span>
                 </div>
               </div>
@@ -572,7 +658,7 @@ export default function Thread() {
             
             {displayThread.isPotd && (
               <div className="bg-gray-800 p-3 rounded-lg mb-4">
-                <div className="flex items-center text-ufc-red mb-1">
+                <div className="flex items-center text-ufc-blue mb-1">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                   </svg>
@@ -598,7 +684,7 @@ export default function Thread() {
                     </svg>
                     {displayThread.isPinned ? 'Unpin Thread' : 'Pin Thread'}
                   </button>
-                  <button className="w-full bg-red-900 hover:bg-red-800 text-white px-3 py-2 rounded-lg text-sm transition flex items-center justify-center">
+                  <button className="w-full bg-ufc-blue hover:bg-ufc-blue-dark text-black px-3 py-2 rounded-lg text-sm transition flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
@@ -619,14 +705,21 @@ interface ReplyCardProps {
   onQuote: (reply: ThreadReply) => void;
   onLike: () => void;
   onDislike: () => void;
+  onDelete: () => void;
 }
 
-function ReplyCard({ reply, onQuote, onLike, onDislike }: ReplyCardProps) {
+function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardProps) {
   const { currentUser } = useAuth();
   
   // Calculate indentation level based on nested replies
   const indentationLevel = reply.parentReplyId ? 1 : 0;
   const indentationClass = indentationLevel > 0 ? 'ml-8 border-l-2 border-gray-800 pl-4' : '';
+  
+  const canDeleteReply = currentUser && (
+    currentUser.id === reply.userId || 
+    currentUser.role === "ADMIN" || 
+    currentUser.role === "MODERATOR"
+  );
   
   return (
     <div className={`bg-dark-gray rounded-lg overflow-hidden shadow-lg ${indentationClass}`}>
@@ -661,7 +754,7 @@ function ReplyCard({ reply, onQuote, onLike, onDislike }: ReplyCardProps) {
                 </span>
               )}
               
-              <Link href={`/user/${reply.user.username}`} className="text-white font-medium hover:text-ufc-red transition">
+              <Link href={`/user/${reply.user.username}`} className="text-white font-medium hover:text-ufc-blue transition">
                 {reply.user.username}
               </Link>
               
@@ -734,6 +827,22 @@ function ReplyCard({ reply, onQuote, onLike, onDislike }: ReplyCardProps) {
                 <span className="font-medium">Reply</span>
               </button>
             </div>
+            
+            {canDeleteReply && (
+              <button 
+                onClick={() => {
+                  if (window.confirm("Are you sure you want to delete this reply? This action cannot be undone.")) {
+                    onDelete();
+                  }
+                }}
+                className="flex items-center text-gray-400 hover:text-red-500 transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -743,379 +852,6 @@ function ReplyCard({ reply, onQuote, onLike, onDislike }: ReplyCardProps) {
 
 // Helper function to get category name
 function getCategoryName(categoryId: string): string {
-  const categories: Record<string, string> = {
-    'general': 'General Discussion',
-    'ufc': 'UFC',
-    'bellator': 'Bellator',
-    'one': 'ONE Championship',
-    'pfl': 'PFL',
-    'boxing': 'Boxing',
-    'techniques': 'Fight Techniques',
-    'offtopic': 'Off Topic',
-  };
-  
-  return categories[categoryId] || 'Unknown Category';
-}
-
-// Helper function to generate a mock thread for demonstration
-function generateMockThread(threadId: number): ForumThread {
-  if (threadId === 2) {
-    // Jones vs Aspinall thread from design reference
-    return {
-      id: 2,
-      title: "Jones vs Aspinall: Who would win and why?",
-      content: "With Aspinall taking the interim title, a unification bout with Jones seems inevitable. Let's break down who would win this dream matchup and why. Personally, I think Aspinall's speed gives Jones problems but Jon's experience edge is significant.",
-      userId: 2,
-      user: {
-        id: 2,
-        username: "KnockoutKing",
-        avatar: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "CHAMPION",
-        isOnline: true,
-        postsCount: 94,
-        likesCount: 1203,
-        potdCount: 8,
-        rank: 2,
-        followersCount: 215,
-        followingCount: 44,
-        role: "USER",
-      },
-      categoryId: "ufc",
-      isPinned: false,
-      isLocked: false,
-      createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-      updatedAt: new Date(Date.now() - 4 * 60 * 60 * 1000),
-      lastActivityAt: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
-      viewCount: 1800,
-      likesCount: 324,
-      dislikesCount: 42,
-      repliesCount: 86,
-      isPotd: true,
-      poll: {
-        id: 1,
-        threadId: 2,
-        question: "Who wins this matchup?",
-        options: [
-          { id: 1, pollId: 1, text: "Jon Jones", votesCount: 156 },
-          { id: 2, pollId: 1, text: "Tom Aspinall", votesCount: 87 },
-        ],
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day from now
-        votesCount: 243,
-      },
-    };
-  } else {
-    // Default thread
-    return {
-      id: threadId,
-      title: "Welcome to 3 Punch Convo - Rules & Guidelines",
-      content: "Welcome to our community! Please read our rules before posting. We aim to keep discussions respectful and on-topic. Any violation may result in post removal or account suspension.\n\n1. Be respectful to fellow community members\n2. No hate speech or personal attacks\n3. Keep discussions relevant to MMA and combat sports\n4. No spam or excessive self-promotion\n5. No illegal streams or pirated content\n\nThank you for joining our community. Let's make this the best place for MMA fans to discuss the sport we all love!",
-      userId: 1,
-      user: {
-        id: 1,
-        username: "OctagonInsider",
-        avatar: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "HALL OF FAMER",
-        isOnline: true,
-        postsCount: 157,
-        likesCount: 3200,
-        potdCount: 12,
-        rank: 1,
-        followersCount: 420,
-        followingCount: 63,
-        role: "ADMIN",
-      },
-      categoryId: "general",
-      isPinned: true,
-      isLocked: false,
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      lastActivityAt: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-      viewCount: 3200,
-      likesCount: 147,
-      dislikesCount: 0,
-      repliesCount: 24,
-      isPotd: false,
-    };
-  }
-}
-
-// Helper function to generate mock replies for demonstration
-function generateMockReplies(threadId: number): ThreadReply[] {
-  if (threadId === 2) {
-    // Jones vs Aspinall thread replies
-    return [
-      {
-        id: 1,
-        threadId: 2,
-        userId: 4,
-        user: {
-          id: 4,
-          username: "MMAHistorian",
-          avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "RANKED POSTER",
-          isOnline: true,
-          postsCount: 152,
-          likesCount: 2700,
-          potdCount: 6,
-          rank: 5,
-          followersCount: 87,
-          followingCount: 113,
-          role: "USER",
-        },
-        content: "I disagree. Aspinall's ground game is underrated, but Jones has been taking down Olympic wrestlers his entire career. Jon would take him down at will and control him for 5 rounds. His fight IQ is just too high.",
-        createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
-        updatedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-        likesCount: 82,
-        dislikesCount: 17,
-      },
-      {
-        id: 2,
-        threadId: 2,
-        userId: 5,
-        user: {
-          id: 5,
-          username: "StrikingQueen",
-          avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "CONTENDER",
-          isOnline: true,
-          postsCount: 217,
-          likesCount: 3800,
-          potdCount: 12,
-          rank: 3,
-          followersCount: 148,
-          followingCount: 76,
-          role: "USER",
-        },
-        content: "This is a tough one. Jones has the experience and fight IQ, but Aspinall has youth, speed, and legitimate KO power. I think it comes down to whether Tom can keep it standing. If he can, I give him a good chance. If Jones gets him to the ground, it's Jon's fight to lose.",
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-        updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        likesCount: 65,
-        dislikesCount: 3,
-      },
-      {
-        id: 3,
-        threadId: 2,
-        userId: 3,
-        user: {
-          id: 3,
-          username: "DustinPoirier",
-          avatar: "https://images.unsplash.com/photo-1614632537197-38a17061c2bd?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "HALL OF FAMER",
-          isOnline: true,
-          postsCount: 73,
-          likesCount: 4120,
-          potdCount: 14,
-          rank: 1,
-          followersCount: 1200,
-          followingCount: 23,
-          role: "PRO",
-        },
-        content: "Speaking from experience, Jones is the most difficult fighter to game plan for. His reach and creativity make him unpredictable. But Aspinall has incredible speed for a heavyweight. I'd give a slight edge to Jones, but wouldn't be shocked if Aspinall caught him.",
-        createdAt: new Date(Date.now() - 90 * 60 * 1000), // 90 minutes ago
-        updatedAt: new Date(Date.now() - 90 * 60 * 1000),
-        likesCount: 241,
-        dislikesCount: 2,
-      },
-      {
-        id: 4,
-        threadId: 2,
-        userId: 2,
-        parentReplyId: 3,
-        user: {
-          id: 2,
-          username: "KnockoutKing",
-          avatar: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "CHAMPION",
-          isOnline: true,
-          postsCount: 94,
-          likesCount: 1203,
-          potdCount: 8,
-          rank: 2,
-          followersCount: 215,
-          followingCount: 44,
-          role: "USER",
-        },
-        content: "Thanks for weighing in, Dustin! Great to get a pro's perspective. Do you think the layoff might have affected Jones in any way?",
-        createdAt: new Date(Date.now() - 60 * 60 * 1000), // 60 minutes ago
-        updatedAt: new Date(Date.now() - 60 * 60 * 1000),
-        likesCount: 48,
-        dislikesCount: 0,
-      },
-      {
-        id: 5,
-        threadId: 2,
-        userId: 3,
-        parentReplyId: 4,
-        user: {
-          id: 3,
-          username: "DustinPoirier",
-          avatar: "https://images.unsplash.com/photo-1614632537197-38a17061c2bd?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "HALL OF FAMER",
-          isOnline: true,
-          postsCount: 73,
-          likesCount: 4120,
-          potdCount: 14,
-          rank: 1,
-          followersCount: 1200,
-          followingCount: 23,
-          role: "PRO",
-        },
-        content: "The layoff is definitely a factor. Sometimes it can be good to let your body recover, but timing and reaction speed can suffer. That said, Jones has always been a student of the game. I'm sure he's been studying and preparing even when not actively fighting.",
-        createdAt: new Date(Date.now() - 45 * 60 * 1000), // 45 minutes ago
-        updatedAt: new Date(Date.now() - 45 * 60 * 1000),
-        likesCount: 92,
-        dislikesCount: 1,
-      },
-      {
-        id: 6,
-        threadId: 2,
-        userId: 6,
-        user: {
-          id: 6,
-          username: "FighterFan84",
-          avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "CONTENDER",
-          isOnline: true,
-          postsCount: 157,
-          likesCount: 1203,
-          potdCount: 5,
-          rank: 17,
-          followersCount: 42,
-          followingCount: 63,
-          role: "USER",
-        },
-        content: "I think we're overlooking one big factor here - Jon hasn't really faced anyone with the combination of size, speed, and technique that Aspinall brings. Every heavyweight he's faced so far has been lacking in at least one of those areas.\n\nAspinall is legitimately as fast as a light heavyweight but with actual heavyweight power. I believe he presents problems Jon hasn't had to solve yet.",
-        createdAt: new Date(Date.now() - 20 * 60 * 1000), // 20 minutes ago
-        updatedAt: new Date(Date.now() - 20 * 60 * 1000),
-        likesCount: 37,
-        dislikesCount: 12,
-      },
-    ];
-  } else {
-    // Default thread replies
-    return [
-      {
-        id: 1,
-        threadId: 1,
-        userId: 2,
-        user: {
-          id: 2,
-          username: "KnockoutKing",
-          avatar: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "CHAMPION",
-          isOnline: true,
-          postsCount: 94,
-          likesCount: 1203,
-          potdCount: 8,
-          rank: 2,
-          followersCount: 215,
-          followingCount: 44,
-          role: "USER",
-        },
-        content: "Great rules! Thanks for creating this community. Looking forward to some awesome MMA discussions!",
-        createdAt: new Date(Date.now() - 110 * 60 * 1000), // 110 minutes ago
-        updatedAt: new Date(Date.now() - 110 * 60 * 1000),
-        likesCount: 32,
-        dislikesCount: 0,
-      },
-      {
-        id: 2,
-        threadId: 1,
-        userId: 4,
-        user: {
-          id: 4,
-          username: "GrappleGuru",
-          avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "RANKED POSTER",
-          isOnline: true,
-          postsCount: 178,
-          likesCount: 3100,
-          potdCount: 9,
-          rank: 4,
-          followersCount: 103,
-          followingCount: 89,
-          role: "USER",
-        },
-        content: "Question about rule #3 - does this mean we can't discuss boxing or other combat sports at all? Or just that we should keep it in the relevant sections?",
-        createdAt: new Date(Date.now() - 90 * 60 * 1000), // 90 minutes ago
-        updatedAt: new Date(Date.now() - 90 * 60 * 1000),
-        likesCount: 15,
-        dislikesCount: 0,
-      },
-      {
-        id: 3,
-        threadId: 1,
-        userId: 1,
-        parentReplyId: 2,
-        user: {
-          id: 1,
-          username: "OctagonInsider",
-          avatar: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "HALL OF FAMER",
-          isOnline: true,
-          postsCount: 157,
-          likesCount: 3200,
-          potdCount: 12,
-          rank: 1,
-          followersCount: 420,
-          followingCount: 63,
-          role: "ADMIN",
-        },
-        content: "Great question! Boxing and other combat sports are definitely welcome, but please use the appropriate categories. We have a dedicated boxing section, and if there's enough interest, we can add more specific categories for other combat sports.",
-        createdAt: new Date(Date.now() - 80 * 60 * 1000), // 80 minutes ago
-        updatedAt: new Date(Date.now() - 80 * 60 * 1000),
-        likesCount: 28,
-        dislikesCount: 0,
-      },
-      {
-        id: 4,
-        threadId: 1,
-        userId: 5,
-        user: {
-          id: 5,
-          username: "StrikingQueen",
-          avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "CONTENDER",
-          isOnline: true,
-          postsCount: 217,
-          likesCount: 3800,
-          potdCount: 12,
-          rank: 3,
-          followersCount: 148,
-          followingCount: 76,
-          role: "USER",
-        },
-        content: "Will there be any kind of verified status for fighters or industry professionals who join the community?",
-        createdAt: new Date(Date.now() - 60 * 60 * 1000), // 60 minutes ago
-        updatedAt: new Date(Date.now() - 60 * 60 * 1000),
-        likesCount: 41,
-        dislikesCount: 0,
-      },
-      {
-        id: 5,
-        threadId: 1,
-        userId: 1,
-        parentReplyId: 4,
-        user: {
-          id: 1,
-          username: "OctagonInsider",
-          avatar: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-          status: "HALL OF FAMER",
-          isOnline: true,
-          postsCount: 157,
-          likesCount: 3200,
-          potdCount: 12,
-          rank: 1,
-          followersCount: 420,
-          followingCount: 63,
-          role: "ADMIN",
-        },
-        content: "Yes, absolutely! We're implementing a verification process for fighters, coaches, journalists, and other industry professionals. They'll receive a verified badge and will be exempt from the normal ranking system.",
-        createdAt: new Date(Date.now() - 50 * 60 * 1000), // 50 minutes ago
-        updatedAt: new Date(Date.now() - 50 * 60 * 1000),
-        likesCount: 38,
-        dislikesCount: 0,
-      },
-    ];
-  }
+  const category = FORUM_CATEGORIES.find(cat => cat.id === categoryId);
+  return category?.name || 'Unknown Category';
 }

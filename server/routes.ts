@@ -4,6 +4,10 @@ import { storage } from "./storage";
 import { fetchUpcomingEvents } from "./espn-api";
 import { z } from "zod";
 import { ZodError } from "zod";
+import multer from "multer";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { v4 as uuidv4 } from "uuid";
+import path from "path";
 import {
   insertThreadSchema,
   insertReplySchema,
@@ -13,7 +17,32 @@ import {
   insertNotificationSchema,
   PollOption
 } from "@shared/schema";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./auth";
+
+// Configure S3 client
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
+  }
+});
+
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  },
+  fileFilter: (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPEG, PNG and GIF are allowed.'));
+    }
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -38,262 +67,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Set up authentication - this must come after error handling middleware
   await setupAuth(app);
-  
-  // Add development-only authentication routes if needed
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Adding development authentication routes');
-    
-    // Development-only register with proper password hashing
-    app.post('/api/dev/register', async (req: Request, res: Response) => {
-      try {
-        const userData = insertUserSchema.parse(req.body);
-        
-        // Check if username already exists
-        const existingUser = await storage.getUserByUsername(userData.username);
-        if (existingUser) {
-          return res.status(400).json({ message: 'Username is already taken' });
-        }
-        
-        // Hash the password for secure storage
-        let hashedPassword = userData.password;
-        if (userData.password) {
-          const { hashPassword } = await import('./auth');
-          hashedPassword = await hashPassword(userData.password);
-        }
-        
-        // Create user with all required fields
-        // Generate a simple ID for the user
-        const generateId = () => {
-          return 'user_' + Math.random().toString(36).substring(2, 15) + 
-                 Math.random().toString(36).substring(2, 15);
-        };
-        
-        const user = await storage.createUser({
-          ...userData,
-          id: generateId(),
-          password: hashedPassword,
-          // Add default values for required fields that might be missing
-          firstName: userData.firstName || null,
-          lastName: userData.lastName || null,
-          bio: userData.bio || null,
-          profileImageUrl: userData.profileImageUrl || null,
-          isOnline: true,
-          lastActive: new Date()
-        });
-        
-        // Log in the user automatically after registration
-        req.login(user, (err) => {
-          if (err) {
-            console.error("Login error after registration:", err);
-            // Continue without login - at least the user was created
-            const { password, ...userWithoutPassword } = user;
-            return res.status(201).json({
-              ...userWithoutPassword,
-              warning: "User created but auto-login failed"
-            });
-          }
-          
-          // Don't return password in response
-          const { password, ...userWithoutPassword } = user;
-          return res.status(201).json(userWithoutPassword);
-        });
-      } catch (error) {
-        if (error instanceof ZodError) {
-          return res.status(400).json({
-            message: 'Validation error',
-            errors: error.errors
-          });
-        }
-        
-        console.error('Error creating user:', error);
-        res.status(500).json({ message: 'Failed to register user' });
-      }
-    });
-    
-    // Development-only login with proper password verification
-    app.post('/api/dev/login', async (req: Request, res: Response) => {
-      try {
-        const { username, password } = req.body;
-        
-        if (!username || !password) {
-          return res.status(400).json({ message: 'Username and password are required' });
-        }
-        
-        // Find the user
-        const user = await storage.getUserByUsername(username);
-        if (!user) {
-          return res.status(401).json({ message: 'Invalid username or password' });
-        }
-        
-        // Verify password
-        if (user.password) {
-          const { comparePasswords } = await import('./auth');
-          const isValid = await comparePasswords(password, user.password);
-          
-          if (!isValid) {
-            return res.status(401).json({ message: 'Invalid username or password' });
-          }
-        } else {
-          return res.status(401).json({ message: 'User has no password set' });
-        }
-        
-        // Mark user as online
-        await storage.updateUser(user.id.toString(), { isOnline: true, lastActive: new Date() });
-        
-        // Log the user in with session
-        req.login(user, (err) => {
-          if (err) {
-            console.error("Login error:", err);
-            return res.status(500).json({ message: "Failed to start session" });
-          }
-          
-          // Don't return password in response
-          const { password, ...userWithoutPassword } = user;
-          return res.json(userWithoutPassword);
-        });
-      } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ message: 'Failed to login' });
-      }
-    });
-    
-    // Development-only logout
-    app.post('/api/dev/logout', (req: Request, res: Response) => {
-      req.logout((err) => {
-        if (err) {
-          console.error("Logout error:", err);
-          return res.status(500).json({ message: "Failed to logout" });
-        }
-        
-        res.json({ message: 'Logged out successfully' });
-      });
-    });
-  }
 
-  // Authentication endpoints
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res: Response) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ message: 'Not authenticated' });
-      }
-      
-      // If using Replit Auth
-      if (req.user.claims && req.user.claims.sub) {
-        const userId = req.user.claims.sub;
-        const user = await storage.getUser(userId);
-        
-        if (!user) {
-          return res.status(404).json({ message: 'User not found' });
-        }
-        
-        // Don't return password in response
-        const { password, ...userWithoutPassword } = user;
-        return res.json(userWithoutPassword);
-      } 
-      // If using regular auth
-      else if (req.user.id) {
-        const { password, ...userWithoutPassword } = req.user;
-        return res.json(userWithoutPassword);
-      }
-      
-      return res.status(401).json({ message: 'Invalid user data' });
-    } catch (error) {
-      console.error('Error fetching authenticated user:', error);
-      res.status(500).json({ message: 'Failed to fetch user' });
-    }
-  });
-  app.post('/api/auth/register', async (req: Request, res: Response) => {
-    try {
-      const userData = insertUserSchema.parse(req.body);
-      
-      // Check if username already exists
-      const existingUser = await storage.getUserByUsername(userData.username);
-      if (existingUser) {
-        return res.status(400).json({ message: 'Username is already taken' });
-      }
-      
-      // Create user
-      const user = await storage.createUser(userData);
-      
-      // Don't return password in response
-      const { password, ...userWithoutPassword } = user;
-      
-      res.status(201).json(userWithoutPassword);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({
-          message: 'Validation error',
-          errors: error.errors
-        });
-      }
-      
-      res.status(500).json({ message: 'Failed to register user' });
-    }
-  });
-
-  app.post('/api/auth/login', async (req: Request, res: Response) => {
-    try {
-      const { username, password } = req.body;
-      
-      if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required' });
-      }
-      
-      const user = await storage.getUserByUsername(username);
-      
-      if (!user) {
-        return res.status(401).json({ message: 'Invalid username or password' });
-      }
-
-      // In development, use secure password comparison with hash
-      if (process.env.NODE_ENV === 'development' && user.password) {
-        const { comparePasswords } = await import('./auth');
-        const isValid = await comparePasswords(password, user.password);
-        
-        if (!isValid) {
-          return res.status(401).json({ message: 'Invalid username or password' });
-        }
-      } 
-      // In non-development or for testing (insecure, only for demo)
-      else if (user.password !== password) {
-        return res.status(401).json({ message: 'Invalid username or password' });
-      }
-      
-      // Mark user as online
-      await storage.updateUser(user.id.toString(), { isOnline: true, lastActive: new Date() });
-      
-      // Log the user in with session
-      req.login(user, (err) => {
-        if (err) {
-          console.error("Login error:", err);
-          return res.status(500).json({ message: "Failed to start session" });
-        }
-        
-        // Don't return password in response
-        const { password: _, ...userWithoutPassword } = user;
-        return res.json(userWithoutPassword);
-      });
-    } catch (error) {
-      console.error('Login error:', error);
-      res.status(500).json({ message: 'Failed to login' });
-    }
-  });
-
-  app.post('/api/auth/logout', async (req: Request, res: Response) => {
-    try {
-      const { userId } = req.body;
-      
-      if (!userId) {
-        return res.status(400).json({ message: 'User ID is required' });
-      }
-      
-      await storage.updateUser(userId, { isOnline: false, lastActive: new Date() });
-      
-      res.json({ message: 'Logged out successfully' });
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to logout' });
-    }
-  });
+  // Authentication endpoints are now handled by auth.ts
+  // Remove duplicate routes and continue with other API endpoints...
 
   // User endpoints
   app.get('/api/users/top', async (req: Request, res: Response) => {
@@ -396,9 +172,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/users/:id/followers', async (req: Request, res: Response) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       
-      if (isNaN(userId)) {
+      if (!userId) {
         return res.status(400).json({ message: 'Invalid user ID' });
       }
       
@@ -416,11 +192,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/users/:id/posts', async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      
+      if (!userId) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+      
+      const threads = await storage.getThreadsByUser(userId);
+      
+      // Fetch user and additional data for each thread
+      const threadsWithData = await Promise.all(
+        threads.map(async (thread) => {
+          const user = await storage.getUser(thread.userId);
+          
+          if (!user) {
+            return { ...thread, user: null };
+          }
+          
+          // Don't return user password
+          const { password, ...userWithoutPassword } = user;
+          
+          // Get thread media
+          const media = await storage.getMediaByThread(thread.id);
+          
+          // Get thread poll
+          const poll = await storage.getPollByThread(thread.id);
+          
+          let pollWithOptions;
+          if (poll) {
+            const options = await storage.getPollOptions(poll.id);
+            pollWithOptions = {
+              ...poll,
+              options
+            };
+          }
+          
+          return {
+            ...thread,
+            user: userWithoutPassword,
+            media: media || [],
+            poll: pollWithOptions
+          };
+        })
+      );
+      
+      res.json(threadsWithData);
+    } catch (error) {
+      console.error('Error fetching user posts:', error);
+      res.status(500).json({ message: 'Failed to fetch user posts' });
+    }
+  });
+
   app.get('/api/users/:id/following', async (req: Request, res: Response) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       
-      if (isNaN(userId)) {
+      if (!userId) {
         return res.status(400).json({ message: 'Invalid user ID' });
       }
       
@@ -440,10 +269,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/users/:id/follow', async (req: Request, res: Response) => {
     try {
-      const followingId = parseInt(req.params.id);
+      const followingId = req.params.id;
       const { followerId } = req.body;
       
-      if (isNaN(followingId) || !followerId) {
+      if (!followingId || !followerId) {
         return res.status(400).json({ message: 'Both follower ID and following ID are required' });
       }
       
@@ -461,10 +290,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/users/:id/unfollow', async (req: Request, res: Response) => {
     try {
-      const followingId = parseInt(req.params.id);
+      const followingId = req.params.id;
       const { followerId } = req.body;
       
-      if (isNaN(followingId) || !followerId) {
+      if (!followingId || !followerId) {
         return res.status(400).json({ message: 'Both follower ID and following ID are required' });
       }
       
@@ -487,15 +316,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sort = req.query.sort as string || 'recent';
       const limit = parseInt(req.query.limit as string) || 10;
       const offset = parseInt(req.query.offset as string) || 0;
+      const potdFilter = req.query.potdFilter as string || 'include'; // 'only', 'exclude', or 'include'
       
-      const threads = await storage.getThreadsByCategory(categoryId, sort, limit, offset);
+      // Set cache control headers
+      res.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store'
+      });
+      
+      // Get threads with more buffer if we need to filter
+      const fetchLimit = potdFilter !== 'include' ? limit + 20 : limit;
+      const threads = await storage.getThreadsByCategory(categoryId, sort, fetchLimit, offset);
+      
+      // Filter threads based on POTD status
+      let filteredThreads = threads;
+      if (potdFilter === 'only') {
+        filteredThreads = threads.filter(thread => thread.isPotd);
+      } else if (potdFilter === 'exclude') {
+        filteredThreads = threads.filter(thread => !thread.isPotd);
+      }
+      
+      // Apply limit if we've filtered
+      if (potdFilter !== 'include' && filteredThreads.length > limit) {
+        filteredThreads = filteredThreads.slice(0, limit);
+      }
       
       // Fetch user for each thread
       const threadsWithUser = await Promise.all(
-        threads.map(async (thread) => {
-          // Ensure userId is treated as a number
-          const userId = typeof thread.userId === 'string' ? parseInt(thread.userId, 10) : thread.userId;
-          const user = await storage.getUser(userId);
+        filteredThreads.map(async (thread) => {
+          const user = await storage.getUser(thread.userId);
           
           if (!user) {
             return { ...thread, user: null };
@@ -512,114 +363,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           let pollWithOptions;
           if (poll) {
-            // Get poll options using the storage interface
-            // This is a temporary solution for the interface not exposing pollOptions directly
-            let pollOptions: PollOption[] = [];
-            try {
-              // If using MemStorage 
-              if ('pollOptions' in (storage as any)) {
-                const values = Array.from((storage as any)['pollOptions'].values());
-                pollOptions = values
-                  .filter((option: any) => option.pollId === poll.id) as PollOption[];
-              } else {
-                // Fallback - in a real implementation, we would add a proper method to the interface
-                pollOptions = [];
-              }
-            } catch (err) {
-              console.error('Error getting poll options:', err);
-              pollOptions = [];
-            }
-            
+            // Get poll options
+            const options = await storage.getPollOptions(poll.id);
             pollWithOptions = {
               ...poll,
-              options: pollOptions
+              options
             };
           }
           
           return {
             ...thread,
             user: userWithoutPassword,
-            media: media.length > 0 ? media : undefined,
-            poll: poll ? pollWithOptions : undefined
+            media: media || [],
+            poll: pollWithOptions
           };
         })
       );
       
       res.json(threadsWithUser);
     } catch (error) {
+      console.error('Error fetching threads:', error);
       res.status(500).json({ message: 'Failed to fetch threads' });
     }
   });
 
   app.get('/api/threads/id/:id', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
+      const threadId = req.params.id;
+      const userId = req.query.userId as string | undefined;
       
-      if (isNaN(threadId)) {
+      if (!threadId) {
         return res.status(400).json({ message: 'Invalid thread ID' });
       }
       
-      const thread = await storage.getThread(threadId);
+      const thread = await storage.getThread(threadId, userId);
       
       if (!thread) {
         return res.status(404).json({ message: 'Thread not found' });
       }
       
-      // Increment view count
-      await storage.incrementThreadView(threadId);
-      
-      // Get thread author
-      // Ensure userId is treated as a number
-      const userId = typeof thread.userId === 'string' ? parseInt(thread.userId, 10) : thread.userId;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: 'Thread author not found' });
-      }
-      
-      // Don't return user password
-      const { password, ...userWithoutPassword } = user;
-      
-      // Get thread media
-      const media = await storage.getMediaByThread(threadId);
-      
-      // Get thread poll
-      const poll = await storage.getPollByThread(threadId);
-      
-      let pollWithOptions;
-      if (poll) {
-        // Get poll options using the storage interface
-        // This is a temporary solution for the interface not exposing pollOptions directly
-        let pollOptions: PollOption[] = [];
-        try {
-          // If using MemStorage 
-          if ('pollOptions' in (storage as any)) {
-            const values = Array.from((storage as any)['pollOptions'].values());
-            pollOptions = values
-              .filter((option: any) => option.pollId === poll.id) as PollOption[];
-          } else {
-            // Fallback - in a real implementation, we would add a proper method to the interface
-            pollOptions = [];
-          }
-        } catch (err) {
-          console.error('Error getting poll options:', err);
-          pollOptions = [];
-        }
-        
-        pollWithOptions = {
-          ...poll,
-          options: pollOptions
-        };
-      }
-      
-      const threadWithDetails = {
-        ...thread,
-        user: userWithoutPassword,
-        media: media.length > 0 ? media : undefined,
-        poll: poll ? pollWithOptions : undefined
-      };
-      
-      res.json(threadWithDetails);
+      res.json(thread);
     } catch (error) {
       res.status(500).json({ message: 'Failed to fetch thread' });
     }
@@ -672,10 +455,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/threads/:id', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
+      const threadId = req.params.id;
       const { userId, role } = req.body;
       
-      if (isNaN(threadId)) {
+      if (!threadId) {
         return res.status(400).json({ message: 'Invalid thread ID' });
       }
       
@@ -704,10 +487,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/threads/:id/like', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
+      const threadId = req.params.id;
       const { userId } = req.body;
       
-      if (isNaN(threadId) || !userId) {
+      if (!threadId || !userId) {
         return res.status(400).json({ message: 'Thread ID and user ID are required' });
       }
       
@@ -725,10 +508,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/threads/:id/dislike', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
+      const threadId = req.params.id;
       const { userId } = req.body;
       
-      if (isNaN(threadId) || !userId) {
+      if (!threadId || !userId) {
         return res.status(400).json({ message: 'Thread ID and user ID are required' });
       }
       
@@ -746,10 +529,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/threads/:id/potd', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
+      const threadId = req.params.id;
       const { userId } = req.body;
       
-      if (isNaN(threadId) || !userId) {
+      if (!threadId || !userId) {
         return res.status(400).json({ message: 'Thread ID and user ID are required' });
       }
       
@@ -767,11 +550,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/threads/:id/poll/:optionId/vote', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
-      const optionId = parseInt(req.params.optionId);
+      const threadId = req.params.id;
+      const optionId = req.params.optionId;
       const { userId } = req.body;
       
-      if (isNaN(threadId) || isNaN(optionId) || !userId) {
+      if (!threadId || !optionId || !userId) {
         return res.status(400).json({ message: 'Thread ID, option ID, and user ID are required' });
       }
       
@@ -797,9 +580,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reply endpoints
   app.get('/api/threads/:id/replies', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
+      const threadId = req.params.id;
       
-      if (isNaN(threadId)) {
+      if (!threadId) {
         return res.status(400).json({ message: 'Invalid thread ID' });
       }
       
@@ -808,8 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch user for each reply
       const repliesWithUser = await Promise.all(
         replies.map(async (reply) => {
-          // Ensure userId is treated as a number
-          const userId = typeof reply.userId === 'string' ? parseInt(reply.userId, 10) : reply.userId;
+          const userId = reply.userId;
           const user = await storage.getUser(userId);
           
           if (!user) {
@@ -838,9 +620,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/threads/:id/replies', async (req: Request, res: Response) => {
     try {
-      const threadId = parseInt(req.params.id);
+      const threadId = req.params.id;
       
-      if (isNaN(threadId)) {
+      if (!threadId) {
         return res.status(400).json({ message: 'Invalid thread ID' });
       }
       
@@ -858,7 +640,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (media && Array.isArray(media)) {
         for (const mediaItem of media) {
           const mediaData = {
-            threadId: reply.threadId, // Use threadId since we don't have a specific reply media method
+            threadId: reply.threadId,
             type: mediaItem.type,
             url: mediaItem.url
           };
@@ -882,10 +664,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/replies/:id', async (req: Request, res: Response) => {
     try {
-      const replyId = parseInt(req.params.id);
+      const replyId = req.params.id;
       const { userId, role } = req.body;
       
-      if (isNaN(replyId)) {
+      if (!replyId) {
         return res.status(400).json({ message: 'Invalid reply ID' });
       }
       
@@ -914,10 +696,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/replies/:id/like', async (req: Request, res: Response) => {
     try {
-      const replyId = parseInt(req.params.id);
+      const replyId = req.params.id;
       const { userId } = req.body;
       
-      if (isNaN(replyId) || !userId) {
+      if (!replyId || !userId) {
         return res.status(400).json({ message: 'Reply ID and user ID are required' });
       }
       
@@ -935,10 +717,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/replies/:id/dislike', async (req: Request, res: Response) => {
     try {
-      const replyId = parseInt(req.params.id);
+      const replyId = req.params.id;
       const { userId } = req.body;
       
-      if (isNaN(replyId) || !userId) {
+      if (!replyId || !userId) {
         return res.status(400).json({ message: 'Reply ID and user ID are required' });
       }
       
@@ -957,9 +739,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notification endpoints
   app.get('/api/notifications', async (req: Request, res: Response) => {
     try {
-      const userId = parseInt(req.query.userId as string);
+      const userId = req.query.userId as string;
       
-      if (isNaN(userId)) {
+      if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
       }
       
@@ -972,11 +754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return notification;
           }
           
-          // Ensure relatedUserId is treated as a number
-          const relatedUserId = typeof notification.relatedUserId === 'string' 
-            ? parseInt(notification.relatedUserId, 10) 
-            : notification.relatedUserId;
-          const relatedUser = await storage.getUser(relatedUserId);
+          const relatedUser = await storage.getUser(notification.relatedUserId);
           
           if (!relatedUser) {
             return notification;
@@ -1022,9 +800,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/notifications/read/:id', async (req: Request, res: Response) => {
     try {
-      const notificationId = parseInt(req.params.id);
+      const notificationId = req.params.id;
       
-      if (isNaN(notificationId)) {
+      if (!notificationId) {
         return res.status(400).json({ message: 'Invalid notification ID' });
       }
       
@@ -1057,6 +835,236 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'All notifications marked as read' });
     } catch (error) {
       res.status(500).json({ message: 'Failed to mark all notifications as read' });
+    }
+  });
+
+  // User status update endpoint
+  app.put('/api/users/:id/status', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      const { status, updatedBy } = req.body;
+      
+      // Validate input
+      if (!userId || !status) {
+        return res.status(400).json({ message: 'User ID and status are required' });
+      }
+      
+      // Validate status value
+      const validStatuses = [
+        'AMATEUR', 
+        'REGIONAL_POSTER', 
+        'COMPETITOR', 
+        'RANKED_POSTER', 
+        'CONTENDER', 
+        'CHAMPION', 
+        'HALL_OF_FAMER'
+      ];
+      
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ 
+          message: 'Invalid status value', 
+          validStatuses 
+        });
+      }
+      
+      // Get the user performing the update
+      const admin = await storage.getUser(updatedBy);
+      if (!admin || (admin.role !== 'ADMIN' && admin.role !== 'MODERATOR')) {
+        return res.status(403).json({ message: 'Not authorized to update user status' });
+      }
+      
+      // Get the user being updated to ensure they exist
+      const userToUpdate = await storage.getUser(userId);
+      if (!userToUpdate) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Update the user's status
+      const updatedUser = await storage.updateUser(userId, { status });
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: 'Failed to update user status' });
+      }
+      
+      // Don't return password in response
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      res.json({
+        message: 'User status updated successfully',
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      res.status(500).json({ message: 'Failed to update user status' });
+    }
+  });
+
+  // User role update endpoint
+  app.put('/api/users/:id/role', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      const { role, updatedBy } = req.body;
+      
+      // Validate input
+      if (!userId || !role) {
+        return res.status(400).json({ message: 'User ID and role are required' });
+      }
+      
+      // Validate role value
+      const validRoles = [
+        'ADMIN', 
+        'MODERATOR', 
+        'PRO', 
+        'USER',
+        'PREMIUM_USER'
+      ];
+      
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ 
+          message: 'Invalid role value', 
+          validRoles 
+        });
+      }
+      
+      // Get the user performing the update - only admins can update roles
+      const admin = await storage.getUser(updatedBy);
+      if (!admin || admin.role !== 'ADMIN') {
+        return res.status(403).json({ message: 'Only administrators can update user roles' });
+      }
+      
+      // Get the user being updated to ensure they exist
+      const userToUpdate = await storage.getUser(userId);
+      if (!userToUpdate) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // If trying to set another user as ADMIN, require extra confirmation
+      if (role === 'ADMIN' && updatedBy !== userId) {
+        const { confirmAdminPromotion } = req.body;
+        if (!confirmAdminPromotion) {
+          return res.status(400).json({ 
+            message: 'Admin promotion requires confirmation',
+            requiresConfirmation: true
+          });
+        }
+      }
+      
+      // Update the user's role
+      const updatedUser = await storage.updateUser(userId, { role });
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: 'Failed to update user role' });
+      }
+      
+      // Log the role change for audit purposes
+      console.log(`User role updated: ${userToUpdate.username} (${userId}) from ${userToUpdate.role} to ${role} by admin ${admin.username} (${updatedBy})`);
+      
+      // Don't return password in response
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      res.json({
+        message: 'User role updated successfully',
+        previousRole: userToUpdate.role,
+        newRole: role,
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      res.status(500).json({ message: 'Failed to update user role' });
+    }
+  });
+
+  // Auto-calculate user status endpoint
+  app.post('/api/users/:id/recalculate-status', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      const { requestedBy } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+      
+      // Check if the request is from an admin/moderator or the user themselves
+      if (requestedBy) {
+        const admin = await storage.getUser(requestedBy);
+        if (requestedBy !== userId && 
+            (!admin || (admin.role !== 'ADMIN' && admin.role !== 'MODERATOR'))) {
+          return res.status(403).json({ message: 'Not authorized to recalculate user status' });
+        }
+      }
+      
+      // Make sure the user exists
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Recalculate status based on user's points and activity
+      const newStatus = await storage.recalculateUserStatus(userId);
+      
+      if (!newStatus) {
+        return res.status(500).json({ message: 'Failed to recalculate user status' });
+      }
+      
+      // Get the updated user
+      const updatedUser = await storage.getUser(userId);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: 'Failed to fetch updated user' });
+      }
+      
+      // Don't return password in response
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      res.json({
+        message: 'User status recalculated successfully',
+        previousStatus: user.status,
+        newStatus: newStatus,
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error('Error recalculating user status:', error);
+      res.status(500).json({ message: 'Failed to recalculate user status' });
+    }
+  });
+
+  // Admin endpoint to recalculate all user statuses
+  app.post('/api/admin/recalculate-all-statuses', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { adminId } = req.body;
+      
+      if (!adminId) {
+        return res.status(400).json({ message: 'Admin ID is required' });
+      }
+      
+      // Check if the request is from an admin
+      const admin = await storage.getUser(adminId);
+      if (!admin || admin.role !== 'ADMIN') {
+        return res.status(403).json({ message: 'Only administrators can trigger this operation' });
+      }
+      
+      // Log that this admin triggered the operation
+      console.log(`Admin ${admin.username} (ID: ${adminId}) triggered manual recalculation of all user statuses`);
+      
+      // Start the recalculation process
+      // This might take a while for many users, so we return immediately
+      // and let the process run in the background
+      res.json({ 
+        message: 'Status recalculation started',
+        info: 'This process will run in the background. Check server logs for progress and results.'
+      });
+      
+      // Run the recalculation after sending the response
+      storage.recalculateAllUserStatuses()
+        .then(result => {
+          console.log(`Manual status recalculation completed by admin ${admin.username}: ${result.success} updated, ${result.unchanged} unchanged, ${result.failed} failed`);
+        })
+        .catch(error => {
+          console.error('Error during manual status recalculation:', error);
+        });
+    } catch (error) {
+      console.error('Error processing recalculate all statuses request:', error);
+      res.status(500).json({ message: 'Failed to start status recalculation process' });
     }
   });
 
@@ -1134,6 +1142,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching event:', error);
       res.status(500).json({ message: 'Failed to fetch event' });
+    }
+  });
+
+  // Image upload endpoint
+  app.post('/api/upload', upload.single('image'), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const file = req.file;
+      const fileExtension = path.extname(file.originalname);
+      const fileName = `${uuidv4()}${fileExtension}`;
+
+      // Upload to S3
+      const uploadParams = {
+        Bucket: process.env.AWS_S3_BUCKET || 'your-bucket-name',
+        Key: `uploads/${fileName}`,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+        ACL: 'public-read'
+      };
+
+      await s3Client.send(new PutObjectCommand(uploadParams));
+
+      // Generate the CDN URL
+      const cdnUrl = `${process.env.CDN_BASE_URL || `https://${uploadParams.Bucket}.s3.amazonaws.com`}/uploads/${fileName}`;
+      
+      res.json({ url: cdnUrl });
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      res.status(500).json({ message: 'Failed to upload file' });
     }
   });
 

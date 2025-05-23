@@ -1,9 +1,9 @@
 // User related types
-export type UserRole = "ADMIN" | "MODERATOR" | "PRO" | "USER";
+export type UserRole = "ADMIN" | "MODERATOR" | "PRO" | "USER" | "PREMIUM_USER";
 export type UserStatus = "HALL OF FAMER" | "CHAMPION" | "CONTENDER" | "RANKED POSTER" | "COMPETITOR" | "REGIONAL POSTER" | "AMATEUR";
 
 export interface AuthUser {
-  id: number;
+  id: string;
   username: string;
   avatar?: string;
   status: UserStatus;
@@ -34,10 +34,10 @@ export interface ForumCategory {
 }
 
 export interface ForumThread {
-  id: number;
+  id: string;
   title: string;
   content: string;
-  userId: number;
+  userId: string;
   user: AuthUser;
   categoryId: string;
   isPinned: boolean;
@@ -52,18 +52,19 @@ export interface ForumThread {
   isPotd: boolean;
   media?: ThreadMedia[];
   poll?: Poll;
+  hasLiked?: boolean;
 }
 
 export interface ThreadMedia {
-  id: number;
-  threadId: number;
+  id: string;
+  threadId: string;
   type: "IMAGE" | "GIF";
   url: string;
 }
 
 export interface Poll {
-  id: number;
-  threadId: number;
+  id: string;
+  threadId: string;
   question: string;
   options: PollOption[];
   expiresAt: Date;
@@ -71,21 +72,21 @@ export interface Poll {
 }
 
 export interface PollOption {
-  id: number;
-  pollId: number;
+  id: string;
+  pollId: string;
   text: string;
   votesCount: number;
 }
 
 export interface ThreadReply {
-  id: number;
-  threadId: number;
-  userId: number;
+  id: string;
+  threadId: string;
+  userId: string;
   user: AuthUser;
   content: string;
   createdAt: Date;
   updatedAt: Date;
-  parentReplyId?: number;
+  parentReplyId?: string;
   likesCount: number;
   dislikesCount: number;
   media?: ThreadMedia[];
@@ -93,14 +94,14 @@ export interface ThreadReply {
 
 // Notification types
 export interface Notification {
-  id: number;
-  userId: number;
+  id: string;
+  userId: string;
   type: "REPLY" | "MENTION" | "LIKE" | "SYSTEM" | "FOLLOW";
-  relatedUserId?: number;
+  relatedUserId?: string;
   relatedUser?: AuthUser;
-  threadId?: number;
+  threadId?: string;
   threadTitle?: string;
-  replyId?: number;
+  replyId?: string;
   replyPreview?: string;
   message?: string;
   isRead: boolean;

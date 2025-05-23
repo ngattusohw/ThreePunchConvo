@@ -1,192 +1,203 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import ThreadCard from "@/components/forum/ThreadCard";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ForumThread, ForumCategory, UserStatus } from "@/lib/types";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import CreatePostModal from "@/components/forum/CreatePostModal";
 import { formatDistanceToNow } from "date-fns";
-
-// Function to generate mock threads
-function generateMockThreads(currentCategory: any): ForumThread[] {
-  const mockAuthors = [
-    { id: 1, username: "UFCFanatic", avatarUrl: null, points: 3450, status: "HALL OF FAMER" },
-    { id: 2, username: "MMAExpert", avatarUrl: null, points: 2100, status: "CHAMPION" },
-    { id: 3, username: "FightScience", avatarUrl: null, points: 1850, status: "CONTENDER" },
-    { id: 4, username: "OctagonInsider", avatarUrl: null, points: 980, status: "AMATEUR" },
-    { id: 5, username: "KnockoutKing", avatarUrl: null, points: 1200, status: "COMPETITOR" }
-  ];
-  
-  const generateRandomDate = () => {
-    const now = Date.now();
-    const randomTime = Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000); // Random time within last month
-    return new Date(now - randomTime);
-  };
-  
-  const titles = {
-    general: [
-      "Welcome to 3 Punch Convo! Introduce yourself here",
-      "What got you into MMA? Share your story",
-      "Best way to watch fights - TV, Phone, or Live?",
-      "Who's the GOAT debate - let's settle this once and for all",
-      "Most anticipated fight of the year?"
-    ],
-    ufc: [
-      "UFC 300 card predictions and discussion",
-      "Jon Jones vs Stipe - Will it ever happen?",
-      "Dana White announces new UFC APEX expansion",
-      "Alex Pereira - Could he become double champ?",
-      "Sean O'Malley's next title defense - who's it going to be?"
-    ],
-    bellator: [
-      "Bellator-PFL merger: Good or bad for fighters?",
-      "Patricio Pitbull legacy discussion",
-      "Best Bellator event of all time?",
-      "Bellator's heavyweight division analysis",
-      "Ryan Bader vs Fedor - rematch possibility?"
-    ],
-    one: [
-      "ONE Championship expanding to US market",
-      "Rodtang vs Takeru - Who wins and how?",
-      "Stamp Fairtex impressive run as champion",
-      "Best Muay Thai fights in ONE history",
-      "Demetrious Johnson's career at ONE"
-    ],
-    pfl: [
-      "PFL $1M tournament format discussion",
-      "Kayla Harrison's dominance - good or bad for PFL?",
-      "PFL's new broadcast deal analysis",
-      "Best prospects to watch in this PFL season",
-      "Could the PFL champions compete in the UFC?"
-    ],
-    boxing: [
-      "Fury vs Usyk - unified heavyweight championship",
-      "Canelo's next opponent prediction thread",
-      "Ryan Garcia comeback strategy",
-      "Is Jake Paul good for boxing?",
-      "Women's boxing getting more spotlight - thoughts?"
-    ],
-    techniques: [
-      "Southpaw vs Orthodox - Best strategies",
-      "Takedown defense fundamentals - share your tips",
-      "Calf kick counter techniques - what works?",
-      "How to improve punching power - scientific approach",
-      "Best conditioning exercises for MMA fighters"
-    ],
-    offtopic: [
-      "MMA video games - which one is your favorite?",
-      "Favorite fighter entrances of all time",
-      "Share your home workout setup for MMA training",
-      "Sports betting strategies thread",
-      "Best MMA documentaries to watch"
-    ]
-  };
-  
-  const mockThreads: ForumThread[] = [];
-  
-  // Get the appropriate titles for the current category
-  const categoryTitles = titles[currentCategory.id as keyof typeof titles] || titles.general;
-  
-  for (let i = 0; i < 5; i++) {
-    const author = mockAuthors[i % mockAuthors.length];
-    const createdAt = generateRandomDate();
-    
-    mockThreads.push({
-      id: 1000 + i,
-      title: categoryTitles[i],
-      content: `This is a mock discussion about ${categoryTitles[i].toLowerCase()}. Join the conversation!`,
-      userId: author.id,
-      categoryId: currentCategory.id,
-      isPinned: i === 0,
-      isLocked: false,
-      viewCount: Math.floor(Math.random() * 1000) + 100,
-      repliesCount: Math.floor(Math.random() * 50) + 5,
-      lastActivityAt: new Date(),
-      createdAt,
-      updatedAt: createdAt,
-      isPotd: i === 1,
-      user: {
-        id: author.id,
-        username: author.username,
-        avatar: author.avatarUrl || undefined,
-        status: author.status as UserStatus,
-        isOnline: true,
-        postsCount: Math.floor(Math.random() * 100) + 10,
-        likesCount: Math.floor(Math.random() * 300) + 50,
-        potdCount: Math.floor(Math.random() * 5),
-        rank: i + 1,
-        followersCount: Math.floor(Math.random() * 50) + 10,
-        followingCount: Math.floor(Math.random() * 30) + 5,
-        role: i === 0 ? "ADMIN" : "USER",
-      },
-      poll: i === 1 ? {
-        id: 1,
-        threadId: 1000 + i,
-        question: "Who will win?",
-        options: [
-          { id: 1, pollId: 1, text: "Fighter A", votesCount: 24 },
-          { id: 2, pollId: 1, text: "Fighter B", votesCount: 18 }
-        ],
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        votesCount: 42
-      } : undefined,
-      likesCount: Math.floor(Math.random() * 30) + 5,
-      dislikesCount: Math.floor(Math.random() * 10)
-    });
-  }
-  
-  return mockThreads;
-}
 
 interface ForumContentProps {
   category?: string;
 }
 
 export default function ForumContent({ category = "general" }: ForumContentProps) {
+  const queryClient = useQueryClient();
   const [filterOption, setFilterOption] = useState<"recent" | "popular" | "new">("recent");
   const [timeRange, setTimeRange] = useState<"all" | "week" | "month" | "year">("all");
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(0);
+  const [allRegularThreads, setAllRegularThreads] = useState<ForumThread[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const limit = 10;
   
   // Get the current category info
   const currentCategory = FORUM_CATEGORIES.find(cat => cat.id === category) || FORUM_CATEGORIES[0];
   
-  // Fetch threads for the current category
-  const { data: threads, isLoading, error } = useQuery<ForumThread[]>({
-    queryKey: [`/api/threads/${category}`, filterOption, timeRange],
+  // Query for POTD threads
+  const { 
+    data: potdThreads = [], 
+    isLoading: isPotdLoading 
+  } = useQuery<ForumThread[]>({
+    queryKey: [`/api/threads/${category}`, 'potd'],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        potdFilter: 'only',
+        sort: 'recent'
+      });
+      const response = await fetch(`/api/threads/${category}?${params}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch POTD threads');
+      }
+      return response.json();
+    },
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true
   });
   
-  // Generate mock threads if none are returned from the API
-  const displayThreads = threads?.length ? threads : generateMockThreads(currentCategory);
+  // Query for regular threads (non-POTD)
+  const { 
+    data: regularThreads = [], 
+    isLoading: isRegularLoading,
+    error,
+    refetch: refetchRegularThreads
+  } = useQuery<ForumThread[]>({
+    queryKey: [`/api/threads/${category}`, filterOption, timeRange, page],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        potdFilter: 'exclude',
+        sort: filterOption,
+        timeRange: timeRange,
+        limit: String(limit),
+        offset: String(page * limit)
+      });
+      const response = await fetch(`/api/threads/${category}?${params}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch regular threads');
+      }
+      return response.json();
+    },
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    staleTime: 0, // Consider data always stale to force refetch
+  });
+  
+  // Update allRegularThreads when regularThreads changes
+  useEffect(() => {
+    if (!regularThreads || isRegularLoading) return;
+    if (regularThreads) {
+      console.log("in use effect check for reg threads", regularThreads)
+      if (page === 0) {
+        console.log("in use effect check for page 0, ", regularThreads)
+        // Replace all threads when filters change (page is reset to 0)
+        setAllRegularThreads(regularThreads);
+      } else {
+        // Append new threads when loading more
+        setAllRegularThreads(prev => [...prev, ...regularThreads]);
+      }
+
+      // Check if we have more threads to load
+      setHasMore(regularThreads.length >= limit);
+    }
+  }, [regularThreads, page, limit, category]);
+
+  // Reset pagination and force refetch when filter options change
+  // useEffect(() => {
+  //   const resetAndRefetch = async () => {
+  //     setPage(0);
+  //     console.log("help me, im here resetting")
+  //     setAllRegularThreads([]);
+  //     setHasMore(true); // Reset the hasMore flag to enable loading
+  //     await refetchRegularThreads(); // Force a refetch when filter changes
+  //   };
+    
+  //   resetAndRefetch();
+  // }, [filterOption, timeRange, category, refetchRegularThreads]);
+  
+  // Scroll to the loading area when new content is loaded
+  useEffect(() => {
+    if (page > 0 && regularThreads.length > 0 && loadMoreRef.current) {
+      const previousHeight = loadMoreRef.current.offsetTop - window.innerHeight / 2;
+      window.scrollTo({
+        top: previousHeight,
+        behavior: 'auto'
+      });
+    }
+  }, [regularThreads, page]);
+  
+  const isLoading = isPotdLoading || isRegularLoading;
+  
+  const loadMore = () => {
+    if (hasMore && !isRegularLoading) {
+      setPage(prevPage => prevPage + 1);
+    }
+  };
+
+  // Helper function to handle filter changes
+  const handleFilterChange = (newFilter: "recent" | "popular" | "new") => {
+    if (newFilter === filterOption) {
+      // If clicking the same filter, force a refresh
+      setAllRegularThreads([]);
+      setPage(0);
+      setHasMore(true);
+      setTimeout(() => {
+        refetchRegularThreads();
+      }, 0);
+    } else {
+      setFilterOption(newFilter);
+    }
+  };
+
+  // Helper function to handle time range changes
+  const handleTimeRangeChange = (newTimeRange: "all" | "week" | "month" | "year") => {
+    if (newTimeRange === timeRange) {
+      // If selecting the same time range, force a refresh
+      setAllRegularThreads([]);
+      setPage(0);
+      setHasMore(true);
+      setTimeout(() => {
+        refetchRegularThreads();
+      }, 0);
+    } else {
+      setTimeRange(newTimeRange as any);
+    }
+  };
+
+  console.log("allRegularThreads: ", allRegularThreads);
 
   return (
     <div className="flex-grow">
       {/* Forum Header and Actions */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <div>
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-6 gap-4">
+        <div className="md:max-w-[70%]">
           <h1 className="text-2xl font-heading font-bold text-white mb-1">{currentCategory.name}</h1>
           <p className="text-gray-400 text-sm">{currentCategory.description}</p>
         </div>
         
         <div className="mt-4 md:mt-0 flex space-x-3">
-          <div className="relative">
+          {/* Hiding search */}
+          {/* <div className="relative">
             <input 
               type="text" 
               placeholder="Search discussions..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-dark-gray border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300 w-full md:w-64 focus:outline-none focus:ring-1 focus:ring-ufc-red"
+              className="bg-dark-gray border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300 w-full md:w-64 focus:outline-none focus:ring-1 focus:ring-ufc-blue"
             />
             <button className="absolute right-2 top-2 text-gray-400">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </button>
-          </div>
+          </div> */}
           
           <button 
             onClick={() => setCreatePostModalOpen(true)}
-            className="bg-ufc-red hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg text-sm flex items-center transition"
+            className="bg-ufc-blue hover:bg-ufc-blue-dark text-black font-medium px-4 py-2 rounded-lg text-sm flex-shrink-0 flex items-center transition whitespace-nowrap"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -203,34 +214,35 @@ export default function ForumContent({ category = "general" }: ForumContentProps
           onChange={(e) => {
             window.location.href = `/forum/${e.target.value}`;
           }}
-          className="bg-dark-gray border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300 w-full focus:outline-none focus:ring-1 focus:ring-ufc-red"
+          className="bg-dark-gray border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300 w-full focus:outline-none focus:ring-1 focus:ring-ufc-blue"
         >
           {FORUM_CATEGORIES.map((cat) => (
             <option key={cat.id} value={cat.id}>
-              {cat.name} ({cat.count})
+              {cat.name}
+               {/* ({cat.count}) */}
             </option>
           ))}
         </select>
       </div>
 
       {/* Forum Filter Options */}
-      <div className="flex items-center justify-between mb-4 bg-dark-gray p-3 rounded-lg">
+      {/* <div className="flex items-center justify-between mb-4 bg-dark-gray p-3 rounded-lg">
         <div className="flex space-x-4">
           <button 
-            onClick={() => setFilterOption("recent")}
-            className={`font-medium text-sm pb-1 ${filterOption === "recent" ? "text-white border-b-2 border-ufc-red" : "text-gray-400 hover:text-white"}`}
+            onClick={() => handleFilterChange("recent")}
+            className={`font-medium text-sm pb-1 ${filterOption === "recent" ? "text-white border-b-2 border-ufc-blue" : "text-gray-400 hover:text-white"}`}
           >
             Recent Activity
           </button>
           <button 
-            onClick={() => setFilterOption("popular")}
-            className={`font-medium text-sm pb-1 ${filterOption === "popular" ? "text-white border-b-2 border-ufc-red" : "text-gray-400 hover:text-white"}`}
+            onClick={() => handleFilterChange("popular")}
+            className={`font-medium text-sm pb-1 ${filterOption === "popular" ? "text-white border-b-2 border-ufc-blue" : "text-gray-400 hover:text-white"}`}
           >
             Most Popular
           </button>
           <button 
-            onClick={() => setFilterOption("new")}
-            className={`font-medium text-sm pb-1 hidden md:block ${filterOption === "new" ? "text-white border-b-2 border-ufc-red" : "text-gray-400 hover:text-white"}`}
+            onClick={() => handleFilterChange("new")}
+            className={`font-medium text-sm pb-1 hidden md:block ${filterOption === "new" ? "text-white border-b-2 border-ufc-blue" : "text-gray-400 hover:text-white"}`}
           >
             New Posts
           </button>
@@ -239,8 +251,10 @@ export default function ForumContent({ category = "general" }: ForumContentProps
         <div>
           <select 
             value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value as any)}
-            className="bg-dark-gray text-gray-300 text-sm border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ufc-red"
+            onChange={(e) => {
+              handleTimeRangeChange(e.target.value as any);
+            }}
+            className="bg-dark-gray text-gray-300 text-sm border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ufc-blue"
           >
             <option value="all">All Time</option>
             <option value="week">This Week</option>
@@ -248,12 +262,12 @@ export default function ForumContent({ category = "general" }: ForumContentProps
             <option value="year">This Year</option>
           </select>
         </div>
-      </div>
+      </div> */}
 
-      {/* Loading State */}
-      {isLoading && (
+      {/* Loading State - Initial Page Load */}
+      {isLoading && page === 0 && allRegularThreads.length === 0 && (
         <div className="py-20 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-red mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>
           <p className="mt-4 text-gray-400">Loading discussions...</p>
         </div>
       )}
@@ -266,18 +280,68 @@ export default function ForumContent({ category = "general" }: ForumContentProps
       )}
 
       {/* Forum Thread List */}
-      {!isLoading && !error && (
+      {(!isLoading || page > 0 || allRegularThreads.length > 0) && !error && (
         <div className="space-y-4">
-          {displayThreads.map(thread => (
-            <ThreadCard key={thread.id} thread={thread} />
-          ))}
-          
-          {/* Load More Button */}
-          <div className="mt-6 text-center">
-            <button className="bg-gray-800 hover:bg-gray-700 text-white font-medium px-6 py-3 rounded-lg text-sm transition">
-              Load More Discussions
-            </button>
-          </div>
+          {(potdThreads.length > 0 || allRegularThreads.length > 0) ? (
+            <div>
+              {/* POTD Section - only shown once at the top */}
+              {potdThreads.length > 0 && (
+                <div className="mb-6">
+                  <div className="text-sm font-medium text-ufc-blue mb-2">Posts of the Day</div>
+                  <div className="space-y-4">
+                    {potdThreads.map(thread => (
+                      <ThreadCard key={thread.id} thread={thread} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Regular Threads Section - grows with infinite scrolling */}
+              {allRegularThreads.length > 0 ? (
+                <div className="space-y-4">
+                  {allRegularThreads.map(thread => (
+                    <ThreadCard key={thread.id} thread={thread} />
+                  ))}
+                </div>
+              ) : (
+                !isRegularLoading && page === 0 && (
+                  <div className="text-center py-6">
+                    <p className="text-gray-400">No threads found with the current filters.</p>
+                  </div>
+                )
+              )}
+              
+              {/* Reference point for scroll position */}
+              <div ref={loadMoreRef}></div>
+              
+              {/* Load More Button with loading state */}
+              <div className="mt-6 text-center">
+                {isRegularLoading && page > 0 ? (
+                  <div className="py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={loadMore}
+                    className={`bg-gray-800 hover:bg-gray-700 text-white font-medium px-6 py-3 rounded-lg text-sm transition ${!hasMore ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={!hasMore || isRegularLoading}
+                  >
+                    {!hasMore ? "No More Discussions" : "Load More Discussions"}
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-400">No discussions found in this category.</p>
+              <button 
+                onClick={() => setCreatePostModalOpen(true)}
+                className="mt-4 bg-ufc-blue hover:bg-ufc-blue-dark text-black font-medium px-6 py-3 rounded-lg text-sm transition"
+              >
+                Start a New Discussion
+              </button>
+            </div>
+          )}
         </div>
       )}
 

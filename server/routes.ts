@@ -838,6 +838,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User status update endpoint
+  app.put('/api/users/:id/status', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      const { status, updatedBy } = req.body;
+      
+      // Validate input
+      if (!userId || !status) {
+        return res.status(400).json({ message: 'User ID and status are required' });
+      }
+      
+      // Validate status value
+      const validStatuses = [
+        'AMATEUR', 
+        'REGIONAL_POSTER', 
+        'COMPETITOR', 
+        'RANKED_POSTER', 
+        'CONTENDER', 
+        'CHAMPION', 
+        'HALL_OF_FAMER'
+      ];
+      
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ 
+          message: 'Invalid status value', 
+          validStatuses 
+        });
+      }
+      
+      // Get the user performing the update
+      const admin = await storage.getUser(updatedBy);
+      if (!admin || (admin.role !== 'ADMIN' && admin.role !== 'MODERATOR')) {
+        return res.status(403).json({ message: 'Not authorized to update user status' });
+      }
+      
+      // Get the user being updated to ensure they exist
+      const userToUpdate = await storage.getUser(userId);
+      if (!userToUpdate) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Update the user's status
+      const updatedUser = await storage.updateUser(userId, { status });
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: 'Failed to update user status' });
+      }
+      
+      // Don't return password in response
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      res.json({
+        message: 'User status updated successfully',
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      res.status(500).json({ message: 'Failed to update user status' });
+    }
+  });
+
+  // Auto-calculate user status endpoint
+  app.post('/api/users/:id/recalculate-status', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      const { requestedBy } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+      
+      // Check if the request is from an admin/moderator or the user themselves
+      if (requestedBy) {
+        const admin = await storage.getUser(requestedBy);
+        if (requestedBy !== userId && 
+            (!admin || (admin.role !== 'ADMIN' && admin.role !== 'MODERATOR'))) {
+          return res.status(403).json({ message: 'Not authorized to recalculate user status' });
+        }
+      }
+      
+      // Make sure the user exists
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Recalculate status based on user's points and activity
+      const newStatus = await storage.recalculateUserStatus(userId);
+      
+      if (!newStatus) {
+        return res.status(500).json({ message: 'Failed to recalculate user status' });
+      }
+      
+      // Get the updated user
+      const updatedUser = await storage.getUser(userId);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: 'Failed to fetch updated user' });
+      }
+      
+      // Don't return password in response
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      res.json({
+        message: 'User status recalculated successfully',
+        previousStatus: user.status,
+        newStatus: newStatus,
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error('Error recalculating user status:', error);
+      res.status(500).json({ message: 'Failed to recalculate user status' });
+    }
+  });
+
+  // Admin endpoint to recalculate all user statuses
+  app.post('/api/admin/recalculate-all-statuses', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { adminId } = req.body;
+      
+      if (!adminId) {
+        return res.status(400).json({ message: 'Admin ID is required' });
+      }
+      
+      // Check if the request is from an admin
+      const admin = await storage.getUser(adminId);
+      if (!admin || admin.role !== 'ADMIN') {
+        return res.status(403).json({ message: 'Only administrators can trigger this operation' });
+      }
+      
+      // Log that this admin triggered the operation
+      console.log(`Admin ${admin.username} (ID: ${adminId}) triggered manual recalculation of all user statuses`);
+      
+      // Start the recalculation process
+      // This might take a while for many users, so we return immediately
+      // and let the process run in the background
+      res.json({ 
+        message: 'Status recalculation started',
+        info: 'This process will run in the background. Check server logs for progress and results.'
+      });
+      
+      // Run the recalculation after sending the response
+      storage.recalculateAllUserStatuses()
+        .then(result => {
+          console.log(`Manual status recalculation completed by admin ${admin.username}: ${result.success} updated, ${result.unchanged} unchanged, ${result.failed} failed`);
+        })
+        .catch(error => {
+          console.error('Error during manual status recalculation:', error);
+        });
+    } catch (error) {
+      console.error('Error processing recalculate all statuses request:', error);
+      res.status(500).json({ message: 'Failed to start status recalculation process' });
+    }
+  });
+
   // MMA Schedule endpoints
   app.get('/api/events', async (req: Request, res: Response) => {
     try {

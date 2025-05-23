@@ -22,12 +22,13 @@ export default function ForumCategories() {
                     : 'hover:bg-gray-800 text-gray-300'} font-medium`}
               >
                 <span>{category.name}</span>
-                <span className={`${category.id === currentCategory 
+                {/* TODO category count - maybe notification here */}
+                {/* <span className={`${category.id === currentCategory 
                   ? 'bg-ufc-blue text-black' 
                   : 'bg-gray-700 text-gray-300'} text-xs rounded-full px-2 py-0.5`}
                 >
                   {category.count}
-                </span>
+                </span> */}
               </Link>
             </li>
           ))}

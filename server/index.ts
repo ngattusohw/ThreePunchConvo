@@ -3,6 +3,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ensureConnection } from "./db";
+import { setupCronJobs } from "./cron-jobs";
 
 const app = express();
 app.use(express.json());
@@ -47,6 +48,10 @@ app.use((req, res, next) => {
     }
 
     const server = await registerRoutes(app);
+    
+    // Initialize cron jobs after database connection is established
+    setupCronJobs();
+    log('Cron jobs initialized for user status and ranking updates');
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       console.error('Global error handler:', err);

@@ -102,6 +102,11 @@ export interface IStorage {
   saveMMAEvent(event: any): Promise<MMAEvent>;
   saveFighter(fighter: any): Promise<Fighter>;
   saveFight(fight: any): Promise<Fight>;
+  
+  // User ranking and status management
+  recalculateRankings(): Promise<void>;
+  recalculateUserStatus(userId: string): Promise<string | undefined>;
+  recalculateAllUserStatuses(): Promise<{success: number, failed: number, unchanged: number}>;
 }
 
 // Extended Thread type that includes associated data
@@ -1825,6 +1830,128 @@ export class DatabaseStorage implements IStorage {
       }
     } catch (error) {
       console.error('Error recalculating rankings:', error);
+    }
+  }
+
+  // Calculate and update user status based on points and activity
+  async recalculateUserStatus(userId: string): Promise<string | undefined> {
+    try {
+      const user = await this.getUser(userId);
+      
+      if (!user) {
+        return undefined;
+      }
+      
+      // Define thresholds for different statuses
+      // These can be adjusted as needed
+      const statusThresholds = [
+        { status: 'HALL_OF_FAMER', points: 5000, posts: 200, potd: 10 },
+        { status: 'CHAMPION', points: 2500, posts: 100, potd: 5 },
+        { status: 'CONTENDER', points: 1000, posts: 50, potd: 2 },
+        { status: 'RANKED_POSTER', points: 500, posts: 25, potd: 1 },
+        { status: 'COMPETITOR', points: 250, posts: 15, potd: 0 },
+        { status: 'REGIONAL_POSTER', points: 100, posts: 5, potd: 0 },
+        { status: 'AMATEUR', points: 0, posts: 0, potd: 0 }
+      ];
+      
+      // Find the highest status the user qualifies for
+      let newStatus = 'AMATEUR';
+      for (const threshold of statusThresholds) {
+        if (
+          user.points >= threshold.points && 
+          user.postsCount >= threshold.posts && 
+          user.potdCount >= threshold.potd
+        ) {
+          newStatus = threshold.status;
+          break;
+        }
+      }
+      
+      // Only update if status has changed
+      if (newStatus !== user.status) {
+        const updatedUser = await this.updateUser(userId, { status: newStatus });
+        
+        if (updatedUser) {
+          return newStatus;
+        }
+      }
+      
+      return user.status;
+    } catch (error) {
+      console.error('Error recalculating user status:', error);
+      return undefined;
+    }
+  }
+
+  // Recalculate statuses for all users - to be called by cron job
+  async recalculateAllUserStatuses(): Promise<{success: number, failed: number, unchanged: number}> {
+    try {
+      // Get all users
+      const allUsers = await this.getAllUsers();
+      
+      // Status thresholds - same as in recalculateUserStatus
+      const statusThresholds = [
+        { status: 'HALL_OF_FAMER', points: 5000, posts: 200, potd: 10 },
+        { status: 'CHAMPION', points: 2500, posts: 100, potd: 5 },
+        { status: 'CONTENDER', points: 1000, posts: 50, potd: 2 },
+        { status: 'RANKED_POSTER', points: 500, posts: 25, potd: 1 },
+        { status: 'COMPETITOR', points: 250, posts: 15, potd: 0 },
+        { status: 'REGIONAL_POSTER', points: 100, posts: 5, potd: 0 },
+        { status: 'AMATEUR', points: 0, posts: 0, potd: 0 }
+      ];
+      
+      // Track statistics
+      let success = 0;
+      let failed = 0;
+      let unchanged = 0;
+      
+      // Process users in smaller batches to avoid memory issues
+      const batchSize = 50;
+      for (let i = 0; i < allUsers.length; i += batchSize) {
+        const userBatch = allUsers.slice(i, i + batchSize);
+        
+        // Process each user in the batch
+        await Promise.all(userBatch.map(async (user) => {
+          try {
+            // Find the highest status the user qualifies for
+            let newStatus = 'AMATEUR';
+            for (const threshold of statusThresholds) {
+              if (
+                user.points >= threshold.points && 
+                user.postsCount >= threshold.posts && 
+                user.potdCount >= threshold.potd
+              ) {
+                newStatus = threshold.status;
+                break;
+              }
+            }
+            
+            // Only update if status has changed
+            if (newStatus !== user.status) {
+              const updatedUser = await this.updateUser(user.id, { status: newStatus });
+              
+              if (updatedUser) {
+                console.log(`Updated user ${user.username} status from ${user.status} to ${newStatus}`);
+                success++;
+              } else {
+                console.error(`Failed to update status for user ${user.username}`);
+                failed++;
+              }
+            } else {
+              unchanged++;
+            }
+          } catch (userError) {
+            console.error(`Error processing user ${user.id}:`, userError);
+            failed++;
+          }
+        }));
+      }
+      
+      console.log(`Status recalculation complete: ${success} updated, ${unchanged} unchanged, ${failed} failed`);
+      return { success, failed, unchanged };
+    } catch (error) {
+      console.error('Error recalculating all user statuses:', error);
+      return { success: 0, failed: 0, unchanged: 0 };
     }
   }
 

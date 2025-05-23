@@ -5,6 +5,7 @@ import NotificationModal from "@/components/notification/NotificationModal";
 import MobileNavigation from "@/components/layout/MobileNavigation";
 import { formatUsername } from "@/lib/utils";
 import { UserStatus } from "@/lib/types";
+import StatusBadge from "@/components/ui/status-badge";
 import logoImage from "@/assets/3PC-Logo-FullColor-RGB.png";
 
 export default function Header() {
@@ -81,12 +82,12 @@ export default function Header() {
               >
                 FORUM
               </Link>
-              <Link
+              {/* <Link
                 href="/schedule"
                 className={`font-heading font-medium ${location === "/schedule" ? "text-white" : "text-gray-400 hover:text-white"} transition`}
               >
                 SCHEDULES
-              </Link>
+              </Link> */}
               <Link
                 href="/rankings"
                 className={`font-heading font-medium ${location === "/rankings" ? "text-white" : "text-gray-400 hover:text-white"} transition`}
@@ -150,9 +151,9 @@ export default function Header() {
                     </span>
                     {user.status && (
                       <span
-                        className={`hidden md:block ${getStatusClassForBadge(user.status as UserStatus)} text-xs px-2 py-0.5 rounded font-bold`}
+                        className="hidden md:block"
                       >
-                        {user.status}
+                        <StatusBadge status={user.status} />
                       </span>
                     )}
                     <svg
@@ -233,25 +234,4 @@ export default function Header() {
       )}
     </header>
   );
-}
-
-function getStatusClassForBadge(status: UserStatus): string {
-  switch (status) {
-    case "HALL OF FAMER":
-      return "status-hof";
-    case "CHAMPION":
-      return "status-champion";
-    case "CONTENDER":
-      return "status-contender";
-    case "RANKED POSTER":
-      return "status-ranked";
-    case "COMPETITOR":
-      return "status-competitor";
-    case "REGIONAL POSTER":
-      return "status-regional";
-    case "AMATEUR":
-      return "status-amateur";
-    default:
-      return "status-amateur";
-  }
 }

@@ -143,14 +143,14 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                 {thread.likesCount}
               </div>
               
-              {thread.dislikesCount > 0 && (
+              {/* {thread.dislikesCount > 0 && (
                 <div className="flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2" />
                   </svg>
                   {thread.dislikesCount}
                 </div>
-              )}
+              )} */}
               
             </div>
           </div>

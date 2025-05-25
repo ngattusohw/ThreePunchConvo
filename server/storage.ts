@@ -41,6 +41,7 @@ export interface IStorage {
   // User management
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByExternalId(externalId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   upsertUser(userData: UpsertUser): Promise<User>;
   updateUser(id: string, userData: Partial<User>): Promise<User | undefined>;
@@ -151,6 +152,7 @@ export class DatabaseStorage implements IStorage {
           username: users.username,
           email: users.email,
           password: users.password,
+          externalId: users.externalId,
           avatar: users.avatar,
           firstName: users.firstName,
           lastName: users.lastName,
@@ -190,6 +192,7 @@ export class DatabaseStorage implements IStorage {
           username: users.username,
           email: users.email,
           password: users.password,
+          externalId: users.externalId,
           avatar: users.avatar,
           firstName: users.firstName,
           lastName: users.lastName,
@@ -220,6 +223,45 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
+  async getUserByExternalId(externalId: string): Promise<User | undefined> {
+    try {
+      const [user] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          password: users.password,
+          externalId: users.externalId,
+          avatar: users.avatar,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          bio: users.bio,
+          profileImageUrl: users.profileImageUrl,
+          role: users.role,
+          status: users.status,
+          isOnline: users.isOnline,
+          lastActive: users.lastActive,
+          points: users.points,
+          rank: users.rank,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+          postsCount: users.postsCount,
+          likesCount: users.likesCount,
+          potdCount: users.potdCount,
+          followersCount: users.followersCount,
+          followingCount: users.followingCount,
+          socialLinks: users.socialLinks
+        })
+        .from(users)
+        .where(eq(users.externalId, externalId));
+      
+      return user;
+    } catch (error) {
+      console.error('Error getting user by external ID:', error);
+      return undefined;
+    }
+  }
+  
   async createUser(userData: InsertUser): Promise<User> {
     try {
       // Generate a numeric ID using timestamp and random number
@@ -233,8 +275,9 @@ export class DatabaseStorage implements IStorage {
       const userValues = {
         id: userData.id || String(generateId()), // Convert to string since schema expects string
         username: userData.username,
-        password: userData.password,
+        password: userData.password || null,
         email: userData.email || null,
+        externalId: userData.externalId || null,
         avatar: userData.avatar || null,
         firstName: userData.firstName || null,
         lastName: userData.lastName || null,
@@ -330,6 +373,7 @@ export class DatabaseStorage implements IStorage {
           username: users.username,
           email: users.email,
           password: users.password,
+          externalId: users.externalId,
           avatar: users.avatar,
           firstName: users.firstName,
           lastName: users.lastName,
@@ -403,6 +447,7 @@ export class DatabaseStorage implements IStorage {
           username: users.username,
           email: users.email,
           password: users.password,
+          externalId: users.externalId,
           avatar: users.avatar,
           firstName: users.firstName,
           lastName: users.lastName,
@@ -498,6 +543,7 @@ export class DatabaseStorage implements IStorage {
           id: user.id,
           username: user.username,
           email: user.email,
+          externalId: user.externalId,
           avatar: user.avatar,
           firstName: user.firstName,
           lastName: user.lastName,

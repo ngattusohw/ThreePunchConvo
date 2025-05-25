@@ -11,12 +11,23 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Add Clerk middleware
+// Add Clerk middleware with proper configuration
 app.use(clerkMiddleware());
 
-// Apply ensureLocalUser middleware after Clerk auth middleware
-// This will create a local user for any Clerk-authenticated user
-app.use(ensureLocalUser);
+console.log("Clerk config:", {
+  secretKey: process.env.CLERK_SECRET_KEY ? "exists" : "missing",
+});
+
+// Add this after the Clerk middleware but before registerAuthEndpoints
+app.use((req: any, res, next) => {
+  console.log("DEBUG AUTH:", { 
+    hasAuth: !!req.auth,
+    userId: req.auth?.userId,
+    sessionId: req.auth?.sessionId,
+    headers: req.headers.authorization?.substring(0, 20) + "..."
+  });
+  next();
+});
 
 // Register auth-related endpoints
 registerAuthEndpoints(app);

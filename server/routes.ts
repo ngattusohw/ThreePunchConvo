@@ -82,21 +82,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication endpoints are now handled by Clerk
 
   // Thread endpoints with Clerk authentication
-  app.post('/api/threads', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
+  app.post('/api/threads', requireAuth(), async (req: any, res: Response, next: NextFunction) => {
     try {
-      console.log('POST /api/threads: Starting thread creation');
-      console.log('POST /api/threads: Auth info:', { 
-        clerkUserId: req.auth?.userId,
-        localUserPresent: !!req.localUser,
-        localUserId: req.localUser?.id,
-        externalId: req.localUser?.externalId
-      });
+      // Extract user ID from token directly
+      let userId;
+      if (req.headers.authorization?.startsWith('Bearer ')) {
+        const token = req.headers.authorization.split(' ')[1];
+        try {
+          // Parse the JWT payload
+          const base64Payload = token.split('.')[1];
+          const payload = JSON.parse(Buffer.from(base64Payload, 'base64').toString());
+          userId = payload.sub; // Clerk uses 'sub' for the user ID
+          console.log("Manually extracted userId from JWT:", userId);
+        } catch (error) {
+          console.error("Error extracting userId from JWT:", error);
+        }
+      }
       
-      // Use the local user ID that was attached by the ensureLocalUser middleware
-      if (!req.localUser) {
-        console.error('POST /api/threads: Local user not found in request');
+      if (!userId) {
         return res.status(400).json({ message: 'User not found' });
       }
+      
+      const localUser = await storage.getUserByExternalId(userId);
+      
+      if (!localUser) {
+        return res.status(400).json({ message: 'User not found' });
+      }
+      
+      req.localUser = localUser;
+      
+      console.log('POST /api/threads: Using local user ID', req.localUser.id);
       
       // Use our internal user ID for database operations
       req.body.userId = req.localUser.id;
@@ -137,16 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(thread);
     } catch (error) {
-      if (error instanceof ZodError) {
-        console.error('POST /api/threads: Validation error:', error.errors);
-        return res.status(400).json({
-          message: 'Validation error',
-          errors: error.errors
-        });
-      }
-      console.error("POST /api/threads: Error creating thread:", error);
-      
-      res.status(500).json({ message: 'Failed to create thread' });
+      next(error);
     }
   });
 

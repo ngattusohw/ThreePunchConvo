@@ -38,13 +38,24 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
         throw new Error("You must be logged in to create a post");
       }
       
+      // Make sure you're logged in and session is loaded
+      if (!await window.Clerk?.session?.getToken()) {
+        throw new Error("Authentication token not available. Please log in again.");
+      }
+      
       const response = await apiRequest("POST", "/api/threads", {
         title,
         content,
         categoryId,
-        userId: user.id,
+        // userId: user.id,
         poll: includePoll ? poll : undefined
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create post");
+      }
+      
       return response.json();
     },
     onSuccess: () => {

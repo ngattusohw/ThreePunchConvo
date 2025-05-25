@@ -24,72 +24,48 @@ declare global {
 const scryptAsync = promisify(scrypt);
 
 // Middleware to ensure Clerk users exist in our local database
-export const ensureLocalUser = async (req: any, res: any, next: any) => {
+// Make sure it's correctly extracting the Clerk token
+export const ensureLocalUser = async (req, res, next) => {
   try {
-    // Skip if not authenticated
-    if (!req.auth || !req.auth.userId) {
-      console.log('ensureLocalUser: No auth or userId found in request', req.method, req.path);
-      return next();
-    }
+    console.log("Authorization header:", req.headers.authorization);
     
-    const clerkUserId = req.auth.userId;
-    console.log(`ensureLocalUser: Processing Clerk user ${clerkUserId} for ${req.method} ${req.path}`);
+    // Extract user ID from bearer token if req.auth doesn't have it
+    let userId = req.auth?.userId;
     
-    // Check if user already exists in our database
-    let dbUser = await storage.getUserByExternalId(clerkUserId);
-    
-    if (!dbUser) {
-      console.log(`ensureLocalUser: User with externalId ${clerkUserId} not found, creating new user`);
-      // Get username from Clerk ID as a fallback
-      // In a production app, you might want to get more user details from Clerk's API
-      const username = `user_${clerkUserId.substring(clerkUserId.lastIndexOf('_') + 1)}`;
-      
+    if (!userId && req.headers.authorization?.startsWith('Bearer ')) {
+      const token = req.headers.authorization.split(' ')[1];
       try {
-        // Create user in our database
-        const newUser = await storage.createUser({
-          username,
-          externalId: clerkUserId,
-          email: null, // You might want to fetch this from Clerk
-          profileImageUrl: null // You might want to fetch this from Clerk
-        });
-        
-        console.log(`ensureLocalUser: Created new local user for Clerk user: ${clerkUserId}, local ID: ${newUser.id}`);
-        
-        // Double-check the user was created by fetching it
-        dbUser = await storage.getUserByExternalId(clerkUserId);
-        
-        if (!dbUser) {
-          console.error(`ensureLocalUser: Failed to fetch newly created user for Clerk ID: ${clerkUserId}`);
-        }
-        
-        // Attach the internal user ID to the request for use in route handlers
-        req.localUser = dbUser || newUser;
-      } catch (createError) {
-        console.error('ensureLocalUser: Error creating new user:', createError);
-        
-        // Try one more time to check if user exists, might have been created in a race condition
-        const retryUser = await storage.getUserByExternalId(clerkUserId);
-        if (retryUser) {
-          console.log(`ensureLocalUser: Found user on retry for Clerk ID: ${clerkUserId}`);
-          req.localUser = retryUser;
-        } else {
-          console.error(`ensureLocalUser: Failed to create or find user for Clerk ID: ${clerkUserId}`);
-        }
+        // Parse the JWT (not verifying signature, just extracting payload)
+        const base64Payload = token.split('.')[1];
+        const payload = JSON.parse(Buffer.from(base64Payload, 'base64').toString());
+        userId = payload.sub;
+        console.log("Extracted userId from JWT:", userId);
+      } catch (error) {
+        console.error("Error extracting userId from JWT:", error);
       }
-    } else {
-      console.log(`ensureLocalUser: Found existing user with ID ${dbUser.id} for Clerk user ${clerkUserId}`);
-      // Attach existing user to the request
-      req.localUser = dbUser;
     }
     
-    // Log whether the user was attached to the request
-    console.log(`ensureLocalUser: req.localUser is ${req.localUser ? 'present' : 'missing'} after middleware`);
+    if (!userId) {
+      console.log("ensureLocalUser: No auth or userId found in request", req.method, req.originalUrl);
+      return res.status(400).json({ message: "User not found" });
+    }
+    
+    // Find the local user based on Clerk ID
+    const localUser = await storage.getUserByExternalId(userId);
+    
+    if (!localUser) {
+      console.log(`ensureLocalUser: No local user found for Clerk ID ${userId}`);
+      return res.status(400).json({ message: "User not found" });
+    }
+    
+    // Attach the local user to the request
+    req.localUser = localUser;
+    console.log(`ensureLocalUser: Found local user ${localUser.id} for Clerk ID ${userId}`);
     
     next();
   } catch (error) {
-    console.error('Error in ensureLocalUser middleware:', error);
-    // Continue anyway to avoid blocking the request
-    next();
+    console.error("Error in ensureLocalUser middleware:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 

@@ -12,11 +12,22 @@ import NotFound from "@/pages/not-found";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { ProtectedRoute } from "@/lib/protected-route";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
+import { queryClient } from "@/lib/queryClient";
 
 function App() {
   const { isSignedIn, user, isLoaded } = useUser();
+  const { userId } = useAuth();
   const [localUserChecked, setLocalUserChecked] = useState(false);
+
+  // Clear React Query cache when auth state changes (on logout)
+  useEffect(() => {
+    if (isLoaded && !isSignedIn && !userId) {
+      // User has logged out, clear all queries from cache
+      queryClient.clear();
+      console.log("Auth state changed: user logged out, cleared query cache");
+    }
+  }, [isLoaded, isSignedIn, userId]);
 
   useEffect(() => {
     const checkOrCreateUser = async () => {
@@ -63,6 +74,7 @@ function App() {
         <main className="flex-grow">
           <Switch>
             <Route path="/" component={Home} />
+            <Route path="/forum" component={Forum} />
             <Route path="/auth" component={AuthPage} />
             <Route path="/login" component={AuthPage} />
             <Route path="/register" component={AuthPage} />

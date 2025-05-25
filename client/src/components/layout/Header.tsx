@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
+import { dark } from '@clerk/themes';
 import NotificationModal from "@/components/notification/NotificationModal";
 import MobileNavigation from "@/components/layout/MobileNavigation";
 import { formatUsername } from "@/lib/utils";
@@ -25,6 +26,9 @@ export default function Header() {
   if (!isLoaded) {
     return null; // Or a loading spinner
   }
+
+  console.log("isSignedIn", isSignedIn);
+  console.log("user", user);
 
   return (
     <header className="bg-ufc-black border-b border-gray-800 sticky top-0 z-50">
@@ -100,7 +104,25 @@ export default function Header() {
                 </div>
               </>
             ) : (
-              <SignInButton mode="modal" />
+              <SignInButton 
+                appearance={{
+                  baseTheme: dark,
+                  elements: {
+                    formButtonPrimary: "bg-ufc-blue hover:bg-ufc-blue-dark",
+                    footerActionLink: "text-ufc-blue hover:text-ufc-blue-dark",
+                    // Other element customizations
+                  },
+                  variables: {
+                    colorPrimary: "#25C3EC",
+                    // Other color variables
+                  },
+                }} 
+                mode="modal" 
+              >
+                <button className="px-4 py-2 bg-ufc-blue hover:bg-ufc-blue-dark text-black rounded-lg text-sm">
+                  Sign In
+                </button>
+              </SignInButton>
             )}
           </div>
         </div>

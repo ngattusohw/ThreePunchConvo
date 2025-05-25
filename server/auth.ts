@@ -18,6 +18,15 @@ declare global {
       role?: string;
       status?: string;
     }
+    
+    // Extend the Request interface to include localUser
+    interface Request {
+      localUser?: User;
+      auth?: {
+        userId?: string;
+        sessionId?: string;
+      }
+    }
   }
 }
 
@@ -25,7 +34,7 @@ const scryptAsync = promisify(scrypt);
 
 // Middleware to ensure Clerk users exist in our local database
 // Make sure it's correctly extracting the Clerk token
-export const ensureLocalUser = async (req, res, next) => {
+export const ensureLocalUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     console.log("Authorization header:", req.headers.authorization);
     
@@ -72,9 +81,10 @@ export const ensureLocalUser = async (req, res, next) => {
 // Register auth-related endpoints
 export const registerAuthEndpoints = (app: Express) => {
   // Endpoint to check if a user with a specific Clerk ID exists and create one if not
-  app.get('/api/users/clerk/:clerkId', async (req: any, res: Response) => {
+  app.post('/api/users/clerk/:clerkId', async (req: any, res: Response) => {
     try {
       const clerkId = req.params.clerkId;
+      const { firstName, lastName, email, profileImageUrl, username } = req.body;
       
       if (!clerkId) {
         return res.status(400).json({ message: 'Clerk ID is required' });
@@ -88,16 +98,18 @@ export const registerAuthEndpoints = (app: Express) => {
       if (!user) {
         console.log(`User with Clerk ID ${clerkId} doesn't exist, creating new user`);
         
-        // Generate a username based on the Clerk ID
-        const username = `user_${clerkId.substring(clerkId.lastIndexOf('_') + 1)}`;
+        // Use provided username or generate one based on Clerk ID
+        const finalUsername = username || `user_${clerkId.substring(clerkId.lastIndexOf('_') + 1)}`;
         
         try {
-          // Create user in our database
+          // Create user in our database with Clerk profile data
           const newUser = await storage.createUser({
-            username,
+            username: finalUsername,
             externalId: clerkId,
-            email: null,
-            profileImageUrl: null
+            firstName,
+            lastName,
+            email,
+            profileImageUrl
           });
           
           console.log(`Created new local user for Clerk ID ${clerkId}, local ID: ${newUser.id}`);
@@ -120,6 +132,30 @@ export const registerAuthEndpoints = (app: Express) => {
             user = retryUser;
           } else {
             return res.status(500).json({ message: 'Failed to create user' });
+          }
+        }
+      } else {
+        // User exists, update their profile data if provided
+        if (firstName || lastName || email || profileImageUrl || username) {
+          try {
+            const updates: Record<string, string | null> = {};
+            if (firstName) updates['firstName'] = firstName;
+            if (lastName) updates['lastName'] = lastName;
+            if (email) updates['email'] = email;
+            if (profileImageUrl) updates['profileImageUrl'] = profileImageUrl;
+            if (username) updates['username'] = username;
+            
+            // Only update if there are changes
+            if (Object.keys(updates).length > 0) {
+              const updatedUser = await storage.updateUser(user.id, updates);
+              if (updatedUser) {
+                user = updatedUser;
+                console.log(`Updated user ${user.id} with latest Clerk profile data`);
+              }
+            }
+          } catch (updateError) {
+            console.error('Error updating user profile:', updateError);
+            // Continue with existing user data even if update fails
           }
         }
       }

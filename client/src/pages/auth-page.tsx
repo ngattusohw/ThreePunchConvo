@@ -35,7 +35,7 @@ export default function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center">
-            <SignIn redirectUrl="/" />
+            <SignIn forceRedirectUrl="/" />
           </CardContent>
         </Card>
       </div>

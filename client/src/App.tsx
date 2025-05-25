@@ -21,11 +21,23 @@ function App() {
   useEffect(() => {
     const checkOrCreateUser = async () => {
       if (isLoaded && isSignedIn && user) {
-        console.log("Clerk user logged in:", user.id);
+        console.log("Clerk user logged in:", user);
         
         try {
           // Check if user exists in our database, creates one if not
-          const response = await fetch(`/api/users/clerk/${user.id}`);
+          const response = await fetch(`/api/users/clerk/${user?.id}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              firstName: user?.firstName,
+              lastName: user?.lastName,
+              email: user?.emailAddresses[0]?.emailAddress,
+              profileImageUrl: user?.imageUrl,
+              username: user?.username
+            })
+          });
           const data = await response.json();
           
           if (data.created) {

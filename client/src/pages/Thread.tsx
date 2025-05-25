@@ -645,10 +645,10 @@ export default function Thread() {
             <div className="mb-4">
               <p className="text-gray-400 text-sm mb-1">Stats</p>
               <div className="grid grid-cols-2 gap-2">
-                <div className="bg-gray-800 p-2 rounded-lg text-center">
+                {/* <div className="bg-gray-800 p-2 rounded-lg text-center">
                   <span className="block text-ufc-blue font-bold">{displayThread.viewCount}</span>
                   <span className="text-gray-400 text-xs">Views</span>
-                </div>
+                </div> */}
                 <div className="bg-gray-800 p-2 rounded-lg text-center">
                   <span className="block text-ufc-blue font-bold">{displayThread.repliesCount}</span>
                   <span className="text-gray-400 text-xs">Replies</span>

@@ -90,7 +90,6 @@ export default function ForumContent({ category = "general" }: ForumContentProps
   useEffect(() => {
     if (!regularThreads || isRegularLoading) return;
     if (regularThreads) {
-      console.log("in use effect check for reg threads", regularThreads)
       if (page === 0) {
         // Replace all threads when filters change (page is reset to 0)
         setAllRegularThreads(regularThreads);

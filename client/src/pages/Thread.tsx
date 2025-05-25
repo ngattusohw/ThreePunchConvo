@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ForumThread, ThreadReply } from "@/lib/types";
-import { useAuth } from "@/hooks/use-auth";
+import { useUser } from "@clerk/clerk-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
@@ -12,7 +12,7 @@ import { FORUM_CATEGORIES } from "@/lib/constants";
 
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
-  const { currentUser } = useAuth();
+  const { user:currentUser } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();

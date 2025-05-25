@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import { Switch, Route } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import Home from "@/pages/Home";
@@ -10,17 +11,41 @@ import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import { ClerkProvider } from '@clerk/clerk-react'
 import { ProtectedRoute } from "@/lib/protected-route";
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-
-if (!PUBLISHABLE_KEY) {
-  throw new Error('Missing Publishable Key')
-}
+import { useUser } from "@clerk/clerk-react";
 
 function App() {
+  const { isSignedIn, user, isLoaded } = useUser();
+  const [localUserChecked, setLocalUserChecked] = useState(false);
+
+  useEffect(() => {
+    const checkOrCreateUser = async () => {
+      if (isLoaded && isSignedIn && user) {
+        console.log("Clerk user logged in:", user.id);
+        
+        try {
+          // Check if user exists in our database, creates one if not
+          const response = await fetch(`/api/users/clerk/${user.id}`);
+          const data = await response.json();
+          
+          if (data.created) {
+            console.log("Created new local user for Clerk user:", data.user);
+          } else {
+            console.log("Found existing local user:", data.user);
+          }
+          
+          setLocalUserChecked(true);
+        } catch (error) {
+          console.error("Error checking/creating user:", error);
+        }
+      }
+    };
+    
+    checkOrCreateUser();
+  }, [isLoaded, isSignedIn, user]);
+
   return (
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl='/'>
+    <div>
       <div className="flex flex-col min-h-screen bg-ufc-black text-light-gray">
         <Header />
         <main className="flex-grow">
@@ -42,7 +67,7 @@ function App() {
         <Footer />
       </div>
       <Toaster />
-    </ClerkProvider>
+    </div>
   );
 }
 

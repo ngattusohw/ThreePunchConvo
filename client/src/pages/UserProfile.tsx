@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { AuthUser, ForumThread } from "@/lib/types";
-import { useAuth } from "@/hooks/use-auth";
+// import { useUser } from "@clerk/clerk-react";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
 import ThreadCard from "@/components/forum/ThreadCard";
@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function UserProfile() {
   const { username } = useParams<{ username: string }>();
-  const { currentUser } = useAuth();
+  // const { user:currentUser } = useUser();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"posts" | "about">("posts");
   const [isFollowing, setIsFollowing] = useState(false);

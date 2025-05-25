@@ -5,7 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { ensureConnection } from "./db";
 import { setupCronJobs } from "./cron-jobs";
 import { clerkMiddleware } from '@clerk/express';
-import { ensureLocalUser } from './auth';
+import { ensureLocalUser, registerAuthEndpoints } from './auth';
 
 const app = express();
 app.use(express.json());
@@ -17,6 +17,9 @@ app.use(clerkMiddleware());
 // Apply ensureLocalUser middleware after Clerk auth middleware
 // This will create a local user for any Clerk-authenticated user
 app.use(ensureLocalUser);
+
+// Register auth-related endpoints
+registerAuthEndpoints(app);
 
 app.use((req, res, next) => {
   const start = Date.now();

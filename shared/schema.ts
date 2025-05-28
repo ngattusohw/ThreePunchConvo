@@ -17,8 +17,9 @@ export const sessions = pgTable(
 export const users = pgTable("users", {
   id: text("id").primaryKey().notNull(),  // Changed to text
   username: text("username").unique().notNull(),
-  password: text("password"), // Added password field for local auth
+  password: text("password"), // Made optional for Clerk auth
   email: text("email").unique(),
+  externalId: text("external_id").unique(), // For Clerk user ID
   avatar: text("avatar"),
   firstName: text("first_name"),
   lastName: text("last_name"),
@@ -210,8 +211,9 @@ export const fights = pgTable("fights", {
 export const insertUserSchema = createInsertSchema(users, {
   id: z.string().optional(),  // Changed to string
   username: z.string().min(3).max(30),
-  password: z.string().min(6),
+  password: z.string().min(6).optional(), // Now optional for Clerk users
   email: z.string().email().nullable().optional(),
+  externalId: z.string().optional(), // Add externalId field
   avatar: z.string().nullable().optional(),
   firstName: z.string().nullable().optional(),
   lastName: z.string().nullable().optional(),

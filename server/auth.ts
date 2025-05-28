@@ -13,269 +13,164 @@ declare global {
     interface User {
       id: string;
       username: string;
-      password?: string | null;
       email?: string | null;
       avatar?: string | null;
       role?: string;
       status?: string;
+    }
+    
+    // Extend the Request interface to include localUser
+    interface Request {
+      localUser?: User;
+      auth?: {
+        userId?: string;
+        sessionId?: string;
+      }
     }
   }
 }
 
 const scryptAsync = promisify(scrypt);
 
-export async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
-
-export async function comparePasswords(supplied: string, stored: string) {
+// Middleware to ensure Clerk users exist in our local database
+// Make sure it's correctly extracting the Clerk token
+export const ensureLocalUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    console.log('Comparing passwords');
-    const [hashed, salt] = stored.split(".");
+    console.log("Authorization header:", req.headers.authorization);
     
-    if (!hashed || !salt) {
-      console.error('Invalid stored password format');
-      return false;
-    }
+    // Extract user ID from bearer token if req.auth doesn't have it
+    let userId = req.auth?.userId;
     
-    const hashedBuf = Buffer.from(hashed, "hex");
-    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-    
-    return timingSafeEqual(hashedBuf, suppliedBuf);
-  } catch (error) {
-    console.error('Error comparing passwords:', error);
-    throw error;
-  }
-}
-
-export function setupAuth(app: Express) {
-  const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || 'developmentsecret', // For production, require a proper secret
-    resave: false,
-    saveUninitialized: false,
-    store: storage.sessionStore,
-    cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production'
-    }
-  };
-
-  app.set("trust proxy", 1);
-  app.use(session(sessionSettings));
-  app.use(passport.initialize());
-  app.use(passport.session());
-
-  passport.use(
-    new LocalStrategy(async (username, password, done) => {
+    if (!userId && req.headers.authorization?.startsWith('Bearer ')) {
+      const token = req.headers.authorization.split(' ')[1];
       try {
-        console.log('Attempting login for username:', username);
-        const user = await storage.getUserByUsername(username);
-        
-        if (!user) {
-          console.log('User not found:', username);
-          return done(null, false, { message: "Invalid username or password" });
-        }
-        
-        if (!user.password) {
-          console.log('User has no password:', username);
-          return done(null, false, { message: "Invalid username or password" });
-        }
-        
-        console.log('Comparing passwords for user:', username);
-        const isValid = await comparePasswords(password, user.password);
-        
-        if (!isValid) {
-          console.log('Invalid password for user:', username);
-          return done(null, false, { message: "Invalid username or password" });
-        }
-        
-        console.log('Login successful for user:', username);
-        return done(null, user);
+        // Parse the JWT (not verifying signature, just extracting payload)
+        const base64Payload = token.split('.')[1];
+        const payload = JSON.parse(Buffer.from(base64Payload, 'base64').toString());
+        userId = payload.sub;
+        console.log("Extracted userId from JWT:", userId);
       } catch (error) {
-        console.error('Error in LocalStrategy:', error);
-        return done(error);
+        console.error("Error extracting userId from JWT:", error);
       }
-    }),
-  );
-
-  passport.serializeUser((user, done) => {
-    done(null, user.id);
-  });
-  
-  passport.deserializeUser(async (id: string, done) => {
-    try {
-      console.log('Deserializing user with ID:', id, 'Type:', typeof id);
-      const user = await storage.getUser(id);
-      
-      if (!user) {
-        console.error('User not found during deserialization, ID:', id);
-        return done(null, null);
-      }
-      
-      // Don't include password in the session
-      const { password, ...userWithoutPassword } = user;
-      done(null, userWithoutPassword);
-    } catch (error) {
-      console.error('Error deserializing user:', error);
-      done(error, null);
-    }
-  });
-
-  app.post("/api/auth/register", async (req, res, next) => {
-    try {
-      const { username, password } = req.body;
-      
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
-      }
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByUsername(username);
-      if (existingUser) {
-        return res.status(400).json({ message: "Username already exists" });
-      }
-      
-      // Hash password
-      const hashedPassword = await hashPassword(password);
-      
-      // Create user with a unique ID
-      const userId = `local_${username}_${Date.now()}`;
-      const user = await storage.createUser({
-        id: userId,
-        username,
-        password: hashedPassword,
-        email: null,
-        avatar: null,
-        firstName: null,
-        lastName: null,
-        bio: null,
-        profileImageUrl: null,
-        role: "USER",
-        status: "AMATEUR",
-        isOnline: true,
-        lastActive: new Date(),
-        points: 0,
-        rank: 0,
-        postsCount: 0,
-        likesCount: 0,
-        potdCount: 0,
-        followersCount: 0,
-        followingCount: 0,
-        socialLinks: {}
-      });
-      
-      // Remove password before sending to client
-      const { password: _, ...userWithoutPassword } = user;
-      
-      // Log user in using passport
-      req.login(userWithoutPassword, (err) => {
-        if (err) {
-          console.error('Login error after registration:', err);
-          return res.status(500).json({ message: "Error during login" });
-        }
-        
-        // Set session cookie
-        req.session.save((err) => {
-          if (err) {
-            console.error('Session save error:', err);
-            return res.status(500).json({ message: "Error saving session" });
-          }
-          console.log('Registration successful, session saved for user:', userWithoutPassword.username);
-          return res.status(201).json(userWithoutPassword);
-        });
-      });
-    } catch (error) {
-      console.error("Registration error:", error);
-      return res.status(500).json({ message: "Failed to register" });
-    }
-  });
-
-  app.post("/api/auth/login", (req, res, next) => {
-    console.log('Login request received for username:', req.body.username);
-    
-    passport.authenticate("local", (err: Error, user: User, info: any) => {
-      if (err) {
-        console.error('Passport authentication error:', err);
-        return res.status(500).json({ message: "Internal server error during login" });
-      }
-      
-      if (!user) {
-        console.log('Authentication failed:', info?.message);
-        return res.status(401).json({ message: info?.message || "Authentication failed" });
-      }
-      
-      // Remove password before sending to client
-      const { password, ...userWithoutPassword } = user;
-      
-      req.login(userWithoutPassword, (loginErr) => {
-        if (loginErr) {
-          console.error('Login error:', loginErr);
-          return res.status(500).json({ message: "Error during login" });
-        }
-        
-        // Set session cookie
-        req.session.save((err) => {
-          if (err) {
-            console.error('Session save error:', err);
-            return res.status(500).json({ message: "Error saving session" });
-          }
-          console.log('Login successful, session saved for user:', userWithoutPassword.username);
-          return res.status(200).json(userWithoutPassword);
-        });
-      });
-    })(req, res, next);
-  });
-
-  app.post("/api/auth/logout", (req, res, next) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not authenticated" });
     }
     
-    // Set user as offline before logging out
-    storage.updateUser(req.user.id, { isOnline: false })
-      .then(() => {
-        req.logout((err) => {
-          if (err) return next(err);
-          req.session.destroy((err) => {
-            if (err) {
-              console.error('Error destroying session:', err);
-              return res.status(500).json({ message: "Failed to logout" });
-            }
-            res.clearCookie('connect.sid'); // Clear the session cookie
-            res.status(200).json({ message: "Logged out successfully" });
-          });
-        });
-      })
-      .catch(error => {
-        console.error('Error updating user online status:', error);
-        return res.status(500).json({ message: "Failed to update online status" });
-      });
-  });
-
-  app.get("/api/auth/user", (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not authenticated" });
+    if (!userId) {
+      console.log("ensureLocalUser: No auth or userId found in request", req.method, req.originalUrl);
+      return res.status(400).json({ message: "User not found" });
     }
     
-    // Remove password before sending the user data
-    const { password, ...userWithoutPassword } = req.user as User;
-    res.json(userWithoutPassword);
-  });
-
-  // Add error handling middleware
-  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    console.error('Global error handler:', err);
-    res.status(500).json({ message: err.message || "Internal server error" });
-  });
-}
-
-// Middleware to check if user is authenticated
-export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
-  if (req.isAuthenticated()) {
-    return next();
+    // Find the local user based on Clerk ID
+    const localUser = await storage.getUserByExternalId(userId);
+    
+    if (!localUser) {
+      console.log(`ensureLocalUser: No local user found for Clerk ID ${userId}`);
+      return res.status(400).json({ message: "User not found" });
+    }
+    
+    // Attach the local user to the request
+    req.localUser = localUser;
+    console.log(`ensureLocalUser: Found local user ${localUser.id} for Clerk ID ${userId}`);
+    
+    next();
+  } catch (error) {
+    console.error("Error in ensureLocalUser middleware:", error);
+    res.status(500).json({ message: "Server error" });
   }
-  res.status(401).json({ message: "Unauthorized - Please log in" });
-}
+};
+
+// Register auth-related endpoints
+export const registerAuthEndpoints = (app: Express) => {
+  // Endpoint to check if a user with a specific Clerk ID exists and create one if not
+  app.post('/api/users/clerk/:clerkId', async (req: any, res: Response) => {
+    try {
+      const clerkId = req.params.clerkId;
+      const { firstName, lastName, email, profileImageUrl, username } = req.body;
+      
+      if (!clerkId) {
+        return res.status(400).json({ message: 'Clerk ID is required' });
+      }
+      
+      console.log(`Checking if user with Clerk ID ${clerkId} exists`);
+      let user = await storage.getUserByExternalId(clerkId);
+      let userCreated = false;
+      
+      // If user doesn't exist, create a new one
+      if (!user) {
+        console.log(`User with Clerk ID ${clerkId} doesn't exist, creating new user`);
+        
+        // Use provided username or generate one based on Clerk ID
+        const finalUsername = username || `user_${clerkId.substring(clerkId.lastIndexOf('_') + 1)}`;
+        
+        try {
+          // Create user in our database with Clerk profile data
+          const newUser = await storage.createUser({
+            username: finalUsername,
+            externalId: clerkId,
+            firstName,
+            lastName,
+            email,
+            profileImageUrl
+          });
+          
+          console.log(`Created new local user for Clerk ID ${clerkId}, local ID: ${newUser.id}`);
+          
+          // Get the created user to return
+          user = await storage.getUserByExternalId(clerkId);
+          userCreated = true;
+          
+          if (!user) {
+            console.error(`Failed to fetch newly created user for Clerk ID: ${clerkId}`);
+            return res.status(500).json({ message: 'Failed to create user' });
+          }
+        } catch (createError) {
+          console.error('Error creating new user:', createError);
+          
+          // Try one more time to check if user exists (might have been created in a race condition)
+          const retryUser = await storage.getUserByExternalId(clerkId);
+          if (retryUser) {
+            console.log(`Found user on retry for Clerk ID: ${clerkId}`);
+            user = retryUser;
+          } else {
+            return res.status(500).json({ message: 'Failed to create user' });
+          }
+        }
+      } else {
+        // User exists, update their profile data if provided
+        if (firstName || lastName || email || profileImageUrl || username) {
+          try {
+            const updates: Record<string, string | null> = {};
+            if (firstName) updates['firstName'] = firstName;
+            if (lastName) updates['lastName'] = lastName;
+            if (email) updates['email'] = email;
+            if (profileImageUrl) updates['profileImageUrl'] = profileImageUrl;
+            if (username) updates['username'] = username;
+            
+            // Only update if there are changes
+            if (Object.keys(updates).length > 0) {
+              const updatedUser = await storage.updateUser(user.id, updates);
+              if (updatedUser) {
+                user = updatedUser;
+                console.log(`Updated user ${user.id} with latest Clerk profile data`);
+              }
+            }
+          } catch (updateError) {
+            console.error('Error updating user profile:', updateError);
+            // Continue with existing user data even if update fails
+          }
+        }
+      }
+      
+      // Don't return password in response
+      const { password, ...userWithoutPassword } = user;
+      
+      res.json({
+        exists: !userCreated,
+        created: userCreated,
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error('Error checking/creating user:', error);
+      res.status(500).json({ message: 'Failed to check/create user' });
+    }
+  });
+};

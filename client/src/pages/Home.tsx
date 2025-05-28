@@ -18,7 +18,7 @@ export default function Home() {
         {/* Right Sidebar - Schedule and Rankings */}
         <aside className="hidden sidebar:block w-96 flex-shrink-0 space-y-6">
           {/* Upcoming Events */}
-          <EventsSidebar />
+          {/* <EventsSidebar /> */}
           
           {/* Top Users */}
           <TopUsersSidebar />

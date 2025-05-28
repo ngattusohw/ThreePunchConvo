@@ -6,6 +6,8 @@ import { ForumThread, ForumCategory, UserStatus } from "@/lib/types";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import CreatePostModal from "@/components/forum/CreatePostModal";
 import { formatDistanceToNow } from "date-fns";
+import { SignedIn, SignedOut, SignInButton } from '@clerk/clerk-react'
+import { dark } from "@clerk/themes";
 
 interface ForumContentProps {
   category?: string;
@@ -90,9 +92,7 @@ export default function ForumContent({ category = "general" }: ForumContentProps
   useEffect(() => {
     if (!regularThreads || isRegularLoading) return;
     if (regularThreads) {
-      console.log("in use effect check for reg threads", regularThreads)
       if (page === 0) {
-        console.log("in use effect check for page 0, ", regularThreads)
         // Replace all threads when filters change (page is reset to 0)
         setAllRegularThreads(regularThreads);
       } else {
@@ -167,8 +167,6 @@ export default function ForumContent({ category = "general" }: ForumContentProps
     }
   };
 
-  console.log("allRegularThreads: ", allRegularThreads);
-
   return (
     <div className="flex-grow">
       {/* Forum Header and Actions */}
@@ -194,16 +192,43 @@ export default function ForumContent({ category = "general" }: ForumContentProps
               </svg>
             </button>
           </div> */}
-          
-          <button 
-            onClick={() => setCreatePostModalOpen(true)}
-            className="bg-ufc-blue hover:bg-ufc-blue-dark text-black font-medium px-4 py-2 rounded-lg text-sm flex-shrink-0 flex items-center transition whitespace-nowrap"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
-            New Post
-          </button>
+          <SignedIn>
+            <button 
+              onClick={() => setCreatePostModalOpen(true)}
+              className="bg-ufc-blue hover:bg-ufc-blue-dark text-black font-medium px-4 py-2 rounded-lg text-sm flex-shrink-0 flex items-center transition whitespace-nowrap"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              New Post
+            </button>
+          </SignedIn>
+          <SignedOut>
+            <SignInButton 
+                appearance={{
+                  baseTheme: dark,
+                  elements: {
+                    formButtonPrimary: "bg-ufc-blue hover:bg-ufc-blue-dark",
+                    footerActionLink: "text-ufc-blue hover:text-ufc-blue-dark",
+                    // Other element customizations
+                  },
+                  variables: {
+                    colorPrimary: "#25C3EC",
+                    // Other color variables
+                  },
+                }} 
+                mode="modal" 
+              >
+              <button 
+                className="bg-ufc-blue hover:bg-ufc-blue-dark text-black font-medium px-4 py-2 rounded-lg text-sm flex-shrink-0 flex items-center transition whitespace-nowrap"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                New Post
+              </button>  
+            </SignInButton>
+          </SignedOut>
         </div>
       </div>
       

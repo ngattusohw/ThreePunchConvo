@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ForumThread, ThreadReply } from "@/lib/types";
-import { useAuth } from "@/hooks/use-auth";
+import { useUser } from "@clerk/clerk-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
@@ -12,7 +12,7 @@ import { FORUM_CATEGORIES } from "@/lib/constants";
 
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
-  const { currentUser } = useAuth();
+  const { user:currentUser } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -645,10 +645,10 @@ export default function Thread() {
             <div className="mb-4">
               <p className="text-gray-400 text-sm mb-1">Stats</p>
               <div className="grid grid-cols-2 gap-2">
-                <div className="bg-gray-800 p-2 rounded-lg text-center">
+                {/* <div className="bg-gray-800 p-2 rounded-lg text-center">
                   <span className="block text-ufc-blue font-bold">{displayThread.viewCount}</span>
                   <span className="text-gray-400 text-xs">Views</span>
-                </div>
+                </div> */}
                 <div className="bg-gray-800 p-2 rounded-lg text-center">
                   <span className="block text-ufc-blue font-bold">{displayThread.repliesCount}</span>
                   <span className="text-gray-400 text-xs">Replies</span>
@@ -709,7 +709,7 @@ interface ReplyCardProps {
 }
 
 function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardProps) {
-  const { currentUser } = useAuth();
+  const { user:currentUser } = useUser();
   
   // Calculate indentation level based on nested replies
   const indentationLevel = reply.parentReplyId ? 1 : 0;
@@ -791,7 +791,7 @@ function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardPro
                 <span className="font-medium">{reply.likesCount}</span>
               </button>
               
-              <button 
+              {/* <button 
                 onClick={onDislike}
                 disabled={!currentUser}
                 className="flex items-center text-gray-400 hover:text-red-500 transition"
@@ -800,7 +800,7 @@ function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardPro
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2" />
                 </svg>
                 <span className="font-medium">{reply.dislikesCount}</span>
-              </button>
+              </button> */}
               
               <button 
                 onClick={() => onQuote(reply)}

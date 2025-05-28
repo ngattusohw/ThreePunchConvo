@@ -1,4 +1,4 @@
-import express, { type Express, Request, Response, NextFunction } from "express";
+import express, { type Express, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { fetchUpcomingEvents } from "./espn-api";
@@ -17,7 +17,21 @@ import {
   insertNotificationSchema,
   PollOption
 } from "@shared/schema";
-import { setupAuth, isAuthenticated } from "./auth";
+import { requireAuth } from '@clerk/express';
+import { ensureLocalUser } from './auth';
+
+// Extend Express Request type to include Clerk auth property
+declare global {
+  namespace Express {
+    interface Request {
+      auth?: {
+        userId?: string;
+        sessionId?: string;
+        // Add other properties as needed
+      };
+    }
+  }
+}
 
 // Configure S3 client
 const s3Client = new S3Client({
@@ -34,7 +48,7 @@ const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB limit
   },
-  fileFilter: (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  fileFilter: (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
@@ -48,7 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   
   // Error handling middleware
-  app.use((req: Request, res: Response, next: Function) => {
+  app.use((req: any, res: Response, next: NextFunction) => {
     try {
       next();
     } catch (error) {
@@ -65,11 +79,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Set up authentication - this must come after error handling middleware
-  await setupAuth(app);
+  // Authentication endpoints are now handled by Clerk
 
-  // Authentication endpoints are now handled by auth.ts
-  // Remove duplicate routes and continue with other API endpoints...
+  // Thread endpoints with Clerk authentication
+  app.post('/api/threads', requireAuth(), async (req: any, res: Response, next: NextFunction) => {
+    try {
+      // Extract user ID from token directly
+      let userId;
+      if (req.headers.authorization?.startsWith('Bearer ')) {
+        const token = req.headers.authorization.split(' ')[1];
+        try {
+          // Parse the JWT payload
+          const base64Payload = token.split('.')[1];
+          const payload = JSON.parse(Buffer.from(base64Payload, 'base64').toString());
+          userId = payload.sub; // Clerk uses 'sub' for the user ID
+          console.log("Manually extracted userId from JWT:", userId);
+        } catch (error) {
+          console.error("Error extracting userId from JWT:", error);
+        }
+      }
+      
+      if (!userId) {
+        return res.status(400).json({ message: 'User not found' });
+      }
+      
+      const localUser = await storage.getUserByExternalId(userId);
+      
+      if (!localUser) {
+        return res.status(400).json({ message: 'User not found' });
+      }
+      
+      req.localUser = localUser;
+      
+      console.log('POST /api/threads: Using local user ID', req.localUser.id);
+      
+      // Use our internal user ID for database operations
+      req.body.userId = req.localUser.id;
+      console.log(`POST /api/threads: Using local user ID ${req.body.userId} for thread creation`);
+      
+      const threadData = insertThreadSchema.parse(req.body);
+      const { poll, media } = req.body;
+      
+      // Create thread
+      const thread = await storage.createThread(threadData);
+      console.log(`POST /api/threads: Thread created with ID ${thread.id}`);
+      
+      // Create poll if provided
+      if (poll && poll.question && poll.options && poll.options.length >= 2) {
+        const pollData = {
+          threadId: thread.id,
+          question: poll.question,
+          expiresAt: poll.expiresAt ? new Date(poll.expiresAt) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Default 7 days
+        };
+        
+        await storage.createPoll(pollData, poll.options);
+        console.log(`POST /api/threads: Poll created for thread ${thread.id}`);
+      }
+      
+      // Create media if provided
+      if (media && Array.isArray(media)) {
+        for (const mediaItem of media) {
+          const mediaData = {
+            threadId: thread.id,
+            type: mediaItem.type,
+            url: mediaItem.url
+          };
+          
+          await storage.createThreadMedia(mediaData);
+        }
+        console.log(`POST /api/threads: ${media.length} media items created for thread ${thread.id}`);
+      }
+      
+      res.status(201).json(thread);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Update all other handlers that need the user ID from Clerk auth
+  app.get('/api/notifications', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
+    try {
+      // Get userId from local user
+      if (!req.localUser || !req.localUser.id) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+      const userId = req.localUser.id;
+      
+      const notifications = await storage.getNotifications(userId);
+      
+      // Fetch related user for each notification
+      const notificationsWithRelatedUser = await Promise.all(
+        notifications.map(async (notification) => {
+          if (!notification.relatedUserId) {
+            return notification;
+          }
+          
+          const relatedUser = await storage.getUser(notification.relatedUserId);
+          
+          if (!relatedUser) {
+            return notification;
+          }
+          
+          // Don't return user password
+          const { password, ...userWithoutPassword } = relatedUser;
+          
+          // Get thread title if applicable
+          let threadTitle;
+          if (notification.threadId) {
+            const thread = await storage.getThread(notification.threadId);
+            if (thread) {
+              threadTitle = thread.title;
+            }
+          }
+          
+          // Get reply preview if applicable
+          let replyPreview;
+          if (notification.replyId) {
+            const reply = await storage.getReply(notification.replyId);
+            if (reply) {
+              replyPreview = reply.content.length > 100 
+                ? reply.content.substring(0, 100) + '...' 
+                : reply.content;
+            }
+          }
+          
+          return {
+            ...notification,
+            relatedUser: userWithoutPassword,
+            threadTitle,
+            replyPreview
+          };
+        })
+      );
+      
+      res.json(notificationsWithRelatedUser);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch notifications' });
+    }
+  });
 
   // User endpoints
   app.get('/api/users/top', async (req: Request, res: Response) => {
@@ -267,7 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/users/:id/follow', async (req: Request, res: Response) => {
+  app.post('/api/users/:id/follow', requireAuth(), async (req: Request, res: Response) => {
     try {
       const followingId = req.params.id;
       const { followerId } = req.body;
@@ -288,7 +435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/users/:id/unfollow', async (req: Request, res: Response) => {
+  app.post('/api/users/:id/unfollow', requireAuth(), async (req: Request, res: Response) => {
     try {
       const followingId = req.params.id;
       const { followerId } = req.body;
@@ -408,52 +555,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/threads', async (req: Request, res: Response) => {
-    try {
-      const threadData = insertThreadSchema.parse(req.body);
-      const { poll, media } = req.body;
-      
-      // Create thread
-      const thread = await storage.createThread(threadData);
-      
-      // Create poll if provided
-      if (poll && poll.question && poll.options && poll.options.length >= 2) {
-        const pollData = {
-          threadId: thread.id,
-          question: poll.question,
-          expiresAt: poll.expiresAt ? new Date(poll.expiresAt) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Default 7 days
-        };
-        
-        await storage.createPoll(pollData, poll.options);
-      }
-      
-      // Create media if provided
-      if (media && Array.isArray(media)) {
-        for (const mediaItem of media) {
-          const mediaData = {
-            threadId: thread.id,
-            type: mediaItem.type,
-            url: mediaItem.url
-          };
-          
-          await storage.createThreadMedia(mediaData);
-        }
-      }
-      
-      res.status(201).json(thread);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({
-          message: 'Validation error',
-          errors: error.errors
-        });
-      }
-      
-      res.status(500).json({ message: 'Failed to create thread' });
-    }
-  });
-
-  app.delete('/api/threads/:id', async (req: Request, res: Response) => {
+  app.delete('/api/threads/:id', requireAuth(), async (req: Request, res: Response) => {
     try {
       const threadId = req.params.id;
       const { userId, role } = req.body;
@@ -485,10 +587,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/threads/:id/like', async (req: Request, res: Response) => {
+  app.post('/api/threads/:id/like', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
     try {
       const threadId = req.params.id;
-      const { userId } = req.body;
+      // Use local user ID instead of Clerk ID
+      const userId = req.localUser?.id;
       
       if (!threadId || !userId) {
         return res.status(400).json({ message: 'Thread ID and user ID are required' });
@@ -506,10 +609,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/threads/:id/dislike', async (req: Request, res: Response) => {
+  app.post('/api/threads/:id/dislike', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
     try {
       const threadId = req.params.id;
-      const { userId } = req.body;
+      // Use local user ID instead of Clerk ID
+      const userId = req.localUser?.id;
       
       if (!threadId || !userId) {
         return res.status(400).json({ message: 'Thread ID and user ID are required' });
@@ -527,10 +631,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/threads/:id/potd', async (req: Request, res: Response) => {
+  app.post('/api/threads/:id/potd', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
     try {
       const threadId = req.params.id;
-      const { userId } = req.body;
+      // Use local user ID instead of Clerk ID
+      const userId = req.localUser?.id;
       
       if (!threadId || !userId) {
         return res.status(400).json({ message: 'Thread ID and user ID are required' });
@@ -548,11 +653,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/threads/:id/poll/:optionId/vote', async (req: Request, res: Response) => {
+  app.post('/api/threads/:id/poll/:optionId/vote', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
     try {
       const threadId = req.params.id;
       const optionId = req.params.optionId;
-      const { userId } = req.body;
+      // Use local user ID instead of Clerk ID
+      const userId = req.localUser?.id;
       
       if (!threadId || !optionId || !userId) {
         return res.status(400).json({ message: 'Thread ID, option ID, and user ID are required' });
@@ -618,12 +724,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/threads/:id/replies', async (req: Request, res: Response) => {
+  app.post('/api/threads/:id/replies', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
     try {
       const threadId = req.params.id;
       
       if (!threadId) {
         return res.status(400).json({ message: 'Invalid thread ID' });
+      }
+      
+      // Use our local user ID
+      if (req.localUser) {
+        req.body.userId = req.localUser.id;
       }
       
       const replyData = insertReplySchema.parse({
@@ -662,7 +773,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/replies/:id', async (req: Request, res: Response) => {
+  app.delete('/api/replies/:id', requireAuth(), async (req: Request, res: Response) => {
     try {
       const replyId = req.params.id;
       const { userId, role } = req.body;
@@ -694,10 +805,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/replies/:id/like', async (req: Request, res: Response) => {
+  app.post('/api/replies/:id/like', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
     try {
       const replyId = req.params.id;
-      const { userId } = req.body;
+      // Use local user ID instead of Clerk ID
+      const userId = req.localUser?.id;
       
       if (!replyId || !userId) {
         return res.status(400).json({ message: 'Reply ID and user ID are required' });
@@ -715,10 +827,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/replies/:id/dislike', async (req: Request, res: Response) => {
+  app.post('/api/replies/:id/dislike', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
     try {
       const replyId = req.params.id;
-      const { userId } = req.body;
+      // Use local user ID instead of Clerk ID
+      const userId = req.localUser?.id;
       
       if (!replyId || !userId) {
         return res.status(400).json({ message: 'Reply ID and user ID are required' });
@@ -736,69 +849,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Notification endpoints
-  app.get('/api/notifications', async (req: Request, res: Response) => {
-    try {
-      const userId = req.query.userId as string;
-      
-      if (!userId) {
-        return res.status(400).json({ message: 'User ID is required' });
-      }
-      
-      const notifications = await storage.getNotifications(userId);
-      
-      // Fetch related user for each notification
-      const notificationsWithRelatedUser = await Promise.all(
-        notifications.map(async (notification) => {
-          if (!notification.relatedUserId) {
-            return notification;
-          }
-          
-          const relatedUser = await storage.getUser(notification.relatedUserId);
-          
-          if (!relatedUser) {
-            return notification;
-          }
-          
-          // Don't return user password
-          const { password, ...userWithoutPassword } = relatedUser;
-          
-          // Get thread title if applicable
-          let threadTitle;
-          if (notification.threadId) {
-            const thread = await storage.getThread(notification.threadId);
-            if (thread) {
-              threadTitle = thread.title;
-            }
-          }
-          
-          // Get reply preview if applicable
-          let replyPreview;
-          if (notification.replyId) {
-            const reply = await storage.getReply(notification.replyId);
-            if (reply) {
-              replyPreview = reply.content.length > 100 
-                ? reply.content.substring(0, 100) + '...' 
-                : reply.content;
-            }
-          }
-          
-          return {
-            ...notification,
-            relatedUser: userWithoutPassword,
-            threadTitle,
-            replyPreview
-          };
-        })
-      );
-      
-      res.json(notificationsWithRelatedUser);
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch notifications' });
-    }
-  });
-
-  app.post('/api/notifications/read/:id', async (req: Request, res: Response) => {
+  app.post('/api/notifications/read/:id', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
     try {
       const notificationId = req.params.id;
       
@@ -818,9 +869,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/notifications/read-all', async (req: Request, res: Response) => {
+  app.post('/api/notifications/read-all', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
     try {
-      const { userId } = req.body;
+      // Use local user ID
+      const userId = req.localUser?.id;
       
       if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
@@ -839,7 +891,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User status update endpoint
-  app.put('/api/users/:id/status', isAuthenticated, async (req: Request, res: Response) => {
+  app.put('/api/users/:id/status', requireAuth(), async (req: Request, res: Response) => {
     try {
       const userId = req.params.id;
       const { status, updatedBy } = req.body;
@@ -900,7 +952,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User role update endpoint
-  app.put('/api/users/:id/role', isAuthenticated, async (req: Request, res: Response) => {
+  app.put('/api/users/:id/role', requireAuth(), async (req: Request, res: Response) => {
     try {
       const userId = req.params.id;
       const { role, updatedBy } = req.body;
@@ -975,7 +1027,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auto-calculate user status endpoint
-  app.post('/api/users/:id/recalculate-status', isAuthenticated, async (req: Request, res: Response) => {
+  app.post('/api/users/:id/recalculate-status', requireAuth(), async (req: Request, res: Response) => {
     try {
       const userId = req.params.id;
       const { requestedBy } = req.body;
@@ -1029,7 +1081,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin endpoint to recalculate all user statuses
-  app.post('/api/admin/recalculate-all-statuses', isAuthenticated, async (req: Request, res: Response) => {
+  app.post('/api/admin/recalculate-all-statuses', requireAuth(), async (req: Request, res: Response) => {
     try {
       const { adminId } = req.body;
       
@@ -1145,8 +1197,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Image upload endpoint
-  app.post('/api/upload', upload.single('image'), async (req: Request, res: Response) => {
+  // Image upload endpoint with Clerk auth
+  app.post('/api/upload', requireAuth(), upload.single('image'), async (req: Request, res: Response) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
@@ -1162,7 +1214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         Key: `uploads/${fileName}`,
         Body: file.buffer,
         ContentType: file.mimetype,
-        ACL: 'public-read'
+        ACL: 'public-read' as const
       };
 
       await s3Client.send(new PutObjectCommand(uploadParams));

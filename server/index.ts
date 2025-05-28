@@ -4,10 +4,33 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ensureConnection } from "./db";
 import { setupCronJobs } from "./cron-jobs";
+import { clerkMiddleware } from '@clerk/express';
+import { ensureLocalUser, registerAuthEndpoints } from './auth';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Add Clerk middleware with proper configuration
+app.use(clerkMiddleware());
+
+console.log("Clerk config:", {
+  secretKey: process.env.CLERK_SECRET_KEY ? "exists" : "missing",
+});
+
+// Add this after the Clerk middleware but before registerAuthEndpoints
+app.use((req: any, res, next) => {
+  console.log("DEBUG AUTH:", { 
+    hasAuth: !!req.auth,
+    userId: req.auth?.userId,
+    sessionId: req.auth?.sessionId,
+    headers: req.headers.authorization?.substring(0, 20) + "..."
+  });
+  next();
+});
+
+// Register auth-related endpoints
+registerAuthEndpoints(app);
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -64,9 +87,9 @@ app.use((req, res, next) => {
       console.log('starting development server')
       await setupVite(app, server);
     } else {
-      app.use(express.static(path.resolve(import.meta.dirname, "..", "dist", "public")));
+      app.use(express.static(path.resolve(__dirname, "..", "dist", "public")));
       app.get("*", (_req, res) => {
-        res.sendFile(path.resolve(import.meta.dirname, "..", "dist", "public", "index.html"));
+        res.sendFile(path.resolve(__dirname, "..", "dist", "public", "index.html"));
       });
     }
 

@@ -1,5 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Switch, Route } from "wouter";
+import {loadStripe} from '@stripe/stripe-js';
+import {
+  CheckoutProvider
+} from '@stripe/react-stripe-js';
 import { Toaster } from "@/components/ui/toaster";
 import Home from "@/pages/Home";
 import Forum from "@/pages/Forum";
@@ -14,11 +18,15 @@ import Footer from "@/components/layout/Footer";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { queryClient } from "@/lib/queryClient";
-
+import CheckoutForm from "./components/payment/CheckoutForm";
+import { Return } from "./components/payment/Return";
 function App() {
   const { isSignedIn, user, isLoaded } = useUser();
   const { userId } = useAuth();
   const [localUserChecked, setLocalUserChecked] = useState(false);
+
+  // TODO test key
+  const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
   // Clear React Query cache when auth state changes (on logout)
   useEffect(() => {
@@ -67,12 +75,35 @@ function App() {
     checkOrCreateUser();
   }, [isLoaded, isSignedIn, user]);
 
+  const promise = useMemo(() => {
+    console.log("Fetching client secret");
+    return fetch('/create-checkout-session', {
+      method: 'POST',
+    })
+      .then((res) => res.json())
+      .then((data) => data.clientSecret);
+  }, []);
+
+  const stripeAppearance = {
+    theme: 'night',
+  };
+
   return (
     <div>
       <div className="flex flex-col min-h-screen bg-ufc-black text-light-gray">
         <Header />
         <main className="flex-grow">
           <Switch>
+            <CheckoutProvider
+              stripe={stripePromise}
+              options={{
+                fetchClientSecret: () => promise,
+                elementsOptions: { appearance: stripeAppearance },
+              }}
+            >
+              <Route path="/checkout" component={CheckoutForm} />
+              <Route path="/return" component={Return} />
+            </CheckoutProvider>
             <Route path="/" component={Home} />
             <Route path="/forum" component={Forum} />
             <Route path="/auth" component={AuthPage} />

@@ -1,36 +1,5 @@
-import passport from "passport";
-import { Strategy as LocalStrategy } from "passport-local";
 import { Express, Request, Response, NextFunction } from "express";
-import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
 import { storage } from "./storage";
-import { User } from "@shared/schema";
-
-declare global {
-  namespace Express {
-    // Extending the User interface to include our User type
-    interface User {
-      id: string;
-      username: string;
-      email?: string | null;
-      avatar?: string | null;
-      role?: string;
-      status?: string;
-    }
-    
-    // Extend the Request interface to include localUser
-    interface Request {
-      localUser?: User;
-      auth?: {
-        userId?: string;
-        sessionId?: string;
-      }
-    }
-  }
-}
-
-const scryptAsync = promisify(scrypt);
 
 // Middleware to ensure Clerk users exist in our local database
 // Make sure it's correctly extracting the Clerk token

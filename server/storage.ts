@@ -70,6 +70,7 @@ export interface IStorage {
   getPollByThread(threadId: string): Promise<Poll | undefined>;
   createPoll(poll: InsertPoll, options: string[]): Promise<Poll>;
   votePoll(pollId: string, optionId: string, userId: string): Promise<boolean>;
+  getUserPollVote(pollId: string, userId: string): Promise<{ optionId: string } | null>;
   
   // Media management
   getMedia(id: string): Promise<Media | undefined>;
@@ -1225,6 +1226,30 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error voting in poll:', error);
       return false;
+    }
+  }
+  
+  async getUserPollVote(pollId: string, userId: string): Promise<{ optionId: string } | null> {
+    try {
+      // Lookup if the user has already voted on this poll
+      const existingVote = await db.query.pollVotes.findFirst({
+        where: and(
+          eq(pollVotes.pollId, pollId),
+          eq(pollVotes.userId, userId)
+        ),
+        columns: {
+          pollOptionId: true
+        }
+      });
+      
+      if (existingVote) {
+        return { optionId: existingVote.pollOptionId };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error getting user poll vote:', error);
+      return null;
     }
   }
   

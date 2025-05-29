@@ -111,6 +111,7 @@ export const registerAuthEndpoints = (app: Express) => {
             email,
             profileImageUrl
           });
+          console.log("auth profile: ", profileImageUrl);
           
           console.log(`Created new local user for Clerk ID ${clerkId}, local ID: ${newUser.id}`);
           

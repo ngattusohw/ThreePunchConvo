@@ -1,3 +1,4 @@
+import React from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { RankedUser } from "@/lib/types";
@@ -8,11 +9,15 @@ export default function TopUsersSidebar() {
   // Fetch top users
   const { data: topUsers, isLoading, error } = useQuery<RankedUser[]>({
     queryKey: ['/api/users/top'],
-    // In a real app, we would fetch from the API
   });
 
-  // For demo purposes, create mock users if none are returned from the API
-  const displayUsers =  topUsers;
+  const displayUsers = topUsers;
+
+  // Helper function to truncate text
+  const truncateText = (text: string, maxLength: number) => {
+    if (text.length <= maxLength) return text;
+    return `${text.substring(0, maxLength)}...`;
+  };
 
   return topUsers?.length && (
     <div className="bg-dark-gray rounded-lg overflow-hidden">
@@ -32,15 +37,15 @@ export default function TopUsersSidebar() {
           </div>
         ) : (
           <ul className="space-y-3">
-            {displayUsers.slice(0, 5).map((rankedUser) => (
+            {displayUsers?.slice(0, 5).map((rankedUser) => (
               <li key={rankedUser.user.id} className="flex items-center py-2 hover:bg-gray-800 rounded-lg px-2 transition">
                 <span className="text-gray-400 font-accent font-bold w-10 whitespace-nowrap">
                   #{rankedUser.position}{rankedUser.isTied ? "-T" : ""}
                 </span>
                 <UserAvatar user={rankedUser.user} size="sm" className="mr-3" />
-                <div className="flex-grow">
-                  <Link href={`/user/${rankedUser.user.username}`} className="text-white font-medium block leading-tight hover:text-ufc-blue transition">
-                    {rankedUser.user.username}
+                <div className="flex-grow overflow-hidden">
+                  <Link href={`/user/${rankedUser.user.username}`} className="text-white font-medium block leading-tight hover:text-ufc-blue transition truncate">
+                    {truncateText(rankedUser.user.username, 15)}
                   </Link>
                   <StatusBadge status={rankedUser.user.status} />
                 </div>

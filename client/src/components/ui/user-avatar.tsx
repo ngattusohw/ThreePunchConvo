@@ -63,7 +63,7 @@ export default function UserAvatar({ user, size = "md", className }: UserAvatarP
   return (
     <div className={cn("relative", className)}>
       <img 
-        src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.username || 'User'}&background=random`} 
+        src={user?.profileImageUrl || `https://ui-avatars.com/api/?name=${user?.username || 'User'}&background=random`} 
         alt={`${user?.username || 'User'}'s avatar`} 
         className={cn(
           sizeClasses[size], 

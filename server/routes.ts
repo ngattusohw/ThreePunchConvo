@@ -84,38 +84,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Thread endpoints with Clerk authentication
   app.post('/api/threads', requireAuth(), async (req: any, res: Response, next: NextFunction) => {
     try {
-      // Extract user ID from token directly
-      let userId;
-      if (req.headers.authorization?.startsWith('Bearer ')) {
-        const token = req.headers.authorization.split(' ')[1];
-        try {
-          // Parse the JWT payload
-          const base64Payload = token.split('.')[1];
-          const payload = JSON.parse(Buffer.from(base64Payload, 'base64').toString());
-          userId = payload.sub; // Clerk uses 'sub' for the user ID
-          console.log("Manually extracted userId from JWT:", userId);
-        } catch (error) {
-          console.error("Error extracting userId from JWT:", error);
-        }
+      // Get the Clerk user ID from the request body
+      const clerkUserId = req.body.userId;
+      
+      if (!clerkUserId) {
+        return res.status(400).json({ message: 'User ID is required' });
       }
       
-      if (!userId) {
-        return res.status(400).json({ message: 'User not found' });
-      }
+      console.log("Using Clerk user ID from request body:", clerkUserId);
       
-      const localUser = await storage.getUserByExternalId(userId);
+      // Get the local user from the Clerk external ID
+      const localUser = await storage.getUserByExternalId(clerkUserId);
       
       if (!localUser) {
-        return res.status(400).json({ message: 'User not found' });
+        return res.status(400).json({ message: 'User not found in database' });
       }
       
-      req.localUser = localUser;
-      
-      console.log('POST /api/threads: Using local user ID', req.localUser.id);
+      console.log(`POST /api/threads: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
       
       // Use our internal user ID for database operations
-      req.body.userId = req.localUser.id;
-      console.log(`POST /api/threads: Using local user ID ${req.body.userId} for thread creation`);
+      req.body.userId = localUser.id;
       
       const threadData = insertThreadSchema.parse(req.body);
       const { poll, media } = req.body;
@@ -555,13 +543,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/threads/:id', requireAuth(), async (req: Request, res: Response) => {
+  app.delete('/api/threads/:id', requireAuth(), async (req: any, res: Response) => {
     try {
       const threadId = req.params.id;
-      const { userId, role } = req.body;
+      const { userId: clerkUserId, role } = req.body;
+      
+      if (!clerkUserId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+      
+      console.log("Using Clerk user ID from request body:", clerkUserId);
+      
+      // Get the local user from the Clerk external ID
+      const localUser = await storage.getUserByExternalId(clerkUserId);
+      
+      if (!localUser) {
+        return res.status(400).json({ message: 'User not found in database' });
+      }
+      
+      console.log(`Delete thread: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
       
       if (!threadId) {
-        return res.status(400).json({ message: 'Invalid thread ID' });
+        return res.status(400).json({ message: 'Thread ID is required' });
       }
       
       const thread = await storage.getThread(threadId);
@@ -571,7 +574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only thread author, moderators, and admins can delete threads
-      if (thread.userId !== userId && role !== 'MODERATOR' && role !== 'ADMIN') {
+      if (thread.userId !== localUser.id && role !== 'MODERATOR' && role !== 'ADMIN') {
         return res.status(403).json({ message: 'Not authorized to delete this thread' });
       }
       
@@ -583,21 +586,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ message: 'Thread deleted successfully' });
     } catch (error) {
+      console.error("Error in thread delete:", error);
       res.status(500).json({ message: 'Failed to delete thread' });
     }
   });
 
-  app.post('/api/threads/:id/like', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
+  app.post('/api/threads/:id/like', requireAuth(), async (req: any, res: Response) => {
     try {
       const threadId = req.params.id;
-      // Use local user ID instead of Clerk ID
-      const userId = req.localUser?.id;
       
-      if (!threadId || !userId) {
-        return res.status(400).json({ message: 'Thread ID and user ID are required' });
+      // Get the Clerk user ID from the request body
+      const clerkUserId = req.body.userId;
+      
+      if (!clerkUserId) {
+        return res.status(400).json({ message: 'User ID is required' });
       }
       
-      const success = await storage.likeThread(threadId, userId);
+      console.log("Using Clerk user ID from request body:", clerkUserId);
+      
+      // Get the local user from the Clerk external ID
+      const localUser = await storage.getUserByExternalId(clerkUserId);
+      
+      if (!localUser) {
+        return res.status(400).json({ message: 'User not found in database' });
+      }
+      
+      console.log(`Like thread: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
+      
+      if (!threadId) {
+        return res.status(400).json({ message: 'Thread ID is required' });
+      }
+      
+      const success = await storage.likeThread(threadId, localUser.id);
       
       if (!success) {
         return res.status(400).json({ message: 'Failed to like thread' });
@@ -605,21 +625,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ message: 'Thread liked successfully' });
     } catch (error) {
+      console.error("Error in thread like:", error);
       res.status(500).json({ message: 'Failed to like thread' });
     }
   });
 
-  app.post('/api/threads/:id/dislike', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
+  app.post('/api/threads/:id/dislike', requireAuth(), async (req: any, res: Response) => {
     try {
       const threadId = req.params.id;
-      // Use local user ID instead of Clerk ID
-      const userId = req.localUser?.id;
       
-      if (!threadId || !userId) {
-        return res.status(400).json({ message: 'Thread ID and user ID are required' });
+      // Get the Clerk user ID from the request body
+      const clerkUserId = req.body.userId;
+      
+      if (!clerkUserId) {
+        return res.status(400).json({ message: 'User ID is required' });
       }
       
-      const success = await storage.dislikeThread(threadId, userId);
+      console.log("Using Clerk user ID from request body:", clerkUserId);
+      
+      // Get the local user from the Clerk external ID
+      const localUser = await storage.getUserByExternalId(clerkUserId);
+      
+      if (!localUser) {
+        return res.status(400).json({ message: 'User not found in database' });
+      }
+      
+      console.log(`Dislike thread: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
+      
+      if (!threadId) {
+        return res.status(400).json({ message: 'Thread ID is required' });
+      }
+      
+      const success = await storage.dislikeThread(threadId, localUser.id);
       
       if (!success) {
         return res.status(400).json({ message: 'Failed to dislike thread' });
@@ -627,21 +664,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ message: 'Thread disliked successfully' });
     } catch (error) {
+      console.error("Error in thread dislike:", error);
       res.status(500).json({ message: 'Failed to dislike thread' });
     }
   });
 
-  app.post('/api/threads/:id/potd', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
+  app.post('/api/threads/:id/potd', requireAuth(), async (req: any, res: Response) => {
     try {
       const threadId = req.params.id;
-      // Use local user ID instead of Clerk ID
-      const userId = req.localUser?.id;
       
-      if (!threadId || !userId) {
-        return res.status(400).json({ message: 'Thread ID and user ID are required' });
+      // Get the Clerk user ID from the request body
+      const clerkUserId = req.body.userId;
+      
+      if (!clerkUserId) {
+        return res.status(400).json({ message: 'User ID is required' });
       }
       
-      const success = await storage.potdThread(threadId, userId);
+      console.log("Using Clerk user ID from request body:", clerkUserId);
+      
+      // Get the local user from the Clerk external ID
+      const localUser = await storage.getUserByExternalId(clerkUserId);
+      
+      if (!localUser) {
+        return res.status(400).json({ message: 'User not found in database' });
+      }
+      
+      console.log(`POTD thread: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
+      
+      if (!threadId) {
+        return res.status(400).json({ message: 'Thread ID is required' });
+      }
+      
+      const success = await storage.potdThread(threadId, localUser.id);
       
       if (!success) {
         return res.status(400).json({ message: 'Failed to set thread as POTD' });
@@ -649,19 +703,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ message: 'Thread set as POTD successfully' });
     } catch (error) {
+      console.error("Error in thread POTD:", error);
       res.status(500).json({ message: 'Failed to set thread as POTD' });
     }
   });
 
-  app.post('/api/threads/:id/poll/:optionId/vote', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
+  app.post('/api/threads/:id/poll/:optionId/vote', requireAuth(), async (req: any, res: Response) => {
     try {
       const threadId = req.params.id;
       const optionId = req.params.optionId;
-      // Use local user ID instead of Clerk ID
-      const userId = req.localUser?.id;
       
-      if (!threadId || !optionId || !userId) {
-        return res.status(400).json({ message: 'Thread ID, option ID, and user ID are required' });
+      // Get the Clerk user ID from the request body
+      const clerkUserId = req.body.userId;
+      
+      if (!clerkUserId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+      
+      console.log("Using Clerk user ID from request body:", clerkUserId);
+      
+      // Get the local user from the Clerk external ID
+      const localUser = await storage.getUserByExternalId(clerkUserId);
+      
+      if (!localUser) {
+        return res.status(400).json({ message: 'User not found in database' });
+      }
+      
+      console.log(`Poll vote: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
+      
+      if (!threadId || !optionId) {
+        return res.status(400).json({ message: 'Thread ID and option ID are required' });
       }
       
       // Get poll for this thread
@@ -671,15 +742,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Poll not found for this thread' });
       }
       
-      const success = await storage.votePoll(poll.id, optionId, userId);
+      // Check if user has already voted on this poll
+      const existingVote = await storage.getUserPollVote(poll.id, localUser.id);
+      
+      if (existingVote) {
+        return res.status(400).json({ 
+          message: 'You have already voted on this poll',
+          votedOptionId: existingVote.optionId
+        });
+      }
+      
+      const success = await storage.votePoll(poll.id, optionId, localUser.id);
       
       if (!success) {
         return res.status(400).json({ message: 'Failed to vote in poll' });
+      } else {
+        res.json({ message: 'Vote recorded successfully' });
       }
-      
-      res.json({ message: 'Vote recorded successfully' });
     } catch (error) {
-      res.status(500).json({ message: 'Failed to vote in poll' });
+      console.error("Error in poll vote:", error);
+      res.status(500).json({ message: 'Failed to vote in poll', error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -773,13 +855,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/replies/:id', requireAuth(), async (req: Request, res: Response) => {
+  app.delete('/api/replies/:id', requireAuth(), async (req: any, res: Response) => {
     try {
       const replyId = req.params.id;
-      const { userId, role } = req.body;
+      const { userId: clerkUserId, role } = req.body;
+      
+      if (!clerkUserId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+      
+      console.log("Using Clerk user ID from request body:", clerkUserId);
+      
+      // Get the local user from the Clerk external ID
+      const localUser = await storage.getUserByExternalId(clerkUserId);
+      
+      if (!localUser) {
+        return res.status(400).json({ message: 'User not found in database' });
+      }
+      
+      console.log(`Delete reply: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
       
       if (!replyId) {
-        return res.status(400).json({ message: 'Invalid reply ID' });
+        return res.status(400).json({ message: 'Reply ID is required' });
       }
       
       const reply = await storage.getReply(replyId);
@@ -789,7 +886,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only reply author, moderators, and admins can delete replies
-      if (reply.userId !== userId && role !== 'MODERATOR' && role !== 'ADMIN') {
+      if (reply.userId !== localUser.id && role !== 'MODERATOR' && role !== 'ADMIN') {
         return res.status(403).json({ message: 'Not authorized to delete this reply' });
       }
       
@@ -801,21 +898,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ message: 'Reply deleted successfully' });
     } catch (error) {
+      console.error("Error in reply delete:", error);
       res.status(500).json({ message: 'Failed to delete reply' });
     }
   });
 
-  app.post('/api/replies/:id/like', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
+  app.post('/api/replies/:id/like', requireAuth(), async (req: any, res: Response) => {
     try {
       const replyId = req.params.id;
-      // Use local user ID instead of Clerk ID
-      const userId = req.localUser?.id;
       
-      if (!replyId || !userId) {
-        return res.status(400).json({ message: 'Reply ID and user ID are required' });
+      // Get the Clerk user ID from the request body
+      const clerkUserId = req.body.userId;
+      
+      if (!clerkUserId) {
+        return res.status(400).json({ message: 'User ID is required' });
       }
       
-      const success = await storage.likeReply(replyId, userId);
+      console.log("Using Clerk user ID from request body:", clerkUserId);
+      
+      // Get the local user from the Clerk external ID
+      const localUser = await storage.getUserByExternalId(clerkUserId);
+      
+      if (!localUser) {
+        return res.status(400).json({ message: 'User not found in database' });
+      }
+      
+      console.log(`Like reply: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
+      
+      if (!replyId) {
+        return res.status(400).json({ message: 'Reply ID is required' });
+      }
+      
+      const success = await storage.likeReply(replyId, localUser.id);
       
       if (!success) {
         return res.status(400).json({ message: 'Failed to like reply' });
@@ -823,21 +937,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ message: 'Reply liked successfully' });
     } catch (error) {
+      console.error("Error in reply like:", error);
       res.status(500).json({ message: 'Failed to like reply' });
     }
   });
 
-  app.post('/api/replies/:id/dislike', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
+  app.post('/api/replies/:id/dislike', requireAuth(), async (req: any, res: Response) => {
     try {
       const replyId = req.params.id;
-      // Use local user ID instead of Clerk ID
-      const userId = req.localUser?.id;
       
-      if (!replyId || !userId) {
-        return res.status(400).json({ message: 'Reply ID and user ID are required' });
+      // Get the Clerk user ID from the request body
+      const clerkUserId = req.body.userId;
+      
+      if (!clerkUserId) {
+        return res.status(400).json({ message: 'User ID is required' });
       }
       
-      const success = await storage.dislikeReply(replyId, userId);
+      console.log("Using Clerk user ID from request body:", clerkUserId);
+      
+      // Get the local user from the Clerk external ID
+      const localUser = await storage.getUserByExternalId(clerkUserId);
+      
+      if (!localUser) {
+        return res.status(400).json({ message: 'User not found in database' });
+      }
+      
+      console.log(`Dislike reply: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
+      
+      if (!replyId) {
+        return res.status(400).json({ message: 'Reply ID is required' });
+      }
+      
+      const success = await storage.dislikeReply(replyId, localUser.id);
       
       if (!success) {
         return res.status(400).json({ message: 'Failed to dislike reply' });
@@ -845,6 +976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ message: 'Reply disliked successfully' });
     } catch (error) {
+      console.error("Error in reply dislike:", error);
       res.status(500).json({ message: 'Failed to dislike reply' });
     }
   });

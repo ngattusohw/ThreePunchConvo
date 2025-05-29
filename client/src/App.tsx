@@ -41,7 +41,8 @@ function App() {
     const checkOrCreateUser = async () => {
       if (isLoaded && isSignedIn && user) {
         console.log("Clerk user logged in:", user);
-        
+        console.log("app profile: ", user?.imageUrl);
+
         try {
           // Check if user exists in our database, creates one if not
           const response = await fetch(`/api/users/clerk/${user?.id}`, {

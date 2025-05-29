@@ -54,9 +54,22 @@ export default function Thread() {
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to like posts");
       
-      return apiRequest("POST", `/api/threads/${threadId}/like`, {
-        userId: currentUser.id
+      const response = await fetch(`/api/threads/${threadId}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.id
+        })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       const wasLiked = displayThread?.hasLiked;
@@ -80,9 +93,22 @@ export default function Thread() {
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to dislike posts");
       
-      return apiRequest("POST", `/api/threads/${threadId}/dislike`, {
-        userId: currentUser.id
+      const response = await fetch(`/api/threads/${threadId}/dislike`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.id
+        })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/threads/id/${threadId}`] });
@@ -105,9 +131,22 @@ export default function Thread() {
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to vote for POTD");
       
-      return apiRequest("POST", `/api/threads/${threadId}/potd`, {
-        userId: currentUser.id
+      const response = await fetch(`/api/threads/${threadId}/potd`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.id
+        })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/threads/id/${threadId}`] });
@@ -131,11 +170,24 @@ export default function Thread() {
       if (!currentUser) throw new Error("You must be logged in to reply");
       if (!replyContent.trim()) throw new Error("Reply cannot be empty");
       
-      return apiRequest("POST", `/api/threads/${threadId}/replies`, {
-        userId: currentUser.id,
-        content: replyContent,
-        parentReplyId: replyingTo?.id
+      const response = await fetch(`/api/threads/${threadId}/replies`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          content: replyContent,
+          parentReplyId: replyingTo?.id
+        })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/threads/${threadId}/replies`] });
@@ -160,9 +212,22 @@ export default function Thread() {
     mutationFn: async (replyId: number) => {
       if (!currentUser) throw new Error("You must be logged in to like replies");
       
-      return apiRequest("POST", `/api/replies/${replyId}/like`, {
-        userId: currentUser.id
+      const response = await fetch(`/api/replies/${replyId}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.id
+        })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/threads/${threadId}/replies`] });
@@ -181,9 +246,22 @@ export default function Thread() {
     mutationFn: async (replyId: number) => {
       if (!currentUser) throw new Error("You must be logged in to dislike replies");
       
-      return apiRequest("POST", `/api/replies/${replyId}/dislike`, {
-        userId: currentUser.id
+      const response = await fetch(`/api/replies/${replyId}/dislike`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.id
+        })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/threads/${threadId}/replies`] });
@@ -211,9 +289,68 @@ export default function Thread() {
       if (!currentUser) throw new Error("You must be logged in to vote");
       if (!displayThread.poll) throw new Error("No poll found");
       
-      return apiRequest("POST", `/api/threads/${threadId}/poll/${optionId}/vote`, {
-        userId: currentUser.id
-      });
+      // Log user information for debugging
+      console.log("Current user ID:", currentUser.id);
+      console.log("Voting on poll option ID:", optionId);
+      
+      try {
+        // First, ensure the user exists in the backend database
+        // This is important because the backend expects a registered user
+        console.log("Checking if user exists in backend database");
+        const userCheckResponse = await fetch(`/api/users/clerk/${currentUser.id}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firstName: currentUser.firstName,
+            lastName: currentUser.lastName,
+            email: currentUser.emailAddresses?.[0]?.emailAddress,
+            profileImageUrl: currentUser.imageUrl,
+            username: currentUser.username
+          })
+        });
+        
+        if (!userCheckResponse.ok) {
+          throw new Error("Failed to register user in backend system");
+        }
+        
+        const userData = await userCheckResponse.json();
+        console.log("User check result:", userData);
+        
+        // Now that we've ensured the user exists, we can proceed with voting
+        const response = await fetch(`/api/threads/${threadId}/poll/${optionId}/vote`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: currentUser.id
+          })
+        });
+        
+        // If there's an error, try to get detailed error information
+        if (!response.ok) {
+          let errorMessage = `Error: ${response.status} ${response.statusText}`;
+          const responseText = await response.text();
+          console.error("Raw API error response:", responseText);
+          
+          try {
+            const errorData = JSON.parse(responseText);
+            console.error("Parsed API error response:", errorData);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (e) {
+            console.error("Failed to parse error response as JSON");
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
+        return response.json();
+      } catch (error) {
+        console.error("Error in poll vote:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/threads/id/${threadId}`] });
@@ -223,6 +360,7 @@ export default function Thread() {
       });
     },
     onError: (error: Error) => {
+      console.error("Vote error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to record vote",
@@ -236,10 +374,23 @@ export default function Thread() {
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to delete this thread");
       
-      return apiRequest("DELETE", `/api/threads/${threadId}`, {
-        userId: currentUser.id,
-        role: currentUser.role
+      const response = await fetch(`/api/threads/${threadId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          role: currentUser.publicMetadata?.role
+        })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -263,10 +414,23 @@ export default function Thread() {
     mutationFn: async (replyId: string) => {
       if (!currentUser) throw new Error("You must be logged in to delete this reply");
       
-      return apiRequest("DELETE", `/api/replies/${replyId}`, {
-        userId: currentUser.id,
-        role: currentUser.role
+      const response = await fetch(`/api/replies/${replyId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          role: currentUser.publicMetadata?.role
+        })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/threads/${threadId}/replies`] });
@@ -404,7 +568,7 @@ export default function Thread() {
                   )}
                   
                   {/* Thread Poll */}
-                  {displayThread.poll && (
+                  {displayThread?.poll && (
                     <div className="bg-gray-800 rounded-lg p-4 mb-6">
                       <h3 className="text-white font-medium mb-4">{displayThread.poll.question}</h3>
                       <div className="space-y-3">
@@ -417,7 +581,7 @@ export default function Thread() {
                             <div key={option.id} className="relative">
                               <button
                                 onClick={() => submitPollVoteMutation.mutate(option.id)}
-                                disabled={!currentUser || submitPollVoteMutation.isPending}
+                                disabled={!currentUser || submitPollVoteMutation.isPending || new Date() > new Date(displayThread.poll.expiresAt)}
                                 className="w-full"
                               >
                                 <div className="flex items-center justify-between mb-1">
@@ -802,7 +966,7 @@ function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardPro
                 <span className="font-medium">{reply.dislikesCount}</span>
               </button> */}
               
-              <button 
+              {/* <button 
                 onClick={() => onQuote(reply)}
                 disabled={!currentUser}
                 className="flex items-center text-gray-400 hover:text-white transition"
@@ -811,7 +975,7 @@ function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardPro
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
                 <span className="font-medium">Quote</span>
-              </button>
+              </button> */}
               
               <button 
                 onClick={() => {

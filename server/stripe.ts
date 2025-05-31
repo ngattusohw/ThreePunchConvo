@@ -22,6 +22,7 @@ export const registerStripeEndpoints = (app: Express) => {
         },
       ],
       mode: "subscription",
+      customer_email: req.body.email,
       // TODO: change to production url
       return_url: `http://localhost:5000/return?session_id={CHECKOUT_SESSION_ID}`,
     });

@@ -16,6 +16,10 @@ export const Return = () => {
       .then((data) => {
         setStatus(data.status);
         setCustomerEmail(data.customer_email);
+      })
+      .catch(err => {
+        console.error("Error fetching client secret:", err);
+        return null; // TODO reroute to error page
       });
   }, []);
 
@@ -26,13 +30,24 @@ export const Return = () => {
 
   if (status === 'complete') {
     return (
-      <section id="success">
-        <p>
-          We appreciate your business! A confirmation email will be sent to {customerEmail}.
-
-          If you have any questions, please email <a href="mailto:orders@example.com">orders@example.com</a>.
-        </p>
-      </section>
+      <div className="flex flex-col p-6 max-w-md mx-auto">
+        <section id="success">
+          {/* TODO change  */}
+          <p className="text-white">
+            We appreciate your business! A confirmation email will be sent to {customerEmail}. 
+            <br /><br />
+            If you have any questions, please email <a href="mailto:orders@example.com">orders@example.com</a>.
+          </p>
+        </section>
+        <div>
+          <button 
+            className="bg-ufc-blue hover:bg-ufc-blue-dark text-black font-medium px-4 py-2 rounded-lg text-sm flex-shrink-0 flex items-center transition whitespace-nowrap mt-6"
+            onClick={() => setLocation("/forum")}
+          >
+          Return to Home 
+          </button>
+        </div>
+      </div>
     )
   }
 

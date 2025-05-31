@@ -26,7 +26,7 @@ function App() {
   const [localUserChecked, setLocalUserChecked] = useState(false);
 
   // TODO test key
-  const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+  const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
   // Clear React Query cache when auth state changes (on logout)
   useEffect(() => {
@@ -80,13 +80,23 @@ function App() {
     console.log("Fetching client secret");
     return fetch('/create-checkout-session', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: user?.emailAddresses[0]?.emailAddress
+      })
     })
       .then((res) => res.json())
-      .then((data) => data.clientSecret);
-  }, []);
+      .then((data) => data.clientSecret)
+      .catch(err => {
+        console.error("Error fetching client secret:", err);
+        return null;
+      });
+  }, [user?.emailAddresses]);
 
   const stripeAppearance = {
-    theme: 'night',
+    theme: 'night' as const,
   };
 
   return (
@@ -94,31 +104,31 @@ function App() {
       <div className="flex flex-col min-h-screen bg-ufc-black text-light-gray">
         <Header />
         <main className="flex-grow">
-          <Switch>
-            <CheckoutProvider
-              stripe={stripePromise}
-              options={{
-                fetchClientSecret: () => promise,
-                elementsOptions: { appearance: stripeAppearance },
-              }}
-            >
+          <CheckoutProvider
+            stripe={stripePromise}
+            options={{
+              fetchClientSecret: () => promise,
+              elementsOptions: { appearance: stripeAppearance },
+            }}
+          >
+            <Switch>
               <Route path="/checkout" component={CheckoutForm} />
               <Route path="/return" component={Return} />
-            </CheckoutProvider>
-            <Route path="/" component={Home} />
-            <Route path="/forum" component={Forum} />
-            <Route path="/auth" component={AuthPage} />
-            <Route path="/login" component={AuthPage} />
-            <Route path="/register" component={AuthPage} />
-            <Route path="/schedule" component={Schedule} />
-            <Route path="/rankings" component={Rankings} />
-            {/* Protected Routes */}
-            <ProtectedRoute path="/forum" component={Forum} />
-            <ProtectedRoute path="/forum/:categoryId" component={Forum} />
-            <ProtectedRoute path="/thread/:threadId" component={Thread} />
-            <ProtectedRoute path="/user/:username" component={UserProfile} />
-            <Route component={NotFound} />
-          </Switch>
+              <Route path="/" component={Home} />
+              <Route path="/forum" component={Forum} />
+              <Route path="/auth" component={AuthPage} />
+              <Route path="/login" component={AuthPage} />
+              <Route path="/register" component={AuthPage} />
+              <Route path="/schedule" component={Schedule} />
+              <Route path="/rankings" component={Rankings} />
+              {/* Protected Routes */}
+              <ProtectedRoute path="/forum" component={Forum} />
+              <ProtectedRoute path="/forum/:categoryId" component={Forum} />
+              <ProtectedRoute path="/thread/:threadId" component={Thread} />
+              <ProtectedRoute path="/user/:username" component={UserProfile} />
+              <Route component={NotFound} />
+            </Switch>
+          </CheckoutProvider>
         </main>
         <Footer />
       </div>

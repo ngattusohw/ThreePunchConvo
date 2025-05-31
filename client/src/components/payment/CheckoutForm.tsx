@@ -3,6 +3,8 @@ import {
   PaymentElement,
   useCheckout,
 } from '@stripe/react-stripe-js';
+import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@clerk/clerk-react";
 
 const validateEmail = async (email, checkout) => {
   const updateResult = await checkout.updateEmail(email);
@@ -32,17 +34,18 @@ const EmailInput = ({ email, setEmail, error, setError }) => {
 
   return (
     <>
-      <label>
-        Email
-        <input
-          id="email"
-          type="text"
+      <div className="mb-4">
+        <label htmlFor="email-checkout" className="block text-gray-300 mb-2 font-medium">Email</label>
+        <input 
+          type="text" 
+          id="email-checkout" 
+          placeholder={"you@example.com"}
           value={email}
           onChange={handleChange}
           onBlur={handleBlur}
-          placeholder="you@example.com"
+          className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-blue"
         />
-      </label>
+      </div>
       {error && <div id="email-errors">{error}</div>}
     </>
   );
@@ -50,10 +53,11 @@ const EmailInput = ({ email, setEmail, error, setError }) => {
 
 const CheckoutForm = () => {
   const checkout = useCheckout();
+  const { toast } = useToast();
+  const { user } = useUser();
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(user?.emailAddresses[0]?.emailAddress ? user?.emailAddresses[0]?.emailAddress : '');
   const [emailError, setEmailError] = useState(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -64,7 +68,11 @@ const CheckoutForm = () => {
     const { isValid, message } = await validateEmail(email, checkout);
     if (!isValid) {
       setEmailError(message);
-      setMessage(message);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive"
+      });
       setIsLoading(false);
       return;
     }
@@ -77,32 +85,40 @@ const CheckoutForm = () => {
     // be redirected to an intermediate site first to authorize the payment, then
     // redirected to the `return_url`.
     if (confirmResult.type === 'error') {
-      setMessage(confirmResult.error.message);
+      toast({
+        title: "Payment Error",
+        description: confirmResult.error.message,
+        variant: "destructive"
+      });
     }
 
     setIsLoading(false);
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <EmailInput
-        email={email}
-        setEmail={setEmail}
-        error={emailError}
-        setError={setEmailError}
-      />
-      <h4>Payment</h4>
-      <PaymentElement id="payment-element" />
-      <button disabled={isLoading} id="submit">
-        {isLoading ? (
-          <div className="spinner"></div>
-        ) : (
-          `Pay ${checkout.total.total.amount} now`
-        )}
-      </button>
-      {/* Show any error or success messages */}
-      {message && <div id="payment-message">{message}</div>}
-    </form>
+    <div className="flex flex-col p-6 max-w-md mx-auto">
+      <form onSubmit={handleSubmit}>
+        <EmailInput
+          email={email}
+          setEmail={setEmail}
+          error={emailError}
+          setError={setEmailError}
+        />
+        <h4>Payment</h4>
+        <PaymentElement id="payment-element" />
+        <button 
+          disabled={isLoading}
+          id="submit"
+          className="bg-ufc-blue hover:bg-ufc-blue-dark text-black font-medium px-4 py-2 rounded-lg text-sm flex-shrink-0 flex items-center transition whitespace-nowrap mt-6"
+        >
+          {isLoading ? (
+            <div className="spinner"></div>
+          ) : (
+            `Pay ${checkout.total.total.amount} now`
+          )}
+        </button>
+      </form>
+    </div>
   );
 }
 

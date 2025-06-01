@@ -24,7 +24,8 @@ function App() {
   const { isSignedIn, user, isLoaded } = useUser();
   const { userId } = useAuth();
   const [localUserChecked, setLocalUserChecked] = useState(false);
-  const [userSubscriptions, setUserSubscriptions] = useState<any[]>([]);
+  const [isLoadingClientSecret, setIsLoadingClientSecret] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   // TODO test key
   const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
@@ -77,51 +78,38 @@ function App() {
     checkOrCreateUser();
   }, [isLoaded, isSignedIn, user]);
 
+  // Fetch client secret only when user is loaded and signed in
   useEffect(() => {
-    const fetchUserSubscriptions = async () => {
-      if (isLoaded && isSignedIn && user) {
-        console.log("Fetching user subscriptions");
+    const fetchClientSecret = async () => {
+      if (isLoaded && isSignedIn && user?.id && user?.emailAddresses[0]?.emailAddress) {
+        setIsLoadingClientSecret(true);
+        console.log("Fetching client secret");
+        
         try {
-          const response = await fetch(`/get-subscriptions?customerId=${user.id}&status=active`, {
-            method: 'GET',
+          const response = await fetch('/create-checkout-session', {
+            method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-            }
+            },
+            body: JSON.stringify({
+              email: user.emailAddresses[0].emailAddress,
+              clerkUserId: user.id
+            })
           });
           
           const data = await response.json();
-          setUserSubscriptions(data.data || []);
-          console.log("User subscriptions:", data.data);
+          setClientSecret(data.clientSecret);
         } catch (err) {
-          console.error("Error fetching user subscriptions:", err);
+          console.error("Error fetching client secret:", err);
+          setClientSecret(null);
+        } finally {
+          setIsLoadingClientSecret(false);
         }
       }
     };
     
-    fetchUserSubscriptions();
-  }, [isLoaded, isSignedIn, user]);
-
-  const promise = useMemo(() => {
-    console.log("Fetching client secret");
-    return fetch('/create-checkout-session', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: user?.emailAddresses[0]?.emailAddress,
-        clerkUserId: user?.id
-      })
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("data from client fetch: ", data);
-        return data.clientSecret})
-      .catch(err => {
-        console.error("Error fetching client secret:", err);
-        return null;
-      });
-  }, [user?.emailAddresses, user?.id]);
+    fetchClientSecret();
+  }, [isLoaded, isSignedIn, user?.id, user?.emailAddresses]);
 
   const stripeAppearance = {
     theme: 'night' as const,
@@ -135,7 +123,10 @@ function App() {
           <CheckoutProvider
             stripe={stripePromise}
             options={{
-              fetchClientSecret: () => promise,
+              fetchClientSecret: () => 
+                isLoadingClientSecret || !clientSecret
+                  ? Promise.resolve(null)
+                  : Promise.resolve(clientSecret),
               elementsOptions: { appearance: stripeAppearance },
             }}
           >

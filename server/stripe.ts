@@ -38,6 +38,8 @@ export const registerStripeEndpoints = (app: Express) => {
           console.error('Error checking database for user:', dbError);
         }
       }
+
+      console.log("HELLO FROM CREATE CHECKOUT SESSION: ", customerId);
       
       // If no stripeId found, create a new customer
       if (!customerId) {
@@ -63,6 +65,7 @@ export const registerStripeEndpoints = (app: Express) => {
         }
       }
 
+      console.log("customer id from create checkout session: ", customerId);
       // Create the checkout session with the customer ID
       const session = await stripe.checkout.sessions.create({
         ui_mode: "custom",
@@ -75,6 +78,7 @@ export const registerStripeEndpoints = (app: Express) => {
         ],
         mode: "subscription",
         customer: customerId,
+        // customer_email: email,
         // TODO: change to production url
         return_url: `http://localhost:5000/return?session_id={CHECKOUT_SESSION_ID}`,
       });
@@ -134,68 +138,6 @@ export const registerStripeEndpoints = (app: Express) => {
       }
       
       res.send(subscription);
-    } catch (error: any) {
-      res.status(400).send({ error: { message: error.message } });
-    }
-  });
-
-  app.get("/get-customer-by-email", async (req: Request, res: Response) => {
-    try {
-      const { email } = req.query;
-      
-      if (!email) {
-        return res.status(400).send({ 
-          error: { message: "Missing required parameter: email" } 
-        });
-      }
-
-      // First check our database for a user with this email
-      try {
-        // Import necessary modules
-        const { db } = await import('./db');
-        const { users } = await import('@shared/schema');
-        const { eq } = await import('drizzle-orm');
-        
-        // First find the user by email to get their external ID
-        const [dbUser] = await db
-          .select()
-          .from(users)
-          .where(eq(users.email, email as string));
-        
-        if (dbUser && dbUser.externalId) {
-          // Use the external ID to get the full user record through storage
-          const user = await storage.getUserByExternalId(dbUser.externalId);
-          
-          // If we found a user with a stripeId, return that directly
-          if (user && user.stripeId) {
-            return res.send({ 
-              customerId: user.stripeId,
-              fromDatabase: true
-            });
-          }
-        }
-      } catch (dbError) {
-        console.error('Error checking database for user:', dbError);
-        // Continue with Stripe lookup even if database check fails
-      }
-
-      // If no user with stripeId found in our database, check Stripe
-      const customers = await stripe.customers.list({
-        email: email as string,
-        limit: 1,
-      });
-      
-      if (customers.data.length === 0) {
-        return res.status(404).send({ 
-          error: { message: "No customer found with this email" } 
-        });
-      }
-      
-      res.send({ 
-        customerId: customers.data[0].id,
-        customer: customers.data[0],
-        fromStripe: true
-      });
     } catch (error: any) {
       res.status(400).send({ error: { message: error.message } });
     }

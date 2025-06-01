@@ -24,6 +24,7 @@ function App() {
   const { isSignedIn, user, isLoaded } = useUser();
   const { userId } = useAuth();
   const [localUserChecked, setLocalUserChecked] = useState(false);
+  const [userSubscriptions, setUserSubscriptions] = useState<any[]>([]);
 
   // TODO test key
   const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
@@ -76,6 +77,30 @@ function App() {
     checkOrCreateUser();
   }, [isLoaded, isSignedIn, user]);
 
+  useEffect(() => {
+    const fetchUserSubscriptions = async () => {
+      if (isLoaded && isSignedIn && user) {
+        console.log("Fetching user subscriptions");
+        try {
+          const response = await fetch(`/get-subscriptions?customerId=${user.id}&status=active`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+          
+          const data = await response.json();
+          setUserSubscriptions(data.data || []);
+          console.log("User subscriptions:", data.data);
+        } catch (err) {
+          console.error("Error fetching user subscriptions:", err);
+        }
+      }
+    };
+    
+    fetchUserSubscriptions();
+  }, [isLoaded, isSignedIn, user]);
+
   const promise = useMemo(() => {
     console.log("Fetching client secret");
     return fetch('/create-checkout-session', {
@@ -84,16 +109,19 @@ function App() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email: user?.emailAddresses[0]?.emailAddress
+        email: user?.emailAddresses[0]?.emailAddress,
+        clerkUserId: user?.id
       })
     })
       .then((res) => res.json())
-      .then((data) => data.clientSecret)
+      .then((data) => {
+        console.log("data from client fetch: ", data);
+        return data.clientSecret})
       .catch(err => {
         console.error("Error fetching client secret:", err);
         return null;
       });
-  }, [user?.emailAddresses]);
+  }, [user?.emailAddresses, user?.id]);
 
   const stripeAppearance = {
     theme: 'night' as const,

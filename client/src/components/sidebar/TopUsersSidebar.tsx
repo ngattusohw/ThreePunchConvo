@@ -20,12 +20,10 @@ export default function TopUsersSidebar() {
   };
 
   return topUsers?.length && (
-    <div className="bg-dark-gray rounded-lg overflow-hidden">
-      <div className="bg-ufc-black p-4 border-b border-gray-800">
-        <h2 className="font-heading text-lg font-bold text-white">Top Users</h2>
-      </div>
+    <div className="bg-dark-gray rounded-lg p-4">
+      <h2 className="font-heading text-lg font-bold mb-4 text-white">Top Users</h2>
       
-      <div className="p-4">
+      <div>
         {isLoading ? (
           <div className="py-4 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>

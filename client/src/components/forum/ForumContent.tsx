@@ -312,7 +312,6 @@ export default function ForumContent({ category = "general" }: ForumContentProps
               {/* POTD Section - only shown once at the top */}
               {potdThreads.length > 0 && (
                 <div className="mb-6">
-                  <div className="text-sm font-medium text-ufc-blue mb-2">Posts of the Day</div>
                   <div className="space-y-4">
                     {potdThreads.map(thread => (
                       <ThreadCard key={thread.id} thread={thread} />

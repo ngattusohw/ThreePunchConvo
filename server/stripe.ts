@@ -211,6 +211,123 @@ export const registerStripeEndpoints = (app: Express) => {
       res.status(400).send({ error: { message: error.message } });
     }
   });
+
+  // Stripe webhook endpoint to handle events
+  app.post("/webhook", express.raw({type: 'application/json'}), async (req: Request, res: Response) => {
+    const sig = req.headers['stripe-signature'] as string;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      console.error('Stripe webhook secret is not configured');
+      return res.status(500).send('Webhook secret not configured');
+    }
+
+    let event: Stripe.Event;
+
+    try {
+      // Verify the event came from Stripe
+      const rawBody = req.body;
+      event = stripe.webhooks.constructEvent(
+        rawBody,
+        sig,
+        webhookSecret
+      );
+    } catch (err: any) {
+      console.error(`Webhook signature verification failed: ${err.message}`);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Handle the event
+    try {
+      switch (event.type) {
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated':
+          await handleSubscriptionChange(event.data.object as Stripe.Subscription);
+          break;
+        case 'customer.subscription.deleted':
+          await handleSubscriptionCancelled(event.data.object as Stripe.Subscription);
+          break;
+        default:
+          console.log(`Unhandled event type: ${event.type}`);
+      }
+
+      // Return a 200 response to acknowledge receipt of the event
+      res.send({ received: true });
+    } catch (err: any) {
+      console.error(`Error handling webhook event: ${err.message}`);
+      res.status(500).send(`Webhook handler error: ${err.message}`);
+    }
+  });
+}
+
+// Function to handle subscription created or updated events
+async function handleSubscriptionChange(subscription: Stripe.Subscription) {
+  try {
+    // Get the customer ID from the subscription
+    const customerId = subscription.customer as string;
+    
+    // Find the user with this Stripe customer ID
+    const user = await storage.getUserByStripeId(customerId);
+    
+    if (!user) {
+      console.error(`No user found with Stripe customer ID: ${customerId}`);
+      return;
+    }
+    
+    // Determine the plan type based on the subscription
+    let planType = 'FREE';
+    
+    // Get the first subscription item's price ID (assuming one product per subscription)
+    const priceId = subscription.items.data[0]?.price.id;
+    
+    // Map price IDs to plan types
+    // Update these price IDs to match your actual Stripe product price IDs
+    switch (priceId) {
+      case 'price_1RTZenQt7iN2KzepXaYJIwtM': // Example - replace with your actual price ID
+        planType = 'BASIC';
+        break;
+      case 'price_premium': // Example - replace with your actual price ID
+        planType = 'PRO';
+        break;
+      default:
+        // Check subscription status
+        if (subscription.status !== 'active') {
+          planType = 'FREE';
+        }
+    }
+    
+    // Update the user's plan type
+    await storage.updateUser(user.id, { planType });
+    
+    console.log(`Updated user ${user.id} plan to ${planType} based on subscription ${subscription.id}`);
+  } catch (error) {
+    console.error('Error handling subscription change:', error);
+    throw error;
+  }
+}
+
+// Function to handle subscription cancelled events
+async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
+  try {
+    // Get the customer ID from the subscription
+    const customerId = subscription.customer as string;
+    
+    // Find the user with this Stripe customer ID
+    const user = await storage.getUserByStripeId(customerId);
+    
+    if (!user) {
+      console.error(`No user found with Stripe customer ID: ${customerId}`);
+      return;
+    }
+    
+    // Downgrade the user to FREE plan
+    await storage.updateUser(user.id, { planType: 'FREE' });
+    
+    console.log(`Downgraded user ${user.id} to FREE plan due to cancelled subscription ${subscription.id}`);
+  } catch (error) {
+    console.error('Error handling subscription cancellation:', error);
+    throw error;
+  }
 }
 
 // TODO cancel subscription, resume subscription, update subscription, delete subscription

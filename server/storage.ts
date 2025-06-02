@@ -42,6 +42,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByExternalId(externalId: string): Promise<User | undefined>;
+  getUserByStripeId(stripeId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   upsertUser(userData: UpsertUser): Promise<User>;
   updateUser(id: string, userData: Partial<User>): Promise<User | undefined>;
@@ -155,6 +156,7 @@ export class DatabaseStorage implements IStorage {
           password: users.password,
           externalId: users.externalId,
           stripeId: users.stripeId,
+          planType: users.planType,
           avatar: users.avatar,
           firstName: users.firstName,
           lastName: users.lastName,
@@ -196,6 +198,7 @@ export class DatabaseStorage implements IStorage {
           password: users.password,
           externalId: users.externalId,
           stripeId: users.stripeId,
+          planType: users.planType,
           avatar: users.avatar,
           firstName: users.firstName,
           lastName: users.lastName,
@@ -237,6 +240,7 @@ export class DatabaseStorage implements IStorage {
           password: users.password,
           externalId: users.externalId,
           stripeId: users.stripeId,
+          planType: users.planType,
           avatar: users.avatar,
           firstName: users.firstName,
           lastName: users.lastName,
@@ -263,6 +267,48 @@ export class DatabaseStorage implements IStorage {
       return user;
     } catch (error) {
       console.error('Error getting user by external ID:', error);
+      return undefined;
+    }
+  }
+  
+  async getUserByStripeId(stripeId: string): Promise<User | undefined> {
+    try {
+      // Use explicit column selection to match schema
+      const [user] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          password: users.password,
+          externalId: users.externalId,
+          stripeId: users.stripeId,
+          planType: users.planType,
+          avatar: users.avatar,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          bio: users.bio,
+          profileImageUrl: users.profileImageUrl,
+          role: users.role,
+          status: users.status,
+          isOnline: users.isOnline,
+          lastActive: users.lastActive,
+          points: users.points,
+          rank: users.rank,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+          postsCount: users.postsCount,
+          likesCount: users.likesCount,
+          potdCount: users.potdCount,
+          followersCount: users.followersCount,
+          followingCount: users.followingCount,
+          socialLinks: users.socialLinks
+        })
+        .from(users)
+        .where(eq(users.stripeId, stripeId));
+      
+      return user;
+    } catch (error) {
+      console.error('Error getting user by Stripe ID:', error);
       return undefined;
     }
   }
@@ -937,11 +983,8 @@ export class DatabaseStorage implements IStorage {
       if ((error as any)?.code === '57P01') {
         console.log('Attempting to reconnect to database...');
         try {
-          // Import and reconnect using your db configuration
-          const { db: freshDb } = await import('./db');
-          
-          // Retry the query with the fresh connection
-          const threadReplies = await freshDb
+          // Use the existing db instance instead of creating a new one
+          const threadReplies = await db
             .select({
               id: replies.id,
               threadId: replies.threadId,
@@ -959,7 +1002,7 @@ export class DatabaseStorage implements IStorage {
 
           return threadReplies;
         } catch (retryError) {
-          console.error('Failed to reconnect and retry query:', retryError);
+          console.error('Failed to retry query:', retryError);
           return [];
         }
       }

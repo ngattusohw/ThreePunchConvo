@@ -790,12 +790,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const { password, ...userWithoutPassword } = user;
           
           // Get reply media
-          const media = await storage.getMediaByReply(reply.id);
+          // const media = await storage.getMediaByReply(reply.id);
           
           return {
             ...reply,
             user: userWithoutPassword,
-            media: media.length > 0 ? media : undefined
+            // media: media.length > 0 ? media : undefined
           };
         })
       );
@@ -1164,6 +1164,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating user role:', error);
       res.status(500).json({ message: 'Failed to update user role' });
+    }
+  });
+
+  // User plan type update endpoint - Removed manual admin update endpoint since we'll update via Stripe webhook
+
+  // Get user plan type
+  app.get('/api/users/:id/plan', requireAuth(), async (req: any, res: Response) => {
+    try {
+      const userId = req.params.id;
+      
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+      
+      // Get the user to check plan type
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Return just the plan info
+      res.json({
+        userId: user.id,
+        username: user.username,
+        planType: user.planType || 'FREE'
+      });
+    } catch (error) {
+      console.error('Error getting user plan:', error);
+      res.status(500).json({ message: 'Failed to get user plan' });
+    }
+  });
+
+  // Check and update user's plan type based on Stripe subscription status
+  app.post('/api/users/update-plan', requireAuth(), async (req: any, res: Response) => {
+    try {
+      const { clerkUserId, planType } = req.body;
+      
+      if (!clerkUserId || !planType) {
+        return res.status(400).json({ message: 'Clerk user ID and plan type are required' });
+      }
+      
+      // Validate plan type value
+      const validPlanTypes = ['FREE', 'BASIC', 'PRO'];
+      
+      if (!validPlanTypes.includes(planType)) {
+        return res.status(400).json({ 
+          message: 'Invalid plan type value', 
+          validPlanTypes 
+        });
+      }
+      
+      // Get the local user from the Clerk external ID
+      const user = await storage.getUserByExternalId(clerkUserId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Check if plan type needs updating
+      if (user.planType === planType) {
+        return res.json({ 
+          message: 'Plan type already up to date',
+          planType,
+          updated: false
+        });
+      }
+      
+      // Update the user's plan type
+      const updatedUser = await storage.updateUser(user.id, { planType });
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: 'Failed to update user plan type' });
+      }
+      
+      console.log(`Updated user ${user.username} (${user.id}) plan from ${user.planType || 'FREE'} to ${planType}`);
+      
+      // Don't return password in response
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      res.json({
+        message: 'User plan updated successfully',
+        previousPlan: user.planType || 'FREE',
+        newPlan: planType,
+        updated: true,
+        user: userWithoutPassword
+      });
+    } catch (error) {
+      console.error('Error updating user plan:', error);
+      res.status(500).json({ message: 'Failed to update user plan' });
     }
   });
 

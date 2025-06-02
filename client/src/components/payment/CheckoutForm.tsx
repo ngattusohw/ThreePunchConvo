@@ -6,76 +6,16 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@clerk/clerk-react";
 
-const validateEmail = async (email, checkout) => {
-  const updateResult = await checkout.updateEmail(email);
-  const isValid = updateResult.type !== "error";
-
-  return { isValid, message: !isValid ? updateResult.error.message : null };
-}
-
-const EmailInput = ({ email, setEmail, error, setError }) => {
-  const checkout = useCheckout();
-
-  const handleBlur = async () => {
-    if (!email) {
-      return;
-    }
-
-    const { isValid, message } = await validateEmail(email, checkout);
-    if (!isValid) {
-      setError(message);
-    }
-  };
-
-  const handleChange = (e) => {
-    setError(null);
-    setEmail(e.target.value);
-  };
-
-  return (
-    <>
-      <div className="mb-4">
-        <label htmlFor="email-checkout" className="block text-gray-300 mb-2 font-medium">Email</label>
-        <input 
-          type="text" 
-          id="email-checkout" 
-          placeholder={"you@example.com"}
-          value={email}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full focus:outline-none focus:ring-1 focus:ring-ufc-blue"
-        />
-      </div>
-      {error && <div id="email-errors">{error}</div>}
-    </>
-  );
-};
-
 const CheckoutForm = () => {
   const checkout = useCheckout();
   const { toast } = useToast();
   const { user } = useUser();
 
-  const [email, setEmail] = useState(user?.emailAddresses[0]?.emailAddress ? user?.emailAddresses[0]?.emailAddress : '');
-  const [emailError, setEmailError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     setIsLoading(true);
-
-    const { isValid, message } = await validateEmail(email, checkout);
-    if (!isValid) {
-      setEmailError(message);
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive"
-      });
-      setIsLoading(false);
-      return;
-    }
 
     const confirmResult = await checkout.confirm();
 
@@ -98,13 +38,10 @@ const CheckoutForm = () => {
   return (
     <div className="flex flex-col p-6 max-w-md mx-auto">
       <form onSubmit={handleSubmit}>
-        <EmailInput
-          email={email}
-          setEmail={setEmail}
-          error={emailError}
-          setError={setEmailError}
-        />
-        <h4>Payment</h4>
+        <h4 className="text-lg font-semibold mb-4 text-white">Payment</h4>
+        <p className="text-gray-300 mb-4">
+          Your payment is being processed using the email: {user?.emailAddresses[0]?.emailAddress}
+        </p>
         <PaymentElement id="payment-element" />
         <button 
           disabled={isLoading}

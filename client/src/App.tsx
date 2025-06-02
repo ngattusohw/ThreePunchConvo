@@ -19,6 +19,7 @@ import Footer from "@/components/layout/Footer";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { getSubscriptionStatus } from "@/lib/utils";
 import CheckoutForm from "./components/payment/CheckoutForm";
 import { Return } from "./components/payment/Return";
 import { ForumSkeleton } from "./components/skeletons/ForumSkeleton";
@@ -29,6 +30,9 @@ function App() {
   const [localUserChecked, setLocalUserChecked] = useState(false);
   const [isLoadingClientSecret, setIsLoadingClientSecret] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [subscriptions, setSubscriptions] = useState<any[] | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string>("");
+  const [localUser, setLocalUser] = useState<any | null>(null);
   // Add a debug state
   const [debugInfo, setDebugInfo] = useState<{loading: boolean, error: string | null}>({
     loading: true,
@@ -78,6 +82,7 @@ function App() {
             console.log("Found existing local user:", data.user);
           }
           
+          setLocalUser(data.user);
           setLocalUserChecked(true);
         } catch (error) {
           console.error("Error checking/creating user:", error);
@@ -87,6 +92,91 @@ function App() {
     
     checkOrCreateUser();
   }, [isLoaded, isSignedIn, user]);
+
+  // Check for user subscriptions
+  useEffect(() => {
+    const checkUserSubscriptions = async () => {
+      if (localUser?.stripeId) {
+        try {
+          console.log("Checking subscriptions for user with Stripe ID:", localUser.stripeId);
+          const response = await apiRequest("GET", `/get-subscriptions?customerId=${localUser.stripeId}&status=active`);
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch subscriptions: ${response.statusText}`);
+          }
+          
+          const data = await response.json();
+          const subscriptionsData = data.data || [];
+          setSubscriptions(subscriptionsData);
+          
+          // Get subscription status using the utility function
+          const status = getSubscriptionStatus(subscriptionsData);
+          setSubscriptionStatus(status);
+          
+          // Update the user's plan type in the database if needed
+          if (user?.id && status) {
+            // Status will be 'BASIC', 'PRO', or empty string
+            const planType = status || 'FREE';
+            await updateUserPlanType(user.id, planType);
+          }
+          
+          if (data.data && data.data.length > 0) {
+            console.log("User has active subscriptions:", data.data);
+            console.log("Subscription status:", status);
+          } else {
+            console.log("User has no active subscriptions");
+            
+            // If no active subscriptions, downgrade to FREE plan if user is logged in
+            if (user?.id) {
+              await updateUserPlanType(user.id, 'FREE');
+            }
+          }
+        } catch (error) {
+          console.error("Error checking subscriptions:", error);
+        }
+      }
+    };
+    
+    if (localUserChecked && localUser) {
+      checkUserSubscriptions();
+    }
+  }, [localUser, localUserChecked, user?.id]);
+
+  // Function to update user's plan type in the database
+  const updateUserPlanType = async (clerkUserId: string, planType: string) => {
+    try {
+      console.log(`Updating plan type for user ${clerkUserId} to ${planType}`);
+      const response = await apiRequest("POST", '/api/users/update-plan', {
+        clerkUserId,
+        planType
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update plan type: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.updated) {
+        console.log(`Plan type updated from ${data.previousPlan} to ${data.newPlan}`);
+        
+        // Update local user state if the plan changed
+        if (localUser && data.user) {
+          setLocalUser({
+            ...localUser,
+            planType: data.newPlan
+          });
+        }
+      } else {
+        console.log(`Plan type already up to date: ${data.planType}`);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("Error updating plan type:", error);
+      return null;
+    }
+  };
 
   // Fetch client secret only when user is loaded and signed in
   useEffect(() => {

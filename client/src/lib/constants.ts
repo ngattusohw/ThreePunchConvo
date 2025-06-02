@@ -123,3 +123,8 @@ export const MMA_ORGANIZATIONS = {
 
 // ESPN API endpoint for MMA events (would normally be hidden in .env)
 export const ESPN_API_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/mma";
+
+export const SUBSCRIPTION_STATUS = {
+  prod_SOMN2freGOFOzm: "BASIC",
+  TODO: "PRO",
+};

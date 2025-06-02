@@ -3,28 +3,25 @@ import path from 'path';
 
 // Load environment variables from .env file
 const rootDir = process.cwd();
-config({ path: path.resolve(rootDir, ".env") });
+config({ path: path.resolve(rootDir, '.env') });
 
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
-import * as schema from "@shared/schema";
+import { Pool } from 'pg'; // Changed from @neondatabase/serverless
+import { drizzle } from 'drizzle-orm/node-postgres'; // Changed from neon-serverless
+import * as schema from '@shared/schema';
 
-neonConfig.webSocketConstructor = ws;
+// Removed Neon-specific WebSocket config
 
 if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+  throw new Error('DATABASE_URL must be set. Did you forget to provision a database?');
 }
 
-// Configure the connection pool with better defaults for serverless
-export const pool = new Pool({ 
+// Configure the connection pool for standard PostgreSQL
+export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 10, // Maximum number of connections
-  idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
-  connectionTimeoutMillis: 5000, // Timeout after 5 seconds when connecting
-  maxUses: 7500 // Number of times a connection can be used before being closed
+  max: 20, // Can increase for standard Postgres
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+  // Removed maxUses (Neon-specific)
 });
 
 // Add error handler for the pool
@@ -37,7 +34,7 @@ pool.on('connect', (client) => {
   console.log('New database connection established');
 });
 
-export const db = drizzle({ client: pool, schema });
+export const db = drizzle(pool, { schema }); // Different syntax for node-postgres
 
 // Export a function to check and refresh the connection if needed
 export async function ensureConnection() {

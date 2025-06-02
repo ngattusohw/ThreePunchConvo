@@ -3,7 +3,6 @@ import { Switch, Route } from "wouter";
 import {loadStripe} from '@stripe/stripe-js';
 import {
   CheckoutProvider,
-  useCheckout
 } from '@stripe/react-stripe-js';
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
@@ -133,12 +132,22 @@ function App() {
       }
     };
     
-    fetchClientSecret();
+    // Only fetch client secret if user is signed in
+    if (isLoaded && isSignedIn) {
+      fetchClientSecret();
+    } else {
+      // Reset loading state when not signed in
+      setIsLoadingClientSecret(false);
+      setDebugInfo(prev => ({ ...prev, loading: false }));
+    }
   }, [isLoaded, isSignedIn, user?.id, user?.emailAddresses]);
 
   const stripeAppearance = {
     theme: 'night' as const,
   };
+
+  // Determine if we should show loading state
+  const isLoadingApp = isLoadingClientSecret && isSignedIn;
 
   return (
     <div>
@@ -148,53 +157,82 @@ function App() {
           <ErrorBoundary fallback={
             <div className="p-4 bg-red-800 text-white m-4">
               <h2 className="text-xl font-bold">Rendering Error</h2>
-              <p>There was an error rendering the checkout components</p>
+              <p>There was an error rendering the components</p>
               <p className="text-sm mt-2">Client Secret: {clientSecret ? "Available" : "Not available"}</p>
               <p className="text-sm">Loading: {isLoadingClientSecret ? "Yes" : "No"}</p>
             </div>
           }>
-            {/* The key point - make sure checkout provider has valid client secret before rendering */}
-            {clientSecret ? (
-              <CheckoutProvider
-                stripe={stripePromise}
-                options={{
-                  fetchClientSecret: () => {
-                    console.log("fetchClientSecret called", { isLoadingClientSecret, clientSecret });
-                    return Promise.resolve(clientSecret || "");
-                  },
-                  elementsOptions: { appearance: stripeAppearance },
-                }}
-              > 
-                <Switch>
-                  <Route path="/checkout" component={CheckoutForm} />
-                  <Route path="/return" component={Return} />
-                  <Route path="/" component={Home} />
-                  <Route path="/forum" component={Forum} />
-                  <Route path="/auth" component={AuthPage} />
-                  <Route path="/login" component={AuthPage} />
-                  <Route path="/register" component={AuthPage} />
-                  <Route path="/schedule" component={Schedule} />
-                  <Route path="/rankings" component={Rankings} />
-                  {/* Protected Routes */}
-                  <ProtectedRoute path="/forum" component={Forum} />
-                  <ProtectedRoute path="/forum/:categoryId" component={Forum} />
-                  <ProtectedRoute path="/thread/:threadId" component={Thread} />
-                  <ProtectedRoute path="/user/:username" component={UserProfile} />
-                  <Route component={NotFound} />
-                </Switch>
-              </CheckoutProvider>
+            {isLoadingApp ? (
+              <ForumSkeleton />
             ) : (
-              <>
-                <ForumSkeleton />
-                {debugInfo.error && (
-                  <div className="container mx-auto px-4 mt-4">
-                    <div className="bg-red-800 text-white p-4 rounded-lg">
-                      <h2 className="text-xl font-bold mb-2">Error Loading</h2>
-                      <p>{debugInfo.error}</p>
+              <Switch>
+                {/* Public Routes - Always accessible */}
+                <Route path="/" component={Home} />
+                <Route path="/forum" component={Forum} />
+                <Route path="/auth" component={AuthPage} />
+                <Route path="/login" component={AuthPage} />
+                <Route path="/register" component={AuthPage} />
+                <Route path="/schedule" component={Schedule} />
+                <Route path="/rankings" component={Rankings} />
+                
+                {/* Protected Routes - Need auth but not checkout */}
+                <ProtectedRoute path="/forum/:categoryId" component={Forum} />
+                <ProtectedRoute path="/thread/:threadId" component={Thread} />
+                <ProtectedRoute path="/user/:username" component={UserProfile} />
+                
+                {/* Checkout Routes - Need auth AND checkout provider */}
+                {isSignedIn && clientSecret ? (
+                  <>
+                    <Route path="/checkout">
+                      <CheckoutProvider
+                        stripe={stripePromise}
+                        options={{
+                          fetchClientSecret: () => {
+                            console.log("fetchClientSecret called", { isLoadingClientSecret, clientSecret });
+                            return Promise.resolve(clientSecret || "");
+                          },
+                          elementsOptions: { appearance: stripeAppearance },
+                        }}
+                      >
+                        <CheckoutForm />
+                      </CheckoutProvider>
+                    </Route>
+                    <Route path="/return">
+                      <CheckoutProvider
+                        stripe={stripePromise}
+                        options={{
+                          fetchClientSecret: () => {
+                            return Promise.resolve(clientSecret || "");
+                          },
+                          elementsOptions: { appearance: stripeAppearance },
+                        }}
+                      >
+                        <Return />
+                      </CheckoutProvider>
+                    </Route>
+                  </>
+                ) : isSignedIn && debugInfo.error ? (
+                  <Route path={["/checkout", "/return"]}>
+                    <div className="container mx-auto px-4 mt-4">
+                      <div className="bg-red-800 text-white p-4 rounded-lg">
+                        <h2 className="text-xl font-bold mb-2">Payment Setup Error</h2>
+                        <p>{debugInfo.error}</p>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </>
+                  </Route>
+                ) : null}
+                
+                {/* 404 Route */}
+                <Route component={NotFound} />
+              </Switch>
+            )}
+            {!isLoadingApp && debugInfo.error && !isSignedIn && (
+              <div className="container mx-auto px-4 mt-4">
+                <div className="bg-yellow-800 text-white p-4 rounded-lg">
+                  <h2 className="text-xl font-bold mb-2">Payment Features Unavailable</h2>
+                  <p>Please sign in to access checkout features.</p>
+                </div>
+              </div>
             )}
           </ErrorBoundary>
         </main>

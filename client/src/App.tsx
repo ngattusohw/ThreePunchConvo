@@ -22,6 +22,7 @@ import { useUser, useAuth } from "@clerk/clerk-react";
 import { queryClient } from "@/lib/queryClient";
 import CheckoutForm from "./components/payment/CheckoutForm";
 import { Return } from "./components/payment/Return";
+import { ForumSkeleton } from "./components/skeletons/ForumSkeleton";
 
 function App() {
   const { isSignedIn, user, isLoaded } = useUser();
@@ -183,14 +184,17 @@ function App() {
                 </Switch>
               </CheckoutProvider>
             ) : (
-              <div className="p-4 bg-yellow-600 text-white m-4">
-                <h2 className="text-xl font-bold">Loading</h2>
+              <>
+                <ForumSkeleton />
                 {debugInfo.error && (
-                  <div className="mt-2 text-white bg-red-800 p-2 rounded">
-                    Error: {debugInfo.error}
+                  <div className="container mx-auto px-4 mt-4">
+                    <div className="bg-red-800 text-white p-4 rounded-lg">
+                      <h2 className="text-xl font-bold mb-2">Error Loading</h2>
+                      <p>{debugInfo.error}</p>
+                    </div>
                   </div>
                 )}
-              </div>
+              </>
             )}
           </ErrorBoundary>
         </main>

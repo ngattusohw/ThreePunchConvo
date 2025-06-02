@@ -1,12 +1,12 @@
-import React, { useEffect, useState, useMemo, ErrorInfo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Switch, Route } from "wouter";
 import {loadStripe} from '@stripe/stripe-js';
 import {
   CheckoutProvider,
-  PaymentElement,
   useCheckout
 } from '@stripe/react-stripe-js';
 import { Toaster } from "@/components/ui/toaster";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import Home from "@/pages/Home";
 import Forum from "@/pages/Forum";
 import Schedule from "@/pages/Schedule";
@@ -22,63 +22,6 @@ import { useUser, useAuth } from "@clerk/clerk-react";
 import { queryClient } from "@/lib/queryClient";
 import CheckoutForm from "./components/payment/CheckoutForm";
 import { Return } from "./components/payment/Return";
-import DebugPanel from "./components/payment/DebugPanel";
-
-// Simple error boundary component
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode, fallback?: React.ReactNode },
-  { hasError: boolean, error: Error | null }
-> {
-  constructor(props: { children: React.ReactNode, fallback?: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("React Error Boundary caught an error:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return this.props.fallback || (
-        <div className="p-4 bg-red-900 text-white">
-          <h2>Something went wrong</h2>
-          <p>{this.state.error?.message}</p>
-          <button onClick={() => this.setState({ hasError: false })} className="px-2 py-1 bg-white text-red-900 mt-2">
-            Try again
-          </button>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-// Simple display component to test if checkout provider is working
-const StripeChecker = () => {
-  try {
-    // Try to access the checkout context
-    const checkout = useCheckout();
-    console.log("Checkout context available:", checkout);
-    return (
-      <div className="bg-green-700 text-white p-2 m-2 rounded">
-        Stripe checkout is working
-      </div>
-    );
-  } catch (error) {
-    console.error("Error accessing checkout context:", error);
-    return (
-      <div className="bg-red-700 text-white p-2 m-2 rounded">
-        Stripe checkout error: {error.message}
-      </div>
-    );
-  }
-};
 
 function App() {
   const { isSignedIn, user, isLoaded } = useUser();
@@ -196,14 +139,6 @@ function App() {
     theme: 'night' as const,
   };
 
-  console.log("App render state:", { 
-    isLoaded, 
-    isSignedIn, 
-    hasClientSecret: !!clientSecret,
-    isLoadingClientSecret,
-    debugInfo
-  });
-
   return (
     <div>
       <div className="flex flex-col min-h-screen bg-ufc-black text-light-gray">
@@ -228,10 +163,7 @@ function App() {
                   },
                   elementsOptions: { appearance: stripeAppearance },
                 }}
-              >
-                {/* Test component to verify checkout context */}
-                <StripeChecker />
-                
+              > 
                 <Switch>
                   <Route path="/checkout" component={CheckoutForm} />
                   <Route path="/return" component={Return} />
@@ -252,8 +184,7 @@ function App() {
               </CheckoutProvider>
             ) : (
               <div className="p-4 bg-yellow-600 text-white m-4">
-                <h2 className="text-xl font-bold">Loading Checkout</h2>
-                <p>Waiting for checkout information to load...</p>
+                <h2 className="text-xl font-bold">Loading</h2>
                 {debugInfo.error && (
                   <div className="mt-2 text-white bg-red-800 p-2 rounded">
                     Error: {debugInfo.error}
@@ -266,15 +197,6 @@ function App() {
         <Footer />
       </div>
       <Toaster />
-      {/* Debug panel */}
-      <DebugPanel 
-        clientSecret={clientSecret}
-        isLoadingClientSecret={isLoadingClientSecret}
-        isLoaded={isLoaded}
-        isSignedIn={isSignedIn}
-        userId={userId}
-        error={debugInfo.error}
-      />
     </div>
   );
 }

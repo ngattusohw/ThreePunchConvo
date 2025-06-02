@@ -54,14 +54,8 @@ export default function Thread() {
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to like posts");
       
-      const response = await fetch(`/api/threads/${threadId}/like`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id
-        })
+      const response = await apiRequest("POST", `/api/threads/${threadId}/like`, {
+        userId: currentUser.id
       });
       
       if (!response.ok) {
@@ -93,14 +87,8 @@ export default function Thread() {
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to dislike posts");
       
-      const response = await fetch(`/api/threads/${threadId}/dislike`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id
-        })
+      const response = await apiRequest("POST", `/api/threads/${threadId}/dislike`, {
+        userId: currentUser.id
       });
       
       if (!response.ok) {
@@ -131,14 +119,8 @@ export default function Thread() {
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to vote for POTD");
       
-      const response = await fetch(`/api/threads/${threadId}/potd`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id
-        })
+      const response = await apiRequest("POST", `/api/threads/${threadId}/potd`, {
+        userId: currentUser.id
       });
       
       if (!response.ok) {
@@ -206,14 +188,8 @@ export default function Thread() {
     mutationFn: async (replyId: number) => {
       if (!currentUser) throw new Error("You must be logged in to like replies");
       
-      const response = await fetch(`/api/replies/${replyId}/like`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id
-        })
+      const response = await apiRequest("POST", `/api/replies/${replyId}/like`, {
+        userId: currentUser.id
       });
       
       if (!response.ok) {
@@ -240,14 +216,8 @@ export default function Thread() {
     mutationFn: async (replyId: number) => {
       if (!currentUser) throw new Error("You must be logged in to dislike replies");
       
-      const response = await fetch(`/api/replies/${replyId}/dislike`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id
-        })
+      const response = await apiRequest("POST", `/api/replies/${replyId}/dislike`, {
+        userId: currentUser.id
       });
       
       if (!response.ok) {
@@ -289,20 +259,13 @@ export default function Thread() {
       
       try {
         // First, ensure the user exists in the backend database
-        // This is important because the backend expects a registered user
         console.log("Checking if user exists in backend database");
-        const userCheckResponse = await fetch(`/api/users/clerk/${currentUser.id}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            firstName: currentUser.firstName,
-            lastName: currentUser.lastName,
-            email: currentUser.emailAddresses?.[0]?.emailAddress,
-            profileImageUrl: currentUser.imageUrl,
-            username: currentUser.username
-          })
+        const userCheckResponse = await apiRequest("POST", `/api/users/clerk/${currentUser.id}`, {
+          firstName: currentUser.firstName,
+          lastName: currentUser.lastName,
+          email: currentUser.emailAddresses?.[0]?.emailAddress,
+          profileImageUrl: currentUser.imageUrl,
+          username: currentUser.username
         });
         
         if (!userCheckResponse.ok) {
@@ -313,14 +276,8 @@ export default function Thread() {
         console.log("User check result:", userData);
         
         // Now that we've ensured the user exists, we can proceed with voting
-        const response = await fetch(`/api/threads/${threadId}/poll/${optionId}/vote`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: currentUser.id
-          })
+        const response = await apiRequest("POST", `/api/threads/${threadId}/poll/${optionId}/vote`, {
+          userId: currentUser.id
         });
         
         // If there's an error, try to get detailed error information
@@ -368,15 +325,9 @@ export default function Thread() {
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to delete this thread");
       
-      const response = await fetch(`/api/threads/${threadId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id,
-          role: currentUser.publicMetadata?.role
-        })
+      const response = await apiRequest("DELETE", `/api/threads/${threadId}`, {
+        userId: currentUser.id,
+        role: currentUser.publicMetadata?.role
       });
       
       if (!response.ok) {
@@ -408,15 +359,9 @@ export default function Thread() {
     mutationFn: async (replyId: string) => {
       if (!currentUser) throw new Error("You must be logged in to delete this reply");
       
-      const response = await fetch(`/api/replies/${replyId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id,
-          role: currentUser.publicMetadata?.role
-        })
+      const response = await apiRequest("DELETE", `/api/replies/${replyId}`, {
+        userId: currentUser.id,
+        role: currentUser.publicMetadata?.role
       });
       
       if (!response.ok) {

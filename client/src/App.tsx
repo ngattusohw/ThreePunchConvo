@@ -18,7 +18,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { useUser, useAuth } from "@clerk/clerk-react";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import CheckoutForm from "./components/payment/CheckoutForm";
 import { Return } from "./components/payment/Return";
 import { ForumSkeleton } from "./components/skeletons/ForumSkeleton";
@@ -58,19 +58,18 @@ function App() {
 
         try {
           // Check if user exists in our database, creates one if not
-          const response = await fetch(`/api/users/clerk/${user?.id}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              firstName: user?.firstName,
-              lastName: user?.lastName,
-              email: user?.emailAddresses[0]?.emailAddress,
-              profileImageUrl: user?.imageUrl,
-              username: user?.username
-            })
+          const response = await apiRequest("POST", `/api/users/clerk/${user?.id}`, {
+            firstName: user?.firstName,
+            lastName: user?.lastName,
+            email: user?.emailAddresses[0]?.emailAddress,
+            profileImageUrl: user?.imageUrl,
+            username: user?.username
           });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to check/create user: ${response.statusText}`);
+          }
+          
           const data = await response.json();
           
           if (data.created) {
@@ -97,15 +96,9 @@ function App() {
         console.log("Fetching client secret");
         
         try {
-          const response = await fetch('/create-checkout-session', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: user.emailAddresses[0].emailAddress,
-              clerkUserId: user.id
-            })
+          const response = await apiRequest("POST", '/create-checkout-session', {
+            email: user.emailAddresses[0].emailAddress,
+            clerkUserId: user.id
           });
           
           if (!response.ok) {

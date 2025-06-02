@@ -27,8 +27,8 @@ flowchart TD
 
     subgraph "🔄 Data Flow"
         API[REST API<br/>Express Routes]
-        ClerkMiddleware[Clerk Middleware<br/>requireAuth()]
-        LocalUser[Local User Mapping<br/>Clerk → Local DB]
+        ClerkMiddleware[Clerk Middleware<br/>requireAuth]
+        LocalUser[Local User Mapping<br/>Clerk to Local DB]
     end
 
     subgraph "🖥️ Server Layer"
@@ -38,26 +38,26 @@ flowchart TD
         ESPN[ESPN API<br/>MMA Event Data]
     end
 
-    subgraph "📊 Forum Entities & Relationships"
-        User[👤 User<br/>username, role, status, points]
-        Thread[🧵 Thread<br/>title, content, category]
-        Reply[💬 Reply<br/>content, nested replies]
-        Poll[📊 Poll<br/>question, options, votes]
-        Media[🖼️ Media<br/>images, GIFs]
-        Reaction[⭐ Reactions<br/>likes, dislikes, POTD]
-        Notification[🔔 Notification<br/>mentions, follows, likes]
-        Category[📁 Category<br/>general, UFC, etc.]
+    subgraph "📊 Forum Entities"
+        User[User<br/>username, role, status, points]
+        Thread[Thread<br/>title, content, category]
+        Reply[Reply<br/>content, nested replies]
+        Poll[Poll<br/>question, options, votes]
+        Media[Media<br/>images, GIFs]
+        Reaction[Reactions<br/>likes, dislikes, POTD]
+        Notification[Notification<br/>mentions, follows, likes]
+        Category[Category<br/>general, UFC, etc]
     end
 
     subgraph "🥊 MMA Integration"
-        MMAEvent[🎪 MMA Event<br/>date, venue, organization]
-        Fighter[🥊 Fighter<br/>name, record, image]
-        Fight[⚔️ Fight<br/>fighter matchups]
+        MMAEvent[MMA Event<br/>date, venue, organization]
+        Fighter[Fighter<br/>name, record, image]
+        Fight[Fight<br/>fighter matchups]
     end
 
     subgraph "👥 Social Features"
-        Follow[👥 Follow<br/>user relationships]
-        UserRank[🏆 User Rankings<br/>points, status tiers]
+        Follow[Follow<br/>user relationships]
+        UserRank[User Rankings<br/>points, status tiers]
     end
 
     %% Authentication Flow

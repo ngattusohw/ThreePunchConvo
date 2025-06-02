@@ -170,16 +170,10 @@ export default function Thread() {
       if (!currentUser) throw new Error("You must be logged in to reply");
       if (!replyContent.trim()) throw new Error("Reply cannot be empty");
       
-      const response = await fetch(`/api/threads/${threadId}/replies`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id,
-          content: replyContent,
-          parentReplyId: replyingTo?.id
-        })
+      const response = await apiRequest("POST", `/api/threads/${threadId}/replies`, {
+        userId: currentUser.id,
+        content: replyContent,
+        parentReplyId: replyingTo?.id
       });
       
       if (!response.ok) {
@@ -780,7 +774,7 @@ export default function Thread() {
         </div>
         
         {/* Right Sidebar */}
-        <div className="hidden lg:block w-80 flex-shrink-0 mt-16">
+        <div className="hidden lg:block w-80 flex-shrink-0 mt-9">
           <div className="bg-dark-gray rounded-lg p-4 sticky top-20">
             <h3 className="text-lg font-bold text-white mb-4">Thread Info</h3>
             

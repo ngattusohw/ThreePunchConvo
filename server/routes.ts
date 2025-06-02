@@ -813,9 +813,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!threadId) {
         return res.status(400).json({ message: 'Invalid thread ID' });
       }
+      // Get the Clerk user ID from the request body
+      const clerkUserId = req.body.userId;
+
+      if (!clerkUserId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
       
-      // Use our local user ID
-      if (req.localUser) {
+      console.log("Using Clerk user ID from request body:", clerkUserId);
+      
+      // Get the local user from the Clerk external ID
+      const localUser = await storage.getUserByExternalId(clerkUserId);
+      if (localUser) {
         req.body.userId = req.localUser.id;
       }
       

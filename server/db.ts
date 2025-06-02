@@ -4,8 +4,9 @@ import path from 'path';
 // Load environment variables from .env file
 const rootDir = process.cwd();
 config({ path: path.resolve(rootDir, '.env') });
-
-import { Pool } from 'pg'; // Changed from @neondatabase/serverless
+import pkg from 'pg';
+const { Pool } = pkg;
+// import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres'; // Changed from neon-serverless
 import * as schema from '@shared/schema';
 

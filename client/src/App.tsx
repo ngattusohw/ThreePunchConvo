@@ -1,8 +1,10 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, ErrorInfo } from "react";
 import { Switch, Route } from "wouter";
 import {loadStripe} from '@stripe/stripe-js';
 import {
-  CheckoutProvider
+  CheckoutProvider,
+  PaymentElement,
+  useCheckout
 } from '@stripe/react-stripe-js';
 import { Toaster } from "@/components/ui/toaster";
 import Home from "@/pages/Home";
@@ -20,15 +22,81 @@ import { useUser, useAuth } from "@clerk/clerk-react";
 import { queryClient } from "@/lib/queryClient";
 import CheckoutForm from "./components/payment/CheckoutForm";
 import { Return } from "./components/payment/Return";
+import DebugPanel from "./components/payment/DebugPanel";
+
+// Simple error boundary component
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode, fallback?: React.ReactNode },
+  { hasError: boolean, error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode, fallback?: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("React Error Boundary caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="p-4 bg-red-900 text-white">
+          <h2>Something went wrong</h2>
+          <p>{this.state.error?.message}</p>
+          <button onClick={() => this.setState({ hasError: false })} className="px-2 py-1 bg-white text-red-900 mt-2">
+            Try again
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// Simple display component to test if checkout provider is working
+const StripeChecker = () => {
+  try {
+    // Try to access the checkout context
+    const checkout = useCheckout();
+    console.log("Checkout context available:", checkout);
+    return (
+      <div className="bg-green-700 text-white p-2 m-2 rounded">
+        Stripe checkout is working
+      </div>
+    );
+  } catch (error) {
+    console.error("Error accessing checkout context:", error);
+    return (
+      <div className="bg-red-700 text-white p-2 m-2 rounded">
+        Stripe checkout error: {error.message}
+      </div>
+    );
+  }
+};
+
 function App() {
   const { isSignedIn, user, isLoaded } = useUser();
   const { userId } = useAuth();
   const [localUserChecked, setLocalUserChecked] = useState(false);
   const [isLoadingClientSecret, setIsLoadingClientSecret] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  // Add a debug state
+  const [debugInfo, setDebugInfo] = useState<{loading: boolean, error: string | null}>({
+    loading: true,
+    error: null
+  });
 
   // TODO test key
-  const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+  const stripePromise = useMemo(() => 
+    loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ''),
+    [] // Only create once
+  );
 
   // Clear React Query cache when auth state changes (on logout)
   useEffect(() => {
@@ -97,11 +165,24 @@ function App() {
             })
           });
           
+          if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}`);
+          }
+          
           const data = await response.json();
+          console.log("Received client secret:", data.clientSecret ? "Valid secret" : "No secret");
+          if (!data.clientSecret) {
+            throw new Error("No client secret received from server");
+          }
           setClientSecret(data.clientSecret);
+          setDebugInfo(prev => ({ ...prev, loading: false }));
         } catch (err) {
           console.error("Error fetching client secret:", err);
           setClientSecret(null);
+          setDebugInfo(prev => ({ 
+            loading: false, 
+            error: err instanceof Error ? err.message : String(err) 
+          }));
         } finally {
           setIsLoadingClientSecret(false);
         }
@@ -115,43 +196,85 @@ function App() {
     theme: 'night' as const,
   };
 
+  console.log("App render state:", { 
+    isLoaded, 
+    isSignedIn, 
+    hasClientSecret: !!clientSecret,
+    isLoadingClientSecret,
+    debugInfo
+  });
+
   return (
     <div>
       <div className="flex flex-col min-h-screen bg-ufc-black text-light-gray">
         <Header />
         <main className="flex-grow">
-          <CheckoutProvider
-            stripe={stripePromise}
-            options={{
-              fetchClientSecret: () => 
-                isLoadingClientSecret || !clientSecret
-                  ? Promise.resolve(null)
-                  : Promise.resolve(clientSecret),
-              elementsOptions: { appearance: stripeAppearance },
-            }}
-          >
-            <Switch>
-              <Route path="/checkout" component={CheckoutForm} />
-              <Route path="/return" component={Return} />
-              <Route path="/" component={Home} />
-              <Route path="/forum" component={Forum} />
-              <Route path="/auth" component={AuthPage} />
-              <Route path="/login" component={AuthPage} />
-              <Route path="/register" component={AuthPage} />
-              <Route path="/schedule" component={Schedule} />
-              <Route path="/rankings" component={Rankings} />
-              {/* Protected Routes */}
-              <ProtectedRoute path="/forum" component={Forum} />
-              <ProtectedRoute path="/forum/:categoryId" component={Forum} />
-              <ProtectedRoute path="/thread/:threadId" component={Thread} />
-              <ProtectedRoute path="/user/:username" component={UserProfile} />
-              <Route component={NotFound} />
-            </Switch>
-          </CheckoutProvider>
+          <ErrorBoundary fallback={
+            <div className="p-4 bg-red-800 text-white m-4">
+              <h2 className="text-xl font-bold">Rendering Error</h2>
+              <p>There was an error rendering the checkout components</p>
+              <p className="text-sm mt-2">Client Secret: {clientSecret ? "Available" : "Not available"}</p>
+              <p className="text-sm">Loading: {isLoadingClientSecret ? "Yes" : "No"}</p>
+            </div>
+          }>
+            {/* The key point - make sure checkout provider has valid client secret before rendering */}
+            {clientSecret ? (
+              <CheckoutProvider
+                stripe={stripePromise}
+                options={{
+                  fetchClientSecret: () => {
+                    console.log("fetchClientSecret called", { isLoadingClientSecret, clientSecret });
+                    return Promise.resolve(clientSecret || "");
+                  },
+                  elementsOptions: { appearance: stripeAppearance },
+                }}
+              >
+                {/* Test component to verify checkout context */}
+                <StripeChecker />
+                
+                <Switch>
+                  <Route path="/checkout" component={CheckoutForm} />
+                  <Route path="/return" component={Return} />
+                  <Route path="/" component={Home} />
+                  <Route path="/forum" component={Forum} />
+                  <Route path="/auth" component={AuthPage} />
+                  <Route path="/login" component={AuthPage} />
+                  <Route path="/register" component={AuthPage} />
+                  <Route path="/schedule" component={Schedule} />
+                  <Route path="/rankings" component={Rankings} />
+                  {/* Protected Routes */}
+                  <ProtectedRoute path="/forum" component={Forum} />
+                  <ProtectedRoute path="/forum/:categoryId" component={Forum} />
+                  <ProtectedRoute path="/thread/:threadId" component={Thread} />
+                  <ProtectedRoute path="/user/:username" component={UserProfile} />
+                  <Route component={NotFound} />
+                </Switch>
+              </CheckoutProvider>
+            ) : (
+              <div className="p-4 bg-yellow-600 text-white m-4">
+                <h2 className="text-xl font-bold">Loading Checkout</h2>
+                <p>Waiting for checkout information to load...</p>
+                {debugInfo.error && (
+                  <div className="mt-2 text-white bg-red-800 p-2 rounded">
+                    Error: {debugInfo.error}
+                  </div>
+                )}
+              </div>
+            )}
+          </ErrorBoundary>
         </main>
         <Footer />
       </div>
       <Toaster />
+      {/* Debug panel */}
+      <DebugPanel 
+        clientSecret={clientSecret}
+        isLoadingClientSecret={isLoadingClientSecret}
+        isLoaded={isLoaded}
+        isSignedIn={isSignedIn}
+        userId={userId}
+        error={debugInfo.error}
+      />
     </div>
   );
 }

@@ -1,182 +1,248 @@
-# Three Punch Convo
+# ThreePunchConvo Architecture
 
-## Architecture
+## Overview
+
+**ThreePunchConvo** is a specialized **MMA (Mixed Martial Arts) forum platform** built for fight discussion, polls, media sharing, and community engagement. Built with React SPA, Express.js API, PostgreSQL database, and **Clerk authentication**.
+
+## Key Implementation Details
+
+### 🏗️ Architecture Pattern
+
+- **Client**: Single Page Application (React + Vite)
+- **Server**: Express.js REST API (NO SSR - fully client-rendered)
+- **Database**: **PostgreSQL with Drizzle ORM** (properly implemented)
+- **Authentication**: **Clerk** for external auth + local user management
+- **File Storage**: **AWS S3** for images/media
+- **State Management**: React Query for server state
+
+### 🥊 Core Business Domain - MMA Forum
 
 ```mermaid
+flowchart TD
+    subgraph "🌐 Client Layer (SPA)"
+        UI[React Components<br/>Forum UI]
+        RQ[React Query<br/>Server State]
+        Auth[Clerk Auth<br/>User Authentication]
+    end
 
-graph TB
-%% Root Configuration
-subgraph "🏗️ Root Configuration"
-PKG[package.json<br/>Dependencies & Scripts]
-TS[tsconfig.json<br/>TypeScript Config]
-VITE[vite.config.ts<br/>Build Config]
-DRIZZLE[drizzle.config.ts<br/>Database Config]
-TAILWIND[tailwind.config.ts<br/>Styling Config]
-end
+    subgraph "🔄 Data Flow"
+        API[REST API<br/>Express Routes]
+        ClerkMiddleware[Clerk Middleware<br/>requireAuth()]
+        LocalUser[Local User Mapping<br/>Clerk → Local DB]
+    end
 
-%% Shared Layer
-subgraph "🔄 Shared Layer"
-SCHEMA[schema.ts<br/>Database Schema<br/>Zod Validation]
+    subgraph "🖥️ Server Layer"
+        Routes[Express Routes<br/>Forum APIs]
+        Storage[DatabaseStorage<br/>PostgreSQL + Drizzle]
+        S3[AWS S3<br/>Image Storage]
+        ESPN[ESPN API<br/>MMA Event Data]
+    end
 
-subgraph "📊 Database Entities"
-USERS[users<br/>id, username, email, password]
-EVENTS[events<br/>id, title, description, date, location]
-PRODUCTS[products<br/>id, name, price, category, sizes]
-NEWSLETTERS[newsletters<br/>id, email, createdAt]
-CONTACTS[contacts<br/>id, name, email, subject, message]
-CARTS[carts<br/>id, userId, sessionId]
-CART_ITEMS[cartItems<br/>id, cartId, productId, quantity, size]
-DONATIONS[donations<br/>id, name, email, amount, status]
-end
-end
+    subgraph "📊 Forum Entities & Relationships"
+        User[👤 User<br/>username, role, status, points]
+        Thread[🧵 Thread<br/>title, content, category]
+        Reply[💬 Reply<br/>content, nested replies]
+        Poll[📊 Poll<br/>question, options, votes]
+        Media[🖼️ Media<br/>images, GIFs]
+        Reaction[⭐ Reactions<br/>likes, dislikes, POTD]
+        Notification[🔔 Notification<br/>mentions, follows, likes]
+        Category[📁 Category<br/>general, UFC, etc.]
+    end
 
-%% Server Layer
-subgraph "🖥️ Server Layer"
-SERVER_INDEX[index.ts<br/>Express Server Setup]
-ROUTES[routes.ts<br/>API Endpoints]
-STORAGE[storage.ts<br/>Data Access Layer]
-VITE_SERVER[vite.ts<br/>Development Server]
+    subgraph "🥊 MMA Integration"
+        MMAEvent[🎪 MMA Event<br/>date, venue, organization]
+        Fighter[🥊 Fighter<br/>name, record, image]
+        Fight[⚔️ Fight<br/>fighter matchups]
+    end
 
-subgraph "🛣️ API Endpoints"
-API_EVENTS[GET/POST /api/events]
-API_PRODUCTS[GET /api/products]
-API_GALLERY[GET /api/gallery]
-API_NEWSLETTER[POST /api/newsletter]
-API_CONTACT[POST /api/contact]
-API_CART[GET/POST /api/cart]
-API_PAYMENT[POST /api/create-payment-intent]
-end
-end
+    subgraph "👥 Social Features"
+        Follow[👥 Follow<br/>user relationships]
+        UserRank[🏆 User Rankings<br/>points, status tiers]
+    end
 
-%% Client Layer
-subgraph "💻 Client Layer"
-CLIENT_INDEX[index.html<br/>Entry Point]
-MAIN[main.tsx<br/>React Entry]
-APP[App.tsx<br/>Router & Layout]
+    %% Authentication Flow
+    UI --> Auth
+    Auth --> ClerkMiddleware
+    ClerkMiddleware --> LocalUser
+    LocalUser --> Routes
 
-subgraph "📄 Pages"
-HOME[Home.tsx]
-ABOUT[About.tsx]
-EVENTS_PAGE[Events.tsx]
-GALLERY_PAGE[Gallery.tsx]
-STORE_PAGE[Store.tsx]
-PRODUCT_PAGE[Product.tsx]
-DONATE_PAGE[Donate.tsx]
-CONTACT_PAGE[Contact.tsx]
-CHECKOUT_PAGE[Checkout.tsx]
-LINKS_PAGE[Links.tsx]
-NOT_FOUND[not-found.tsx]
-end
+    %% Data Flow
+    UI --> RQ
+    RQ --> API
+    API --> Routes
+    Routes --> Storage
 
-subgraph "🧩 Components"
-LAYOUT[layout/<br/>Layout Components]
-UI[ui/<br/>Reusable UI Components]
-STORE_COMP[store/<br/>Store Components]
-GALLERY_COMP[gallery/<br/>Gallery Components]
-HOME_COMP[home/<br/>Home Components]
-CONTACT_COMP[contact/<br/>Contact Components]
-DONATE_COMP[donate/<br/>Donate Components]
-SVG[svg/<br/>SVG Icons]
-end
+    %% External Services
+    Routes --> S3
+    Routes --> ESPN
 
-subgraph "🔧 Client Utils"
-HOOKS[hooks/<br/>Custom Hooks]
-LIB[lib/<br/>Utilities]
-QUERY_CLIENT[queryClient.ts<br/>React Query Config]
-CONSTANTS[constants.ts<br/>App Constants]
-UTILS[utils.ts<br/>Helper Functions]
-TYPES[types/<br/>TypeScript Types]
-DATA[data/<br/>Static Data]
-end
-end
+    %% Entity Relationships
+    User -.->|1:n| Thread
+    User -.->|1:n| Reply
+    User -.->|1:n| Follow
+    Thread -.->|1:n| Reply
+    Thread -.->|1:1| Poll
+    Thread -.->|1:n| Media
+    Thread -.->|1:n| Reaction
+    Reply -.->|1:n| Reaction
+    Poll -.->|1:n| PollOption[Poll Options]
+    Category -.->|1:n| Thread
+    MMAEvent -.->|1:n| Fight
+    Fighter -.->|1:n| Fight
+    User -.->|1:n| Notification
 
-%% Dependencies & Data Flow
-SCHEMA --> ROUTES
-SCHEMA --> STORAGE
-ROUTES --> STORAGE
-SERVER_INDEX --> ROUTES
-SERVER_INDEX --> VITE_SERVER
+    classDef client fill:#e3f2fd,stroke:#1976d2
+    classDef server fill:#e8f5e8,stroke:#388e3c
+    classDef entity fill:#fff3e0,stroke:#f57c00
+    classDef mma fill:#f3e5f5,stroke:#7b1fa2
+    classDef social fill:#e8f5e8,stroke:#388e3c
+    classDef external fill:#ffebee,stroke:#d32f2f
 
-%% Database Relations
-USERS -.->|1:n| CARTS
-CARTS -.->|1:n| CART_ITEMS
-PRODUCTS -.->|1:n| CART_ITEMS
-PRODUCTS -.->|self-reference| PRODUCTS
-
-%% API to Database Entity Mapping
-API_EVENTS --> EVENTS
-API_PRODUCTS --> PRODUCTS
-API_NEWSLETTER --> NEWSLETTERS
-API_CONTACT --> CONTACTS
-API_CART --> CARTS
-API_CART --> CART_ITEMS
-API_PAYMENT --> DONATIONS
-
-%% Client to Server Communication
-QUERY_CLIENT --> API_EVENTS
-QUERY_CLIENT --> API_PRODUCTS
-QUERY_CLIENT --> API_GALLERY
-QUERY_CLIENT --> API_NEWSLETTER
-QUERY_CLIENT --> API_CONTACT
-QUERY_CLIENT --> API_CART
-QUERY_CLIENT --> API_PAYMENT
-
-%% Page to Component Relationships
-APP --> HOME
-APP --> ABOUT
-APP --> EVENTS_PAGE
-APP --> GALLERY_PAGE
-APP --> STORE_PAGE
-APP --> PRODUCT_PAGE
-APP --> DONATE_PAGE
-APP --> CONTACT_PAGE
-APP --> CHECKOUT_PAGE
-APP --> LINKS_PAGE
-APP --> NOT_FOUND
-
-%% Component Dependencies
-HOME --> HOME_COMP
-EVENTS_PAGE --> UI
-GALLERY_PAGE --> GALLERY_COMP
-STORE_PAGE --> STORE_COMP
-STORE_PAGE --> UI
-PRODUCT_PAGE --> STORE_COMP
-DONATE_PAGE --> DONATE_COMP
-CONTACT_PAGE --> CONTACT_COMP
-
-%% Client Utils Dependencies
-APP --> LAYOUT
-HOME --> QUERY_CLIENT
-EVENTS_PAGE --> QUERY_CLIENT
-GALLERY_PAGE --> QUERY_CLIENT
-STORE_PAGE --> QUERY_CLIENT
-PRODUCT_PAGE --> QUERY_CLIENT
-DONATE_PAGE --> QUERY_CLIENT
-CONTACT_PAGE --> QUERY_CLIENT
-
-%% Configuration Dependencies
-PKG --> VITE
-PKG --> DRIZZLE
-PKG --> TAILWIND
-TS --> VITE
-
-%% Shared Schema Usage
-SCHEMA -.->|types| TYPES
-SCHEMA -.->|validation| ROUTES
-SCHEMA -.->|orm| STORAGE
-
-%% Styling
-classDef config fill:   #e1f5fe,stroke:#01579b,stroke-width:2px
-classDef shared fill:   #f3e5f5,stroke:#4a148c,stroke-width:2px
-classDef server fill:   #e8f5e8,stroke:#1b5e20,stroke-width:2px
-classDef client fill:   #fff3e0,stroke:#e65100,stroke-width:2px
-classDef database fill: #fce4ec,stroke:#880e4f,stroke-width:2px
-classDef api fill:      #e0f2f1,stroke:#004d40,stroke-width:2px
-
-class PKG,TS,VITE,DRIZZLE,TAILWIND config
-class SCHEMA,USERS,EVENTS,PRODUCTS,NEWSLETTERS,CONTACTS,CARTS,CART_ITEMS,DONATIONS shared
-class SERVER_INDEX,ROUTES,STORAGE,VITE_SERVER,API_EVENTS,API_PRODUCTS,API_GALLERY,API_NEWSLETTER,API_CONTACT,API_CART,API_PAYMENT server
-class CLIENT_INDEX,MAIN,APP,HOME,ABOUT,EVENTS_PAGE,GALLERY_PAGE,STORE_PAGE,PRODUCT_PAGE,DONATE_PAGE,CONTACT_PAGE,CHECKOUT_PAGE,LINKS_PAGE,NOT_FOUND,LAYOUT,UI,STORE_COMP,GALLERY_COMP,HOME_COMP,CONTACT_COMP,DONATE_COMP,SVG,HOOKS,LIB,QUERY_CLIENT,CONSTANTS,UTILS,TYPES,DATA client
-class USERS,EVENTS,PRODUCTS,NEWSLETTERS,CONTACTS,CARTS,CART_ITEMS,DONATIONS database
-class API_EVENTS,API_PRODUCTS,API_GALLERY,API_NEWSLETTER,API_CONTACT,API_CART,API_PAYMENT api
+    class UI,RQ,Auth client
+    class Routes,Storage,ClerkMiddleware,LocalUser server
+    class User,Thread,Reply,Poll,Media,Reaction,Notification,Category entity
+    class MMAEvent,Fighter,Fight mma
+    class Follow,UserRank social
+    class S3,ESPN external
 ```
+
+## 🥊 Forum-Specific Features
+
+### User Status & Ranking System
+
+```typescript
+// User status progression based on activity
+enum UserStatus {
+  AMATEUR = 'AMATEUR',
+  REGIONAL_POSTER = 'REGIONAL_POSTER',
+  COMPETITOR = 'COMPETITOR',
+  RANKED_POSTER = 'RANKED_POSTER',
+  CONTENDER = 'CONTENDER',
+  CHAMPION = 'CHAMPION',
+  HALL_OF_FAMER = 'HALL_OF_FAMER',
+}
+
+// Points-based ranking system
+// - Posts, likes received, POTD (Post of the Day) awards
+// - Automatic status calculation based on activity
+```
+
+### Thread & Discussion Features
+
+- **Categories**: General, UFC, Boxing, etc.
+- **Polls**: Embedded voting in threads with expiration
+- **Media**: Image/GIF uploads to AWS S3
+- **Reactions**: Like, Dislike, POTD (Post of the Day)
+- **Nested Replies**: Threaded conversation support
+
+### MMA Integration
+
+- **Live Event Data**: ESPN API integration for fight schedules
+- **Fighter Profiles**: Name, record, images
+- **Event Discussions**: Dedicated threads for fight events
+
+## 🔐 Authentication Architecture
+
+### Dual Authentication System
+
+```typescript
+// External: Clerk handles authentication
+// Internal: Local user management for forum features
+
+// Flow:
+// 1. User authenticates with Clerk
+// 2. Clerk userId maps to local database user
+// 3. Local user has forum-specific data (points, status, etc.)
+// 4. ensureLocalUser middleware creates/syncs local user
+```
+
+### Session Management
+
+- **External Sessions**: Managed by Clerk
+- **Database Sessions**: PostgreSQL session store
+- **User Sync**: Automatic local user creation from Clerk profile
+
+## 🗄️ Database Architecture
+
+### PostgreSQL with Drizzle ORM
+
+- **Real database persistence** (not in-memory)
+- **Proper foreign key relationships**
+- **Transaction support for complex operations**
+- **Session storage in database**
+
+### Key Tables & Relationships
+
+```sql
+-- Core forum entities
+users (id, username, points, status, role)
+threads (id, title, content, category_id, user_id)
+replies (id, content, thread_id, user_id, parent_reply_id)
+polls (id, question, thread_id, expires_at)
+poll_options (id, text, poll_id, votes_count)
+
+-- Social features
+follows (follower_id, following_id)
+thread_reactions (thread_id, user_id, type)
+reply_reactions (reply_id, user_id, type)
+notifications (user_id, type, related_user_id, thread_id)
+
+-- MMA data
+mma_events (id, name, date, organization, venue)
+fighters (id, name, nickname, record)
+fights (id, event_id, fighter1_id, fighter2_id)
+```
+
+## 🚀 Key Technical Decisions
+
+### Frontend Architecture
+
+- **No SSR**: Pure SPA with client-side routing
+- **React Query**: Optimistic updates and caching for forum interactions
+- **Clerk Components**: Pre-built auth UI components
+- **Real-time Feel**: Optimistic UI updates for likes/reactions
+
+### API Design
+
+- **RESTful**: Standard CRUD operations for forum entities
+- **Clerk Middleware**: Authentication on protected routes
+- **File Uploads**: Multer + S3 for media handling
+- **External APIs**: ESPN integration for MMA data
+
+### Performance Optimizations
+
+- **Pagination**: Threads and replies with offset/limit
+- **Eager Loading**: Related data fetched with main queries
+- **Image Optimization**: S3 CDN for fast media delivery
+- **Caching**: React Query for client-side state caching
+
+## 📋 Current Implementation Status
+
+### ✅ Implemented Features
+
+- User authentication (Clerk + local mapping)
+- Thread creation with polls and media
+- Nested reply system
+- Reaction system (likes, dislikes, POTD)
+- User ranking and status calculation
+- MMA event integration
+- File uploads to S3
+- Notification system
+
+### 🔧 Development Workflow
+
+```bash
+# Local development
+npm run dev     # Starts both client and server
+npm run build   # Production build
+npm run check   # TypeScript checking
+npm run db:push # Push schema changes to PostgreSQL
+```
+
+### Key Files for New Developers
+
+- `shared/schema.ts` - Database schema and validation
+- `server/storage.ts` - Database operations with Drizzle
+- `server/routes.ts` - API endpoints with Clerk auth
+- `server/auth.ts` - User mapping between Clerk and local DB
+- `client/src/lib/queryClient.ts` - React Query configuration

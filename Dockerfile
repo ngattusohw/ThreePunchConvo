@@ -20,8 +20,8 @@ RUN npx vite build
 RUN ls -la
 RUN ls -la dist || echo "dist directory doesn't exist"
 
-# Expose the port your app runs on
-EXPOSE 5000
+# Expose the port your app runs on (Railway will set PORT env var)
+EXPOSE $PORT
 
-# Command to run the application using tsx directly
-CMD ["npx", "tsx", "server/index.ts"]
+# Command to run the application using node directly instead of npm
+CMD ["node", "node_modules/.bin/tsx", "server/index.ts"]

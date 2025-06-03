@@ -61,13 +61,20 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
+    console.log("🚀 Starting server...");
+    console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`Port: ${process.env.PORT || 5000}`);
+
     // Ensure database connection and session table are ready
+    console.log("📊 Connecting to database...");
     const isConnected = await ensureConnection();
     if (!isConnected) {
       throw new Error("Failed to establish database connection");
     }
+    console.log("✅ Database connected");
 
     const server = await registerRoutes(app);
+    console.log("🛠️ Routes registered");
 
     // Initialize cron jobs after database connection is established
     setupCronJobs();
@@ -84,15 +91,18 @@ app.use((req, res, next) => {
       console.log("starting development server");
       await setupVite(app, server);
     } else {
+      console.log("🔧 Setting up static file serving...");
       app.use(express.static(path.resolve(__dirname, "..", "dist", "public")));
       app.get("*", (_req, res) => {
         res.sendFile(
           path.resolve(__dirname, "..", "dist", "public", "index.html")
         );
       });
+      console.log("📁 Static files configured");
     }
 
-    const port = 5000;
+    const port = process.env.PORT || 5000;
+    console.log(`🌐 Starting server on port ${port}...`);
     const httpServer = server.listen(
       {
         port,
@@ -101,6 +111,7 @@ app.use((req, res, next) => {
       },
       () => {
         log(`serving on port ${port}`);
+        console.log("🎉 Server started successfully!");
       }
     );
 

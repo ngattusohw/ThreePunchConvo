@@ -93,7 +93,7 @@ app.use((req, res, next) => {
     }
 
     const port = 5000;
-    server.listen(
+    const httpServer = server.listen(
       {
         port,
         host: "0.0.0.0",
@@ -103,6 +103,21 @@ app.use((req, res, next) => {
         log(`serving on port ${port}`);
       }
     );
+
+    // Graceful shutdown handling
+    process.on("SIGTERM", () => {
+      console.log("SIGTERM received, shutting down gracefully");
+      httpServer.close(() => {
+        console.log("Process terminated");
+      });
+    });
+
+    process.on("SIGINT", () => {
+      console.log("SIGINT received, shutting down gracefully");
+      httpServer.close(() => {
+        console.log("Process terminated");
+      });
+    });
   } catch (error) {
     console.error("Failed to start server:", error);
     process.exit(1);

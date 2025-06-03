@@ -1,5 +1,5 @@
 import React from "react";
-import { Skeleton } from "../ui/Skeleton";
+import { Skeleton } from "../ui/skeleton";
 
 export function ForumSkeleton() {
   return (
@@ -16,7 +16,7 @@ export function ForumSkeleton() {
         {/* Center - Forum Content Skeleton */}
         <div className="flex-grow">
           <Skeleton className="h-12 w-full mb-6" />
-          
+
           {/* Thread list skeleton */}
           {[...Array(5)].map((_, i) => (
             <div key={i} className="mb-4 p-4 border border-gray-800 rounded-lg">
@@ -46,4 +46,4 @@ export function ForumSkeleton() {
       </div>
     </div>
   );
-} 
+}

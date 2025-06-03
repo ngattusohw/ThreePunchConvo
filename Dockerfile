@@ -14,7 +14,7 @@ RUN npm ci
 COPY . .
 
 # Export VITE_ environment variables and build
-RUN export $(grep "^VITE_" .env | xargs) && npx vite build
+RUN npx vite build
 
 # Debug: List files to verify build output
 RUN ls -la

@@ -1,6 +1,20 @@
 # Use Node.js LTS version as the base image
 FROM node:18
 
+# Build arguments for Railway environment variables
+ARG VITE_CLERK_PUBLISHABLE_KEY
+ARG VITE_FIREBASE_API_KEY
+ARG VITE_FIREBASE_PROJECT_ID
+ARG VITE_FIREBASE_APP_ID
+ARG VITE_STRIPE_PUBLISHABLE_KEY
+
+# Set environment variables from build args
+ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
+ENV VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY
+ENV VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID
+ENV VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID
+ENV VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY
+
 # Create app directory in the container
 WORKDIR /usr/src/app
 
@@ -13,7 +27,7 @@ RUN npm ci
 # Copy everything including .env file
 COPY . .
 
-# Export VITE_ environment variables and build
+# Build frontend (now with environment variables available)
 RUN npx vite build
 
 # Debug: List files to verify build output

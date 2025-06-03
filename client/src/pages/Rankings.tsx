@@ -57,7 +57,7 @@ export default function Rankings() {
       </div>
 
       {/* Filter Options */}
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-6 grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
         <button
           onClick={() => setRankingFilter("all")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
@@ -161,106 +161,156 @@ export default function Rankings() {
               {filteredUsers.map((rankedUser) => (
                 <div
                   key={rankedUser.user.id}
-                  className="p-4 hover:bg-gray-800 transition flex flex-wrap md:flex-nowrap items-center"
+                  className="p-4 hover:bg-gray-800 transition"
                 >
-                  {/* Rank */}
-                  <div className="w-full md:w-16 mb-2 md:mb-0 text-center">
-                    <span className="text-lg font-accent font-bold text-ufc-gold">
-                      #{rankedUser.position}
-                      {rankedUser.isTied ? "-T" : ""}
-                    </span>
-                  </div>
-
-                  {/* User Info */}
-                  <div className="flex items-center flex-1">
-                    <UserAvatar
-                      user={rankedUser.user}
-                      size="md"
-                      className="mr-3"
-                    />
-                    <div>
-                      <Link
-                        href={`/user/${rankedUser.user.username}`}
-                        className="text-white font-medium hover:text-ufc-blue transition"
-                      >
-                        {rankedUser.user.username}
-                      </Link>
-
-                      {rankedUser.user.role === "PRO" && (
-                        <div className="flex items-center mt-1">
-                          <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-bold flex items-center">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-3 w-3 mr-1"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            VERIFIED
-                          </span>
-                        </div>
-                      )}
+                  {/* Desktop layout */}
+                  <div className="hidden md:flex md:flex-nowrap items-center">
+                    {/* Rank */}
+                    <div className="w-16 text-center">
+                      <span className="text-lg font-accent font-bold text-ufc-gold">
+                        #{rankedUser.position}
+                        {rankedUser.isTied ? "-T" : ""}
+                      </span>
                     </div>
-                  </div>
 
-                  {/* Status */}
-                  <div className="w-full md:w-24 my-2 md:my-0 md:text-center">
-                    <StatusBadge status={rankedUser.user.status} />
-                  </div>
+                    {/* User Info */}
+                    <div className="flex items-center flex-1">
+                      <UserAvatar
+                        user={rankedUser.user}
+                        size="md"
+                        className="mr-3"
+                      />
+                      <div>
+                        <Link
+                          href={`/user/${rankedUser.user.username}`}
+                          className="text-white font-medium hover:text-ufc-blue transition"
+                        >
+                          {rankedUser.user.username}
+                        </Link>
 
-                  {/* Stats - Mobile View */}
-                  <div className="w-full flex md:hidden justify-between text-sm text-gray-400 mt-2">
-                    <div>
-                      <span className="font-bold text-gray-300">
-                        {rankedUser.user.postsCount}
-                      </span>{" "}
-                      posts
+                        {rankedUser.user.role === "PRO" && (
+                          <div className="flex items-center mt-1">
+                            <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-bold flex items-center">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-3 w-3 mr-1"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              VERIFIED
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <span className="font-bold text-gray-300">
-                        {rankedUser.user.likesCount}
-                      </span>{" "}
-                      likes
+
+                    {/* Status */}
+                    <div className="w-24 text-center">
+                      <StatusBadge status={rankedUser.user.status} />
                     </div>
-                    <div>
-                      <span className="font-bold text-gray-300">
+
+                    {/* Stats */}
+                    <div className="w-20 text-center">
+                      <span className="text-white">
+                        {shortenNumber(rankedUser.user.postsCount)}
+                      </span>
+                    </div>
+                    <div className="w-20 text-center">
+                      <span className="text-white">
+                        {shortenNumber(rankedUser.user.likesCount)}
+                      </span>
+                    </div>
+                    <div className="w-20 text-center">
+                      <span className="text-white">
                         {rankedUser.user.potdCount}
-                      </span>{" "}
-                      POTD
+                      </span>
                     </div>
-                    <div>
-                      <span className="font-bold text-gray-300">
-                        {rankedUser.points}
-                      </span>{" "}
-                      pts
+                    <div className="w-24 text-center">
+                      <span className="text-ufc-blue font-bold">
+                        {shortenNumber(rankedUser.points)}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Stats - Desktop View */}
-                  <div className="hidden md:block w-20 text-center">
-                    <span className="text-white">
-                      {shortenNumber(rankedUser.user.postsCount)}
-                    </span>
-                  </div>
-                  <div className="hidden md:block w-20 text-center">
-                    <span className="text-white">
-                      {shortenNumber(rankedUser.user.likesCount)}
-                    </span>
-                  </div>
-                  <div className="hidden md:block w-20 text-center">
-                    <span className="text-white">
-                      {rankedUser.user.potdCount}
-                    </span>
-                  </div>
-                  <div className="hidden md:block w-24 text-center">
-                    <span className="text-ufc-blue font-bold">
-                      {shortenNumber(rankedUser.points)}
-                    </span>
+                  {/* Mobile layout */}
+                  <div className="md:hidden">
+                    <div className="flex items-center justify-between mb-2">
+                      {/* Rank */}
+                      <span className="text-xl font-accent font-bold text-ufc-gold">
+                        #{rankedUser.position}
+                        {rankedUser.isTied ? "-T" : ""}
+                      </span>
+                      
+                      {/* Points */}
+                      <span className="text-ufc-blue font-bold text-lg">
+                        {shortenNumber(rankedUser.points)} pts
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <UserAvatar
+                        user={rankedUser.user}
+                        size="md"
+                        className="mr-3 flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <Link
+                          href={`/user/${rankedUser.user.username}`}
+                          className="text-white font-medium hover:text-ufc-blue transition block truncate"
+                        >
+                          {rankedUser.user.username}
+                        </Link>
+
+                        <div className="flex items-center mt-1 space-x-2">
+                          <StatusBadge status={rankedUser.user.status} />
+                          
+                          {rankedUser.user.role === "PRO" && (
+                            <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-bold flex items-center">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-3 w-3 mr-1"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              VERIFIED
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 mt-3 text-center text-sm bg-gray-800 rounded-lg p-2">
+                      <div className="p-1">
+                        <div className="text-white font-medium">
+                          {shortenNumber(rankedUser.user.postsCount)}
+                        </div>
+                        <div className="text-gray-400 text-xs">Posts</div>
+                      </div>
+                      <div className="p-1">
+                        <div className="text-white font-medium">
+                          {shortenNumber(rankedUser.user.likesCount)}
+                        </div>
+                        <div className="text-gray-400 text-xs">Likes</div>
+                      </div>
+                      <div className="p-1">
+                        <div className="text-white font-medium">
+                          {rankedUser.user.potdCount}
+                        </div>
+                        <div className="text-gray-400 text-xs">POTD</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}

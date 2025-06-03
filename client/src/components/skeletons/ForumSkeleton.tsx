@@ -42,14 +42,6 @@ export function ForumSkeleton() {
               </div>
             ))}
           </div>
-          
-          {/* Discord Community Ad Skeleton */}
-          <div className="bg-dark-gray rounded-lg overflow-hidden p-4">
-            <Skeleton className="h-6 w-40 mb-3" />
-            <Skeleton className="h-4 w-full mb-4" />
-            <Skeleton className="h-10 w-full mb-2" />
-            <Skeleton className="h-3 w-32 mx-auto" />
-          </div>
         </aside>
       </div>
     </div>

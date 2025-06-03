@@ -1,6 +1,20 @@
 import { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 
+// Extend the Request interface to include localUser with planType
+declare global {
+  namespace Express {
+    interface Request {
+      localUser?: {
+        id: string;
+        username: string;
+        planType?: string;
+        [key: string]: any;
+      };
+    }
+  }
+}
+
 // Middleware to ensure Clerk users exist in our local database
 // Make sure it's correctly extracting the Clerk token
 export const ensureLocalUser = async (req: Request, res: Response, next: NextFunction) => {
@@ -43,6 +57,35 @@ export const ensureLocalUser = async (req: Request, res: Response, next: NextFun
     next();
   } catch (error) {
     console.error("Error in ensureLocalUser middleware:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Middleware to check if user has a paid plan
+export const requirePaidPlan = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Make sure we have a local user
+    if (!req.localUser) {
+      return res.status(400).json({ message: "User not found" });
+    }
+    
+    // Check the user's plan type
+    const planType = req.localUser.planType || 'FREE';
+    
+    // Allow if the user has a paid plan (not FREE)
+    if (planType === 'FREE') {
+      return res.status(403).json({ 
+        message: "This feature requires a paid subscription",
+        error: "UPGRADE_REQUIRED",
+        currentPlan: planType,
+        requiredPlans: ['BASIC', 'PRO']
+      });
+    }
+    
+    // User has a paid plan, continue
+    next();
+  } catch (error) {
+    console.error("Error in requirePaidPlan middleware:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

@@ -18,7 +18,7 @@ import {
   PollOption
 } from "@shared/schema";
 import { requireAuth } from '@clerk/express';
-import { ensureLocalUser } from './auth';
+import { ensureLocalUser, requirePaidPlan } from './auth';
 
 // Extend Express Request type to include Clerk auth property
 declare global {
@@ -806,7 +806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/threads/:id/replies', requireAuth(), ensureLocalUser, async (req: any, res: Response) => {
+  app.post('/api/threads/:id/replies', requireAuth(), ensureLocalUser, requirePaidPlan, async (req: any, res: Response) => {
     try {
       const threadId = req.params.id;
       

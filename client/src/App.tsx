@@ -25,7 +25,7 @@ import { Return } from "./components/payment/Return";
 import { ForumSkeleton } from "./components/skeletons/ForumSkeleton";
 
 function App() {
-  const { isSignedIn, user, isLoaded } = useUser();
+  const { isSignedIn, user, isLoaded: isUserLoaded } = useUser();
   const { userId } = useAuth();
   const [localUserChecked, setLocalUserChecked] = useState(false);
   const [isLoadingClientSecret, setIsLoadingClientSecret] = useState(false);
@@ -38,6 +38,8 @@ function App() {
     loading: true,
     error: null
   });
+  // Add an initialLoadComplete state to track when the app is ready to render
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // TODO test key
   const stripePromise = useMemo(() => 
@@ -47,16 +49,18 @@ function App() {
 
   // Clear React Query cache when auth state changes (on logout)
   useEffect(() => {
-    if (isLoaded && !isSignedIn && !userId) {
+    if (isUserLoaded && !isSignedIn && !userId) {
       // User has logged out, clear all queries from cache
       queryClient.clear();
       console.log("Auth state changed: user logged out, cleared query cache");
+      // Since we're logged out, we can consider initial load complete
+      if (!initialLoadComplete) setInitialLoadComplete(true);
     }
-  }, [isLoaded, isSignedIn, userId]);
+  }, [isUserLoaded, isSignedIn, userId, initialLoadComplete]);
 
   useEffect(() => {
     const checkOrCreateUser = async () => {
-      if (isLoaded && isSignedIn && user) {
+      if (isUserLoaded && isSignedIn && user) {
         console.log("Clerk user logged in:", user);
         console.log("app profile: ", user?.imageUrl);
 
@@ -86,12 +90,17 @@ function App() {
           setLocalUserChecked(true);
         } catch (error) {
           console.error("Error checking/creating user:", error);
+          // Even if there was an error, we should mark local user check as complete
+          setLocalUserChecked(true);
         }
+      } else if (isUserLoaded && !isSignedIn) {
+        // If user is not signed in, we don't need to check local user
+        setLocalUserChecked(true);
       }
     };
     
     checkOrCreateUser();
-  }, [isLoaded, isSignedIn, user]);
+  }, [isUserLoaded, isSignedIn, user]);
 
   // Check for user subscriptions
   useEffect(() => {
@@ -133,14 +142,23 @@ function App() {
           }
         } catch (error) {
           console.error("Error checking subscriptions:", error);
+        } finally {
+          // Mark the initial load as complete when subscription check is done
+          if (!initialLoadComplete) setInitialLoadComplete(true);
         }
+      } else if (localUserChecked) {
+        // If we've checked the local user and there's no Stripe ID, we can consider initial load complete
+        if (!initialLoadComplete) setInitialLoadComplete(true);
       }
     };
     
     if (localUserChecked && localUser) {
       checkUserSubscriptions();
+    } else if (localUserChecked && !localUser && isUserLoaded) {
+      // If local user check is complete but no local user and user is loaded, we can consider initial load complete
+      if (!initialLoadComplete) setInitialLoadComplete(true);
     }
-  }, [localUser, localUserChecked, user?.id]);
+  }, [localUser, localUserChecked, user?.id, isUserLoaded, initialLoadComplete]);
 
   // Function to update user's plan type in the database
   const updateUserPlanType = async (clerkUserId: string, planType: string) => {
@@ -181,7 +199,7 @@ function App() {
   // Fetch client secret only when user is loaded and signed in
   useEffect(() => {
     const fetchClientSecret = async () => {
-      if (isLoaded && isSignedIn && user?.id && user?.emailAddresses[0]?.emailAddress) {
+      if (isUserLoaded && isSignedIn && user?.id && user?.emailAddresses[0]?.emailAddress) {
         setIsLoadingClientSecret(true);
         console.log("Fetching client secret");
         
@@ -211,26 +229,41 @@ function App() {
           }));
         } finally {
           setIsLoadingClientSecret(false);
+          // Ensure initial load is marked as complete after client secret is loaded (or failed)
+          if (!initialLoadComplete) setInitialLoadComplete(true);
         }
+      } else if (isUserLoaded && !isSignedIn) {
+        // If user is not signed in, we don't need to fetch client secret
+        setIsLoadingClientSecret(false);
+        setDebugInfo(prev => ({ ...prev, loading: false }));
+        // Mark initial load as complete for non-signed in users
+        if (!initialLoadComplete) setInitialLoadComplete(true);
       }
     };
     
     // Only fetch client secret if user is signed in
-    if (isLoaded && isSignedIn) {
+    if (isUserLoaded && isSignedIn) {
       fetchClientSecret();
-    } else {
+    } else if (isUserLoaded && !isSignedIn) {
       // Reset loading state when not signed in
       setIsLoadingClientSecret(false);
       setDebugInfo(prev => ({ ...prev, loading: false }));
+      // Mark initial load as complete for non-signed in users
+      if (!initialLoadComplete) setInitialLoadComplete(true);
     }
-  }, [isLoaded, isSignedIn, user?.id, user?.emailAddresses]);
+  }, [isUserLoaded, isSignedIn, user?.id, user?.emailAddresses, initialLoadComplete]);
 
   const stripeAppearance = {
     theme: 'night' as const,
   };
 
-  // Determine if we should show loading state
-  const isLoadingApp = isLoadingClientSecret && isSignedIn;
+  // Determine if we should show loading state - now we use the initialLoadComplete flag
+  const isLoadingApp = !initialLoadComplete || (isLoadingClientSecret && isSignedIn);
+
+  // If we're going to checkout but clientSecret is still loading, show skeleton
+  const isCheckoutLoading = window.location.pathname === "/checkout" && 
+                            ((isSignedIn && (!clientSecret || isLoadingClientSecret)) ||
+                             !isUserLoaded || !initialLoadComplete);
 
   return (
     <div>
@@ -245,7 +278,7 @@ function App() {
               <p className="text-sm">Loading: {isLoadingClientSecret ? "Yes" : "No"}</p>
             </div>
           }>
-            {isLoadingApp ? (
+            {isLoadingApp || isCheckoutLoading ? (
               <ForumSkeleton />
             ) : (
               <Switch>
@@ -295,7 +328,7 @@ function App() {
                     </Route>
                   </>
                 ) : isSignedIn && debugInfo.error ? (
-                  <Route path={["/checkout", "/return"]}>
+                  <Route path="/checkout">
                     <div className="container mx-auto px-4 mt-4">
                       <div className="bg-red-800 text-white p-4 rounded-lg">
                         <h2 className="text-xl font-bold mb-2">Payment Setup Error</h2>

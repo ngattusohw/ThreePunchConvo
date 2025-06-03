@@ -162,8 +162,11 @@ export default function CreatePostModal({ onClose, categoryId }: CreatePostModal
   };
 
   const handleUpgrade = () => {
-    setShowUpgradeModal(false);
-    window.location.href = '/checkout';
+    // Keep the modal open until we navigate to avoid 404 flash
+    // Use setTimeout to let the current event loop complete before navigation
+    setTimeout(() => {
+      window.location.href = '/checkout';
+    }, 100);
   };
 
   return (

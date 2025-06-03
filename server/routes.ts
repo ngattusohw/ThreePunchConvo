@@ -82,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication endpoints are now handled by Clerk
 
   // Thread endpoints with Clerk authentication
-  app.post('/api/threads', requireAuth(), async (req: any, res: Response, next: NextFunction) => {
+  app.post('/api/threads', requireAuth(), ensureLocalUser, requirePaidPlan, async (req: any, res: Response, next: NextFunction) => {
     try {
       // Get the Clerk user ID from the request body
       const clerkUserId = req.body.userId;

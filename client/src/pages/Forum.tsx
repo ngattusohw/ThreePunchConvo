@@ -24,7 +24,7 @@ export default function Forum() {
         <ForumContent category={validCategoryId} />
 
         {/* Right Sidebar - Schedule and Rankings */}
-        <aside className="hidden lg:block w-80 flex-shrink-0 space-y-6">
+        <aside className="hidden xl:block w-80 flex-shrink-0 space-y-6">
           {/* Upcoming Events */}
           {/* <EventsSidebar /> */}
           

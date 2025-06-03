@@ -18,6 +18,7 @@ export default function Thread() {
   const [, setLocation] = useLocation();
   const [replyContent, setReplyContent] = useState("");
   const [replyingTo, setReplyingTo] = useState<{ id: string, username: string } | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
   // Fetch thread data
   const { data: thread, isLoading: isThreadLoading, error: threadError } = useQuery<ForumThread>({
@@ -54,14 +55,8 @@ export default function Thread() {
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to like posts");
       
-      const response = await fetch(`/api/threads/${threadId}/like`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id
-        })
+      const response = await apiRequest("POST", `/api/threads/${threadId}/like`, {
+        userId: currentUser.id
       });
       
       if (!response.ok) {
@@ -93,14 +88,8 @@ export default function Thread() {
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to dislike posts");
       
-      const response = await fetch(`/api/threads/${threadId}/dislike`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id
-        })
+      const response = await apiRequest("POST", `/api/threads/${threadId}/dislike`, {
+        userId: currentUser.id
       });
       
       if (!response.ok) {
@@ -131,14 +120,8 @@ export default function Thread() {
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to vote for POTD");
       
-      const response = await fetch(`/api/threads/${threadId}/potd`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id
-        })
+      const response = await apiRequest("POST", `/api/threads/${threadId}/potd`, {
+        userId: currentUser.id
       });
       
       if (!response.ok) {
@@ -170,20 +153,20 @@ export default function Thread() {
       if (!currentUser) throw new Error("You must be logged in to reply");
       if (!replyContent.trim()) throw new Error("Reply cannot be empty");
       
-      const response = await fetch(`/api/threads/${threadId}/replies`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id,
-          content: replyContent,
-          parentReplyId: replyingTo?.id
-        })
+      const response = await apiRequest("POST", `/api/threads/${threadId}/replies`, {
+        userId: currentUser.id,
+        content: replyContent,
+        parentReplyId: replyingTo?.id
       });
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        
+        // Check for the special upgrade required error
+        if (errorData.error === "UPGRADE_REQUIRED") {
+          throw new Error("UPGRADE_REQUIRED");
+        }
+        
         throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
       }
       
@@ -199,6 +182,12 @@ export default function Thread() {
       });
     },
     onError: (error: Error) => {
+      // Special handling for the upgrade required error
+      if (error.message === "UPGRADE_REQUIRED") {
+        setShowUpgradeModal(true);
+        return;
+      }
+      
       toast({
         title: "Error",
         description: error.message || "Failed to post reply",
@@ -212,14 +201,8 @@ export default function Thread() {
     mutationFn: async (replyId: number) => {
       if (!currentUser) throw new Error("You must be logged in to like replies");
       
-      const response = await fetch(`/api/replies/${replyId}/like`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id
-        })
+      const response = await apiRequest("POST", `/api/replies/${replyId}/like`, {
+        userId: currentUser.id
       });
       
       if (!response.ok) {
@@ -246,14 +229,8 @@ export default function Thread() {
     mutationFn: async (replyId: number) => {
       if (!currentUser) throw new Error("You must be logged in to dislike replies");
       
-      const response = await fetch(`/api/replies/${replyId}/dislike`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id
-        })
+      const response = await apiRequest("POST", `/api/replies/${replyId}/dislike`, {
+        userId: currentUser.id
       });
       
       if (!response.ok) {
@@ -295,20 +272,13 @@ export default function Thread() {
       
       try {
         // First, ensure the user exists in the backend database
-        // This is important because the backend expects a registered user
         console.log("Checking if user exists in backend database");
-        const userCheckResponse = await fetch(`/api/users/clerk/${currentUser.id}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            firstName: currentUser.firstName,
-            lastName: currentUser.lastName,
-            email: currentUser.emailAddresses?.[0]?.emailAddress,
-            profileImageUrl: currentUser.imageUrl,
-            username: currentUser.username
-          })
+        const userCheckResponse = await apiRequest("POST", `/api/users/clerk/${currentUser.id}`, {
+          firstName: currentUser.firstName,
+          lastName: currentUser.lastName,
+          email: currentUser.emailAddresses?.[0]?.emailAddress,
+          profileImageUrl: currentUser.imageUrl,
+          username: currentUser.username
         });
         
         if (!userCheckResponse.ok) {
@@ -319,14 +289,8 @@ export default function Thread() {
         console.log("User check result:", userData);
         
         // Now that we've ensured the user exists, we can proceed with voting
-        const response = await fetch(`/api/threads/${threadId}/poll/${optionId}/vote`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: currentUser.id
-          })
+        const response = await apiRequest("POST", `/api/threads/${threadId}/poll/${optionId}/vote`, {
+          userId: currentUser.id
         });
         
         // If there's an error, try to get detailed error information
@@ -374,15 +338,9 @@ export default function Thread() {
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to delete this thread");
       
-      const response = await fetch(`/api/threads/${threadId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id,
-          role: currentUser.publicMetadata?.role
-        })
+      const response = await apiRequest("DELETE", `/api/threads/${threadId}`, {
+        userId: currentUser.id,
+        role: currentUser.publicMetadata?.role
       });
       
       if (!response.ok) {
@@ -414,15 +372,9 @@ export default function Thread() {
     mutationFn: async (replyId: string) => {
       if (!currentUser) throw new Error("You must be logged in to delete this reply");
       
-      const response = await fetch(`/api/replies/${replyId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser.id,
-          role: currentUser.publicMetadata?.role
-        })
+      const response = await apiRequest("DELETE", `/api/replies/${replyId}`, {
+        userId: currentUser.id,
+        role: currentUser.publicMetadata?.role
       });
       
       if (!response.ok) {
@@ -447,6 +399,21 @@ export default function Thread() {
       });
     }
   });
+  
+  // Handle replying to a thread
+  const handleReplySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Don't check plan type locally, just try to submit
+    // and let the server determine access
+    submitReplyMutation.mutate();
+  };
+
+  // Function to close modal and navigate to upgrade page
+  const handleUpgrade = () => {
+    setShowUpgradeModal(false);
+    setLocation('/checkout');
+  };
   
   // Loading state
   if (isThreadLoading) {
@@ -717,10 +684,7 @@ export default function Thread() {
                 </Link>
               </div>
             ) : (
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                submitReplyMutation.mutate();
-              }}>
+              <form onSubmit={handleReplySubmit}>
                 {replyingTo && (
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-gray-400">
@@ -736,6 +700,21 @@ export default function Thread() {
                     >
                       Cancel
                     </button>
+                  </div>
+                )}
+                
+                {/* Show upgrade warning for free users */}
+                {currentUser?.publicMetadata?.planType === 'FREE' && (
+                  <div className="bg-gray-800 border-l-4 border-yellow-500 p-3 mb-3 rounded">
+                    <div className="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-sm text-gray-300">
+                        You're on a <span className="font-bold text-yellow-500">Free Plan</span>. 
+                        <span className="text-gray-400"> Upgrade to post replies.</span>
+                      </p>
+                    </div>
                   </div>
                 )}
                 
@@ -780,7 +759,7 @@ export default function Thread() {
         </div>
         
         {/* Right Sidebar */}
-        <div className="hidden lg:block w-80 flex-shrink-0 mt-16">
+        <div className="hidden lg:block w-80 flex-shrink-0 mt-9">
           <div className="bg-dark-gray rounded-lg p-4 sticky top-20">
             <h3 className="text-lg font-bold text-white mb-4">Thread Info</h3>
             
@@ -860,6 +839,40 @@ export default function Thread() {
           </div>
         </div>
       </div>
+
+      {/* Upgrade Plan Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-dark-gray rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="text-center mb-6">
+              <div className="h-16 w-16 bg-ufc-blue rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Upgrade Required</h3>
+              <p className="text-gray-300">
+                Posting replies is only available for paid members. Upgrade your plan to join the conversation!
+              </p>
+            </div>
+            
+            <div className="flex flex-col space-y-3">
+              <button
+                onClick={handleUpgrade}
+                className="w-full bg-ufc-blue hover:bg-ufc-blue-dark text-black font-medium py-2 rounded-lg transition"
+              >
+                Upgrade Now
+              </button>
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="w-full bg-transparent border border-gray-600 hover:bg-gray-800 text-white font-medium py-2 rounded-lg transition"
+              >
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

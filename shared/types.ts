@@ -7,6 +7,7 @@ export type User = {
   role?: string;
   status?: string;
   externalId?: string;
+  stripeId?: string;
   firstName?: string | null;
   lastName?: string | null;
   profileImageUrl?: string | null;

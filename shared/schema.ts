@@ -20,6 +20,8 @@ export const users = pgTable("users", {
   password: text("password"), // Made optional for Clerk auth
   email: text("email").unique(),
   externalId: text("external_id").unique(), // For Clerk user ID
+  stripeId: text("stripe_id").unique(), // For Stripe customer ID
+  planType: text("plan_type").notNull().default("FREE"), // New field for subscription plan: FREE, BASIC, PRO
   avatar: text("avatar"),
   firstName: text("first_name"),
   lastName: text("last_name"),
@@ -214,6 +216,8 @@ export const insertUserSchema = createInsertSchema(users, {
   password: z.string().min(6).optional(), // Now optional for Clerk users
   email: z.string().email().nullable().optional(),
   externalId: z.string().optional(), // Add externalId field
+  stripeId: z.string().optional(), // Add stripeId field
+  planType: z.string().optional(), // Add planType field
   avatar: z.string().nullable().optional(),
   firstName: z.string().nullable().optional(),
   lastName: z.string().nullable().optional(),

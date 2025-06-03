@@ -30,9 +30,11 @@ pool.on('error', (err, client) => {
   console.error('Unexpected error on idle client', err);
 });
 
-// Add connection handler
+// Add connection handler - only log in development mode to reduce noise
 pool.on('connect', (client) => {
-  console.log('New database connection established');
+  if (process.env.NODE_ENV === 'development' && process.env.DEBUG_DB === 'true') {
+    console.log('New database connection established');
+  }
 });
 
 export const db = drizzle(pool, { schema }); // Different syntax for node-postgres
@@ -41,10 +43,20 @@ export const db = drizzle(pool, { schema }); // Different syntax for node-postgr
 export async function ensureConnection() {
   try {
     const client = await pool.connect();
-    client.release();
+    client.release(); // Important: always release connections back to the pool
     return true;
   } catch (error) {
     console.error('Failed to connect to database:', error);
     return false;
   }
 }
+
+/*
+ * IMPORTANT: Connection Pool Usage Guidelines
+ * 
+ * 1. Never call pool.connect() directly in route handlers
+ * 2. Use the 'db' object exported above for all database operations
+ * 3. The connection pool automatically manages connections
+ * 4. If you must use pool.connect(), always call client.release() in a finally block
+ * 5. To debug excessive connections, set DEBUG_DB=true in your .env file
+ */

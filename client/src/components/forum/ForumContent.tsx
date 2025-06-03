@@ -8,6 +8,7 @@ import CreatePostModal from "@/components/forum/CreatePostModal";
 import { formatDistanceToNow } from "date-fns";
 import { SignedIn, SignedOut, SignInButton } from '@clerk/clerk-react'
 import { dark } from "@clerk/themes";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ForumContentProps {
   category?: string;
@@ -39,12 +40,8 @@ export default function ForumContent({ category = "general" }: ForumContentProps
         potdFilter: 'only',
         sort: 'recent'
       });
-      const response = await fetch(`/api/threads/${category}?${params}`, {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
+      const response = await apiRequest("GET", `/api/threads/${category}?${params}`);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch POTD threads');
       }
@@ -71,12 +68,8 @@ export default function ForumContent({ category = "general" }: ForumContentProps
         limit: String(limit),
         offset: String(page * limit)
       });
-      const response = await fetch(`/api/threads/${category}?${params}`, {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
+      const response = await apiRequest("GET", `/api/threads/${category}?${params}`);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch regular threads');
       }
@@ -312,7 +305,6 @@ export default function ForumContent({ category = "general" }: ForumContentProps
               {/* POTD Section - only shown once at the top */}
               {potdThreads.length > 0 && (
                 <div className="mb-6">
-                  <div className="text-sm font-medium text-ufc-blue mb-2">Posts of the Day</div>
                   <div className="space-y-4">
                     {potdThreads.map(thread => (
                       <ThreadCard key={thread.id} thread={thread} />

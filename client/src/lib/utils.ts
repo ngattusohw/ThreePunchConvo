@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { SUBSCRIPTION_STATUS } from "./constants";
  
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -78,4 +79,22 @@ export function formatUsername(username: string, maxLength = 15): string {
   return username.length > maxLength 
     ? username.substring(0, maxLength - 3) + "..." 
     : username;
+}
+
+export function getSubscriptionStatus(subscriptions: any[]): string {
+  if (subscriptions && subscriptions.length > 0) {
+    // get the product for the subscription
+    const subscription = subscriptions[0];
+    const { plan } = subscription;
+    const { product } = plan;
+
+    if (product && SUBSCRIPTION_STATUS[product]) {
+      return SUBSCRIPTION_STATUS[product];
+    } else {
+      return "";
+    }
+  }
+  else {
+    return "";
+  }
 }

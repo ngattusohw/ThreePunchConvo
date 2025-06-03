@@ -27,17 +27,7 @@ export default function AuthPage() {
     <div className="flex flex-col md:flex-row min-h-screen">
       {/* Left side - Auth form */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-4 md:p-8">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Welcome to 3 Punch Convo</CardTitle>
-            <CardDescription className="text-center">
-              Join the MMA discussion
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center">
-            <SignIn forceRedirectUrl="/" />
-          </CardContent>
-        </Card>
+        <SignIn forceRedirectUrl="/" />
       </div>
 
       {/* Right side - Hero section */}

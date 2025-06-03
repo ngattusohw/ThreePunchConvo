@@ -24,24 +24,12 @@ export default function Forum() {
         <ForumContent category={validCategoryId} />
 
         {/* Right Sidebar - Schedule and Rankings */}
-        <aside className="hidden lg:block w-80 flex-shrink-0 space-y-6">
+        <aside className="hidden xl:block w-80 flex-shrink-0 space-y-6">
           {/* Upcoming Events */}
           {/* <EventsSidebar /> */}
           
           {/* Top Users */}
           <TopUsersSidebar />
-          
-          {/* Community Ad */}
-          <div className="bg-dark-gray rounded-lg overflow-hidden">
-            <div className="p-4">
-              <h3 className="text-white font-bold mb-2">Join Our Discord</h3>
-              <p className="text-gray-300 text-sm mb-3">Connect with other MMA fans in our community Discord server!</p>
-              <a href="https://discord.gg/3punchconvo" target="_blank" rel="noopener noreferrer" className="block bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded text-center text-sm transition">
-                Join Community
-              </a>
-              <p className="text-gray-500 text-xs mt-2 text-center">5,400+ members online now</p>
-            </div>
-          </div>
         </aside>
       </div>
     </div>

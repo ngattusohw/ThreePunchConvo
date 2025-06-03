@@ -4,6 +4,8 @@ import * as addMissingTablesMigration from "./migrations/0002_add_missing_tables
 import * as addReactionTablesMigration from "./migrations/0003_add_reactions_tables";
 import * as createSessionTableMigration from "./migrations/0004_create_session_table";
 import * as addClerkExternalIdMigration from "./migrations/0005_add_clerk_external_id";
+import * as addStripeIdMigration from "./migrations/0006_add_stripe_id";
+import * as addPlanTypeMigration from "./migrations/0007_add_plan_type";
 
 async function migrate() {
   try {
@@ -15,6 +17,8 @@ async function migrate() {
     await addReactionTablesMigration.up(db);
     await createSessionTableMigration.up(db);
     await addClerkExternalIdMigration.up(db);
+    await addStripeIdMigration.up(db);
+    await addPlanTypeMigration.up(db);
     
     console.log("Migrations completed successfully!");
     process.exit(0);

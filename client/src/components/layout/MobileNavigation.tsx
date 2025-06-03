@@ -18,13 +18,13 @@ export default function MobileNavigation({ onClose }: MobileNavigationProps) {
           >
             FORUM
           </Link>
-          <Link 
+          {/* <Link 
             href="/schedule" 
             onClick={onClose}
             className={`${location === "/schedule" ? "text-white" : "text-gray-400"} font-heading font-medium py-2 border-b border-gray-800`}
           >
             SCHEDULE
-          </Link>
+          </Link> */}
           <Link 
             href="/rankings" 
             onClick={onClose}

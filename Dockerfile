@@ -10,18 +10,18 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy the rest of the application code
+# Copy everything including .env file
 COPY . .
 
-# Build only the frontend (Vite part)
-RUN npx vite build
+# Export VITE_ environment variables and build
+RUN export $(grep "^VITE_" .env | xargs) && npx vite build
 
 # Debug: List files to verify build output
 RUN ls -la
 RUN ls -la dist || echo "dist directory doesn't exist"
 
 # Expose the port your app runs on
-EXPOSE 5001
+EXPOSE 5000
 
 # Command to run the application using tsx directly
 CMD ["npx", "tsx", "server/index.ts"]

@@ -1,11 +1,16 @@
 import path from "path";
+import { fileURLToPath } from "url";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ensureConnection } from "./db";
 import { setupCronJobs } from "./cron-jobs";
-import { clerkMiddleware } from '@clerk/express';
-import { ensureLocalUser, registerAuthEndpoints } from './auth';
+import { clerkMiddleware } from "@clerk/express";
+import { ensureLocalUser, registerAuthEndpoints } from "./auth";
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json());
@@ -20,11 +25,11 @@ console.log("Clerk config:", {
 
 // Add this after the Clerk middleware but before registerAuthEndpoints
 app.use((req: any, res, next) => {
-  console.log("DEBUG AUTH:", { 
+  console.log("DEBUG AUTH:", {
     hasAuth: !!req.auth,
     userId: req.auth?.userId,
     sessionId: req.auth?.sessionId,
-    headers: req.headers.authorization?.substring(0, 20) + "..."
+    headers: req.headers.authorization?.substring(0, 20) + "...",
   });
   next();
 });
@@ -67,42 +72,47 @@ app.use((req, res, next) => {
     // Ensure database connection and session table are ready
     const isConnected = await ensureConnection();
     if (!isConnected) {
-      throw new Error('Failed to establish database connection');
+      throw new Error("Failed to establish database connection");
     }
 
     const server = await registerRoutes(app);
-    
+
     // Initialize cron jobs after database connection is established
     setupCronJobs();
-    log('Cron jobs initialized for user status and ranking updates');
+    log("Cron jobs initialized for user status and ranking updates");
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      console.error('Global error handler:', err);
+      console.error("Global error handler:", err);
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
       res.status(status).json({ message });
     });
 
     if (process.env.NODE_ENV === "development") {
-      console.log('starting development server')
+      console.log("starting development server");
       await setupVite(app, server);
     } else {
       app.use(express.static(path.resolve(__dirname, "..", "dist", "public")));
       app.get("*", (_req, res) => {
-        res.sendFile(path.resolve(__dirname, "..", "dist", "public", "index.html"));
+        res.sendFile(
+          path.resolve(__dirname, "..", "dist", "public", "index.html")
+        );
       });
     }
 
-    const port = 5000;
-    server.listen({
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    }, () => {
-      log(`serving on port ${port}`);
-    });
+    const port = 5001;
+    server.listen(
+      {
+        port,
+        host: "0.0.0.0",
+        reusePort: true,
+      },
+      () => {
+        log(`serving on port ${port}`);
+      }
+    );
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error("Failed to start server:", error);
     process.exit(1);
   }
 })();

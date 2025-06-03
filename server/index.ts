@@ -101,7 +101,7 @@ app.use((req, res, next) => {
       console.log("📁 Static files configured");
     }
 
-    const port = process.env.PORT || 5000;
+    const port = process.env.PORT || 5001;
     console.log(`🌐 Starting server on port ${port}...`);
     const httpServer = server.listen(
       {
@@ -114,21 +114,6 @@ app.use((req, res, next) => {
         console.log("🎉 Server started successfully!");
       }
     );
-
-    // Graceful shutdown handling
-    process.on("SIGTERM", () => {
-      console.log("SIGTERM received, shutting down gracefully");
-      httpServer.close(() => {
-        console.log("Process terminated");
-      });
-    });
-
-    process.on("SIGINT", () => {
-      console.log("SIGINT received, shutting down gracefully");
-      httpServer.close(() => {
-        console.log("Process terminated");
-      });
-    });
   } catch (error) {
     console.error("Failed to start server:", error);
     process.exit(1);

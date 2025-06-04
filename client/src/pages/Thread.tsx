@@ -19,7 +19,7 @@ export default function Thread() {
   const [replyContent, setReplyContent] = useState("");
   const [replyingTo, setReplyingTo] = useState<{ id: string, username: string } | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  
+
   // Fetch thread data
   const { data: thread, isLoading: isThreadLoading, error: threadError } = useQuery<ForumThread>({
     queryKey: [`/api/threads/id/${threadId}`, currentUser?.id],
@@ -32,7 +32,7 @@ export default function Thread() {
     },
     enabled: !!threadId
   });
-  
+
   // Fetch thread replies
   const { data: replies, isLoading: isRepliesLoading, error: repliesError } = useQuery<ThreadReply[]>({
     queryKey: [`/api/threads/${threadId}/replies`],
@@ -45,7 +45,7 @@ export default function Thread() {
     },
     enabled: !!threadId
   });
-  
+
   // Use the actual data from the API
   const displayThread = thread;
   const displayReplies = replies || [];
@@ -54,16 +54,16 @@ export default function Thread() {
   const likeThreadMutation = useMutation({
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to like posts");
-      
+
       const response = await apiRequest("POST", `/api/threads/${threadId}/like`, {
         userId: currentUser.id
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -82,21 +82,21 @@ export default function Thread() {
       });
     }
   });
-  
+
   // Handle disliking a thread
   const dislikeThreadMutation = useMutation({
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to dislike posts");
-      
+
       const response = await apiRequest("POST", `/api/threads/${threadId}/dislike`, {
         userId: currentUser.id
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -114,21 +114,21 @@ export default function Thread() {
       });
     }
   });
-  
+
   // Handle post of the day
   const potdThreadMutation = useMutation({
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to vote for POTD");
-      
+
       const response = await apiRequest("POST", `/api/threads/${threadId}/potd`, {
         userId: currentUser.id
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -146,30 +146,30 @@ export default function Thread() {
       });
     }
   });
-  
+
   // Handle submitting a reply
   const submitReplyMutation = useMutation({
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to reply");
       if (!replyContent.trim()) throw new Error("Reply cannot be empty");
-      
+
       const response = await apiRequest("POST", `/api/threads/${threadId}/replies`, {
         userId: currentUser.id,
         content: replyContent,
         parentReplyId: replyingTo?.id
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        
+
         // Check for the special upgrade required error
         if (errorData.error === "UPGRADE_REQUIRED") {
           throw new Error("UPGRADE_REQUIRED");
         }
-        
+
         throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -187,7 +187,7 @@ export default function Thread() {
         setShowUpgradeModal(true);
         return;
       }
-      
+
       toast({
         title: "Error",
         description: error.message || "Failed to post reply",
@@ -195,21 +195,21 @@ export default function Thread() {
       });
     }
   });
-  
+
   // Handle liking a reply
   const likeReplyMutation = useMutation({
     mutationFn: async (replyId: number) => {
       if (!currentUser) throw new Error("You must be logged in to like replies");
-      
+
       const response = await apiRequest("POST", `/api/replies/${replyId}/like`, {
         userId: currentUser.id
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -223,21 +223,21 @@ export default function Thread() {
       });
     }
   });
-  
+
   // Handle disliking a reply
   const dislikeReplyMutation = useMutation({
     mutationFn: async (replyId: number) => {
       if (!currentUser) throw new Error("You must be logged in to dislike replies");
-      
+
       const response = await apiRequest("POST", `/api/replies/${replyId}/dislike`, {
         userId: currentUser.id
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -251,25 +251,25 @@ export default function Thread() {
       });
     }
   });
-  
+
   // Handle quoting a reply
   const handleQuoteReply = (reply: ThreadReply) => {
     setReplyingTo({ id: reply.id.toString(), username: reply.user.username });
-    
+
     // Scroll to reply form
     document.getElementById('reply-form')?.scrollIntoView({ behavior: 'smooth' });
   };
-  
+
   // Handle poll vote
   const submitPollVoteMutation = useMutation({
     mutationFn: async (optionId: number) => {
       if (!currentUser) throw new Error("You must be logged in to vote");
       if (!displayThread.poll) throw new Error("No poll found");
-      
+
       // Log user information for debugging
       console.log("Current user ID:", currentUser.id);
       console.log("Voting on poll option ID:", optionId);
-      
+
       try {
         // First, ensure the user exists in the backend database
         console.log("Checking if user exists in backend database");
@@ -280,25 +280,25 @@ export default function Thread() {
           profileImageUrl: currentUser.imageUrl,
           username: currentUser.username
         });
-        
+
         if (!userCheckResponse.ok) {
           throw new Error("Failed to register user in backend system");
         }
-        
+
         const userData = await userCheckResponse.json();
         console.log("User check result:", userData);
-        
+
         // Now that we've ensured the user exists, we can proceed with voting
         const response = await apiRequest("POST", `/api/threads/${threadId}/poll/${optionId}/vote`, {
           userId: currentUser.id
         });
-        
+
         // If there's an error, try to get detailed error information
         if (!response.ok) {
           let errorMessage = `Error: ${response.status} ${response.statusText}`;
           const responseText = await response.text();
           console.error("Raw API error response:", responseText);
-          
+
           try {
             const errorData = JSON.parse(responseText);
             console.error("Parsed API error response:", errorData);
@@ -306,10 +306,10 @@ export default function Thread() {
           } catch (e) {
             console.error("Failed to parse error response as JSON");
           }
-          
+
           throw new Error(errorMessage);
         }
-        
+
         return response.json();
       } catch (error) {
         console.error("Error in poll vote:", error);
@@ -332,22 +332,22 @@ export default function Thread() {
       });
     }
   });
-  
+
   // Add delete thread mutation
   const deleteThreadMutation = useMutation({
     mutationFn: async () => {
       if (!currentUser) throw new Error("You must be logged in to delete this thread");
-      
+
       const response = await apiRequest("DELETE", `/api/threads/${threadId}`, {
         userId: currentUser.id,
         role: currentUser.publicMetadata?.role
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -371,17 +371,17 @@ export default function Thread() {
   const deleteReplyMutation = useMutation({
     mutationFn: async (replyId: string) => {
       if (!currentUser) throw new Error("You must be logged in to delete this reply");
-      
+
       const response = await apiRequest("DELETE", `/api/replies/${replyId}`, {
         userId: currentUser.id,
         role: currentUser.publicMetadata?.role
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error: ${response.status} ${response.statusText}`);
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -399,11 +399,11 @@ export default function Thread() {
       });
     }
   });
-  
+
   // Handle replying to a thread
   const handleReplySubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Don't check plan type locally, just try to submit
     // and let the server determine access
     submitReplyMutation.mutate();
@@ -414,7 +414,7 @@ export default function Thread() {
     setShowUpgradeModal(false);
     setLocation('/checkout');
   };
-  
+
   // Loading state
   if (isThreadLoading) {
     return (
@@ -423,7 +423,7 @@ export default function Thread() {
       </div>
     );
   }
-  
+
   // Error state
   if (threadError) {
     return (
@@ -461,7 +461,7 @@ export default function Thread() {
             <span className="mx-2 text-gray-600">/</span>
             <span className="text-white truncate">{displayThread.title.length > 30 ? displayThread.title.substring(0, 30) + '...' : displayThread.title}</span>
           </div>
-          
+
           {/* Thread Card */}
           <div className={`bg-dark-gray ${displayThread.isPotd ? 'border-l-4 border-ufc-blue' : ''} rounded-lg overflow-hidden shadow-lg mb-6`}>
             <div className="p-5">
@@ -470,7 +470,7 @@ export default function Thread() {
                 <div className="mr-4 flex-shrink-0">
                   <UserAvatar user={displayThread.user} size="lg" />
                 </div>
-                
+
                 <div className="flex-grow">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     {displayThread.isPinned && (
@@ -478,15 +478,15 @@ export default function Thread() {
                         PINNED
                       </span>
                     )}
-                    
+
                     {displayThread.isPotd && (
                       <span className="bg-ufc-blue text-black text-xs px-2 py-0.5 rounded font-bold">
                         POTD
                       </span>
                     )}
-                    
+
                     <StatusBadge status={displayThread.user.status} />
-                    
+
                     {displayThread.user.role === "PRO" && (
                       <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-bold flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -495,55 +495,55 @@ export default function Thread() {
                         VERIFIED
                       </span>
                     )}
-                    
+
                     {displayThread.user.role === "ADMIN" && (
                       <span className="bg-ufc-gold text-ufc-black text-xs px-2 py-0.5 rounded font-bold">
                         ADMIN
                       </span>
                     )}
-                    
+
                     {displayThread.user.role === "MODERATOR" && (
                       <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded font-bold">
                         MOD
                       </span>
                     )}
-                    
+
                     <Link href={`/user/${displayThread.user.username}`} className="text-white font-medium hover:text-ufc-blue transition">
                       {displayThread.user.username}
                     </Link>
-                    
+
                     <span className="text-gray-400 text-sm">
                       {formatDate(displayThread.createdAt)}
                     </span>
                   </div>
-                  
+
                   <h1 className="text-2xl font-bold text-white mb-4">{displayThread.title}</h1>
-                  
+
                   <div className="text-gray-300 mb-6 whitespace-pre-line">
                     {displayThread.content}
                   </div>
-                  
+
                   {/* Thread Media */}
                   {displayThread.media && displayThread.media.length > 0 && (
                     <div className="mb-6">
-                      <img 
-                        src={displayThread.media[0].url} 
-                        alt={`Media for ${displayThread.title}`} 
+                      <img
+                        src={displayThread.media[0].url}
+                        alt={`Media for ${displayThread.title}`}
                         className="rounded-lg max-h-96 w-auto"
                       />
                     </div>
                   )}
-                  
+
                   {/* Thread Poll */}
                   {displayThread?.poll && (
                     <div className="bg-gray-800 rounded-lg p-4 mb-6">
                       <h3 className="text-white font-medium mb-4">{displayThread.poll.question}</h3>
                       <div className="space-y-3">
                         {displayThread.poll.options.map((option) => {
-                          const percentage = displayThread.poll?.votesCount 
-                            ? Math.round((option.votesCount / displayThread.poll.votesCount) * 100) 
+                          const percentage = displayThread.poll?.votesCount
+                            ? Math.round((option.votesCount / displayThread.poll.votesCount) * 100)
                             : 0;
-                          
+
                           return (
                             <div key={option.id} className="relative">
                               <button
@@ -556,8 +556,8 @@ export default function Thread() {
                                   <span className="text-sm text-gray-300">{percentage}%</span>
                                 </div>
                                 <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-700">
-                                  <div 
-                                    style={{ width: `${percentage}%` }} 
+                                  <div
+                                    style={{ width: `${percentage}%` }}
                                     className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${option.id % 2 === 0 ? 'bg-blue-500' : 'bg-red-500'}`}
                                   />
                                 </div>
@@ -566,23 +566,23 @@ export default function Thread() {
                           );
                         })}
                       </div>
-                      
+
                       <p className="text-gray-400 text-xs mt-4">
-                        {displayThread.poll.votesCount} votes • 
-                        {new Date() > new Date(displayThread.poll.expiresAt) 
-                          ? ' Poll ended' 
+                        {displayThread.poll.votesCount} votes •
+                        {new Date() > new Date(displayThread.poll.expiresAt)
+                          ? ' Poll ended'
                           : ` ${Math.ceil((new Date(displayThread.poll.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`}
                       </p>
-                      
+
                       {!currentUser && (
                         <p className="text-gray-500 text-xs mt-2">You must be logged in to vote</p>
                       )}
                     </div>
                   )}
-                  
+
                   {/* Thread Actions */}
                   <div className="flex items-center space-x-4 mb-6">
-                    <button 
+                    <button
                       onClick={() => likeThreadMutation.mutate()}
                       disabled={!currentUser}
                       className="flex items-center text-gray-400 hover:text-green-500 transition"
@@ -592,8 +592,9 @@ export default function Thread() {
                       </svg>
                       <span className="font-medium">{displayThread?.likesCount}</span>
                     </button>
-                    
-                    <button 
+
+                    {/* Hiding dislike button for now */}
+                    {/* <button
                       onClick={() => dislikeThreadMutation.mutate()}
                       disabled={!currentUser}
                       className="flex items-center text-gray-400 hover:text-red-500 transition"
@@ -602,9 +603,9 @@ export default function Thread() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2" />
                       </svg>
                       <span className="font-medium">{displayThread?.dislikesCount}</span>
-                    </button>
-                    
-                    <button 
+                    </button> */}
+
+                    <button
                       onClick={() => potdThreadMutation.mutate()}
                       disabled={!currentUser}
                       className="flex items-center text-gray-400 hover:text-yellow-500 transition"
@@ -617,7 +618,7 @@ export default function Thread() {
 
                     {/* Add delete button if user is author or has permission */}
                     {currentUser && (currentUser.id === displayThread?.userId || currentUser.role === "ADMIN" || currentUser.role === "MODERATOR") && (
-                      <button 
+                      <button
                         onClick={() => {
                           if (window.confirm("Are you sure you want to delete this thread? This action cannot be undone.")) {
                             deleteThreadMutation.mutate();
@@ -636,11 +637,11 @@ export default function Thread() {
               </div>
             </div>
           </div>
-          
+
           {/* Thread Replies */}
           <div className="mb-6">
             <h2 className="text-xl font-bold text-white mb-4">Replies ({displayReplies.length})</h2>
-            
+
             {isRepliesLoading ? (
               <div className="py-12 text-center">
                 <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>
@@ -657,9 +658,9 @@ export default function Thread() {
             ) : (
               <div className="space-y-4">
                 {displayReplies.map(reply => (
-                  <ReplyCard 
-                    key={reply.id} 
-                    reply={reply} 
+                  <ReplyCard
+                    key={reply.id}
+                    reply={reply}
                     onQuote={handleQuoteReply}
                     onLike={() => likeReplyMutation.mutate(reply.id)}
                     onDislike={() => dislikeReplyMutation.mutate(reply.id)}
@@ -669,13 +670,13 @@ export default function Thread() {
               </div>
             )}
           </div>
-          
+
           {/* Reply Form */}
           <div id="reply-form" className="bg-dark-gray rounded-lg p-5">
             <h3 className="text-lg font-bold text-white mb-4">
               {replyingTo ? `Reply to ${replyingTo.username}` : "Add Your Reply"}
             </h3>
-            
+
             {!currentUser ? (
               <div className="bg-gray-800 p-4 rounded-lg text-center">
                 <p className="text-gray-300 mb-3">You need to be logged in to reply</p>
@@ -690,7 +691,7 @@ export default function Thread() {
                     <span className="text-sm text-gray-400">
                       Replying to <span className="text-ufc-blue">{replyingTo.username}</span>
                     </span>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => {
                         setReplyingTo(null);
@@ -702,7 +703,7 @@ export default function Thread() {
                     </button>
                   </div>
                 )}
-                
+
                 {/* Show upgrade warning for free users */}
                 {currentUser?.publicMetadata?.planType === 'FREE' && (
                   <div className="bg-gray-800 border-l-4 border-yellow-500 p-3 mb-3 rounded">
@@ -711,14 +712,14 @@ export default function Thread() {
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
                       <p className="text-sm text-gray-300">
-                        You're on a <span className="font-bold text-yellow-500">Free Plan</span>. 
+                        You're on a <span className="font-bold text-yellow-500">Free Plan</span>.
                         <span className="text-gray-400"> Upgrade to post replies.</span>
                       </p>
                     </div>
                   </div>
                 )}
-                
-                <textarea 
+
+                <textarea
                   id="reply-input"
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
@@ -726,7 +727,7 @@ export default function Thread() {
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-gray-300 min-h-[150px] focus:outline-none focus:ring-1 focus:ring-ufc-blue"
                   required
                 />
-                
+
                 <div className="flex justify-between items-center mt-4">
                   <div className="flex space-x-3">
                     {/* <button type="button" className="text-gray-400 hover:text-white flex items-center">
@@ -742,8 +743,8 @@ export default function Thread() {
                       Emoji
                     </button> */}
                   </div>
-                  
-                  <button 
+
+                  <button
                     type="submit"
                     disabled={submitReplyMutation.isPending || !replyContent.trim()}
                     className={`font-medium px-4 py-2 rounded-lg text-sm transition ${
@@ -757,12 +758,12 @@ export default function Thread() {
             )}
           </div>
         </div>
-        
+
         {/* Right Sidebar */}
         <div className="hidden lg:block w-80 flex-shrink-0 mt-9">
           <div className="bg-dark-gray rounded-lg p-4 sticky top-20">
             <h3 className="text-lg font-bold text-white mb-4">Thread Info</h3>
-            
+
             <div className="mb-4">
               <p className="text-gray-400 text-sm mb-1">Posted by</p>
               <div className="flex items-center">
@@ -772,19 +773,19 @@ export default function Thread() {
                 </Link>
               </div>
             </div>
-            
+
             <div className="mb-4">
               <p className="text-gray-400 text-sm mb-1">Category</p>
               <Link href={`/forum/${displayThread.categoryId}`} className="text-ufc-blue hover:underline">
                 {getCategoryName(displayThread.categoryId)}
               </Link>
             </div>
-            
+
             <div className="mb-4">
               <p className="text-gray-400 text-sm mb-1">Created</p>
               <p className="text-white">{formatDate(displayThread.createdAt)}</p>
             </div>
-            
+
             <div className="mb-4">
               <p className="text-gray-400 text-sm mb-1">Stats</p>
               <div className="grid grid-cols-2 gap-2">
@@ -798,7 +799,7 @@ export default function Thread() {
                 </div>
               </div>
             </div>
-            
+
             {displayThread.isPotd && (
               <div className="bg-gray-800 p-3 rounded-lg mb-4">
                 <div className="flex items-center text-ufc-blue mb-1">
@@ -810,7 +811,7 @@ export default function Thread() {
                 <p className="text-gray-300 text-sm">This post has been selected as Post of the Day by the community!</p>
               </div>
             )}
-            
+
             {(currentUser?.role === "ADMIN" || currentUser?.role === "MODERATOR") && (
               <div className="border-t border-gray-800 pt-4 mt-4">
                 <h3 className="text-lg font-bold text-white mb-2">Moderation</h3>
@@ -855,7 +856,7 @@ export default function Thread() {
                 Posting replies is only available for paid members. Upgrade your plan to join the conversation!
               </p>
             </div>
-            
+
             <div className="flex flex-col space-y-3">
               <button
                 onClick={handleUpgrade}
@@ -887,17 +888,17 @@ interface ReplyCardProps {
 
 function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardProps) {
   const { user:currentUser } = useUser();
-  
+
   // Calculate indentation level based on nested replies
   const indentationLevel = reply.parentReplyId ? 1 : 0;
   const indentationClass = indentationLevel > 0 ? 'ml-8 border-l-2 border-gray-800 pl-4' : '';
-  
+
   const canDeleteReply = currentUser && (
-    currentUser.id === reply.userId || 
-    currentUser.role === "ADMIN" || 
+    currentUser.id === reply.userId ||
+    currentUser.role === "ADMIN" ||
     currentUser.role === "MODERATOR"
   );
-  
+
   return (
     <div className={`bg-dark-gray rounded-lg overflow-hidden shadow-lg ${indentationClass}`}>
       <div className="p-4">
@@ -905,11 +906,11 @@ function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardPro
           <div className="mr-3 flex-shrink-0">
             <UserAvatar user={reply.user} size="md" />
           </div>
-          
+
           <div className="flex-grow">
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <StatusBadge status={reply.user.status} />
-              
+
               {reply.user.role === "PRO" && (
                 <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-bold flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -918,46 +919,46 @@ function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardPro
                   VERIFIED
                 </span>
               )}
-              
+
               {reply.user.role === "ADMIN" && (
                 <span className="bg-ufc-gold text-ufc-black text-xs px-2 py-0.5 rounded font-bold">
                   ADMIN
                 </span>
               )}
-              
+
               {reply.user.role === "MODERATOR" && (
                 <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded font-bold">
                   MOD
                 </span>
               )}
-              
+
               <Link href={`/user/${reply.user.username}`} className="text-white font-medium hover:text-ufc-blue transition">
                 {reply.user.username}
               </Link>
-              
+
               <span className="text-gray-400 text-sm">
                 {formatDate(reply.createdAt)}
               </span>
             </div>
-            
+
             <div className="text-gray-300 mb-4 whitespace-pre-line">
               {reply.content}
             </div>
-            
+
             {/* Reply Media */}
             {reply.media && reply.media.length > 0 && (
               <div className="mb-4">
-                <img 
-                  src={reply.media[0].url} 
-                  alt={`Media for reply`} 
+                <img
+                  src={reply.media[0].url}
+                  alt={`Media for reply`}
                   className="rounded-lg max-h-72 w-auto"
                 />
               </div>
             )}
-            
+
             {/* Reply Actions */}
             <div className="flex items-center flex-wrap gap-4">
-              <button 
+              <button
                 onClick={onLike}
                 disabled={!currentUser}
                 className="flex items-center text-gray-400 hover:text-green-500 transition"
@@ -967,8 +968,8 @@ function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardPro
                 </svg>
                 <span className="font-medium">{reply.likesCount}</span>
               </button>
-              
-              {/* <button 
+
+              {/* <button
                 onClick={onDislike}
                 disabled={!currentUser}
                 className="flex items-center text-gray-400 hover:text-red-500 transition"
@@ -978,8 +979,8 @@ function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardPro
                 </svg>
                 <span className="font-medium">{reply.dislikesCount}</span>
               </button> */}
-              
-              {/* <button 
+
+              {/* <button
                 onClick={() => onQuote(reply)}
                 disabled={!currentUser}
                 className="flex items-center text-gray-400 hover:text-white transition"
@@ -989,8 +990,8 @@ function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardPro
                 </svg>
                 <span className="font-medium">Quote</span>
               </button> */}
-              
-              <button 
+
+              <button
                 onClick={() => {
                   document.getElementById('reply-form')?.scrollIntoView({ behavior: 'smooth' });
                   onQuote(reply);
@@ -1004,9 +1005,9 @@ function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardPro
                 <span className="font-medium">Reply</span>
               </button>
             </div>
-            
+
             {canDeleteReply && (
-              <button 
+              <button
                 onClick={() => {
                   if (window.confirm("Are you sure you want to delete this reply? This action cannot be undone.")) {
                     onDelete();

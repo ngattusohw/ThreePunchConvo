@@ -223,3 +223,52 @@ CDN_BASE_URL=https://your-bucket-name.s3.amazonaws.com
 PORT=5000
 NODE_ENV=development
 ```
+
+# Database Migrations
+
+The application uses two types of migrations:
+
+## SQL Migrations
+
+Located in the `/migrations` directory, these are raw SQL files that can be run directly against your PostgreSQL database.
+
+```bash
+# Run a specific SQL migration file
+psql -d your_database_name -f migrations/000_create_categories_table.sql
+
+# Or if using a connection string
+psql "your_connection_string" -f migrations/000_create_categories_table.sql
+```
+
+## TypeScript Migrations
+
+Located in the `/server/migrations` directory, these are programmatic migrations that use Drizzle ORM and are run through the migrate script.
+
+```bash
+# Run all TypeScript migrations
+npm run migrate
+```
+
+### Migration Sequence
+
+When setting up a new database from scratch, follow this sequence:
+
+1. Run the SQL migration to create basic tables:
+   ```bash
+   psql "your_connection_string" -f migrations/000_create_categories_table.sql
+   ```
+
+2. Run the TypeScript migrations which will handle all other table creation and data initialization:
+   ```bash
+   npm run migrate
+   ```
+
+### Troubleshooting Migrations
+
+If you encounter errors during migration:
+
+1. **"relation does not exist"**: This usually means you're trying to reference a table that hasn't been created yet. Make sure to run migrations in the correct order.
+
+2. **Foreign key constraint failures**: Ensure you've created all required tables before adding foreign key constraints.
+
+3. **Duplicate key violations**: This could happen if you try to insert data that already exists. Use `ON CONFLICT DO NOTHING` in your SQL statements to handle this.

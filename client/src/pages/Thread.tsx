@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ForumThread, ThreadReply } from "@/lib/types";
@@ -48,7 +48,69 @@ export default function Thread() {
 
   // Use the actual data from the API
   const displayThread = thread;
-  const displayReplies = replies || [];
+  
+  // Organize replies into a hierarchical structure
+  const [displayReplies, setDisplayReplies] = useState<ThreadReply[]>([]);
+  
+  // Process replies to create a proper threaded structure
+  useEffect(() => {
+    if (!replies) return;
+    
+    // Create a map of parent IDs to their child replies
+    const replyMap = new Map<string | null, ThreadReply[]>();
+    
+    // Create a map of reply IDs to usernames for showing parent info
+    const replyUserMap = new Map<string, string>();
+    
+    // Initialize all possible parent IDs with empty arrays
+    replyMap.set(null, []); // Top-level replies have null parentReplyId
+    
+    // Group replies by their parent ID and build username map
+    replies.forEach(reply => {
+      const parentId = reply.parentReplyId || null;
+      if (!replyMap.has(parentId)) {
+        replyMap.set(parentId, []);
+      }
+      replyMap.get(parentId)!.push(reply);
+      
+      // Store the username for this reply ID
+      replyUserMap.set(reply.id.toString(), reply.user.username);
+    });
+    
+    // Function to recursively build the reply tree in the correct order
+    const buildReplyTree = (parentId: string | null, level: number = 0): ThreadReply[] => {
+      const children = replyMap.get(parentId) || [];
+      
+      // Sort replies by creation date (oldest first)
+      const sortedChildren = [...children].sort((a, b) => 
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+      
+      // For each child, also include its descendants
+      const result: ThreadReply[] = [];
+      
+      for (const child of sortedChildren) {
+        // Add the child itself with its level and parent username if available
+        const parentUsername = child.parentReplyId ? replyUserMap.get(child.parentReplyId) : undefined;
+        const childWithMeta = {
+          ...child,
+          level,
+          parentUsername
+        };
+        result.push(childWithMeta);
+        
+        // Add all of the child's descendants
+        const descendants = buildReplyTree(child.id.toString(), level + 1);
+        result.push(...descendants);
+      }
+      
+      return result;
+    };
+    
+    // Build the complete threaded structure starting from top-level replies
+    const threadedReplies = buildReplyTree(null);
+    setDisplayReplies(threadedReplies);
+  }, [replies]);
 
   // Handle liking a thread
   const likeThreadMutation = useMutation({
@@ -156,7 +218,7 @@ export default function Thread() {
       const response = await apiRequest("POST", `/api/threads/${threadId}/replies`, {
         userId: currentUser.id,
         content: replyContent,
-        parentReplyId: replyingTo?.id
+        parentReplyId: replyingTo?.id || null
       });
 
       if (!response.ok) {
@@ -254,7 +316,10 @@ export default function Thread() {
 
   // Handle quoting a reply
   const handleQuoteReply = (reply: ThreadReply) => {
-    setReplyingTo({ id: reply.id.toString(), username: reply.user.username });
+    setReplyingTo({ 
+      id: reply.id.toString(), 
+      username: reply.user.username 
+    });
 
     // Scroll to reply form
     document.getElementById('reply-form')?.scrollIntoView({ behavior: 'smooth' });
@@ -879,7 +944,10 @@ export default function Thread() {
 }
 
 interface ReplyCardProps {
-  reply: ThreadReply;
+  reply: ThreadReply & { 
+    level?: number;
+    parentUsername?: string;
+  };
   onQuote: (reply: ThreadReply) => void;
   onLike: () => void;
   onDislike: () => void;
@@ -889,9 +957,15 @@ interface ReplyCardProps {
 function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardProps) {
   const { user:currentUser } = useUser();
 
-  // Calculate indentation level based on nested replies
-  const indentationLevel = reply.parentReplyId ? 1 : 0;
-  const indentationClass = indentationLevel > 0 ? 'ml-8 border-l-2 border-gray-800 pl-4' : '';
+  // Calculate indentation based on the reply's level in the thread
+  const level = reply.level || 0;
+  
+  // Use fixed indentation classes based on level
+  let indentationClass = '';
+  if (level === 1) indentationClass = 'ml-4 border-l-2 border-gray-700 pl-4';
+  else if (level === 2) indentationClass = 'ml-8 border-l-2 border-gray-600 pl-4';
+  else if (level === 3) indentationClass = 'ml-12 border-l-2 border-gray-600 pl-4';
+  else if (level >= 4) indentationClass = 'ml-16 border-l-2 border-gray-600 pl-4';
 
   const canDeleteReply = currentUser && (
     currentUser.id === reply.userId ||
@@ -900,7 +974,15 @@ function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardPro
   );
 
   return (
-    <div className={`bg-dark-gray rounded-lg overflow-hidden shadow-lg ${indentationClass}`}>
+    <div className={`bg-dark-gray rounded-lg overflow-hidden shadow-lg ${indentationClass} ${level > 0 ? 'mt-2' : 'mt-4'}`}>
+      {level > 0 && reply.parentUsername && (
+        <div className="bg-gray-800 py-1 px-4 text-xs text-gray-400 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+          </svg>
+          Reply to <span className="text-ufc-blue ml-1 font-medium">{reply.parentUsername}</span>
+        </div>
+      )}
       <div className="p-4">
         <div className="flex items-start">
           <div className="mr-3 flex-shrink-0">
@@ -978,17 +1060,6 @@ function ReplyCard({ reply, onQuote, onLike, onDislike, onDelete }: ReplyCardPro
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2" />
                 </svg>
                 <span className="font-medium">{reply.dislikesCount}</span>
-              </button> */}
-
-              {/* <button
-                onClick={() => onQuote(reply)}
-                disabled={!currentUser}
-                className="flex items-center text-gray-400 hover:text-white transition"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
-                <span className="font-medium">Quote</span>
               </button> */}
 
               <button

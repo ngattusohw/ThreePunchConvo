@@ -9,9 +9,9 @@ export default function Forum() {
   // Get the category ID from URL params
   const params = useParams<{ categoryId?: string }>();
   const categoryId = params.categoryId || "general";
-  
+
   // Validate the category exists, default to general if not found
-  const isValidCategory = FORUM_CATEGORIES.some(cat => cat.id === categoryId);
+  const isValidCategory = FORUM_CATEGORIES.some((cat) => cat.id === categoryId);
   const validCategoryId = isValidCategory ? categoryId : "general";
 
   return (
@@ -24,10 +24,10 @@ export default function Forum() {
         <ForumContent category={validCategoryId} />
 
         {/* Right Sidebar - Schedule and Rankings */}
-        <aside className="hidden xl:block w-80 flex-shrink-0 space-y-6">
+        <aside className="hidden w-80 flex-shrink-0 space-y-6 xl:block">
           {/* Upcoming Events */}
           {/* <EventsSidebar /> */}
-          
+
           {/* Top Users */}
           <TopUsersSidebar />
         </aside>

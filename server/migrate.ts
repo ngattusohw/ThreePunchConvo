@@ -10,7 +10,7 @@ import * as addPlanTypeMigration from "./migrations/0007_add_plan_type";
 async function migrate() {
   try {
     console.log("Running migrations...");
-    
+
     // Run migrations in order
     await initialMigration.up(db);
     await addMissingTablesMigration.up(db);
@@ -19,7 +19,7 @@ async function migrate() {
     await addClerkExternalIdMigration.up(db);
     await addStripeIdMigration.up(db);
     await addPlanTypeMigration.up(db);
-    
+
     console.log("Migrations completed successfully!");
     process.exit(0);
   } catch (error) {
@@ -28,4 +28,4 @@ async function migrate() {
   }
 }
 
-migrate(); 
+migrate();

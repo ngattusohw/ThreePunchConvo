@@ -19,23 +19,24 @@ export default function Rankings() {
   });
 
   // Process users to handle ties
-  const processedUsers = rankedUsers?.reduce((acc, user, index, array) => {
-    // Find all users with the same points (including current user)
-    const tiedUsers = array.filter(u => u.points === user.points);
-    const isTied = tiedUsers.length > 1;
-    
-    // Calculate position based on how many users with higher points exist
-    const usersWithHigherPoints = array.filter(u => u.points > user.points);
-    const position = usersWithHigherPoints.length + 1;
-    
-    acc.push({
-      ...user,
-      position,
-      isTied
-    });
-    
-    return acc;
-  }, [] as RankedUser[]) ?? [];
+  const processedUsers =
+    rankedUsers?.reduce((acc, user, index, array) => {
+      // Find all users with the same points (including current user)
+      const tiedUsers = array.filter((u) => u.points === user.points);
+      const isTied = tiedUsers.length > 1;
+
+      // Calculate position based on how many users with higher points exist
+      const usersWithHigherPoints = array.filter((u) => u.points > user.points);
+      const position = usersWithHigherPoints.length + 1;
+
+      acc.push({
+        ...user,
+        position,
+        isTied,
+      });
+
+      return acc;
+    }, [] as RankedUser[]) ?? [];
 
   // Filter users by status if needed
   const filteredUsers =
@@ -48,7 +49,7 @@ export default function Rankings() {
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-heading font-bold text-white mb-2">
+        <h1 className="font-heading mb-2 text-2xl font-bold text-white">
           Community Rankings
         </h1>
         <p className="text-gray-400">
@@ -57,10 +58,10 @@ export default function Rankings() {
       </div>
 
       {/* Filter Options */}
-      <div className="mb-6 grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+      <div className="mb-6 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         <button
           onClick={() => setRankingFilter("all")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
             rankingFilter === "all"
               ? "bg-ufc-blue text-black"
               : "bg-dark-gray text-gray-300 hover:bg-gray-800"
@@ -70,7 +71,7 @@ export default function Rankings() {
         </button>
         <button
           onClick={() => setRankingFilter("hall")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
             rankingFilter === "hall"
               ? "status-hof"
               : "bg-dark-gray text-gray-300 hover:bg-gray-800"
@@ -80,7 +81,7 @@ export default function Rankings() {
         </button>
         <button
           onClick={() => setRankingFilter("champion")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
             rankingFilter === "champion"
               ? "status-champion"
               : "bg-dark-gray text-gray-300 hover:bg-gray-800"
@@ -90,7 +91,7 @@ export default function Rankings() {
         </button>
         <button
           onClick={() => setRankingFilter("contender")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
             rankingFilter === "contender"
               ? "status-contender"
               : "bg-dark-gray text-gray-300 hover:bg-gray-800"
@@ -100,7 +101,7 @@ export default function Rankings() {
         </button>
         <button
           onClick={() => setRankingFilter("ranked")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
             rankingFilter === "ranked"
               ? "status-ranked text-white"
               : "bg-dark-gray text-gray-300 hover:bg-gray-800"
@@ -111,9 +112,9 @@ export default function Rankings() {
       </div>
 
       {/* Ranking Explanation */}
-      <div className="bg-dark-gray p-4 rounded-lg mb-6">
-        <h2 className="font-bold text-white mb-2">About Rankings</h2>
-        <p className="text-gray-300 text-sm">
+      <div className="bg-dark-gray mb-6 rounded-lg p-4">
+        <h2 className="mb-2 font-bold text-white">About Rankings</h2>
+        <p className="text-sm text-gray-300">
           Rankings are calculated based on your community contributions. Earn
           points through posting quality content, receiving likes, having your
           posts selected as Post of the Day, and more. Status levels from
@@ -125,14 +126,14 @@ export default function Rankings() {
       {/* Loading State */}
       {isLoading && (
         <div className="py-20 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>
+          <div className="border-ufc-blue mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-t-2"></div>
           <p className="mt-4 text-gray-400">Loading rankings...</p>
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-900 bg-opacity-20 border border-red-500 rounded-lg p-4 text-center my-8">
+        <div className="my-8 rounded-lg border border-red-500 bg-red-900 bg-opacity-20 p-4 text-center">
           <p className="text-red-500">
             Error loading rankings. Please try again later.
           </p>
@@ -141,8 +142,8 @@ export default function Rankings() {
 
       {/* Rankings Table */}
       {!isLoading && !error && (
-        <div className="bg-dark-gray rounded-lg overflow-hidden">
-          <div className="bg-ufc-black p-4 hidden md:flex text-gray-400 font-medium text-sm">
+        <div className="bg-dark-gray overflow-hidden rounded-lg">
+          <div className="bg-ufc-black hidden p-4 text-sm font-medium text-gray-400 md:flex">
             <div className="w-16 text-center">Rank</div>
             <div className="flex-1">User</div>
             <div className="w-24 text-center">Status</div>
@@ -161,20 +162,20 @@ export default function Rankings() {
               {filteredUsers.map((rankedUser) => (
                 <div
                   key={rankedUser.user.id}
-                  className="p-4 hover:bg-gray-800 transition"
+                  className="p-4 transition hover:bg-gray-800"
                 >
                   {/* Desktop layout */}
-                  <div className="hidden md:flex md:flex-nowrap items-center">
+                  <div className="hidden items-center md:flex md:flex-nowrap">
                     {/* Rank */}
                     <div className="w-16 text-center">
-                      <span className="text-lg font-accent font-bold text-ufc-gold">
+                      <span className="font-accent text-ufc-gold text-lg font-bold">
                         #{rankedUser.position}
                         {rankedUser.isTied ? "-T" : ""}
                       </span>
                     </div>
 
                     {/* User Info */}
-                    <div className="flex items-center flex-1">
+                    <div className="flex flex-1 items-center">
                       <UserAvatar
                         user={rankedUser.user}
                         size="md"
@@ -183,17 +184,17 @@ export default function Rankings() {
                       <div>
                         <Link
                           href={`/user/${rankedUser.user.username}`}
-                          className="text-white font-medium hover:text-ufc-blue transition"
+                          className="hover:text-ufc-blue font-medium text-white transition"
                         >
                           {rankedUser.user.username}
                         </Link>
 
                         {rankedUser.user.role === "PRO" && (
-                          <div className="flex items-center mt-1">
-                            <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-bold flex items-center">
+                          <div className="mt-1 flex items-center">
+                            <span className="flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                className="h-3 w-3 mr-1"
+                                className="mr-1 h-3 w-3"
                                 viewBox="0 0 20 20"
                                 fill="currentColor"
                               >
@@ -240,41 +241,41 @@ export default function Rankings() {
 
                   {/* Mobile layout */}
                   <div className="md:hidden">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="mb-2 flex items-center justify-between">
                       {/* Rank */}
-                      <span className="text-xl font-accent font-bold text-ufc-gold">
+                      <span className="font-accent text-ufc-gold text-xl font-bold">
                         #{rankedUser.position}
                         {rankedUser.isTied ? "-T" : ""}
                       </span>
-                      
+
                       {/* Points */}
-                      <span className="text-ufc-blue font-bold text-lg">
+                      <span className="text-ufc-blue text-lg font-bold">
                         {shortenNumber(rankedUser.points)} pts
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center">
                       <UserAvatar
                         user={rankedUser.user}
                         size="md"
                         className="mr-3 flex-shrink-0"
                       />
-                      <div className="flex-1 min-w-0">
+                      <div className="min-w-0 flex-1">
                         <Link
                           href={`/user/${rankedUser.user.username}`}
-                          className="text-white font-medium hover:text-ufc-blue transition block truncate"
+                          className="hover:text-ufc-blue block truncate font-medium text-white transition"
                         >
                           {rankedUser.user.username}
                         </Link>
 
-                        <div className="flex items-center mt-1 space-x-2">
+                        <div className="mt-1 flex items-center space-x-2">
                           <StatusBadge status={rankedUser.user.status} />
-                          
+
                           {rankedUser.user.role === "PRO" && (
-                            <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-bold flex items-center">
+                            <span className="flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                className="h-3 w-3 mr-1"
+                                className="mr-1 h-3 w-3"
                                 viewBox="0 0 20 20"
                                 fill="currentColor"
                               >
@@ -291,24 +292,24 @@ export default function Rankings() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 mt-3 text-center text-sm bg-gray-800 rounded-lg p-2">
+                    <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg bg-gray-800 p-2 text-center text-sm">
                       <div className="p-1">
-                        <div className="text-white font-medium">
+                        <div className="font-medium text-white">
                           {shortenNumber(rankedUser.user.postsCount)}
                         </div>
-                        <div className="text-gray-400 text-xs">Posts</div>
+                        <div className="text-xs text-gray-400">Posts</div>
                       </div>
                       <div className="p-1">
-                        <div className="text-white font-medium">
+                        <div className="font-medium text-white">
                           {shortenNumber(rankedUser.user.likesCount)}
                         </div>
-                        <div className="text-gray-400 text-xs">Likes</div>
+                        <div className="text-xs text-gray-400">Likes</div>
                       </div>
                       <div className="p-1">
-                        <div className="text-white font-medium">
+                        <div className="font-medium text-white">
                           {rankedUser.user.potdCount}
                         </div>
-                        <div className="text-gray-400 text-xs">POTD</div>
+                        <div className="text-xs text-gray-400">POTD</div>
                       </div>
                     </div>
                   </div>

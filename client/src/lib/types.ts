@@ -1,6 +1,13 @@
 // User related types
 export type UserRole = "ADMIN" | "MODERATOR" | "PRO" | "USER" | "PREMIUM_USER";
-export type UserStatus = "HALL OF FAMER" | "CHAMPION" | "CONTENDER" | "RANKED POSTER" | "COMPETITOR" | "REGIONAL POSTER" | "AMATEUR";
+export type UserStatus =
+  | "HALL OF FAMER"
+  | "CHAMPION"
+  | "CONTENDER"
+  | "RANKED POSTER"
+  | "COMPETITOR"
+  | "REGIONAL POSTER"
+  | "AMATEUR";
 
 export interface AuthUser {
   id: string;

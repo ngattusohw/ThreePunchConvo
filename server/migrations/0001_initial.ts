@@ -62,7 +62,7 @@ export async function up(db: any) {
       count INTEGER NOT NULL DEFAULT 0
     )
   `);
-  
+
   // Create users table if it doesn't exist
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS users (
@@ -94,7 +94,7 @@ export async function up(db: any) {
       social_links JSONB
     )
   `);
-  
+
   // Create threads table if it doesn't exist
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS threads (
@@ -115,7 +115,7 @@ export async function up(db: any) {
       is_potd BOOLEAN NOT NULL DEFAULT FALSE
     )
   `);
-  
+
   // Create replies table if it doesn't exist
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS replies (
@@ -130,7 +130,7 @@ export async function up(db: any) {
       dislikes_count INTEGER NOT NULL DEFAULT 0
     )
   `);
-  
+
   // Add self-reference for parent_reply_id
   await db.execute(sql`
     ALTER TABLE replies 
@@ -138,7 +138,7 @@ export async function up(db: any) {
     FOREIGN KEY (parent_reply_id) 
     REFERENCES replies(id) ON DELETE SET NULL
   `);
-  
+
   // Insert default categories
   for (const category of FORUM_CATEGORIES) {
     await db.insert(categories).values(category).onConflictDoNothing();
@@ -151,4 +151,4 @@ export async function down(db: any) {
   await db.execute(sql`DROP TABLE IF EXISTS threads`);
   await db.execute(sql`DROP TABLE IF EXISTS users`);
   await db.execute(sql`DROP TABLE IF EXISTS categories`);
-} 
+}

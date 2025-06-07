@@ -5,12 +5,12 @@ export default {
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     screens: {
-      'sm': '640px',
-      'md': '768px',
-      'lg': '1024px',
-      'sidebar': '1134px',
-      'xl': '1280px',
-      '2xl': '1536px',
+      sm: "640px",
+      md: "768px",
+      lg: "1024px",
+      sidebar: "1134px",
+      xl: "1280px",
+      "2xl": "1536px",
     },
     extend: {
       borderRadius: {

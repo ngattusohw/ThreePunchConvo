@@ -17,43 +17,57 @@ declare global {
 
 // Middleware to ensure Clerk users exist in our local database
 // Make sure it's correctly extracting the Clerk token
-export const ensureLocalUser = async (req: Request, res: Response, next: NextFunction) => {
+export const ensureLocalUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     console.log("Authorization header:", req.headers.authorization);
-    
+
     // Extract user ID from bearer token if req.auth doesn't have it
     let userId = req.auth?.userId;
-    
-    if (!userId && req.headers.authorization?.startsWith('Bearer ')) {
-      const token = req.headers.authorization.split(' ')[1];
+
+    if (!userId && req.headers.authorization?.startsWith("Bearer ")) {
+      const token = req.headers.authorization.split(" ")[1];
       try {
         // Parse the JWT (not verifying signature, just extracting payload)
-        const base64Payload = token.split('.')[1];
-        const payload = JSON.parse(Buffer.from(base64Payload, 'base64').toString());
+        const base64Payload = token.split(".")[1];
+        const payload = JSON.parse(
+          Buffer.from(base64Payload, "base64").toString(),
+        );
         userId = payload.sub;
         console.log("Extracted userId from JWT:", userId);
       } catch (error) {
         console.error("Error extracting userId from JWT:", error);
       }
     }
-    
+
     if (!userId) {
-      console.log("ensureLocalUser: No auth or userId found in request", req.method, req.originalUrl);
+      console.log(
+        "ensureLocalUser: No auth or userId found in request",
+        req.method,
+        req.originalUrl,
+      );
       return res.status(400).json({ message: "User not found" });
     }
-    
+
     // Find the local user based on Clerk ID
     const localUser = await storage.getUserByExternalId(userId);
-    
+
     if (!localUser) {
-      console.log(`ensureLocalUser: No local user found for Clerk ID ${userId}`);
+      console.log(
+        `ensureLocalUser: No local user found for Clerk ID ${userId}`,
+      );
       return res.status(400).json({ message: "User not found" });
     }
-    
+
     // Attach the local user to the request
     req.localUser = localUser;
-    console.log(`ensureLocalUser: Found local user ${localUser.id} for Clerk ID ${userId}`);
-    
+    console.log(
+      `ensureLocalUser: Found local user ${localUser.id} for Clerk ID ${userId}`,
+    );
+
     next();
   } catch (error) {
     console.error("Error in ensureLocalUser middleware:", error);
@@ -62,26 +76,30 @@ export const ensureLocalUser = async (req: Request, res: Response, next: NextFun
 };
 
 // Middleware to check if user has a paid plan
-export const requirePaidPlan = async (req: Request, res: Response, next: NextFunction) => {
+export const requirePaidPlan = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     // Make sure we have a local user
     if (!req.localUser) {
       return res.status(400).json({ message: "User not found" });
     }
-    
+
     // Check the user's plan type
-    const planType = req.localUser.planType || 'FREE';
-    
+    const planType = req.localUser.planType || "FREE";
+
     // Allow if the user has a paid plan (not FREE)
-    if (planType === 'FREE') {
-      return res.status(403).json({ 
+    if (planType === "FREE") {
+      return res.status(403).json({
         message: "This feature requires a paid subscription",
         error: "UPGRADE_REQUIRED",
         currentPlan: planType,
-        requiredPlans: ['BASIC', 'PRO']
+        requiredPlans: ["BASIC", "PRO"],
       });
     }
-    
+
     // User has a paid plan, continue
     next();
   } catch (error) {
@@ -93,26 +111,30 @@ export const requirePaidPlan = async (req: Request, res: Response, next: NextFun
 // Register auth-related endpoints
 export const registerAuthEndpoints = (app: Express) => {
   // Endpoint to check if a user with a specific Clerk ID exists and create one if not
-  app.post('/api/users/clerk/:clerkId', async (req: any, res: Response) => {
+  app.post("/api/users/clerk/:clerkId", async (req: any, res: Response) => {
     try {
       const clerkId = req.params.clerkId;
-      const { firstName, lastName, email, profileImageUrl, username } = req.body;
-      
+      const { firstName, lastName, email, profileImageUrl, username } =
+        req.body;
+
       if (!clerkId) {
-        return res.status(400).json({ message: 'Clerk ID is required' });
+        return res.status(400).json({ message: "Clerk ID is required" });
       }
-      
+
       console.log(`Checking if user with Clerk ID ${clerkId} exists`);
       let user = await storage.getUserByExternalId(clerkId);
       let userCreated = false;
-      
+
       // If user doesn't exist, create a new one
       if (!user) {
-        console.log(`User with Clerk ID ${clerkId} doesn't exist, creating new user`);
-        
+        console.log(
+          `User with Clerk ID ${clerkId} doesn't exist, creating new user`,
+        );
+
         // Use provided username or generate one based on Clerk ID
-        const finalUsername = username || `user_${clerkId.substring(clerkId.lastIndexOf('_') + 1)}`;
-        
+        const finalUsername =
+          username || `user_${clerkId.substring(clerkId.lastIndexOf("_") + 1)}`;
+
         try {
           // Create user in our database with Clerk profile data
           const newUser = await storage.createUser({
@@ -121,30 +143,34 @@ export const registerAuthEndpoints = (app: Express) => {
             firstName,
             lastName,
             email,
-            profileImageUrl
+            profileImageUrl,
           });
           console.log("auth profile: ", profileImageUrl);
-          
-          console.log(`Created new local user for Clerk ID ${clerkId}, local ID: ${newUser.id}`);
-          
+
+          console.log(
+            `Created new local user for Clerk ID ${clerkId}, local ID: ${newUser.id}`,
+          );
+
           // Get the created user to return
           user = await storage.getUserByExternalId(clerkId);
           userCreated = true;
-          
+
           if (!user) {
-            console.error(`Failed to fetch newly created user for Clerk ID: ${clerkId}`);
-            return res.status(500).json({ message: 'Failed to create user' });
+            console.error(
+              `Failed to fetch newly created user for Clerk ID: ${clerkId}`,
+            );
+            return res.status(500).json({ message: "Failed to create user" });
           }
         } catch (createError) {
-          console.error('Error creating new user:', createError);
-          
+          console.error("Error creating new user:", createError);
+
           // Try one more time to check if user exists (might have been created in a race condition)
           const retryUser = await storage.getUserByExternalId(clerkId);
           if (retryUser) {
             console.log(`Found user on retry for Clerk ID: ${clerkId}`);
             user = retryUser;
           } else {
-            return res.status(500).json({ message: 'Failed to create user' });
+            return res.status(500).json({ message: "Failed to create user" });
           }
         }
       } else {
@@ -152,38 +178,40 @@ export const registerAuthEndpoints = (app: Express) => {
         if (firstName || lastName || email || profileImageUrl || username) {
           try {
             const updates: Record<string, string | null> = {};
-            if (firstName) updates['firstName'] = firstName;
-            if (lastName) updates['lastName'] = lastName;
-            if (email) updates['email'] = email;
-            if (profileImageUrl) updates['profileImageUrl'] = profileImageUrl;
-            if (username) updates['username'] = username;
-            
+            if (firstName) updates["firstName"] = firstName;
+            if (lastName) updates["lastName"] = lastName;
+            if (email) updates["email"] = email;
+            if (profileImageUrl) updates["profileImageUrl"] = profileImageUrl;
+            if (username) updates["username"] = username;
+
             // Only update if there are changes
             if (Object.keys(updates).length > 0) {
               const updatedUser = await storage.updateUser(user.id, updates);
               if (updatedUser) {
                 user = updatedUser;
-                console.log(`Updated user ${user.id} with latest Clerk profile data`);
+                console.log(
+                  `Updated user ${user.id} with latest Clerk profile data`,
+                );
               }
             }
           } catch (updateError) {
-            console.error('Error updating user profile:', updateError);
+            console.error("Error updating user profile:", updateError);
             // Continue with existing user data even if update fails
           }
         }
       }
-      
+
       // Don't return password in response
       const { password, ...userWithoutPassword } = user;
-      
+
       res.json({
         exists: !userCreated,
         created: userCreated,
-        user: userWithoutPassword
+        user: userWithoutPassword,
       });
     } catch (error) {
-      console.error('Error checking/creating user:', error);
-      res.status(500).json({ message: 'Failed to check/create user' });
+      console.error("Error checking/creating user:", error);
+      res.status(500).json({ message: "Failed to check/create user" });
     }
   });
 };

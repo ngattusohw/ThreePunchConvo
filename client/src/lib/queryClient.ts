@@ -8,17 +8,17 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export const apiRequest = async (
-  method: string, 
-  endpoint: string, 
-  data?: any
+  method: string,
+  endpoint: string,
+  data?: any,
 ) => {
   const token = await window?.Clerk?.session?.getToken();
-  
+
   return fetch(endpoint, {
     method,
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : '',
+      "Content-Type": "application/json",
+      Authorization: token ? `Bearer ${token}` : "",
     },
     body: data ? JSON.stringify(data) : undefined,
   });

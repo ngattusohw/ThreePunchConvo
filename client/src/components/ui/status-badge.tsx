@@ -10,9 +10,15 @@ export default function StatusBadge({ status, className }: StatusBadgeProps) {
   if (!status) {
     return null;
   }
-  
+
   return (
-    <span className={cn(getStatusClass(status as UserStatus), "text-xs px-2 py-0.5 rounded font-bold", className)}>
+    <span
+      className={cn(
+        getStatusClass(status as UserStatus),
+        "rounded px-2 py-0.5 text-xs font-bold",
+        className,
+      )}
+    >
       {status}
     </span>
   );

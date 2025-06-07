@@ -1,6 +1,6 @@
-import React from 'react';
-import { Route, useLocation } from 'wouter';
-import { useAuth as useClerkAuth } from '@clerk/clerk-react';
+import React from "react";
+import { Route, useLocation } from "wouter";
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 
 interface ProtectedRouteProps {
   component: React.ComponentType<any>;
@@ -8,7 +8,10 @@ interface ProtectedRouteProps {
   [key: string]: any;
 }
 
-export function ProtectedRoute({ component: Component, ...rest }: ProtectedRouteProps) {
+export function ProtectedRoute({
+  component: Component,
+  ...rest
+}: ProtectedRouteProps) {
   const { userId, isLoaded } = useClerkAuth();
   const [, setLocation] = useLocation();
 
@@ -19,8 +22,8 @@ export function ProtectedRoute({ component: Component, ...rest }: ProtectedRoute
         // If Clerk is still loading, show a loading state
         if (!isLoaded) {
           return (
-            <div className="min-h-screen flex items-center justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ufc-blue"></div>
+            <div className="flex min-h-screen items-center justify-center">
+              <div className="border-ufc-blue h-12 w-12 animate-spin rounded-full border-b-2 border-t-2"></div>
             </div>
           );
         }
@@ -31,7 +34,7 @@ export function ProtectedRoute({ component: Component, ...rest }: ProtectedRoute
         }
 
         // If not authenticated, redirect to login
-        setLocation('/auth');
+        setLocation("/auth");
         return null;
       }}
     />

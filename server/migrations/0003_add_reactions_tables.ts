@@ -24,12 +24,24 @@ export async function up(db: any) {
   `);
 
   // Create indexes for better query performance
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_thread_reactions_thread_id ON thread_reactions(thread_id);`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_thread_reactions_user_id ON thread_reactions(user_id);`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_thread_reactions_type ON thread_reactions(type);`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_reply_reactions_reply_id ON reply_reactions(reply_id);`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_reply_reactions_user_id ON reply_reactions(user_id);`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_reply_reactions_type ON reply_reactions(type);`);
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_thread_reactions_thread_id ON thread_reactions(thread_id);`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_thread_reactions_user_id ON thread_reactions(user_id);`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_thread_reactions_type ON thread_reactions(type);`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_reply_reactions_reply_id ON reply_reactions(reply_id);`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_reply_reactions_user_id ON reply_reactions(user_id);`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_reply_reactions_type ON reply_reactions(type);`,
+  );
 
   // Create unique constraint to prevent duplicate reactions
   await db.execute(sql`
@@ -46,4 +58,4 @@ export async function down(db: any) {
   // Drop tables and their indexes (CASCADE will handle the indexes)
   await db.execute(sql`DROP TABLE IF EXISTS thread_reactions CASCADE;`);
   await db.execute(sql`DROP TABLE IF EXISTS reply_reactions CASCADE;`);
-} 
+}

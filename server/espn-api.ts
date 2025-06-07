@@ -2,7 +2,9 @@ import fetch from "node-fetch";
 import { MMAEvent, Fighter, Fight } from "@shared/schema";
 
 // ESPN API endpoint for MMA events
-export const ESPN_API_BASE_URL = process.env.ESPN_API_BASE_URL || "https://site.api.espn.com/apis/site/v2/sports/mma";
+export const ESPN_API_BASE_URL =
+  process.env.ESPN_API_BASE_URL ||
+  "https://site.api.espn.com/apis/site/v2/sports/mma";
 
 interface ESPNEvent {
   id: string;
@@ -18,7 +20,7 @@ interface ESPNEvent {
         city: string;
         state?: string;
         country?: string;
-      }
+      };
     };
     competitors: {
       id: string;
@@ -26,7 +28,7 @@ interface ESPNEvent {
         id: string;
         displayName: string;
         headshot?: { href: string };
-      }
+      };
     }[];
   }[];
   links: {
@@ -44,22 +46,24 @@ export async function fetchUpcomingEvents(): Promise<MMAEvent[]> {
   try {
     const url = `${ESPN_API_BASE_URL}/events`;
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       throw new Error(`ESPN API responded with status: ${response.status}`);
     }
-    
-    const data = await response.json() as ESPNEventsResponse;
-    
+
+    const data = (await response.json()) as ESPNEventsResponse;
+
     if (!data.events || !Array.isArray(data.events)) {
       return [];
     }
-    
+
     // Process and map ESPN events to our MMA event format
     const events = data.events.map(processESPNEvent);
-    
+
     // Sort by date (ascending)
-    return events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return events.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
   } catch (error) {
     console.error("Error fetching ESPN events:", error);
     // Return mock events for development/fallback
@@ -78,66 +82,78 @@ function processESPNEvent(espnEvent: ESPNEvent): MMAEvent {
   } else if (espnEvent.name.includes("PFL")) {
     organization = "PFL";
   }
-  
+
   // Get venue and location
   const venue = espnEvent.competitions?.[0]?.venue?.fullName || "TBA";
   const city = espnEvent.competitions?.[0]?.venue?.address?.city || "";
   const state = espnEvent.competitions?.[0]?.venue?.address?.state || "";
   const country = espnEvent.competitions?.[0]?.venue?.address?.country || "";
-  
+
   let location = city;
   if (state) location += state ? `, ${state}` : "";
   if (!state && country) location += country ? `, ${country}` : "";
-  
+
   if (!location) location = "TBA";
-  
+
   // Create main card fights
   const mainCard: any[] = [];
   const prelimCard: any[] = [];
-  
+
   // In real implementation, we would fetch more detailed card info
   // For now we'll create a main event from the competitors if available
   if (espnEvent.competitions?.[0]?.competitors?.length >= 2) {
     const fighter1: Fighter = {
       id: espnEvent.competitions[0].competitors[0].athlete.id,
       name: espnEvent.competitions[0].competitors[0].athlete.displayName,
-      imageUrl: espnEvent.competitions[0].competitors[0].athlete.headshot?.href || null,
+      imageUrl:
+        espnEvent.competitions[0].competitors[0].athlete.headshot?.href || null,
       nickname: null,
       record: null,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
-    
+
     const fighter2: Fighter = {
       id: espnEvent.competitions[0].competitors[1].athlete.id,
       name: espnEvent.competitions[0].competitors[1].athlete.displayName,
-      imageUrl: espnEvent.competitions[0].competitors[1].athlete.headshot?.href || null,
+      imageUrl:
+        espnEvent.competitions[0].competitors[1].athlete.headshot?.href || null,
       nickname: null,
       record: null,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
-    
+
     // Determine weight class from event name
     let weightClass = "Heavyweight";
     const weightClasses = [
-      "Heavyweight", "Light Heavyweight", "Middleweight", "Welterweight",
-      "Lightweight", "Featherweight", "Bantamweight", "Flyweight",
-      "Women's Featherweight", "Women's Bantamweight", "Women's Flyweight", "Women's Strawweight"
+      "Heavyweight",
+      "Light Heavyweight",
+      "Middleweight",
+      "Welterweight",
+      "Lightweight",
+      "Featherweight",
+      "Bantamweight",
+      "Flyweight",
+      "Women's Featherweight",
+      "Women's Bantamweight",
+      "Women's Flyweight",
+      "Women's Strawweight",
     ];
-    
+
     for (const wc of weightClasses) {
       if (espnEvent.name.includes(wc)) {
         weightClass = wc;
         break;
       }
     }
-    
+
     // Determine if title fight
-    const isTitleFight = espnEvent.name.includes("Championship") || 
-                         espnEvent.name.includes("Title") || 
-                         espnEvent.name.includes("Belt");
-    
+    const isTitleFight =
+      espnEvent.name.includes("Championship") ||
+      espnEvent.name.includes("Title") ||
+      espnEvent.name.includes("Belt");
+
     const mainFight = {
       id: espnEvent.competitions[0].id,
       eventId: espnEvent.id,
@@ -148,12 +164,12 @@ function processESPNEvent(espnEvent: ESPNEvent): MMAEvent {
       isMainCard: true,
       order: 1,
       fighter1,
-      fighter2
+      fighter2,
     };
-    
+
     mainCard.push(mainFight);
   }
-  
+
   // Create a proper event object that matches our schema
   const mmaEvent: MMAEvent = {
     id: espnEvent.id,
@@ -165,9 +181,9 @@ function processESPNEvent(espnEvent: ESPNEvent): MMAEvent {
     location,
     imageUrl: null,
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
-  
+
   return mmaEvent;
 }
 
@@ -184,7 +200,7 @@ function generateMockEvents(): MMAEvent[] {
       location: "Miami, FL",
       imageUrl: null,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     },
     {
       id: "2",
@@ -196,7 +212,7 @@ function generateMockEvents(): MMAEvent[] {
       location: "Las Vegas, NV",
       imageUrl: null,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     },
     {
       id: "3",
@@ -208,7 +224,7 @@ function generateMockEvents(): MMAEvent[] {
       location: "Chicago, IL",
       imageUrl: null,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     },
     {
       id: "4",
@@ -220,7 +236,7 @@ function generateMockEvents(): MMAEvent[] {
       location: "Las Vegas, NV",
       imageUrl: null,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     },
   ];
 }

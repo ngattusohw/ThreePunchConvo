@@ -14,26 +14,34 @@ interface NotificationModalProps {
 export default function NotificationModal({ onClose }: NotificationModalProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   // Fetch notifications
-  const { data: notifications, isLoading, error } = useQuery<Notification[]>({
-    queryKey: ['/api/notifications'],
+  const {
+    data: notifications,
+    isLoading,
+    error,
+  } = useQuery<Notification[]>({
+    queryKey: ["/api/notifications"],
     // In a real app, we would fetch from the API
   });
 
   // For demo purposes, create mock notifications if none are returned from the API
-  const displayNotifications = notifications?.length 
-    ? notifications 
+  const displayNotifications = notifications?.length
+    ? notifications
     : generateMockNotifications();
 
   // Mark all as read mutation
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/notifications/read-all", {});
+      const response = await apiRequest(
+        "POST",
+        "/api/notifications/read-all",
+        {},
+      );
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
       toast({
         title: "Notifications updated",
         description: "All notifications marked as read.",
@@ -43,9 +51,9 @@ export default function NotificationModal({ onClose }: NotificationModalProps) {
       toast({
         title: "Error",
         description: error.message || "Failed to mark notifications as read.",
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const handleMarkAllAsRead = () => {
@@ -60,22 +68,38 @@ export default function NotificationModal({ onClose }: NotificationModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" onClick={handleModalClick}>
-      <div className="bg-dark-gray rounded-lg max-w-md w-full mx-4 overflow-hidden shadow-xl">
-        <div className="bg-ufc-black p-4 flex justify-between items-center border-b border-gray-800">
-          <h3 className="text-white font-bold text-lg">Notifications</h3>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      onClick={handleModalClick}
+    >
+      <div className="bg-dark-gray mx-4 w-full max-w-md overflow-hidden rounded-lg shadow-xl">
+        <div className="bg-ufc-black flex items-center justify-between border-b border-gray-800 p-4">
+          <h3 className="text-lg font-bold text-white">Notifications</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
-        
+
         <div className="max-h-96 overflow-y-auto p-4">
           {isLoading ? (
             <div className="py-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-ufc-blue mx-auto"></div>
-              <p className="mt-2 text-gray-400 text-sm">Loading notifications...</p>
+              <div className="border-ufc-blue mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-t-2"></div>
+              <p className="mt-2 text-sm text-gray-400">
+                Loading notifications...
+              </p>
             </div>
           ) : error ? (
             <div className="py-8 text-center">
@@ -88,17 +112,20 @@ export default function NotificationModal({ onClose }: NotificationModalProps) {
           ) : (
             <ul className="space-y-4">
               {displayNotifications.map((notification) => (
-                <NotificationItem key={notification.id} notification={notification} />
+                <NotificationItem
+                  key={notification.id}
+                  notification={notification}
+                />
               ))}
             </ul>
           )}
         </div>
-        
-        <div className="bg-ufc-black p-4 border-t border-gray-800">
-          <button 
+
+        <div className="bg-ufc-black border-t border-gray-800 p-4">
+          <button
             onClick={handleMarkAllAsRead}
             disabled={markAllAsReadMutation.isPending}
-            className={`text-gray-400 hover:text-white text-sm font-medium ${markAllAsReadMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`text-sm font-medium text-gray-400 hover:text-white ${markAllAsReadMutation.isPending ? "cursor-not-allowed opacity-50" : ""}`}
           >
             Mark all as read
           </button>
@@ -114,55 +141,102 @@ interface NotificationItemProps {
 
 function NotificationItem({ notification }: NotificationItemProps) {
   return (
-    <li className={`flex items-start p-3 ${notification.isRead ? 'bg-gray-800 bg-opacity-30' : 'bg-gray-800 bg-opacity-50'} rounded-lg`}>
+    <li
+      className={`flex items-start p-3 ${notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} rounded-lg`}
+    >
       {notification.type === "SYSTEM" ? (
-        <div className="h-10 w-10 rounded-full bg-ufc-blue flex items-center justify-center text-black font-bold mr-3 flex-shrink-0">
+        <div className="bg-ufc-blue mr-3 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-bold text-black">
           3PC
         </div>
       ) : notification.relatedUser ? (
-        <UserAvatar user={notification.relatedUser} size="md" className="mr-3 flex-shrink-0" />
+        <UserAvatar
+          user={notification.relatedUser}
+          size="md"
+          className="mr-3 flex-shrink-0"
+        />
       ) : (
-        <div className="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center text-white font-bold mr-3 flex-shrink-0">
+        <div className="mr-3 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-700 font-bold text-white">
           ?
         </div>
       )}
 
       <div>
-        {notification.type === "REPLY" && notification.relatedUser && notification.threadTitle && (
-          <p className="text-gray-300">
-            <span className="font-medium text-white">{notification.relatedUser.username}</span> replied to your post <Link href={`/thread/${notification.threadId}`} className="text-ufc-blue hover:underline">"{notification.threadTitle}"</Link>
-          </p>
-        )}
-        
-        {notification.type === "MENTION" && notification.relatedUser && notification.threadTitle && (
-          <p className="text-gray-300">
-            <span className="font-medium text-white">{notification.relatedUser.username}</span> mentioned you in a post <Link href={`/thread/${notification.threadId}`} className="text-ufc-blue hover:underline">"{notification.threadTitle}"</Link>
-          </p>
-        )}
-        
-        {notification.type === "LIKE" && notification.relatedUser && notification.threadTitle && (
-          <p className="text-gray-300">
-            <span className="font-medium text-white">{notification.relatedUser.username}</span> liked your post <Link href={`/thread/${notification.threadId}`} className="text-ufc-blue hover:underline">"{notification.threadTitle}"</Link>
-          </p>
-        )}
-        
+        {notification.type === "REPLY" &&
+          notification.relatedUser &&
+          notification.threadTitle && (
+            <p className="text-gray-300">
+              <span className="font-medium text-white">
+                {notification.relatedUser.username}
+              </span>{" "}
+              replied to your post{" "}
+              <Link
+                href={`/thread/${notification.threadId}`}
+                className="text-ufc-blue hover:underline"
+              >
+                "{notification.threadTitle}"
+              </Link>
+            </p>
+          )}
+
+        {notification.type === "MENTION" &&
+          notification.relatedUser &&
+          notification.threadTitle && (
+            <p className="text-gray-300">
+              <span className="font-medium text-white">
+                {notification.relatedUser.username}
+              </span>{" "}
+              mentioned you in a post{" "}
+              <Link
+                href={`/thread/${notification.threadId}`}
+                className="text-ufc-blue hover:underline"
+              >
+                "{notification.threadTitle}"
+              </Link>
+            </p>
+          )}
+
+        {notification.type === "LIKE" &&
+          notification.relatedUser &&
+          notification.threadTitle && (
+            <p className="text-gray-300">
+              <span className="font-medium text-white">
+                {notification.relatedUser.username}
+              </span>{" "}
+              liked your post{" "}
+              <Link
+                href={`/thread/${notification.threadId}`}
+                className="text-ufc-blue hover:underline"
+              >
+                "{notification.threadTitle}"
+              </Link>
+            </p>
+          )}
+
         {notification.type === "FOLLOW" && notification.relatedUser && (
           <p className="text-gray-300">
-            <span className="font-medium text-white">{notification.relatedUser.username}</span> started following you
+            <span className="font-medium text-white">
+              {notification.relatedUser.username}
+            </span>{" "}
+            started following you
           </p>
         )}
-        
+
         {notification.type === "SYSTEM" && notification.message && (
           <p className="text-gray-300">
-            <span className="font-medium text-white">System</span> {notification.message}
+            <span className="font-medium text-white">System</span>{" "}
+            {notification.message}
           </p>
         )}
-        
+
         {notification.replyPreview && (
-          <p className="text-gray-400 text-sm mt-1">{notification.replyPreview}</p>
+          <p className="mt-1 text-sm text-gray-400">
+            {notification.replyPreview}
+          </p>
         )}
-        
-        <span className="text-gray-500 text-xs mt-2 block">{formatDate(notification.createdAt)}</span>
+
+        <span className="mt-2 block text-xs text-gray-500">
+          {formatDate(notification.createdAt)}
+        </span>
       </div>
     </li>
   );
@@ -179,7 +253,8 @@ function generateMockNotifications(): Notification[] {
       relatedUser: {
         id: "4",
         username: "MMAHistorian",
-        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
+        avatar:
+          "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
         status: "RANKED POSTER",
         isOnline: true,
         postsCount: 42,
@@ -205,7 +280,8 @@ function generateMockNotifications(): Notification[] {
       relatedUser: {
         id: "3",
         username: "DustinPoirier",
-        avatar: "https://images.unsplash.com/photo-1614632537197-38a17061c2bd?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
+        avatar:
+          "https://images.unsplash.com/photo-1614632537197-38a17061c2bd?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
         status: "HALL OF FAMER",
         isOnline: true,
         postsCount: 73,
@@ -229,6 +305,6 @@ function generateMockNotifications(): Notification[] {
       message: "Your status has been updated to CONTENDER",
       isRead: false,
       createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-    }
+    },
   ];
 }

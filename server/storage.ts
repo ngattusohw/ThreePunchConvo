@@ -1,18 +1,18 @@
-import { 
-  User, 
+import {
+  User,
   InsertUser,
   UpsertUser,
-  Thread, 
-  InsertThread, 
-  Reply, 
-  InsertReply, 
-  Poll, 
-  InsertPoll, 
-  PollOption, 
-  InsertPollOption, 
-  Media, 
-  InsertMedia, 
-  Notification, 
+  Thread,
+  InsertThread,
+  Reply,
+  InsertReply,
+  Poll,
+  InsertPoll,
+  PollOption,
+  InsertPollOption,
+  Media,
+  InsertMedia,
+  Notification,
   InsertNotification,
   MMAEvent,
   Fighter,
@@ -26,18 +26,18 @@ import {
   notifications,
   threadReactions,
   pollVotes,
-  replyReactions
+  replyReactions,
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool, db } from "./db";
 import { eq, and, sql, desc } from "drizzle-orm";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export interface IStorage {
   // Session store
   sessionStore: any;
-  
+
   // User management
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -49,55 +49,72 @@ export interface IStorage {
   deleteUser(id: string): Promise<boolean>;
   getTopUsers(limit: number): Promise<User[]>;
   getAllUsers(): Promise<User[]>;
-  
+
   // Thread management
-  getThread(id: string, currentUserId?: string): Promise<ThreadWithAssociatedData | undefined>;
-  getThreadsByCategory(categoryId: string, sort: string, limit: number, offset: number): Promise<Thread[]>;
+  getThread(
+    id: string,
+    currentUserId?: string,
+  ): Promise<ThreadWithAssociatedData | undefined>;
+  getThreadsByCategory(
+    categoryId: string,
+    sort: string,
+    limit: number,
+    offset: number,
+  ): Promise<Thread[]>;
   getThreadsByUser(userId: string): Promise<Thread[]>;
   createThread(thread: InsertThread): Promise<Thread>;
-  updateThread(id: string, threadData: Partial<Thread>): Promise<Thread | undefined>;
+  updateThread(
+    id: string,
+    threadData: Partial<Thread>,
+  ): Promise<Thread | undefined>;
   deleteThread(id: string): Promise<boolean>;
   incrementThreadView(id: string): Promise<boolean>;
-  
+
   // Reply management
   getReply(id: string): Promise<Reply | undefined>;
   getRepliesByThread(threadId: string): Promise<Reply[]>;
   createReply(reply: InsertReply): Promise<Reply>;
-  updateReply(id: string, replyData: Partial<Reply>): Promise<Reply | undefined>;
+  updateReply(
+    id: string,
+    replyData: Partial<Reply>,
+  ): Promise<Reply | undefined>;
   deleteReply(id: string): Promise<boolean>;
-  
+
   // Poll management
   getPoll(id: string): Promise<Poll | undefined>;
   getPollByThread(threadId: string): Promise<Poll | undefined>;
   createPoll(poll: InsertPoll, options: string[]): Promise<Poll>;
   votePoll(pollId: string, optionId: string, userId: string): Promise<boolean>;
-  getUserPollVote(pollId: string, userId: string): Promise<{ optionId: string } | null>;
-  
+  getUserPollVote(
+    pollId: string,
+    userId: string,
+  ): Promise<{ optionId: string } | null>;
+
   // Media management
   getMedia(id: string): Promise<Media | undefined>;
   getMediaByThread(threadId: string): Promise<Media[]>;
   getMediaByReply(replyId: string): Promise<Media[]>;
   createThreadMedia(media: InsertMedia): Promise<Media>;
-  
+
   // Reaction management
   likeThread(threadId: string, userId: string): Promise<boolean>;
   dislikeThread(threadId: string, userId: string): Promise<boolean>;
   potdThread(threadId: string, userId: string): Promise<boolean>;
   likeReply(replyId: string, userId: string): Promise<boolean>;
   dislikeReply(replyId: string, userId: string): Promise<boolean>;
-  
+
   // Follow management
   followUser(followerId: string, followingId: string): Promise<boolean>;
   unfollowUser(followerId: string, followingId: string): Promise<boolean>;
   getFollowers(userId: string): Promise<User[]>;
   getFollowing(userId: string): Promise<User[]>;
-  
+
   // Notification management
   getNotifications(userId: string): Promise<Notification[]>;
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationAsRead(id: string): Promise<boolean>;
   markAllNotificationsAsRead(userId: string): Promise<boolean>;
-  
+
   // MMA Schedule management
   getMMAEvents(limit: number, offset: number): Promise<MMAEvent[]>;
   getMMAEvent(id: string): Promise<MMAEvent | undefined>;
@@ -105,16 +122,20 @@ export interface IStorage {
   saveMMAEvent(event: any): Promise<MMAEvent>;
   saveFighter(fighter: any): Promise<Fighter>;
   saveFight(fight: any): Promise<Fight>;
-  
+
   // User ranking and status management
   recalculateRankings(): Promise<void>;
   recalculateUserStatus(userId: string): Promise<string | undefined>;
-  recalculateAllUserStatuses(): Promise<{success: number, failed: number, unchanged: number}>;
+  recalculateAllUserStatuses(): Promise<{
+    success: number;
+    failed: number;
+    unchanged: number;
+  }>;
 }
 
 // Extended Thread type that includes associated data
 type ThreadWithAssociatedData = Thread & {
-  user: Omit<User, 'password'>;
+  user: Omit<User, "password">;
   media?: Media[];
   poll?: Poll & {
     options: PollOption[];
@@ -125,7 +146,7 @@ type ThreadWithAssociatedData = Thread & {
 // Database implementation of the storage interface
 export class DatabaseStorage implements IStorage {
   sessionStore: any;
-  
+
   constructor() {
     // Initialize PostgreSQL session store
     const PostgresStore = connectPg(session);
@@ -134,18 +155,18 @@ export class DatabaseStorage implements IStorage {
       // Don't try to create the table automatically
       createTableIfMissing: false,
       // Use a custom table name to avoid conflicts
-      tableName: 'user_sessions'
+      tableName: "user_sessions",
     });
   }
-  
+
   // User methods
   async getUser(id: string): Promise<User | undefined> {
     try {
       if (id === undefined || id === null) {
-        console.error('Undefined or null user ID provided');
+        console.error("Undefined or null user ID provided");
         return undefined;
       }
-      
+
       // Use sql tag to properly handle both string and number types
       // Use explicit column selection to match schema
       const [user] = await db
@@ -175,18 +196,18 @@ export class DatabaseStorage implements IStorage {
           potdCount: users.potdCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
-          socialLinks: users.socialLinks
+          socialLinks: users.socialLinks,
         })
         .from(users)
         .where(sql`${users.id} = ${id}`);
-      
+
       return user;
     } catch (error) {
-      console.error('Error getting user:', error);
+      console.error("Error getting user:", error);
       return undefined;
     }
   }
-  
+
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
       // Use explicit column selection to match schema
@@ -217,18 +238,18 @@ export class DatabaseStorage implements IStorage {
           potdCount: users.potdCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
-          socialLinks: users.socialLinks
+          socialLinks: users.socialLinks,
         })
         .from(users)
         .where(eq(users.username, username));
-      
+
       return user;
     } catch (error) {
-      console.error('Error getting user by username:', error);
+      console.error("Error getting user by username:", error);
       return undefined;
     }
   }
-  
+
   async getUserByExternalId(externalId: string): Promise<User | undefined> {
     console.log(`Looking up user by externalId: ${externalId}`);
     try {
@@ -259,18 +280,18 @@ export class DatabaseStorage implements IStorage {
           potdCount: users.potdCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
-          socialLinks: users.socialLinks
+          socialLinks: users.socialLinks,
         })
         .from(users)
         .where(eq(users.externalId, externalId));
-      
+
       return user;
     } catch (error) {
-      console.error('Error getting user by external ID:', error);
+      console.error("Error getting user by external ID:", error);
       return undefined;
     }
   }
-  
+
   async getUserByStripeId(stripeId: string): Promise<User | undefined> {
     try {
       // Use explicit column selection to match schema
@@ -301,18 +322,18 @@ export class DatabaseStorage implements IStorage {
           potdCount: users.potdCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
-          socialLinks: users.socialLinks
+          socialLinks: users.socialLinks,
         })
         .from(users)
         .where(eq(users.stripeId, stripeId));
-      
+
       return user;
     } catch (error) {
-      console.error('Error getting user by Stripe ID:', error);
+      console.error("Error getting user by Stripe ID:", error);
       return undefined;
     }
   }
-  
+
   async createUser(userData: InsertUser): Promise<User> {
     try {
       // Generate a numeric ID using timestamp and random number
@@ -321,7 +342,7 @@ export class DatabaseStorage implements IStorage {
         const random = Math.floor(Math.random() * 1000);
         return Math.floor(timestamp / 1000) + random;
       };
-      
+
       // Generate numeric ID for user if not provided
       const userValues = {
         id: userData.id || String(generateId()), // Convert to string since schema expects string
@@ -335,8 +356,8 @@ export class DatabaseStorage implements IStorage {
         lastName: userData.lastName || null,
         bio: userData.bio || null,
         profileImageUrl: userData.profileImageUrl || null,
-        role: userData.role || 'USER',
-        status: userData.status || 'AMATEUR',
+        role: userData.role || "USER",
+        status: userData.status || "AMATEUR",
         isOnline: userData.isOnline || false,
         lastActive: new Date(),
         points: userData.points || 0,
@@ -348,27 +369,27 @@ export class DatabaseStorage implements IStorage {
         socialLinks: userData.socialLinks || {},
         rank: userData.rank || 0,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
-      
-      console.log('Creating user with values:', {
+
+      console.log("Creating user with values:", {
         ...userValues,
-        password: '[REDACTED]' // Don't log the password
+        password: "[REDACTED]", // Don't log the password
       });
-      
+
       const [user] = await db.insert(users).values(userValues).returning();
-      
+
       if (!user) {
-        throw new Error('Failed to create user');
+        throw new Error("Failed to create user");
       }
-      
+
       return user;
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error("Error creating user:", error);
       throw error;
     }
   }
-  
+
   async upsertUser(userData: UpsertUser): Promise<User> {
     try {
       const [user] = await db
@@ -377,45 +398,48 @@ export class DatabaseStorage implements IStorage {
         .onConflictDoUpdate({
           target: users.id,
           set: {
-            ...userData
-          }
+            ...userData,
+          },
         })
         .returning();
-      
+
       return user;
     } catch (error) {
-      console.error('Error upserting user:', error);
-      throw new Error('Failed to upsert user');
+      console.error("Error upserting user:", error);
+      throw new Error("Failed to upsert user");
     }
   }
-  
-  async updateUser(id: string, userData: Partial<User>): Promise<User | undefined> {
+
+  async updateUser(
+    id: string,
+    userData: Partial<User>,
+  ): Promise<User | undefined> {
     try {
       const [updatedUser] = await db
         .update(users)
         .set({
-          ...userData
+          ...userData,
         })
         .where(sql`${users.id} = ${id}`)
         .returning();
-      
+
       return updatedUser;
     } catch (error) {
-      console.error('Error updating user:', error);
+      console.error("Error updating user:", error);
       return undefined;
     }
   }
-  
+
   async deleteUser(id: string): Promise<boolean> {
     try {
       await db.delete(users).where(sql`${users.id} = ${id}`);
       return true;
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error("Error deleting user:", error);
       return false;
     }
   }
-  
+
   async getTopUsers(limit: number): Promise<User[]> {
     try {
       // Query database for top users ordered by points
@@ -445,7 +469,7 @@ export class DatabaseStorage implements IStorage {
           potdCount: users.potdCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
-          socialLinks: users.socialLinks
+          socialLinks: users.socialLinks,
         })
         .from(users)
         .orderBy(desc(users.points))
@@ -472,26 +496,27 @@ export class DatabaseStorage implements IStorage {
         // Return user with updated rank
         return {
           ...user,
-          rank: currentRank
+          rank: currentRank,
         };
       });
 
       // Update ranks in database
       await Promise.all(
-        processedUsers.map(user =>
-          db.update(users)
+        processedUsers.map((user) =>
+          db
+            .update(users)
             .set({ rank: user.rank })
-            .where(eq(users.id, user.id))
-        )
+            .where(eq(users.id, user.id)),
+        ),
       );
 
       return processedUsers;
     } catch (error) {
-      console.error('Error getting top users:', error);
+      console.error("Error getting top users:", error);
       return [];
     }
   }
-  
+
   async getAllUsers(): Promise<User[]> {
     try {
       return await db
@@ -520,19 +545,22 @@ export class DatabaseStorage implements IStorage {
           potdCount: users.potdCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
-          socialLinks: users.socialLinks
+          socialLinks: users.socialLinks,
         })
         .from(users);
     } catch (error) {
-      console.error('Error getting all users:', error);
+      console.error("Error getting all users:", error);
       return [];
     }
   }
-  
+
   // Placeholder implementations for other methods
   // These will be implemented as needed
-  
-  async getThread(id: string, currentUserId?: string): Promise<ThreadWithAssociatedData | undefined> {
+
+  async getThread(
+    id: string,
+    currentUserId?: string,
+  ): Promise<ThreadWithAssociatedData | undefined> {
     try {
       // Build query with explicit column selection
       const [thread] = await db
@@ -551,7 +579,7 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPotd: threads.isPotd
+          isPotd: threads.isPotd,
         })
         .from(threads)
         .where(eq(threads.id, id));
@@ -563,7 +591,9 @@ export class DatabaseStorage implements IStorage {
       // Get thread author
       const user = await this.getUser(thread.userId);
       if (!user) {
-        console.error(`User not found for thread ${id} with userId ${thread.userId}`);
+        console.error(
+          `User not found for thread ${id} with userId ${thread.userId}`,
+        );
         return undefined;
       }
 
@@ -572,10 +602,12 @@ export class DatabaseStorage implements IStorage {
 
       // Get thread poll and its options
       const poll = await this.getPollByThread(id);
-      const pollWithOptions = poll ? {
-        ...poll,
-        options: await this.getPollOptions(poll.id)
-      } : undefined;
+      const pollWithOptions = poll
+        ? {
+            ...poll,
+            options: await this.getPollOptions(poll.id),
+          }
+        : undefined;
 
       // Check if the current user has liked this thread
       let hasLiked = false;
@@ -584,8 +616,8 @@ export class DatabaseStorage implements IStorage {
           where: and(
             eq(threadReactions.threadId, id),
             eq(threadReactions.userId, currentUserId),
-            eq(threadReactions.type, 'LIKE')
-          )
+            eq(threadReactions.type, "LIKE"),
+          ),
         });
         hasLiked = !!existingReaction;
       }
@@ -616,19 +648,24 @@ export class DatabaseStorage implements IStorage {
           potdCount: user.potdCount,
           followersCount: user.followersCount,
           followingCount: user.followingCount,
-          socialLinks: user.socialLinks
+          socialLinks: user.socialLinks,
         },
-        media: [],//media || [],
+        media: [], //media || [],
         poll: pollWithOptions,
-        hasLiked
+        hasLiked,
       };
     } catch (error) {
-      console.error('Error getting thread:', error);
+      console.error("Error getting thread:", error);
       return undefined;
     }
   }
-  
-  async getThreadsByCategory(categoryId: string, sort: string, limit: number, offset: number): Promise<Thread[]> {
+
+  async getThreadsByCategory(
+    categoryId: string,
+    sort: string,
+    limit: number,
+    offset: number,
+  ): Promise<Thread[]> {
     try {
       // Build the base query with explicit column selection
       let baseQuery = db
@@ -647,7 +684,7 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPotd: threads.isPotd
+          isPotd: threads.isPotd,
         })
         .from(threads)
         .where(eq(threads.categoryId, categoryId));
@@ -655,15 +692,15 @@ export class DatabaseStorage implements IStorage {
       // Add sorting based on the sort parameter
       const sortedQuery = (() => {
         switch (sort) {
-          case 'recent':
+          case "recent":
             return baseQuery.orderBy(desc(threads.lastActivityAt));
-          case 'popular':
+          case "popular":
             return baseQuery.orderBy(desc(threads.viewCount));
-          case 'new':
+          case "new":
             return baseQuery.orderBy(desc(threads.createdAt));
-          case 'likes':
+          case "likes":
             return baseQuery.orderBy(desc(threads.likesCount));
-          case 'replies':
+          case "replies":
             return baseQuery.orderBy(desc(threads.repliesCount));
           default:
             return baseQuery.orderBy(desc(threads.lastActivityAt));
@@ -680,12 +717,12 @@ export class DatabaseStorage implements IStorage {
 
       return results;
     } catch (error) {
-      console.error('Error fetching threads by category:', error);
+      console.error("Error fetching threads by category:", error);
       // Return empty array instead of throwing to prevent UI breaks
       return [];
     }
   }
-  
+
   async getThreadsByUser(userId: string): Promise<Thread[]> {
     try {
       // Build query with explicit column selection
@@ -705,7 +742,7 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPotd: threads.isPotd
+          isPotd: threads.isPotd,
         })
         .from(threads)
         .where(eq(threads.userId, userId))
@@ -713,11 +750,11 @@ export class DatabaseStorage implements IStorage {
 
       return userThreads;
     } catch (error) {
-      console.error('Error fetching threads for user:', error);
+      console.error("Error fetching threads for user:", error);
       return [];
     }
   }
-  
+
   async createThread(thread: InsertThread): Promise<Thread> {
     try {
       const threadValues = {
@@ -735,40 +772,45 @@ export class DatabaseStorage implements IStorage {
         likesCount: 0,
         dislikesCount: 0,
         repliesCount: 0,
-        isPotd: false
+        isPotd: false,
       };
-      
+
       // Start a transaction to create thread and update user points
       const [newThread] = await db.transaction(async (tx) => {
         // Create the thread
-        const [thread] = await tx.insert(threads)
+        const [thread] = await tx
+          .insert(threads)
           .values(threadValues)
           .returning();
-        
+
         // Update user's points and posts count
-        await tx.update(users)
+        await tx
+          .update(users)
           .set({
             points: sql`${users.points} + 1`,
-            postsCount: sql`${users.postsCount} + 1`
+            postsCount: sql`${users.postsCount} + 1`,
           })
           .where(eq(users.id, thread.userId));
-        
+
         return [thread];
       });
-      
+
       return newThread;
     } catch (error) {
-      console.error('Error creating thread:', error);
-      throw new Error('Failed to create thread');
+      console.error("Error creating thread:", error);
+      throw new Error("Failed to create thread");
     }
   }
-  
+
   // TODO test
-  async updateThread(id: string, threadData: Partial<Thread>): Promise<Thread | undefined> {
+  async updateThread(
+    id: string,
+    threadData: Partial<Thread>,
+  ): Promise<Thread | undefined> {
     try {
       // Get current thread data to check if it exists and compare changes
       const currentThread = await db.query.threads.findFirst({
-        where: eq(threads.id, id)
+        where: eq(threads.id, id),
       });
 
       if (!currentThread) {
@@ -778,7 +820,7 @@ export class DatabaseStorage implements IStorage {
       // Prepare update data with updatedAt timestamp
       const updateData = {
         ...threadData,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       // If content or title is updated, also update lastActivityAt
@@ -796,7 +838,10 @@ export class DatabaseStorage implements IStorage {
           .returning();
 
         // If thread is being locked/unlocked, create a notification for the thread owner
-        if (threadData.isLocked !== undefined && threadData.isLocked !== currentThread.isLocked) {
+        if (
+          threadData.isLocked !== undefined &&
+          threadData.isLocked !== currentThread.isLocked
+        ) {
           // await tx.insert(notifications).values({
           //   id: uuidv4(),
           //   userId: currentThread.userId,
@@ -809,7 +854,10 @@ export class DatabaseStorage implements IStorage {
         }
 
         // If thread is being pinned/unpinned, create a notification for the thread owner
-        if (threadData.isPinned !== undefined && threadData.isPinned !== currentThread.isPinned) {
+        if (
+          threadData.isPinned !== undefined &&
+          threadData.isPinned !== currentThread.isPinned
+        ) {
           // await tx.insert(notifications).values({
           //   id: uuidv4(),
           //   userId: currentThread.userId,
@@ -826,11 +874,11 @@ export class DatabaseStorage implements IStorage {
 
       return updatedThread;
     } catch (error) {
-      console.error('Error updating thread:', error);
+      console.error("Error updating thread:", error);
       return undefined;
     }
   }
-  
+
   async deleteThread(id: string): Promise<boolean> {
     try {
       // Start a transaction to delete the thread and all associated data
@@ -840,8 +888,8 @@ export class DatabaseStorage implements IStorage {
           where: eq(threads.id, id),
           columns: {
             userId: true,
-            likesCount: true
-          }
+            likesCount: true,
+          },
         });
 
         if (!thread) {
@@ -849,57 +897,53 @@ export class DatabaseStorage implements IStorage {
         }
 
         // Update user's counts before deleting thread data
-        await tx.update(users)
+        await tx
+          .update(users)
           .set({
             postsCount: sql`${users.postsCount} - 1`,
-            likesCount: sql`${users.likesCount} - ${thread.likesCount}` // Remove all likes from user's total
+            likesCount: sql`${users.likesCount} - ${thread.likesCount}`, // Remove all likes from user's total
           })
           .where(eq(users.id, thread.userId));
 
         // Delete all thread reactions
-        await tx.delete(threadReactions)
+        await tx
+          .delete(threadReactions)
           .where(eq(threadReactions.threadId, id));
-        
+
         // Delete all poll votes and options if the thread has a poll
         const poll = await tx.query.polls.findFirst({
-          where: eq(polls.threadId, id)
+          where: eq(polls.threadId, id),
         });
-        
+
         if (poll) {
-          await tx.delete(pollVotes)
-            .where(eq(pollVotes.pollId, poll.id));
-          await tx.delete(pollOptions)
-            .where(eq(pollOptions.pollId, poll.id));
-          await tx.delete(polls)
-            .where(eq(polls.threadId, id));
+          await tx.delete(pollVotes).where(eq(pollVotes.pollId, poll.id));
+          await tx.delete(pollOptions).where(eq(pollOptions.pollId, poll.id));
+          await tx.delete(polls).where(eq(polls.threadId, id));
         }
-        
+
         // Delete all thread media
-        await tx.delete(threadMedia)
-          .where(eq(threadMedia.threadId, id));
-        
+        await tx.delete(threadMedia).where(eq(threadMedia.threadId, id));
+
         // Delete all thread replies
-        await tx.delete(replies)
-          .where(eq(replies.threadId, id));
-        
+        await tx.delete(replies).where(eq(replies.threadId, id));
+
         // Finally, delete the thread itself
-        await tx.delete(threads)
-          .where(eq(threads.id, id));
+        await tx.delete(threads).where(eq(threads.id, id));
       });
-      
+
       return true;
     } catch (error) {
-      console.error('Error deleting thread:', error);
+      console.error("Error deleting thread:", error);
       return false;
     }
   }
-  
+
   // TODO test
   async incrementThreadView(id: string): Promise<boolean> {
     try {
       // Check if thread exists first
       const thread = await db.query.threads.findFirst({
-        where: eq(threads.id, id)
+        where: eq(threads.id, id),
       });
 
       if (!thread) {
@@ -911,17 +955,17 @@ export class DatabaseStorage implements IStorage {
         .update(threads)
         .set({
           viewCount: sql`${threads.viewCount} + 1`,
-          lastActivityAt: new Date() // Update last activity time on view
+          lastActivityAt: new Date(), // Update last activity time on view
         })
         .where(eq(threads.id, id));
 
       return true;
     } catch (error) {
-      console.error('Error incrementing thread view:', error);
+      console.error("Error incrementing thread view:", error);
       return false;
     }
   }
-  
+
   async getReply(id: string): Promise<Reply | undefined> {
     try {
       // Get reply with explicit column selection
@@ -935,7 +979,7 @@ export class DatabaseStorage implements IStorage {
           createdAt: replies.createdAt,
           updatedAt: replies.updatedAt,
           likesCount: replies.likesCount,
-          dislikesCount: replies.dislikesCount
+          dislikesCount: replies.dislikesCount,
         })
         .from(replies)
         .where(eq(replies.id, id));
@@ -946,11 +990,11 @@ export class DatabaseStorage implements IStorage {
 
       return reply;
     } catch (error) {
-      console.error('Error getting reply:', error);
+      console.error("Error getting reply:", error);
       return undefined;
     }
   }
-  
+
   async getRepliesByThread(threadId: string): Promise<Reply[]> {
     try {
       // Build query with explicit column selection
@@ -964,7 +1008,7 @@ export class DatabaseStorage implements IStorage {
           createdAt: replies.createdAt,
           updatedAt: replies.updatedAt,
           likesCount: replies.likesCount,
-          dislikesCount: replies.dislikesCount
+          dislikesCount: replies.dislikesCount,
         })
         .from(replies)
         .where(eq(replies.threadId, threadId))
@@ -973,15 +1017,15 @@ export class DatabaseStorage implements IStorage {
       return threadReplies;
     } catch (error) {
       // Log the specific error for debugging
-      console.error('Error fetching replies for thread:', {
+      console.error("Error fetching replies for thread:", {
         threadId,
         errorCode: (error as any)?.code,
-        errorMessage: (error as Error)?.message
+        errorMessage: (error as Error)?.message,
       });
 
       // If it's a connection error (57P01), let's try to reconnect
-      if ((error as any)?.code === '57P01') {
-        console.log('Attempting to reconnect to database...');
+      if ((error as any)?.code === "57P01") {
+        console.log("Attempting to reconnect to database...");
         try {
           // Use the existing db instance instead of creating a new one
           const threadReplies = await db
@@ -994,7 +1038,7 @@ export class DatabaseStorage implements IStorage {
               createdAt: replies.createdAt,
               updatedAt: replies.updatedAt,
               likesCount: replies.likesCount,
-              dislikesCount: replies.dislikesCount
+              dislikesCount: replies.dislikesCount,
             })
             .from(replies)
             .where(eq(replies.threadId, threadId))
@@ -1002,7 +1046,7 @@ export class DatabaseStorage implements IStorage {
 
           return threadReplies;
         } catch (retryError) {
-          console.error('Failed to retry query:', retryError);
+          console.error("Failed to retry query:", retryError);
           return [];
         }
       }
@@ -1011,7 +1055,7 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-  
+
   async createReply(reply: InsertReply): Promise<Reply> {
     try {
       const replyValues = {
@@ -1023,40 +1067,45 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date(),
         updatedAt: new Date(),
         likesCount: 0,
-        dislikesCount: 0
+        dislikesCount: 0,
       };
-      
+
       // Start a transaction
       const [newReply] = await db.transaction(async (tx) => {
         // Create the reply
-        const [reply] = await tx.insert(replies)
+        const [reply] = await tx
+          .insert(replies)
           .values(replyValues)
           .returning();
-        
+
         // Update the thread's repliesCount and lastActivityAt
-        await tx.update(threads)
+        await tx
+          .update(threads)
           .set({
             repliesCount: sql`${threads.repliesCount} + 1`,
-            lastActivityAt: new Date()
+            lastActivityAt: new Date(),
           })
           .where(eq(threads.id, replyValues.threadId));
-        
+
         return [reply];
       });
-      
+
       return newReply;
     } catch (error) {
-      console.error('Error creating reply:', error);
-      throw new Error('Failed to create reply');
+      console.error("Error creating reply:", error);
+      throw new Error("Failed to create reply");
     }
   }
-  
+
   // T
-  async updateReply(id: string, replyData: Partial<Reply>): Promise<Reply | undefined> {
+  async updateReply(
+    id: string,
+    replyData: Partial<Reply>,
+  ): Promise<Reply | undefined> {
     try {
       // Get current reply data to check if it exists
       const currentReply = await db.query.replies.findFirst({
-        where: eq(replies.id, id)
+        where: eq(replies.id, id),
       });
 
       if (!currentReply) {
@@ -1066,7 +1115,7 @@ export class DatabaseStorage implements IStorage {
       // Prepare update data with updatedAt timestamp
       const updateData = {
         ...replyData,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       // Start a transaction for the update
@@ -1080,7 +1129,8 @@ export class DatabaseStorage implements IStorage {
 
         // Update the thread's lastActivityAt to show recent activity
         if (replyData.content) {
-          await tx.update(threads)
+          await tx
+            .update(threads)
             .set({ lastActivityAt: new Date() })
             .where(eq(threads.id, currentReply.threadId));
         }
@@ -1090,18 +1140,15 @@ export class DatabaseStorage implements IStorage {
 
       return updatedReply;
     } catch (error) {
-      console.error('Error updating reply:', error);
+      console.error("Error updating reply:", error);
       return undefined;
     }
   }
-  
+
   async deleteReply(id: string): Promise<boolean> {
     try {
       // Get the reply to find its threadId
-      const [reply] = await db
-        .select()
-        .from(replies)
-        .where(eq(replies.id, id));
+      const [reply] = await db.select().from(replies).where(eq(replies.id, id));
 
       if (!reply) {
         return false;
@@ -1110,24 +1157,24 @@ export class DatabaseStorage implements IStorage {
       // Start a transaction
       await db.transaction(async (tx) => {
         // Delete the reply
-        await tx.delete(replies)
-          .where(eq(replies.id, id));
-        
+        await tx.delete(replies).where(eq(replies.id, id));
+
         // Update the thread's repliesCount
-        await tx.update(threads)
+        await tx
+          .update(threads)
           .set({
-            repliesCount: sql`${threads.repliesCount} - 1`
+            repliesCount: sql`${threads.repliesCount} - 1`,
           })
           .where(eq(threads.id, reply.threadId));
       });
 
       return true;
     } catch (error) {
-      console.error('Error deleting reply:', error);
+      console.error("Error deleting reply:", error);
       return false;
     }
   }
-  
+
   // TODO test
   async getPoll(id: string): Promise<Poll | undefined> {
     try {
@@ -1139,7 +1186,7 @@ export class DatabaseStorage implements IStorage {
           question: polls.question,
           expiresAt: polls.expiresAt,
           createdAt: polls.createdAt,
-          votesCount: polls.votesCount
+          votesCount: polls.votesCount,
         })
         .from(polls)
         .where(eq(polls.id, id));
@@ -1150,11 +1197,11 @@ export class DatabaseStorage implements IStorage {
 
       return poll;
     } catch (error) {
-      console.error('Error getting poll:', error);
+      console.error("Error getting poll:", error);
       return undefined;
     }
   }
-  
+
   async getPollByThread(threadId: string): Promise<Poll | undefined> {
     try {
       const [poll] = await db
@@ -1164,54 +1211,56 @@ export class DatabaseStorage implements IStorage {
           question: polls.question,
           expiresAt: polls.expiresAt,
           createdAt: polls.createdAt,
-          votesCount: polls.votesCount
+          votesCount: polls.votesCount,
         })
         .from(polls)
         .where(eq(polls.threadId, threadId));
 
       return poll;
     } catch (error) {
-      console.error('Error fetching poll for thread:', error);
+      console.error("Error fetching poll for thread:", error);
       return undefined;
     }
   }
-  
+
   async createPoll(poll: InsertPoll, options: string[]): Promise<Poll> {
     try {
       const pollId = uuidv4(); // Use UUID for poll ID
-      
+
       const pollValues = {
         id: pollId,
         threadId: poll.threadId,
         question: poll.question,
-        expiresAt: poll.expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7 days
+        expiresAt:
+          poll.expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7 days
         createdAt: new Date(),
-        votesCount: 0
+        votesCount: 0,
       };
-      
-      const [newPoll] = await db.insert(polls)
-        .values(pollValues)
-        .returning();
-      
+
+      const [newPoll] = await db.insert(polls).values(pollValues).returning();
+
       // Create poll options
       for (const optionText of options) {
-        await db.insert(pollOptions)
-          .values({
-            id: uuidv4(), // Use UUID for option ID
-            pollId,
-            text: optionText,
-            votesCount: 0
-          });
+        await db.insert(pollOptions).values({
+          id: uuidv4(), // Use UUID for option ID
+          pollId,
+          text: optionText,
+          votesCount: 0,
+        });
       }
-      
+
       return newPoll;
     } catch (error) {
-      console.error('Error creating poll:', error);
-      throw new Error('Failed to create poll');
+      console.error("Error creating poll:", error);
+      throw new Error("Failed to create poll");
     }
   }
-  
-  async votePoll(pollId: string, optionId: string, userId: string): Promise<boolean> {
+
+  async votePoll(
+    pollId: string,
+    optionId: string,
+    userId: string,
+  ): Promise<boolean> {
     try {
       // Start a transaction
       return await db.transaction(async (tx) => {
@@ -1219,8 +1268,8 @@ export class DatabaseStorage implements IStorage {
         const existingVote = await tx.query.pollVotes.findFirst({
           where: and(
             eq(pollVotes.pollId, pollId),
-            eq(pollVotes.userId, userId)
-          )
+            eq(pollVotes.userId, userId),
+          ),
         });
 
         if (existingVote) {
@@ -1229,11 +1278,11 @@ export class DatabaseStorage implements IStorage {
 
         // Check if poll and option exist
         const poll = await tx.query.polls.findFirst({
-          where: eq(polls.id, pollId)
+          where: eq(polls.id, pollId),
         });
 
         const option = await tx.query.pollOptions.findFirst({
-          where: eq(pollOptions.id, optionId)
+          where: eq(pollOptions.id, optionId),
         });
 
         if (!poll || !option) {
@@ -1251,14 +1300,14 @@ export class DatabaseStorage implements IStorage {
           pollId,
           pollOptionId: optionId,
           userId,
-          createdAt: new Date()
+          createdAt: new Date(),
         });
 
         // Increment the vote count for the chosen option
         await tx
           .update(pollOptions)
           .set({
-            votesCount: sql`${pollOptions.votesCount} + 1`
+            votesCount: sql`${pollOptions.votesCount} + 1`,
           })
           .where(eq(pollOptions.id, optionId));
 
@@ -1266,48 +1315,48 @@ export class DatabaseStorage implements IStorage {
         await tx
           .update(polls)
           .set({
-            votesCount: sql`${polls.votesCount} + 1`
+            votesCount: sql`${polls.votesCount} + 1`,
           })
           .where(eq(polls.id, pollId));
 
         return true;
       });
     } catch (error) {
-      console.error('Error voting in poll:', error);
+      console.error("Error voting in poll:", error);
       return false;
     }
   }
-  
-  async getUserPollVote(pollId: string, userId: string): Promise<{ optionId: string } | null> {
+
+  async getUserPollVote(
+    pollId: string,
+    userId: string,
+  ): Promise<{ optionId: string } | null> {
     try {
       // Lookup if the user has already voted on this poll
       const existingVote = await db.query.pollVotes.findFirst({
-        where: and(
-          eq(pollVotes.pollId, pollId),
-          eq(pollVotes.userId, userId)
-        ),
+        where: and(eq(pollVotes.pollId, pollId), eq(pollVotes.userId, userId)),
         columns: {
-          pollOptionId: true
-        }
+          pollOptionId: true,
+        },
       });
-      
+
       if (existingVote) {
         return { optionId: existingVote.pollOptionId };
       }
-      
+
       return null;
     } catch (error) {
-      console.error('Error getting user poll vote:', error);
+      console.error("Error getting user poll vote:", error);
       return null;
     }
   }
-  
+
   async getMedia(id: string): Promise<Media | undefined> {
     // Temporary stub
-    console.log('getMedia not fully implemented', id);
+    console.log("getMedia not fully implemented", id);
     return undefined;
   }
-  
+
   async getMediaByThread(threadId: string): Promise<Media[]> {
     try {
       const media = await db
@@ -1316,7 +1365,7 @@ export class DatabaseStorage implements IStorage {
           threadId: threadMedia.threadId,
           type: threadMedia.type,
           url: threadMedia.url,
-          createdAt: threadMedia.createdAt
+          createdAt: threadMedia.createdAt,
         })
         .from(threadMedia)
         .where(eq(threadMedia.threadId, threadId))
@@ -1324,17 +1373,17 @@ export class DatabaseStorage implements IStorage {
 
       return media;
     } catch (error) {
-      console.error('Error fetching media for thread:', error);
+      console.error("Error fetching media for thread:", error);
       return [];
     }
   }
-  
+
   async getMediaByReply(replyId: string): Promise<Media[]> {
     // Temporary stub
-    console.log('getMediaByReply not fully implemented', replyId);
+    console.log("getMediaByReply not fully implemented", replyId);
     return [];
   }
-  
+
   async createThreadMedia(media: InsertMedia): Promise<Media> {
     try {
       const mediaValues = {
@@ -1342,20 +1391,21 @@ export class DatabaseStorage implements IStorage {
         threadId: media.threadId,
         type: media.type,
         url: media.url,
-        createdAt: new Date()
+        createdAt: new Date(),
       };
-      
-      const [newMedia] = await db.insert(threadMedia)
+
+      const [newMedia] = await db
+        .insert(threadMedia)
         .values(mediaValues)
         .returning();
-      
+
       return newMedia;
     } catch (error) {
-      console.error('Error creating media:', error);
-      throw new Error('Failed to create media');
+      console.error("Error creating media:", error);
+      throw new Error("Failed to create media");
     }
   }
-  
+
   async likeThread(threadId: string, userId: string): Promise<boolean> {
     try {
       // Start a transaction
@@ -1365,16 +1415,16 @@ export class DatabaseStorage implements IStorage {
           where: and(
             eq(threadReactions.threadId, threadId),
             eq(threadReactions.userId, userId),
-            eq(threadReactions.type, 'LIKE')
-          )
+            eq(threadReactions.type, "LIKE"),
+          ),
         });
 
         // Get the thread to check if it exists and get the owner's ID
         const thread = await tx.query.threads.findFirst({
           where: eq(threads.id, threadId),
           columns: {
-            userId: true
-          }
+            userId: true,
+          },
         });
 
         if (!thread) {
@@ -1383,26 +1433,31 @@ export class DatabaseStorage implements IStorage {
 
         if (existingReaction) {
           // User has already liked this thread - remove the like
-          await tx.delete(threadReactions)
-            .where(and(
-              eq(threadReactions.threadId, threadId),
-              eq(threadReactions.userId, userId),
-              eq(threadReactions.type, 'LIKE')
-            ));
+          await tx
+            .delete(threadReactions)
+            .where(
+              and(
+                eq(threadReactions.threadId, threadId),
+                eq(threadReactions.userId, userId),
+                eq(threadReactions.type, "LIKE"),
+              ),
+            );
 
           // Decrease thread likes count
-          await tx.update(threads)
+          await tx
+            .update(threads)
             .set({
-              likesCount: sql`${threads.likesCount} - 1`
+              likesCount: sql`${threads.likesCount} - 1`,
             })
             .where(eq(threads.id, threadId));
 
           // Remove points and decrement likesCount from thread owner (if not liking their own thread)
           if (thread.userId !== userId) {
-            await tx.update(users)
+            await tx
+              .update(users)
               .set({
                 points: sql`${users.points} - 2`,
-                likesCount: sql`${users.likesCount} - 1` // Track total likes received
+                likesCount: sql`${users.likesCount} - 1`, // Track total likes received
               })
               .where(eq(users.id, thread.userId));
           }
@@ -1415,23 +1470,25 @@ export class DatabaseStorage implements IStorage {
           id: uuidv4(),
           threadId,
           userId,
-          type: 'LIKE',
-          createdAt: new Date()
+          type: "LIKE",
+          createdAt: new Date(),
         });
 
         // Update thread likes count
-        await tx.update(threads)
+        await tx
+          .update(threads)
           .set({
-            likesCount: sql`${threads.likesCount} + 1`
+            likesCount: sql`${threads.likesCount} + 1`,
           })
           .where(eq(threads.id, threadId));
 
         // Add points and increment likesCount for thread owner (if not liking their own thread)
         if (thread.userId !== userId) {
-          await tx.update(users)
+          await tx
+            .update(users)
             .set({
               points: sql`${users.points} + 2`,
-              likesCount: sql`${users.likesCount} + 1` // Track total likes received
+              likesCount: sql`${users.likesCount} + 1`, // Track total likes received
             })
             .where(eq(users.id, thread.userId));
 
@@ -1451,11 +1508,11 @@ export class DatabaseStorage implements IStorage {
         return true;
       });
     } catch (error) {
-      console.error('Error liking thread:', error);
+      console.error("Error liking thread:", error);
       return false;
     }
   }
-  
+
   // TODO test
   async dislikeThread(threadId: string, userId: string): Promise<boolean> {
     try {
@@ -1466,16 +1523,16 @@ export class DatabaseStorage implements IStorage {
           where: and(
             eq(threadReactions.threadId, threadId),
             eq(threadReactions.userId, userId),
-            eq(threadReactions.type, 'DISLIKE')
-          )
+            eq(threadReactions.type, "DISLIKE"),
+          ),
         });
 
         // Get the thread to check if it exists and get the owner's ID
         const thread = await tx.query.threads.findFirst({
           where: eq(threads.id, threadId),
           columns: {
-            userId: true
-          }
+            userId: true,
+          },
         });
 
         if (!thread) {
@@ -1484,17 +1541,21 @@ export class DatabaseStorage implements IStorage {
 
         if (existingReaction) {
           // User has already disliked this thread - remove the dislike
-          await tx.delete(threadReactions)
-            .where(and(
-              eq(threadReactions.threadId, threadId),
-              eq(threadReactions.userId, userId),
-              eq(threadReactions.type, 'DISLIKE')
-            ));
+          await tx
+            .delete(threadReactions)
+            .where(
+              and(
+                eq(threadReactions.threadId, threadId),
+                eq(threadReactions.userId, userId),
+                eq(threadReactions.type, "DISLIKE"),
+              ),
+            );
 
           // Decrease thread dislikes count
-          await tx.update(threads)
+          await tx
+            .update(threads)
             .set({
-              dislikesCount: sql`${threads.dislikesCount} - 1`
+              dislikesCount: sql`${threads.dislikesCount} - 1`,
             })
             .where(eq(threads.id, threadId));
 
@@ -1506,14 +1567,15 @@ export class DatabaseStorage implements IStorage {
           id: uuidv4(),
           threadId,
           userId,
-          type: 'DISLIKE',
-          createdAt: new Date()
+          type: "DISLIKE",
+          createdAt: new Date(),
         });
 
         // Update thread dislikes count
-        await tx.update(threads)
+        await tx
+          .update(threads)
           .set({
-            dislikesCount: sql`${threads.dislikesCount} + 1`
+            dislikesCount: sql`${threads.dislikesCount} + 1`,
           })
           .where(eq(threads.id, threadId));
 
@@ -1534,11 +1596,11 @@ export class DatabaseStorage implements IStorage {
         return true;
       });
     } catch (error) {
-      console.error('Error disliking thread:', error);
+      console.error("Error disliking thread:", error);
       return false;
     }
   }
-  
+
   async potdThread(threadId: string, userId: string): Promise<boolean> {
     try {
       // Start a transaction
@@ -1548,8 +1610,8 @@ export class DatabaseStorage implements IStorage {
           where: and(
             eq(threadReactions.threadId, threadId),
             eq(threadReactions.userId, userId),
-            eq(threadReactions.type, 'POTD')
-          )
+            eq(threadReactions.type, "POTD"),
+          ),
         });
 
         // Get the thread to check if it exists
@@ -1557,8 +1619,8 @@ export class DatabaseStorage implements IStorage {
           where: eq(threads.id, threadId),
           columns: {
             userId: true,
-            isPotd: true
-          }
+            isPotd: true,
+          },
         });
 
         if (!thread) {
@@ -1568,22 +1630,27 @@ export class DatabaseStorage implements IStorage {
         // If user has already marked as POTD, remove the POTD status
         if (existingReaction) {
           // Delete the POTD reaction
-          await tx.delete(threadReactions)
-            .where(and(
-              eq(threadReactions.threadId, threadId),
-              eq(threadReactions.userId, userId),
-              eq(threadReactions.type, 'POTD')
-            ));
+          await tx
+            .delete(threadReactions)
+            .where(
+              and(
+                eq(threadReactions.threadId, threadId),
+                eq(threadReactions.userId, userId),
+                eq(threadReactions.type, "POTD"),
+              ),
+            );
 
           // Update thread isPotd status
-          await tx.update(threads)
+          await tx
+            .update(threads)
             .set({ isPotd: false })
             .where(eq(threads.id, threadId));
 
           // Update user's POTD count only, keep the points
-          await tx.update(users)
-            .set({ 
-              potdCount: sql`${users.potdCount} - 1`
+          await tx
+            .update(users)
+            .set({
+              potdCount: sql`${users.potdCount} - 1`,
               // Points are not removed since POTD is a rotating feature
             })
             .where(eq(users.id, thread.userId));
@@ -1592,29 +1659,30 @@ export class DatabaseStorage implements IStorage {
         }
 
         // Add new POTD reaction
-        await tx.insert(threadReactions)
-          .values({
-            id: uuidv4(),
-            threadId,
-            userId,
-            type: 'POTD',
-            createdAt: new Date()
-          });
+        await tx.insert(threadReactions).values({
+          id: uuidv4(),
+          threadId,
+          userId,
+          type: "POTD",
+          createdAt: new Date(),
+        });
 
         // Update thread isPotd status and increment user points
         await Promise.all([
           // Update thread status
-          tx.update(threads)
+          tx
+            .update(threads)
             .set({ isPotd: true })
             .where(eq(threads.id, threadId)),
-          
+
           // Update user's points and POTD count
-          tx.update(users)
-            .set({ 
+          tx
+            .update(users)
+            .set({
               potdCount: sql`${users.potdCount} + 1`,
-              points: sql`${users.points} + 40` // Add 40 points for POTD
+              points: sql`${users.points} + 40`, // Add 40 points for POTD
             })
-            .where(eq(users.id, thread.userId))
+            .where(eq(users.id, thread.userId)),
         ]);
 
         // Create notification for thread owner if it's not their own thread
@@ -1634,11 +1702,11 @@ export class DatabaseStorage implements IStorage {
         return true;
       });
     } catch (error) {
-      console.error('Error in potdThread:', error);
+      console.error("Error in potdThread:", error);
       return false;
     }
   }
-  
+
   async likeReply(replyId: string, userId: string): Promise<boolean> {
     try {
       // Start a transaction
@@ -1648,8 +1716,8 @@ export class DatabaseStorage implements IStorage {
           where: and(
             eq(replyReactions.replyId, replyId),
             eq(replyReactions.userId, userId),
-            eq(replyReactions.type, 'LIKE')
-          )
+            eq(replyReactions.type, "LIKE"),
+          ),
         });
 
         // Get the reply to check if it exists and get the owner's ID
@@ -1657,8 +1725,8 @@ export class DatabaseStorage implements IStorage {
           where: eq(replies.id, replyId),
           columns: {
             userId: true,
-            threadId: true
-          }
+            threadId: true,
+          },
         });
 
         if (!reply) {
@@ -1667,25 +1735,30 @@ export class DatabaseStorage implements IStorage {
 
         if (existingReaction) {
           // User has already liked this reply - remove the like
-          await tx.delete(replyReactions)
-            .where(and(
-              eq(replyReactions.replyId, replyId),
-              eq(replyReactions.userId, userId),
-              eq(replyReactions.type, 'LIKE')
-            ));
+          await tx
+            .delete(replyReactions)
+            .where(
+              and(
+                eq(replyReactions.replyId, replyId),
+                eq(replyReactions.userId, userId),
+                eq(replyReactions.type, "LIKE"),
+              ),
+            );
 
           // Decrease reply likes count
-          await tx.update(replies)
+          await tx
+            .update(replies)
             .set({
-              likesCount: sql`${replies.likesCount} - 1`
+              likesCount: sql`${replies.likesCount} - 1`,
             })
             .where(eq(replies.id, replyId));
 
           // Remove points from reply owner (if not liking their own reply)
           if (reply.userId !== userId) {
-            await tx.update(users)
+            await tx
+              .update(users)
               .set({
-                points: sql`${users.points} - 1` // 1 point for a reply like
+                points: sql`${users.points} - 1`, // 1 point for a reply like
               })
               .where(eq(users.id, reply.userId));
           }
@@ -1698,22 +1771,24 @@ export class DatabaseStorage implements IStorage {
           id: uuidv4(),
           replyId,
           userId,
-          type: 'LIKE',
-          createdAt: new Date()
+          type: "LIKE",
+          createdAt: new Date(),
         });
 
         // Update reply likes count
-        await tx.update(replies)
+        await tx
+          .update(replies)
           .set({
-            likesCount: sql`${replies.likesCount} + 1`
+            likesCount: sql`${replies.likesCount} + 1`,
           })
           .where(eq(replies.id, replyId));
 
         // Add points for reply owner (if not liking their own reply)
         if (reply.userId !== userId) {
-          await tx.update(users)
+          await tx
+            .update(users)
             .set({
-              points: sql`${users.points} + 1` // 1 point for a reply like
+              points: sql`${users.points} + 1`, // 1 point for a reply like
             })
             .where(eq(users.id, reply.userId));
 
@@ -1734,11 +1809,11 @@ export class DatabaseStorage implements IStorage {
         return true;
       });
     } catch (error) {
-      console.error('Error liking reply:', error);
+      console.error("Error liking reply:", error);
       return false;
     }
   }
-  
+
   async dislikeReply(replyId: string, userId: string): Promise<boolean> {
     try {
       // Start a transaction
@@ -1748,8 +1823,8 @@ export class DatabaseStorage implements IStorage {
           where: and(
             eq(replyReactions.replyId, replyId),
             eq(replyReactions.userId, userId),
-            eq(replyReactions.type, 'DISLIKE')
-          )
+            eq(replyReactions.type, "DISLIKE"),
+          ),
         });
 
         // Get the reply to check if it exists and get the owner's ID
@@ -1757,8 +1832,8 @@ export class DatabaseStorage implements IStorage {
           where: eq(replies.id, replyId),
           columns: {
             userId: true,
-            threadId: true
-          }
+            threadId: true,
+          },
         });
 
         if (!reply) {
@@ -1767,17 +1842,21 @@ export class DatabaseStorage implements IStorage {
 
         if (existingReaction) {
           // User has already disliked this reply - remove the dislike
-          await tx.delete(replyReactions)
-            .where(and(
-              eq(replyReactions.replyId, replyId),
-              eq(replyReactions.userId, userId),
-              eq(replyReactions.type, 'DISLIKE')
-            ));
+          await tx
+            .delete(replyReactions)
+            .where(
+              and(
+                eq(replyReactions.replyId, replyId),
+                eq(replyReactions.userId, userId),
+                eq(replyReactions.type, "DISLIKE"),
+              ),
+            );
 
           // Decrease reply dislikes count
-          await tx.update(replies)
+          await tx
+            .update(replies)
             .set({
-              dislikesCount: sql`${replies.dislikesCount} - 1`
+              dislikesCount: sql`${replies.dislikesCount} - 1`,
             })
             .where(eq(replies.id, replyId));
 
@@ -1789,14 +1868,15 @@ export class DatabaseStorage implements IStorage {
           id: uuidv4(),
           replyId,
           userId,
-          type: 'DISLIKE',
-          createdAt: new Date()
+          type: "DISLIKE",
+          createdAt: new Date(),
         });
 
         // Update reply dislikes count
-        await tx.update(replies)
+        await tx
+          .update(replies)
           .set({
-            dislikesCount: sql`${replies.dislikesCount} + 1`
+            dislikesCount: sql`${replies.dislikesCount} + 1`,
           })
           .where(eq(replies.id, replyId));
 
@@ -1818,42 +1898,47 @@ export class DatabaseStorage implements IStorage {
         return true;
       });
     } catch (error) {
-      console.error('Error disliking reply:', error);
+      console.error("Error disliking reply:", error);
       return false;
     }
   }
-  
+
   async followUser(followerId: string, followingId: string): Promise<boolean> {
     // Temporary stub
-    console.log('followUser not fully implemented', followerId, followingId);
+    console.log("followUser not fully implemented", followerId, followingId);
     return false;
   }
-  
-  async unfollowUser(followerId: string, followingId: string): Promise<boolean> {
+
+  async unfollowUser(
+    followerId: string,
+    followingId: string,
+  ): Promise<boolean> {
     // Temporary stub
-    console.log('unfollowUser not fully implemented', followerId, followingId);
+    console.log("unfollowUser not fully implemented", followerId, followingId);
     return false;
   }
-  
+
   async getFollowers(userId: string): Promise<User[]> {
     // Temporary stub
-    console.log('getFollowers not fully implemented', userId);
+    console.log("getFollowers not fully implemented", userId);
     return [];
   }
-  
+
   async getFollowing(userId: string): Promise<User[]> {
     // Temporary stub
-    console.log('getFollowing not fully implemented', userId);
+    console.log("getFollowing not fully implemented", userId);
     return [];
   }
-  
+
   async getNotifications(userId: string): Promise<Notification[]> {
     // Temporary stub
-    console.log('getNotifications not fully implemented', userId);
+    console.log("getNotifications not fully implemented", userId);
     return [];
   }
-  
-  async createNotification(notification: InsertNotification): Promise<Notification> {
+
+  async createNotification(
+    notification: InsertNotification,
+  ): Promise<Notification> {
     try {
       const notificationValues = {
         id: uuidv4(), // Use UUID for notification ID
@@ -1864,93 +1949,91 @@ export class DatabaseStorage implements IStorage {
         replyId: notification.replyId || null,
         message: notification.message || null,
         isRead: false,
-        createdAt: new Date()
+        createdAt: new Date(),
       };
-      
-      const [newNotification] = await db.insert(notifications)
+
+      const [newNotification] = await db
+        .insert(notifications)
         .values(notificationValues)
         .returning();
-      
+
       return newNotification;
     } catch (error) {
-      console.error('Error creating notification:', error);
-      throw new Error('Failed to create notification');
+      console.error("Error creating notification:", error);
+      throw new Error("Failed to create notification");
     }
   }
-  
+
   async markNotificationAsRead(id: string): Promise<boolean> {
     // Temporary stub
-    console.log('markNotificationAsRead not fully implemented', id);
+    console.log("markNotificationAsRead not fully implemented", id);
     return false;
-  }
-  
-  async markAllNotificationsAsRead(userId: string): Promise<boolean> {
-    // Temporary stub
-    console.log('markAllNotificationsAsRead not fully implemented', userId);
-    return false;
-  }
-  
-  async getMMAEvents(limit: number, offset: number): Promise<MMAEvent[]> {
-    // Temporary stub
-    console.log('getMMAEvents not fully implemented', limit, offset);
-    return [];
-  }
-  
-  async getMMAEvent(id: string): Promise<MMAEvent | undefined> {
-    // Temporary stub
-    console.log('getMMAEvent not fully implemented', id);
-    return undefined;
-  }
-  
-  async getFights(eventId: string): Promise<Fight[]> {
-    // Temporary stub
-    console.log('getFights not fully implemented', eventId);
-    return [];
-  }
-  
-  async saveMMAEvent(event: any): Promise<MMAEvent> {
-    // Temporary stub
-    console.log('saveMMAEvent not fully implemented', event);
-    throw new Error('Not implemented');
-  }
-  
-  async saveFighter(fighter: any): Promise<Fighter> {
-    // Temporary stub
-    console.log('saveFighter not fully implemented', fighter);
-    throw new Error('Not implemented');
-  }
-  
-  async saveFight(fight: any): Promise<Fight> {
-    // Temporary stub
-    console.log('saveFight not fully implemented', fight);
-    throw new Error('Not implemented');
   }
 
-  // This will be used to calculate user ranking 
+  async markAllNotificationsAsRead(userId: string): Promise<boolean> {
+    // Temporary stub
+    console.log("markAllNotificationsAsRead not fully implemented", userId);
+    return false;
+  }
+
+  async getMMAEvents(limit: number, offset: number): Promise<MMAEvent[]> {
+    // Temporary stub
+    console.log("getMMAEvents not fully implemented", limit, offset);
+    return [];
+  }
+
+  async getMMAEvent(id: string): Promise<MMAEvent | undefined> {
+    // Temporary stub
+    console.log("getMMAEvent not fully implemented", id);
+    return undefined;
+  }
+
+  async getFights(eventId: string): Promise<Fight[]> {
+    // Temporary stub
+    console.log("getFights not fully implemented", eventId);
+    return [];
+  }
+
+  async saveMMAEvent(event: any): Promise<MMAEvent> {
+    // Temporary stub
+    console.log("saveMMAEvent not fully implemented", event);
+    throw new Error("Not implemented");
+  }
+
+  async saveFighter(fighter: any): Promise<Fighter> {
+    // Temporary stub
+    console.log("saveFighter not fully implemented", fighter);
+    throw new Error("Not implemented");
+  }
+
+  async saveFight(fight: any): Promise<Fight> {
+    // Temporary stub
+    console.log("saveFight not fully implemented", fight);
+    throw new Error("Not implemented");
+  }
+
+  // This will be used to calculate user ranking
   async recalculateRankings(): Promise<void> {
     try {
       const allUsers = await this.getAllUsers();
-      
+
       // Sort users by points
       const sortedUsers = allUsers.sort((a, b) => b.points - a.points);
-      
+
       // Update ranks
       for (let i = 0; i < sortedUsers.length; i++) {
         const user = sortedUsers[i];
-        
+
         // Calculate rank (1-based)
         const rank = i + 1;
-        
+
         // Only update if rank changed
         if (user.rank !== rank) {
-          await db
-            .update(users)
-            .set({ rank })
-            .where(eq(users.id, user.id));
+          await db.update(users).set({ rank }).where(eq(users.id, user.id));
         }
       }
     } catch (error) {
-      console.error('Error recalculating rankings:', error);
+      console.error("Error recalculating rankings:", error);
     }
   }
 
@@ -1958,120 +2041,136 @@ export class DatabaseStorage implements IStorage {
   async recalculateUserStatus(userId: string): Promise<string | undefined> {
     try {
       const user = await this.getUser(userId);
-      
+
       if (!user) {
         return undefined;
       }
-      
+
       // Define thresholds for different statuses
       // These can be adjusted as needed
       const statusThresholds = [
-        { status: 'HALL_OF_FAMER', points: 5000, posts: 200, potd: 10 },
-        { status: 'CHAMPION', points: 2500, posts: 100, potd: 5 },
-        { status: 'CONTENDER', points: 1000, posts: 50, potd: 2 },
-        { status: 'RANKED_POSTER', points: 500, posts: 25, potd: 1 },
-        { status: 'COMPETITOR', points: 250, posts: 15, potd: 0 },
-        { status: 'REGIONAL_POSTER', points: 100, posts: 5, potd: 0 },
-        { status: 'AMATEUR', points: 0, posts: 0, potd: 0 }
+        { status: "HALL_OF_FAMER", points: 5000, posts: 200, potd: 10 },
+        { status: "CHAMPION", points: 2500, posts: 100, potd: 5 },
+        { status: "CONTENDER", points: 1000, posts: 50, potd: 2 },
+        { status: "RANKED_POSTER", points: 500, posts: 25, potd: 1 },
+        { status: "COMPETITOR", points: 250, posts: 15, potd: 0 },
+        { status: "REGIONAL_POSTER", points: 100, posts: 5, potd: 0 },
+        { status: "AMATEUR", points: 0, posts: 0, potd: 0 },
       ];
-      
+
       // Find the highest status the user qualifies for
-      let newStatus = 'AMATEUR';
+      let newStatus = "AMATEUR";
       for (const threshold of statusThresholds) {
         if (
-          user.points >= threshold.points && 
-          user.postsCount >= threshold.posts && 
+          user.points >= threshold.points &&
+          user.postsCount >= threshold.posts &&
           user.potdCount >= threshold.potd
         ) {
           newStatus = threshold.status;
           break;
         }
       }
-      
+
       // Only update if status has changed
       if (newStatus !== user.status) {
-        const updatedUser = await this.updateUser(userId, { status: newStatus });
-        
+        const updatedUser = await this.updateUser(userId, {
+          status: newStatus,
+        });
+
         if (updatedUser) {
           return newStatus;
         }
       }
-      
+
       return user.status;
     } catch (error) {
-      console.error('Error recalculating user status:', error);
+      console.error("Error recalculating user status:", error);
       return undefined;
     }
   }
 
   // Recalculate statuses for all users - to be called by cron job
-  async recalculateAllUserStatuses(): Promise<{success: number, failed: number, unchanged: number}> {
+  async recalculateAllUserStatuses(): Promise<{
+    success: number;
+    failed: number;
+    unchanged: number;
+  }> {
     try {
       // Get all users
       const allUsers = await this.getAllUsers();
-      
+
       // Status thresholds - same as in recalculateUserStatus
       const statusThresholds = [
-        { status: 'HALL_OF_FAMER', points: 5000, posts: 200, potd: 10 },
-        { status: 'CHAMPION', points: 2500, posts: 100, potd: 5 },
-        { status: 'CONTENDER', points: 1000, posts: 50, potd: 2 },
-        { status: 'RANKED_POSTER', points: 500, posts: 25, potd: 1 },
-        { status: 'COMPETITOR', points: 250, posts: 15, potd: 0 },
-        { status: 'REGIONAL_POSTER', points: 100, posts: 5, potd: 0 },
-        { status: 'AMATEUR', points: 0, posts: 0, potd: 0 }
+        { status: "HALL_OF_FAMER", points: 5000, posts: 200, potd: 10 },
+        { status: "CHAMPION", points: 2500, posts: 100, potd: 5 },
+        { status: "CONTENDER", points: 1000, posts: 50, potd: 2 },
+        { status: "RANKED_POSTER", points: 500, posts: 25, potd: 1 },
+        { status: "COMPETITOR", points: 250, posts: 15, potd: 0 },
+        { status: "REGIONAL_POSTER", points: 100, posts: 5, potd: 0 },
+        { status: "AMATEUR", points: 0, posts: 0, potd: 0 },
       ];
-      
+
       // Track statistics
       let success = 0;
       let failed = 0;
       let unchanged = 0;
-      
+
       // Process users in smaller batches to avoid memory issues
       const batchSize = 50;
       for (let i = 0; i < allUsers.length; i += batchSize) {
         const userBatch = allUsers.slice(i, i + batchSize);
-        
+
         // Process each user in the batch
-        await Promise.all(userBatch.map(async (user) => {
-          try {
-            // Find the highest status the user qualifies for
-            let newStatus = 'AMATEUR';
-            for (const threshold of statusThresholds) {
-              if (
-                user.points >= threshold.points && 
-                user.postsCount >= threshold.posts && 
-                user.potdCount >= threshold.potd
-              ) {
-                newStatus = threshold.status;
-                break;
+        await Promise.all(
+          userBatch.map(async (user) => {
+            try {
+              // Find the highest status the user qualifies for
+              let newStatus = "AMATEUR";
+              for (const threshold of statusThresholds) {
+                if (
+                  user.points >= threshold.points &&
+                  user.postsCount >= threshold.posts &&
+                  user.potdCount >= threshold.potd
+                ) {
+                  newStatus = threshold.status;
+                  break;
+                }
               }
-            }
-            
-            // Only update if status has changed
-            if (newStatus !== user.status) {
-              const updatedUser = await this.updateUser(user.id, { status: newStatus });
-              
-              if (updatedUser) {
-                console.log(`Updated user ${user.username} status from ${user.status} to ${newStatus}`);
-                success++;
+
+              // Only update if status has changed
+              if (newStatus !== user.status) {
+                const updatedUser = await this.updateUser(user.id, {
+                  status: newStatus,
+                });
+
+                if (updatedUser) {
+                  console.log(
+                    `Updated user ${user.username} status from ${user.status} to ${newStatus}`,
+                  );
+                  success++;
+                } else {
+                  console.error(
+                    `Failed to update status for user ${user.username}`,
+                  );
+                  failed++;
+                }
               } else {
-                console.error(`Failed to update status for user ${user.username}`);
-                failed++;
+                unchanged++;
               }
-            } else {
-              unchanged++;
+            } catch (userError) {
+              console.error(`Error processing user ${user.id}:`, userError);
+              failed++;
             }
-          } catch (userError) {
-            console.error(`Error processing user ${user.id}:`, userError);
-            failed++;
-          }
-        }));
+          }),
+        );
       }
-      
-      console.log(`Status recalculation complete: ${success} updated, ${unchanged} unchanged, ${failed} failed`);
+
+      console.log(
+        `Status recalculation complete: ${success} updated, ${unchanged} unchanged, ${failed} failed`,
+      );
       return { success, failed, unchanged };
     } catch (error) {
-      console.error('Error recalculating all user statuses:', error);
+      console.error("Error recalculating all user statuses:", error);
       return { success: 0, failed: 0, unchanged: 0 };
     }
   }
@@ -2083,7 +2182,7 @@ export class DatabaseStorage implements IStorage {
           id: pollOptions.id,
           pollId: pollOptions.pollId,
           text: pollOptions.text,
-          votesCount: pollOptions.votesCount
+          votesCount: pollOptions.votesCount,
         })
         .from(pollOptions)
         .where(eq(pollOptions.pollId, pollId))
@@ -2091,7 +2190,7 @@ export class DatabaseStorage implements IStorage {
 
       return options;
     } catch (error) {
-      console.error('Error getting poll options:', error);
+      console.error("Error getting poll options:", error);
       return [];
     }
   }

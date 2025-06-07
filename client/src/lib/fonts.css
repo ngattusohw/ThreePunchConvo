@@ -1,29 +1,29 @@
 /* Custom theme styles for 3 Punch Convo */
 :root {
-  --ufc-blue: #25C3EC;
+  --ufc-blue: #25c3ec;
   --ufc-blue-hover: #23afd1;
-  --ufc-black: #0E0E0E;
-  --ufc-gold: #F5C518;
-  --dark-gray: #1E1E1E;
-  --light-gray: #F5F5F5;
+  --ufc-black: #0e0e0e;
+  --ufc-gold: #f5c518;
+  --dark-gray: #1e1e1e;
+  --light-gray: #f5f5f5;
 }
 
 /* Font family utilities */
 .font-heading {
-  font-family: 'Roboto Condensed', sans-serif;
+  font-family: "Roboto Condensed", sans-serif;
 }
 
 .font-body {
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
 }
 
 .font-accent {
-  font-family: 'Oswald', sans-serif;
+  font-family: "Oswald", sans-serif;
 }
 
 /* Status badges */
 .status-hof {
-  background: linear-gradient(90deg, #F5C518 0%, #E6A819 100%);
+  background: linear-gradient(90deg, #f5c518 0%, #e6a819 100%);
   color: #121212;
 }
 
@@ -38,22 +38,22 @@
 }
 
 .status-ranked {
-  background-color: #3B82F6;
+  background-color: #3b82f6;
   color: white;
 }
 
 .status-competitor {
-  background-color: #4B5563;
+  background-color: #4b5563;
   color: white;
 }
 
 .status-regional {
-  background-color: #6B7280;
+  background-color: #6b7280;
   color: white;
 }
 
 .status-amateur {
-  background-color: #9CA3AF;
+  background-color: #9ca3af;
   color: black;
 }
 
@@ -64,16 +64,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #1E1E1E;
+  background: #1e1e1e;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4B5563;
+  background: #4b5563;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #6B7280;
+  background: #6b7280;
 }
 
 /* MMA theme colors */

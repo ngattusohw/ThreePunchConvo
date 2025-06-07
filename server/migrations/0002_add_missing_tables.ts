@@ -47,9 +47,15 @@ export async function up(db: any) {
   `);
 
   // Create indexes for better query performance
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_polls_thread_id ON polls(thread_id);`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_poll_options_poll_id ON poll_options(poll_id);`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_thread_media_thread_id ON thread_media(thread_id);`);
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_polls_thread_id ON polls(thread_id);`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_poll_options_poll_id ON poll_options(poll_id);`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_thread_media_thread_id ON thread_media(thread_id);`,
+  );
 }
 
 export async function down(db: any) {
@@ -63,4 +69,4 @@ export async function down(db: any) {
   await db.execute(sql`DROP TABLE IF EXISTS poll_options;`);
   await db.execute(sql`DROP TABLE IF EXISTS polls;`);
   await db.execute(sql`DROP TABLE IF EXISTS thread_media;`);
-} 
+}

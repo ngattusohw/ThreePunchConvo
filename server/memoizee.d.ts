@@ -1,4 +1,4 @@
-declare module 'memoizee' {
+declare module "memoizee" {
   function memoize<T extends (...args: any[]) => any>(
     fn: T,
     options?: {
@@ -9,8 +9,8 @@ declare module 'memoizee' {
       normalizer?: (args: any[]) => string;
       resolvers?: Array<(value: any) => any>;
       max?: number;
-    }
+    },
   ): T;
-  
+
   export = memoize;
 }

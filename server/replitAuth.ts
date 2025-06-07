@@ -18,7 +18,7 @@ interface ReplitUser extends User {
   expires_at?: number;
 }
 
-const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopment = process.env.NODE_ENV === "development";
 
 if (!isDevelopment && !process.env.REPLIT_DOMAINS) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
@@ -28,10 +28,10 @@ const getOidcConfig = memoize(
   async () => {
     return await client.discovery(
       new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
+      process.env.REPL_ID!,
     );
   },
-  { maxAge: 3600 * 1000 }
+  { maxAge: 3600 * 1000 },
 );
 
 export function getSession() {
@@ -43,7 +43,7 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
-  
+
   return session({
     secret: process.env.SESSION_SECRET || "3punchconvosessiontopsecret",
     store: sessionStore,
@@ -53,14 +53,14 @@ export function getSession() {
       httpOnly: true,
       secure: !isDevelopment,
       maxAge: sessionTtl,
-      sameSite: 'lax'
+      sameSite: "lax",
     },
   });
 }
 
 function updateUserSession(
   user: ReplitUser,
-  tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers
+  tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
 ) {
   user.claims = tokens.claims();
   user.access_token = tokens.access_token;
@@ -68,13 +68,11 @@ function updateUserSession(
   user.expires_at = user.claims?.exp;
 }
 
-async function upsertUser(
-  claims: any,
-) {
+async function upsertUser(claims: any) {
   if (!claims || !claims.sub) {
     throw new Error("Invalid claims data in upsertUser");
   }
-  
+
   await storage.upsertUser({
     id: claims.sub,
     username: claims.username || `user_${claims.sub.substring(0, 8)}`,
@@ -108,17 +106,18 @@ export async function setupAuth(app: Express) {
     const config = await getOidcConfig();
 
     const verify: VerifyFunction = async (
-      tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-      verified: passport.AuthenticateCallback
+      tokens: client.TokenEndpointResponse &
+        client.TokenEndpointResponseHelpers,
+      verified: passport.AuthenticateCallback,
     ) => {
       const claims = tokens.claims();
       if (!claims || !claims.sub) {
         verified(new Error("Invalid claims data"), null);
         return;
       }
-      
+
       const user = await storage.getUser(claims.sub);
-      
+
       if (!user) {
         // Create the user if they don't exist in our system
         await upsertUser(claims);
@@ -136,7 +135,7 @@ export async function setupAuth(app: Express) {
         verified(null, userObject);
         return;
       }
-      
+
       // Fallback if something went wrong
       verified(new Error("Failed to authenticate user"), null);
     };
@@ -166,38 +165,39 @@ export async function setupAuth(app: Express) {
       passport.authenticate(`replitauth:${req.hostname}`, {
         successReturnToOrRedirect: "/",
         failureRedirect: "/api/login",
-        failWithError: true
+        failWithError: true,
       })(req, res, next);
     });
 
     app.get("/api/logout", (req, res) => {
       if (req.user) {
-        storage.updateUser(req.user.id, { isOnline: false })
+        storage
+          .updateUser(req.user.id, { isOnline: false })
           .then(() => {
             req.logout(() => {
               res.redirect(
                 client.buildEndSessionUrl(config, {
                   client_id: process.env.REPL_ID!,
                   post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-                }).href
+                }).href,
               );
             });
           })
-          .catch(error => {
-            console.error('Error updating user online status:', error);
+          .catch((error) => {
+            console.error("Error updating user online status:", error);
             // Still proceed with logout even if status update fails
             req.logout(() => {
               res.redirect(
                 client.buildEndSessionUrl(config, {
                   client_id: process.env.REPL_ID!,
                   post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-                }).href
+                }).href,
               );
             });
           });
       } else {
         // If no user is logged in, just redirect
-        res.redirect('/');
+        res.redirect("/");
       }
     });
   }

@@ -17,4 +17,4 @@ export async function down(db: any) {
   await db.execute(sql`
     DROP TABLE IF EXISTS user_sessions;
   `);
-} 
+}

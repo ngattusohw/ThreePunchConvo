@@ -25,14 +25,14 @@ declare global {
       role?: string;
       status?: string;
     }
-    
+
     // Extend the Request interface to include localUser
     interface Request {
       localUser?: User;
       auth?: {
         userId?: string;
         sessionId?: string;
-      }
+      };
     }
   }
 }

@@ -1,9 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Switch, Route } from "wouter";
-import {loadStripe} from '@stripe/stripe-js';
-import {
-  CheckoutProvider,
-} from '@stripe/react-stripe-js';
+import { loadStripe } from "@stripe/stripe-js";
+import { CheckoutProvider } from "@stripe/react-stripe-js";
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import Home from "@/pages/Home";
@@ -34,17 +32,20 @@ function App() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>("");
   const [localUser, setLocalUser] = useState<any | null>(null);
   // Add a debug state
-  const [debugInfo, setDebugInfo] = useState<{loading: boolean, error: string | null}>({
+  const [debugInfo, setDebugInfo] = useState<{
+    loading: boolean;
+    error: string | null;
+  }>({
     loading: true,
-    error: null
+    error: null,
   });
   // Add an initialLoadComplete state to track when the app is ready to render
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // TODO test key
-  const stripePromise = useMemo(() => 
-    loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ''),
-    [] // Only create once
+  const stripePromise = useMemo(
+    () => loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ""),
+    [], // Only create once
   );
 
   // Clear React Query cache when auth state changes (on logout)
@@ -66,26 +67,32 @@ function App() {
 
         try {
           // Check if user exists in our database, creates one if not
-          const response = await apiRequest("POST", `/api/users/clerk/${user?.id}`, {
-            firstName: user?.firstName,
-            lastName: user?.lastName,
-            email: user?.emailAddresses[0]?.emailAddress,
-            profileImageUrl: user?.imageUrl,
-            username: user?.username
-          });
-          
+          const response = await apiRequest(
+            "POST",
+            `/api/users/clerk/${user?.id}`,
+            {
+              firstName: user?.firstName,
+              lastName: user?.lastName,
+              email: user?.emailAddresses[0]?.emailAddress,
+              profileImageUrl: user?.imageUrl,
+              username: user?.username,
+            },
+          );
+
           if (!response.ok) {
-            throw new Error(`Failed to check/create user: ${response.statusText}`);
+            throw new Error(
+              `Failed to check/create user: ${response.statusText}`,
+            );
           }
-          
+
           const data = await response.json();
-          
+
           if (data.created) {
             console.log("Created new local user for Clerk user:", data.user);
           } else {
             console.log("Found existing local user:", data.user);
           }
-          
+
           setLocalUser(data.user);
           setLocalUserChecked(true);
         } catch (error) {
@@ -98,7 +105,7 @@ function App() {
         setLocalUserChecked(true);
       }
     };
-    
+
     checkOrCreateUser();
   }, [isUserLoaded, isSignedIn, user]);
 
@@ -107,37 +114,45 @@ function App() {
     const checkUserSubscriptions = async () => {
       if (localUser?.stripeId) {
         try {
-          console.log("Checking subscriptions for user with Stripe ID:", localUser.stripeId);
-          const response = await apiRequest("GET", `/get-subscriptions?customerId=${localUser.stripeId}&status=active`);
-          
+          console.log(
+            "Checking subscriptions for user with Stripe ID:",
+            localUser.stripeId,
+          );
+          const response = await apiRequest(
+            "GET",
+            `/get-subscriptions?customerId=${localUser.stripeId}&status=active`,
+          );
+
           if (!response.ok) {
-            throw new Error(`Failed to fetch subscriptions: ${response.statusText}`);
+            throw new Error(
+              `Failed to fetch subscriptions: ${response.statusText}`,
+            );
           }
-          
+
           const data = await response.json();
           const subscriptionsData = data.data || [];
           setSubscriptions(subscriptionsData);
-          
+
           // Get subscription status using the utility function
           const status = getSubscriptionStatus(subscriptionsData);
           setSubscriptionStatus(status);
-          
+
           // Update the user's plan type in the database if needed
           if (user?.id && status) {
             // Status will be 'BASIC', 'PRO', or empty string
-            const planType = status || 'FREE';
+            const planType = status || "FREE";
             await updateUserPlanType(user.id, planType);
           }
-          
+
           if (data.data && data.data.length > 0) {
             console.log("User has active subscriptions:", data.data);
             console.log("Subscription status:", status);
           } else {
             console.log("User has no active subscriptions");
-            
+
             // If no active subscriptions, downgrade to FREE plan if user is logged in
             if (user?.id) {
-              await updateUserPlanType(user.id, 'FREE');
+              await updateUserPlanType(user.id, "FREE");
             }
           }
         } catch (error) {
@@ -151,44 +166,52 @@ function App() {
         if (!initialLoadComplete) setInitialLoadComplete(true);
       }
     };
-    
+
     if (localUserChecked && localUser) {
       checkUserSubscriptions();
     } else if (localUserChecked && !localUser && isUserLoaded) {
       // If local user check is complete but no local user and user is loaded, we can consider initial load complete
       if (!initialLoadComplete) setInitialLoadComplete(true);
     }
-  }, [localUser, localUserChecked, user?.id, isUserLoaded, initialLoadComplete]);
+  }, [
+    localUser,
+    localUserChecked,
+    user?.id,
+    isUserLoaded,
+    initialLoadComplete,
+  ]);
 
   // Function to update user's plan type in the database
   const updateUserPlanType = async (clerkUserId: string, planType: string) => {
     try {
       console.log(`Updating plan type for user ${clerkUserId} to ${planType}`);
-      const response = await apiRequest("POST", '/api/users/update-plan', {
+      const response = await apiRequest("POST", "/api/users/update-plan", {
         clerkUserId,
-        planType
+        planType,
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to update plan type: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      
+
       if (data.updated) {
-        console.log(`Plan type updated from ${data.previousPlan} to ${data.newPlan}`);
-        
+        console.log(
+          `Plan type updated from ${data.previousPlan} to ${data.newPlan}`,
+        );
+
         // Update local user state if the plan changed
         if (localUser && data.user) {
           setLocalUser({
             ...localUser,
-            planType: data.newPlan
+            planType: data.newPlan,
           });
         }
       } else {
         console.log(`Plan type already up to date: ${data.planType}`);
       }
-      
+
       return data;
     } catch (error) {
       console.error("Error updating plan type:", error);
@@ -199,33 +222,45 @@ function App() {
   // Fetch client secret only when user is loaded and signed in
   useEffect(() => {
     const fetchClientSecret = async () => {
-      if (isUserLoaded && isSignedIn && user?.id && user?.emailAddresses[0]?.emailAddress) {
+      if (
+        isUserLoaded &&
+        isSignedIn &&
+        user?.id &&
+        user?.emailAddresses[0]?.emailAddress
+      ) {
         setIsLoadingClientSecret(true);
         console.log("Fetching client secret");
-        
+
         try {
-          const response = await apiRequest("POST", '/create-checkout-session', {
-            email: user.emailAddresses[0].emailAddress,
-            clerkUserId: user.id
-          });
-          
+          const response = await apiRequest(
+            "POST",
+            "/create-checkout-session",
+            {
+              email: user.emailAddresses[0].emailAddress,
+              clerkUserId: user.id,
+            },
+          );
+
           if (!response.ok) {
             throw new Error(`HTTP error ${response.status}`);
           }
-          
+
           const data = await response.json();
-          console.log("Received client secret:", data.clientSecret ? "Valid secret" : "No secret");
+          console.log(
+            "Received client secret:",
+            data.clientSecret ? "Valid secret" : "No secret",
+          );
           if (!data.clientSecret) {
             throw new Error("No client secret received from server");
           }
           setClientSecret(data.clientSecret);
-          setDebugInfo(prev => ({ ...prev, loading: false }));
+          setDebugInfo((prev) => ({ ...prev, loading: false }));
         } catch (err) {
           console.error("Error fetching client secret:", err);
           setClientSecret(null);
-          setDebugInfo(prev => ({ 
-            loading: false, 
-            error: err instanceof Error ? err.message : String(err) 
+          setDebugInfo((prev) => ({
+            loading: false,
+            error: err instanceof Error ? err.message : String(err),
           }));
         } finally {
           setIsLoadingClientSecret(false);
@@ -235,49 +270,64 @@ function App() {
       } else if (isUserLoaded && !isSignedIn) {
         // If user is not signed in, we don't need to fetch client secret
         setIsLoadingClientSecret(false);
-        setDebugInfo(prev => ({ ...prev, loading: false }));
+        setDebugInfo((prev) => ({ ...prev, loading: false }));
         // Mark initial load as complete for non-signed in users
         if (!initialLoadComplete) setInitialLoadComplete(true);
       }
     };
-    
+
     // Only fetch client secret if user is signed in
     if (isUserLoaded && isSignedIn) {
       fetchClientSecret();
     } else if (isUserLoaded && !isSignedIn) {
       // Reset loading state when not signed in
       setIsLoadingClientSecret(false);
-      setDebugInfo(prev => ({ ...prev, loading: false }));
+      setDebugInfo((prev) => ({ ...prev, loading: false }));
       // Mark initial load as complete for non-signed in users
       if (!initialLoadComplete) setInitialLoadComplete(true);
     }
-  }, [isUserLoaded, isSignedIn, user?.id, user?.emailAddresses, initialLoadComplete]);
+  }, [
+    isUserLoaded,
+    isSignedIn,
+    user?.id,
+    user?.emailAddresses,
+    initialLoadComplete,
+  ]);
 
   const stripeAppearance = {
-    theme: 'night' as const,
+    theme: "night" as const,
   };
 
   // Determine if we should show loading state - now we use the initialLoadComplete flag
-  const isLoadingApp = !initialLoadComplete || (isLoadingClientSecret && isSignedIn);
+  const isLoadingApp =
+    !initialLoadComplete || (isLoadingClientSecret && isSignedIn);
 
   // If we're going to checkout but clientSecret is still loading, show skeleton
-  const isCheckoutLoading = window.location.pathname === "/checkout" && 
-                            ((isSignedIn && (!clientSecret || isLoadingClientSecret)) ||
-                             !isUserLoaded || !initialLoadComplete);
+  const isCheckoutLoading =
+    window.location.pathname === "/checkout" &&
+    ((isSignedIn && (!clientSecret || isLoadingClientSecret)) ||
+      !isUserLoaded ||
+      !initialLoadComplete);
 
   return (
     <div>
-      <div className="flex flex-col min-h-screen bg-ufc-black text-light-gray">
+      <div className="bg-ufc-black text-light-gray flex min-h-screen flex-col">
         <Header />
         <main className="flex-grow">
-          <ErrorBoundary fallback={
-            <div className="p-4 bg-red-800 text-white m-4">
-              <h2 className="text-xl font-bold">Rendering Error</h2>
-              <p>There was an error rendering the components</p>
-              <p className="text-sm mt-2">Client Secret: {clientSecret ? "Available" : "Not available"}</p>
-              <p className="text-sm">Loading: {isLoadingClientSecret ? "Yes" : "No"}</p>
-            </div>
-          }>
+          <ErrorBoundary
+            fallback={
+              <div className="m-4 bg-red-800 p-4 text-white">
+                <h2 className="text-xl font-bold">Rendering Error</h2>
+                <p>There was an error rendering the components</p>
+                <p className="mt-2 text-sm">
+                  Client Secret: {clientSecret ? "Available" : "Not available"}
+                </p>
+                <p className="text-sm">
+                  Loading: {isLoadingClientSecret ? "Yes" : "No"}
+                </p>
+              </div>
+            }
+          >
             {isLoadingApp || isCheckoutLoading ? (
               <ForumSkeleton />
             ) : (
@@ -290,12 +340,15 @@ function App() {
                 <Route path="/register" component={AuthPage} />
                 <Route path="/schedule" component={Schedule} />
                 <Route path="/rankings" component={Rankings} />
-                
+
                 {/* Protected Routes - Need auth but not checkout */}
                 <ProtectedRoute path="/forum/:categoryId" component={Forum} />
                 <ProtectedRoute path="/thread/:threadId" component={Thread} />
-                <ProtectedRoute path="/user/:username" component={UserProfile} />
-                
+                <ProtectedRoute
+                  path="/user/:username"
+                  component={UserProfile}
+                />
+
                 {/* Checkout Routes - Need auth AND checkout provider */}
                 {isSignedIn && clientSecret ? (
                   <>
@@ -304,7 +357,10 @@ function App() {
                         stripe={stripePromise}
                         options={{
                           fetchClientSecret: () => {
-                            console.log("fetchClientSecret called", { isLoadingClientSecret, clientSecret });
+                            console.log("fetchClientSecret called", {
+                              isLoadingClientSecret,
+                              clientSecret,
+                            });
                             return Promise.resolve(clientSecret || "");
                           },
                           elementsOptions: { appearance: stripeAppearance },
@@ -329,23 +385,27 @@ function App() {
                   </>
                 ) : isSignedIn && debugInfo.error ? (
                   <Route path="/checkout">
-                    <div className="container mx-auto px-4 mt-4">
-                      <div className="bg-red-800 text-white p-4 rounded-lg">
-                        <h2 className="text-xl font-bold mb-2">Payment Setup Error</h2>
+                    <div className="container mx-auto mt-4 px-4">
+                      <div className="rounded-lg bg-red-800 p-4 text-white">
+                        <h2 className="mb-2 text-xl font-bold">
+                          Payment Setup Error
+                        </h2>
                         <p>{debugInfo.error}</p>
                       </div>
                     </div>
                   </Route>
                 ) : null}
-                
+
                 {/* 404 Route */}
                 <Route component={NotFound} />
               </Switch>
             )}
             {!isLoadingApp && debugInfo.error && !isSignedIn && (
-              <div className="container mx-auto px-4 mt-4">
-                <div className="bg-yellow-800 text-white p-4 rounded-lg">
-                  <h2 className="text-xl font-bold mb-2">Payment Features Unavailable</h2>
+              <div className="container mx-auto mt-4 px-4">
+                <div className="rounded-lg bg-yellow-800 p-4 text-white">
+                  <h2 className="mb-2 text-xl font-bold">
+                    Payment Features Unavailable
+                  </h2>
                   <p>Please sign in to access checkout features.</p>
                 </div>
               </div>

@@ -95,7 +95,7 @@ app.use((req, res, next) => {
       app.use(express.static(path.resolve(__dirname, "..", "dist", "public")));
       app.get("*", (_req, res) => {
         res.sendFile(
-          path.resolve(__dirname, "..", "dist", "public", "index.html")
+          path.resolve(__dirname, "..", "dist", "public", "index.html"),
         );
       });
       console.log("📁 Static files configured");
@@ -112,7 +112,7 @@ app.use((req, res, next) => {
       () => {
         log(`serving on port ${port}`);
         console.log("🎉 Server started successfully!");
-      }
+      },
     );
   } catch (error) {
     console.error("Failed to start server:", error);

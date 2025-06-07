@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { dark } from '@clerk/themes';
+import { dark } from "@clerk/themes";
 import NotificationModal from "@/components/notification/NotificationModal";
 import MobileNavigation from "@/components/layout/MobileNavigation";
 import { formatUsername } from "@/lib/utils";
 import { UserStatus } from "@/lib/types";
 import StatusBadge from "@/components/ui/status-badge";
 import logoImage from "@/assets/3PC-Logo-FullColor-RGB.png";
-import { SignInButton, UserButton, useAuth, useUser } from '@clerk/clerk-react';
+import { SignInButton, UserButton, useAuth, useUser } from "@clerk/clerk-react";
 
 export default function Header() {
   const [location] = useLocation();
@@ -31,13 +31,13 @@ export default function Header() {
   console.log("user", user);
 
   return (
-    <header className="bg-ufc-black border-b border-gray-800 sticky top-0 z-50">
-      <div className="w-full px-6 lg:px-8 py-2">
-        <div className="flex justify-between items-center w-full">
+    <header className="bg-ufc-black sticky top-0 z-50 border-b border-gray-800">
+      <div className="w-full px-6 py-2 lg:px-8">
+        <div className="flex w-full items-center justify-between">
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden text-gray-400 hover:text-white p-2"
+              className="p-2 text-gray-400 hover:text-white md:hidden"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -59,7 +59,7 @@ export default function Header() {
             </Link>
           </div>
 
-          <div className="hidden md:flex space-x-6 items-center">
+          <div className="hidden items-center space-x-6 md:flex">
             <nav className="flex space-x-6">
               <Link
                 href="/forum"
@@ -86,25 +86,28 @@ export default function Header() {
             {isSignedIn && user ? (
               <>
                 {/* TODO notifications */}
-                
+
                 <div className="relative flex items-center space-x-2">
                   {user.username && (
-                    <Link href={`/user/${user.username}`} className="text-white font-medium hidden md:block">
+                    <Link
+                      href={`/user/${user.username}`}
+                      className="hidden font-medium text-white md:block"
+                    >
                       {formatUsername(user.username)}
                     </Link>
                   )}
-                  
+
                   {user.id && (
                     <span className="hidden md:block">
                       <StatusBadge status={getUserStatus(user.id)} />
                     </span>
                   )}
-                  
+
                   <UserButton afterSignOutUrl="/" />
                 </div>
               </>
             ) : (
-              <SignInButton 
+              <SignInButton
                 appearance={{
                   baseTheme: dark,
                   elements: {
@@ -116,10 +119,10 @@ export default function Header() {
                     colorPrimary: "#25C3EC",
                     // Other color variables
                   },
-                }} 
-                mode="modal" 
+                }}
+                mode="modal"
               >
-                <button className="px-4 py-2 bg-ufc-blue hover:bg-ufc-blue-dark text-black rounded-lg text-sm">
+                <button className="bg-ufc-blue hover:bg-ufc-blue-dark rounded-lg px-4 py-2 text-sm text-black">
                   Sign In
                 </button>
               </SignInButton>

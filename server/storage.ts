@@ -797,28 +797,28 @@ export class DatabaseStorage implements IStorage {
 
         // If thread is being locked/unlocked, create a notification for the thread owner
         if (threadData.isLocked !== undefined && threadData.isLocked !== currentThread.isLocked) {
-          await tx.insert(notifications).values({
-            id: uuidv4(),
-            userId: currentThread.userId,
-            type: threadData.isLocked ? 'THREAD_LOCKED' : 'THREAD_UNLOCKED',
-            threadId: id,
-            message: threadData.isLocked ? 'Your thread has been locked' : 'Your thread has been unlocked',
-            isRead: false,
-            createdAt: new Date()
-          });
+          // await tx.insert(notifications).values({
+          //   id: uuidv4(),
+          //   userId: currentThread.userId,
+          //   type: threadData.isLocked ? 'THREAD_LOCKED' : 'THREAD_UNLOCKED',
+          //   threadId: id,
+          //   message: threadData.isLocked ? 'Your thread has been locked' : 'Your thread has been unlocked',
+          //   isRead: false,
+          //   createdAt: new Date()
+          // });
         }
 
         // If thread is being pinned/unpinned, create a notification for the thread owner
         if (threadData.isPinned !== undefined && threadData.isPinned !== currentThread.isPinned) {
-          await tx.insert(notifications).values({
-            id: uuidv4(),
-            userId: currentThread.userId,
-            type: threadData.isPinned ? 'THREAD_PINNED' : 'THREAD_UNPINNED',
-            threadId: id,
-            message: threadData.isPinned ? 'Your thread has been pinned' : 'Your thread has been unpinned',
-            isRead: false,
-            createdAt: new Date()
-          });
+          // await tx.insert(notifications).values({
+          //   id: uuidv4(),
+          //   userId: currentThread.userId,
+          //   type: threadData.isPinned ? 'THREAD_PINNED' : 'THREAD_UNPINNED',
+          //   threadId: id,
+          //   message: threadData.isPinned ? 'Your thread has been pinned' : 'Your thread has been unpinned',
+          //   isRead: false,
+          //   createdAt: new Date()
+          // });
         }
 
         return [thread];
@@ -1436,16 +1436,16 @@ export class DatabaseStorage implements IStorage {
             .where(eq(users.id, thread.userId));
 
           // Create notification for thread owner
-          await tx.insert(notifications).values({
-            id: uuidv4(),
-            userId: thread.userId,
-            type: 'LIKE',
-            relatedUserId: userId,
-            threadId,
-            message: 'liked your thread',
-            isRead: false,
-            createdAt: new Date()
-          });
+          // await tx.insert(notifications).values({
+          //   id: uuidv4(),
+          //   userId: thread.userId,
+          //   type: 'LIKE',
+          //   relatedUserId: userId,
+          //   threadId,
+          //   message: 'liked your thread',
+          //   isRead: false,
+          //   createdAt: new Date()
+          // });
         }
 
         return true;
@@ -1519,16 +1519,16 @@ export class DatabaseStorage implements IStorage {
 
         // Create notification for thread owner (if not disliking their own thread)
         if (thread.userId !== userId) {
-          await tx.insert(notifications).values({
-            id: uuidv4(),
-            userId: thread.userId,
-            type: 'DISLIKE',
-            relatedUserId: userId,
-            threadId,
-            message: 'disliked your thread',
-            isRead: false,
-            createdAt: new Date()
-          });
+          // await tx.insert(notifications).values({
+          //   id: uuidv4(),
+          //   userId: thread.userId,
+          //   type: 'DISLIKE',
+          //   relatedUserId: userId,
+          //   threadId,
+          //   message: 'disliked your thread',
+          //   isRead: false,
+          //   createdAt: new Date()
+          // });
         }
 
         return true;
@@ -1619,16 +1619,16 @@ export class DatabaseStorage implements IStorage {
 
         // Create notification for thread owner if it's not their own thread
         if (thread.userId !== userId) {
-          await tx.insert(notifications).values({
-            id: uuidv4(),
-            userId: thread.userId,
-            type: 'POTD',
-            relatedUserId: userId,
-            threadId,
-            message: 'selected your thread as Post of the Day!',
-            isRead: false,
-            createdAt: new Date()
-          });
+          // await tx.insert(notifications).values({
+          //   id: uuidv4(),
+          //   userId: thread.userId,
+          //   type: 'POTD',
+          //   relatedUserId: userId,
+          //   threadId,
+          //   message: 'selected your thread as Post of the Day!',
+          //   isRead: false,
+          //   createdAt: new Date()
+          // });
         }
 
         return true;
@@ -1718,17 +1718,17 @@ export class DatabaseStorage implements IStorage {
             .where(eq(users.id, reply.userId));
 
           // Create notification for reply owner
-          await tx.insert(notifications).values({
-            id: uuidv4(),
-            userId: reply.userId,
-            type: 'LIKE_REPLY',
-            relatedUserId: userId,
-            threadId: reply.threadId,
-            replyId,
-            message: 'liked your reply',
-            isRead: false,
-            createdAt: new Date()
-          });
+          // await tx.insert(notifications).values({
+          //   id: uuidv4(),
+          //   userId: reply.userId,
+          //   type: 'LIKE_REPLY',
+          //   relatedUserId: userId,
+          //   threadId: reply.threadId,
+          //   replyId,
+          //   message: 'liked your reply',
+          //   isRead: false,
+          //   createdAt: new Date()
+          // });
         }
 
         return true;
@@ -1802,17 +1802,17 @@ export class DatabaseStorage implements IStorage {
 
         // Create notification for reply owner (if not disliking their own reply)
         if (reply.userId !== userId) {
-          await tx.insert(notifications).values({
-            id: uuidv4(),
-            userId: reply.userId,
-            type: 'DISLIKE_REPLY',
-            relatedUserId: userId,
-            threadId: reply.threadId,
-            replyId,
-            message: 'disliked your reply',
-            isRead: false,
-            createdAt: new Date()
-          });
+          // await tx.insert(notifications).values({
+          //   id: uuidv4(),
+          //   userId: reply.userId,
+          //   type: 'DISLIKE_REPLY',
+          //   relatedUserId: userId,
+          //   threadId: reply.threadId,
+          //   replyId,
+          //   message: 'disliked your reply',
+          //   isRead: false,
+          //   createdAt: new Date()
+          // });
         }
 
         return true;

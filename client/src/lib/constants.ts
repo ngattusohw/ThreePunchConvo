@@ -54,47 +54,59 @@ export const FORUM_CATEGORIES = [
     count: 24,
   },
   {
-    id: "ufc",
-    name: "UFC",
-    description: "Discussion about the Ultimate Fighting Championship",
-    count: 136,
+    id: "mma_takes_podcast_companion",
+    name: "MMA Takes Podcast Companion",
+    description: "Discussion about the MMA Takes Podcast",
+    count: 2,
   },
   {
-    id: "bellator",
-    name: "Bellator",
-    description: "Talk about Bellator MMA events and fighters",
-    count: 41,
-  },
-  {
-    id: "one",
-    name: "ONE Championship",
-    description: "Discussion about ONE Championship events and fighters",
-    count: 28,
-  },
-  {
-    id: "pfl",
-    name: "PFL",
-    description: "Professional Fighters League discussion",
-    count: 15,
-  },
-  {
-    id: "boxing",
-    name: "Boxing",
-    description: "Discussion about boxing events and fighters",
-    count: 47,
-  },
-  {
-    id: "techniques",
-    name: "Fight Techniques",
-    description: "Analysis and discussion of fighting techniques",
-    count: 32,
-  },
-  {
-    id: "offtopic",
-    name: "Off Topic",
-    description: "Non-MMA discussion for community members",
-    count: 94,
-  },
+    id: "fighters_only",
+    name: "Fighters Only",
+    description: "Fights only discussion",
+    count: 3,
+  }
+  // {
+  //   id: "ufc",
+  //   name: "UFC",
+  //   description: "Discussion about the Ultimate Fighting Championship",
+  //   count: 136,
+  // },
+  // {
+  //   id: "bellator",
+  //   name: "Bellator",
+  //   description: "Talk about Bellator MMA events and fighters",
+  //   count: 41,
+  // },
+  // {
+  //   id: "one",
+  //   name: "ONE Championship",
+  //   description: "Discussion about ONE Championship events and fighters",
+  //   count: 28,
+  // },
+  // {
+  //   id: "pfl",
+  //   name: "PFL",
+  //   description: "Professional Fighters League discussion",
+  //   count: 15,
+  // },
+  // {
+  //   id: "boxing",
+  //   name: "Boxing",
+  //   description: "Discussion about boxing events and fighters",
+  //   count: 47,
+  // },
+  // {
+  //   id: "techniques",
+  //   name: "Fight Techniques",
+  //   description: "Analysis and discussion of fighting techniques",
+  //   count: 32,
+  // },
+  // {
+  //   id: "offtopic",
+  //   name: "Off Topic",
+  //   description: "Non-MMA discussion for community members",
+  //   count: 94,
+  // },
 ];
 
 // MMA Organizations

@@ -672,7 +672,7 @@ export default function Thread() {
 
                     <StatusBadge status={displayThread.user.status} />
 
-                    {displayThread.user.role === "PRO" && (
+                    {displayThread?.user?.role === "PRO" && (
                       <span className="flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -690,23 +690,23 @@ export default function Thread() {
                       </span>
                     )}
 
-                    {displayThread.user.role === "ADMIN" && (
+                    {displayThread?.user?.role === "ADMIN" && (
                       <span className="bg-ufc-gold text-ufc-black rounded px-2 py-0.5 text-xs font-bold">
                         ADMIN
                       </span>
                     )}
 
-                    {displayThread.user.role === "MODERATOR" && (
+                    {displayThread?.user?.role === "MODERATOR" && (
                       <span className="rounded bg-green-600 px-2 py-0.5 text-xs font-bold text-white">
                         MOD
                       </span>
                     )}
 
                     <Link
-                      href={`/user/${displayThread.user.username}`}
+                      href={`/user/${displayThread?.user?.username}`}
                       className="hover:text-ufc-blue font-medium text-white transition"
                     >
-                      {displayThread.user.username}
+                      {displayThread?.user?.username}
                     </Link>
 
                     <span className="text-sm text-gray-400">

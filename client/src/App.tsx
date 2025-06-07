@@ -338,7 +338,7 @@ function App() {
                 <Route path="/auth" component={AuthPage} />
                 <Route path="/login" component={AuthPage} />
                 <Route path="/register" component={AuthPage} />
-                <Route path="/schedule" component={Schedule} />
+                {/* <Route path="/schedule" component={Schedule} /> */}
                 <Route path="/rankings" component={Rankings} />
 
                 {/* Protected Routes - Need auth but not checkout */}

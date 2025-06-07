@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { ForumThread } from "@/lib/types";
 import { formatDate, truncateText } from "@/lib/utils";
+import { TbPinnedFilled } from "react-icons/tb";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
 
@@ -31,13 +32,14 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
             <div className="mb-1 flex flex-wrap items-center">
               {thread.isPinned && (
                 <span className="text-ufc-gold mr-2 rounded bg-gray-800 px-2 py-0.5 text-xs font-medium">
-                  PINNED
+                  <TbPinnedFilled />
                 </span>
               )}
 
+              {/* TODO: Right now this is incorrectly a pin -- the POTD is incorrectly acting like the pin functionality, so for now I am just putting this icon here, In the future when we redo it we will properly show somethign here */}
               {thread.isPotd && (
                 <span className="bg-ufc-blue mr-2 rounded px-2 py-0.5 text-xs font-bold text-black">
-                  POTD
+                  <TbPinnedFilled />
                 </span>
               )}
 

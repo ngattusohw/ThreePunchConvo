@@ -5,9 +5,9 @@ import { fetchUpcomingEvents } from "./espn-api";
 import { z } from "zod";
 import { ZodError } from "zod";
 import multer from "multer";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
+import fs from "fs";
 import {
   insertThreadSchema,
   insertReplySchema,
@@ -33,14 +33,14 @@ declare global {
   }
 }
 
-// Configure S3 client
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION || "us-east-1",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
-  },
-});
+// Create uploads directory if it doesn't exist
+const uploadsDir = process.env.RAILWAY_VOLUME_MOUNT_PATH 
+  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'uploads')
+  : path.join(process.cwd(), 'uploads');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Configure multer for memory storage
 const upload = multer({
@@ -1662,7 +1662,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Image upload endpoint with Clerk auth
+  // Serve uploaded files statically
+  app.use('/uploads', express.static(uploadsDir));
+
+  // Image upload endpoint with Railway Volume
   app.post(
     "/api/upload",
     requireAuth(),
@@ -1676,22 +1679,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const file = req.file;
         const fileExtension = path.extname(file.originalname);
         const fileName = `${uuidv4()}${fileExtension}`;
+        const filePath = path.join(uploadsDir, fileName);
 
-        // Upload to S3
-        const uploadParams = {
-          Bucket: process.env.AWS_S3_BUCKET || "your-bucket-name",
-          Key: `uploads/${fileName}`,
-          Body: file.buffer,
-          ContentType: file.mimetype,
-          ACL: "public-read" as const,
-        };
+        // Write file to Railway Volume
+        await fs.promises.writeFile(filePath, file.buffer);
 
-        await s3Client.send(new PutObjectCommand(uploadParams));
+        // Generate the URL - use Railway app URL or localhost for development
+        const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
+          ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+          : `http://localhost:${process.env.PORT || 5001}`;
+        
+        const fileUrl = `${baseUrl}/uploads/${fileName}`;
 
-        // Generate the CDN URL
-        const cdnUrl = `${process.env.CDN_BASE_URL || `https://${uploadParams.Bucket}.s3.amazonaws.com`}/uploads/${fileName}`;
-
-        res.json({ url: cdnUrl });
+        res.json({ url: fileUrl });
       } catch (error) {
         console.error("Error uploading file:", error);
         res.status(500).json({ message: "Failed to upload file" });

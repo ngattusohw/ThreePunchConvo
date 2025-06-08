@@ -1670,7 +1670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/upload",
     requireAuth(),
     upload.single("image"),
-    async (req: any, res: Response) => {
+    async (req: Request, res: Response) => {
       try {
         if (!req.file) {
           return res.status(400).json({ message: "No file uploaded" });

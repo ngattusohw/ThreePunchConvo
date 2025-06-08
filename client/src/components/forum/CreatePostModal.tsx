@@ -28,7 +28,7 @@ export default function CreatePostModal({
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
 
-  // Upload images to S3 and return URLs
+  // Upload images to Volume and return URLs
   const uploadImages = async (files: File[]): Promise<string[]> => {
     const uploadPromises = files.map(async (file) => {
       const formData = new FormData();

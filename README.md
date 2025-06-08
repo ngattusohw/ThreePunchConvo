@@ -235,12 +235,9 @@ DATABASE_URL=postgres://postgres:postgres@localhost:5432/threepunchconvo
 VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 CLERK_SECRET_KEY=your_clerk_secret_key
 
-# AWS S3 configuration for file uploads
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=your_aws_access_key
-AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-AWS_S3_BUCKET=your-bucket-name
-CDN_BASE_URL=https://your-bucket-name.s3.amazonaws.com
+# Railway Volume configuration for file uploads
+RAILWAY_VOLUME_MOUNT_PATH=/data  # Set by Railway automatically when volume is attached
+RAILWAY_PUBLIC_DOMAIN=your-app.railway.app  # Your Railway app domain
 
 # Server configuration
 PORT=5000
@@ -296,3 +293,4 @@ If you encounter errors during migration:
 2. **Foreign key constraint failures**: Ensure you've created all required tables before adding foreign key constraints.
 
 3. **Duplicate key violations**: This could happen if you try to insert data that already exists. Use `ON CONFLICT DO NOTHING` in your SQL statements to handle this.
+

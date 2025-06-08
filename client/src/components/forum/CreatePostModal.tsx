@@ -1,9 +1,10 @@
+import React from "react";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 
 interface CreatePostModalProps {
   onClose: () => void;
@@ -16,11 +17,44 @@ export default function CreatePostModal({
 }: CreatePostModalProps) {
   const { toast } = useToast();
   const { user } = useUser();
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState(categoryId);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Image attachment state
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+
+  // Upload images to S3 and return URLs
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    const uploadPromises = files.map(async (file) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      // Get Clerk token for authentication
+      const token = await getToken();
+      
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to upload ${file.name}`);
+      }
+      
+      const data = await response.json();
+      return data.url;
+    });
+    
+    return Promise.all(uploadPromises);
+  };
 
   // Simple poll state
   const [includePoll, setIncludePoll] = useState(false);
@@ -47,12 +81,30 @@ export default function CreatePostModal({
         throw new Error("You must be logged in to create a post");
       }
 
+      // Upload images first if any are selected
+      let mediaUrls: string[] = [];
+      if (selectedImages.length > 0) {
+        setUploadingImages(true);
+        try {
+          mediaUrls = await uploadImages(selectedImages);
+        } finally {
+          setUploadingImages(false);
+        }
+      }
+
+      // Create media objects for the post
+      const media = mediaUrls.map(url => ({
+        type: 'IMAGE',
+        url: url
+      }));
+
       const response = await apiRequest("POST", "/api/threads", {
         title,
         content,
         categoryId,
         userId: user.id,
         poll: includePoll ? poll : undefined,
+        media: media.length > 0 ? media : undefined,
       });
 
       if (!response.ok) {
@@ -305,6 +357,37 @@ export default function CreatePostModal({
                 />
               </div>
 
+              {/* Image Preview Section */}
+              {selectedImages.length > 0 && (
+                <div className="mb-4">
+                  <label className="mb-2 block font-medium text-gray-300">
+                    Selected Images ({selectedImages.length}/5)
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedImages.map((file, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`Upload ${index + 1}`}
+                          className="h-20 w-20 rounded-lg object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedImages(prev => prev.filter((_, i) => i !== index));
+                          }}
+                          className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                        >
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {includePoll && (
                 <div className="mb-4 rounded-lg bg-gray-800 p-4">
                   <div className="mb-3 flex items-center justify-between">
@@ -407,13 +490,28 @@ export default function CreatePostModal({
 
               <div className="mb-4">
                 <div className="flex space-x-4">
-                  {/* TODO add back in later */}
-                  {/* <button type="button" className="flex items-center text-gray-300 hover:text-white">
+                  <button 
+                    type="button" 
+                    onClick={() => document.getElementById('image-upload')?.click()}
+                    className="flex items-center text-gray-300 hover:text-white"
+                  >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    Add Image
-                  </button> */}
+                    Add Image ({selectedImages.length})
+                  </button>
+
+                  <input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setSelectedImages(prev => [...prev, ...files].slice(0, 5)); // Max 5 images
+                    }}
+                  />
 
                   {/* <button type="button" className="flex items-center text-gray-300 hover:text-white">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -456,10 +554,34 @@ export default function CreatePostModal({
                 </button>
                 <button
                   type="submit"
-                  disabled={createPostMutation.isPending}
-                  className={`bg-ufc-blue hover:bg-ufc-blue-dark rounded-lg px-4 py-2 text-sm text-black transition ${createPostMutation.isPending ? "cursor-not-allowed opacity-70" : ""}`}
+                  disabled={createPostMutation.isPending || uploadingImages}
+                  className={`bg-ufc-blue hover:bg-ufc-blue-dark rounded-lg px-4 py-2 text-sm text-black transition ${createPostMutation.isPending || uploadingImages ? "cursor-not-allowed opacity-70" : ""}`}
                 >
-                  {createPostMutation.isPending ? (
+                  {uploadingImages ? (
+                    <span className="flex items-center">
+                      <svg
+                        className="-ml-1 mr-2 h-4 w-4 animate-spin text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Uploading Images...
+                    </span>
+                  ) : createPostMutation.isPending ? (
                     <span className="flex items-center">
                       <svg
                         className="-ml-1 mr-2 h-4 w-4 animate-spin text-white"

@@ -499,7 +499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sort = (req.query.sort as string) || "recent";
       const limit = parseInt(req.query.limit as string) || 10;
       const offset = parseInt(req.query.offset as string) || 0;
-      const pinnedByUserFilter = req.query.potdFilter as string || 'include'; // 'only', 'exclude', or 'include'
+      const pinnedByUserFilter = req.query.pinnedByUserFilter as string || 'include'; // 'only', 'exclude', or 'include'
       
       // Set cache control headers
       res.set({

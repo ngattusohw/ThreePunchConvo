@@ -43,8 +43,8 @@ export default function ForumContent({
     queryKey: [`/api/threads/${category}`, 'pinned'],
     queryFn: async () => {
       const params = new URLSearchParams({
-        potdFilter: "only",
-        sort: "recent",
+        pinnedByUserFilter: 'only',
+        sort: 'recent'
       });
       const response = await apiRequest(
         "GET",
@@ -71,7 +71,7 @@ export default function ForumContent({
     queryKey: [`/api/threads/${category}`, filterOption, timeRange, page],
     queryFn: async () => {
       const params = new URLSearchParams({
-        potdFilter: "exclude",
+        pinnedByUserFilter: 'exclude',
         sort: filterOption,
         timeRange: timeRange,
         limit: String(limit),

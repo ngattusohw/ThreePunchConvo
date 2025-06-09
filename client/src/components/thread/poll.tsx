@@ -11,20 +11,41 @@ interface ThreadPollProps {
   poll: Poll;
 }
 
+function PollSkeleton() {
+  return (
+    <div className="mb-6 rounded-lg bg-gray-800 p-4 animate-pulse">
+      <div className="h-5 bg-gray-700 rounded w-3/4 mb-4"></div>
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="mb-3">
+            <div className="h-8 bg-gray-700 rounded mb-1"></div>
+          </div>
+        ))}
+      </div>
+      <div className="h-4 bg-gray-700 rounded w-1/3 mt-4"></div>
+    </div>
+  );
+}
+
 export default function ThreadPoll({ threadId, poll }: ThreadPollProps) {
   const { user: currentUser } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [hasVoted, setHasVoted] = useState(false);
   const [userVotedOption, setUserVotedOption] = useState<string | null>(null);
+  const [isCheckingVote, setIsCheckingVote] = useState(true);
   const isPollExpired = new Date() > new Date(poll.expiresAt);
   
   // Check if user has already voted by checking with the backend
   useEffect(() => {
-    if (!currentUser || !poll) return;
+    if (!currentUser || !poll) {
+      setIsCheckingVote(false);
+      return;
+    }
     
     // Function to check if user has voted on this poll
     const checkUserVote = async () => {
+      setIsCheckingVote(true);
       try {
         // We can check if the server returned an error when trying to vote
         // This is a way to determine if the user has already voted
@@ -56,6 +77,8 @@ export default function ThreadPoll({ threadId, poll }: ThreadPollProps) {
             setUserVotedOption(match[1]);
           }
         }
+      } finally {
+        setIsCheckingVote(false);
       }
     };
     
@@ -147,6 +170,11 @@ export default function ThreadPoll({ threadId, poll }: ThreadPollProps) {
   });
 
   const shouldShowResults = hasVoted || isPollExpired || !currentUser;
+  const isLoading = isCheckingVote || submitPollVoteMutation.isPending;
+  
+  if (isLoading) {
+    return <PollSkeleton />;
+  }
   
   return (
     <div className="mb-6 rounded-lg bg-gray-800 p-4">

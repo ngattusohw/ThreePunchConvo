@@ -2124,33 +2124,33 @@ export class DatabaseStorage implements IStorage {
                 newStatus = threshold.status;
                 break;
               }
-
-              // Only update if status has changed
-              if (newStatus !== user.status) {
-                const updatedUser = await this.updateUser(user.id, {
-                  status: newStatus,
-                });
-
-                if (updatedUser) {
-                  console.log(
-                    `Updated user ${user.username} status from ${user.status} to ${newStatus}`,
-                  );
-                  success++;
-                } else {
-                  console.error(
-                    `Failed to update status for user ${user.username}`,
-                  );
-                  failed++;
-                }
-              } else {
-                unchanged++;
-              }
-            } catch (userError) {
-              console.error(`Error processing user ${user.id}:`, userError);
-              failed++;
             }
-          }),
-        );
+
+            // Only update if status has changed
+            if (newStatus !== user.status) {
+              const updatedUser = await this.updateUser(user.id, {
+                status: newStatus,
+              });
+
+              if (updatedUser) {
+                console.log(
+                  `Updated user ${user.username} status from ${user.status} to ${newStatus}`,
+                );
+                success++;
+              } else {
+                console.error(
+                  `Failed to update status for user ${user.username}`,
+                );
+                failed++;
+              }
+            } else {
+              unchanged++;
+            }
+          } catch (userError) {
+            console.error(`Error processing user ${user.id}:`, userError);
+            failed++;
+          }
+        }));
       }
 
       console.log(

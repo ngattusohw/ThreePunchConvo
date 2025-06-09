@@ -608,44 +608,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log("Using Clerk user ID from request body:", clerkUserId);
 
-  app.post('/api/threads/:id/pinned-by-user', requireAuth(), async (req: any, res: Response) => {
-    try {
-      const threadId = req.params.id;
-      
-      // Get the Clerk user ID from the request body
-      const clerkUserId = req.body.userId;
-      
-      if (!clerkUserId) {
-        return res.status(400).json({ message: 'User ID is required' });
-      }
-      
-      console.log("Using Clerk user ID from request body:", clerkUserId);
-      
-      // Get the local user from the Clerk external ID
-      const localUser = await storage.getUserByExternalId(clerkUserId);
-      
-      if (!localUser) {
-        return res.status(400).json({ message: 'User not found in database' });
-      }
-      
-      console.log(`Pinned by user thread: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
-      
-      if (!threadId) {
-        return res.status(400).json({ message: 'Thread ID is required' });
-      }
-      
-      const success = await storage.pinnedByUserThread(threadId, localUser.id);
-      
-      if (!success) {
-        return res.status(400).json({ message: 'Failed to set thread as pinned by user' });
-      }
-      
-      res.json({ message: 'Thread set as pinned by user successfully' });
-    } catch (error) {
-      console.error("Error in thread pinned by user:", error);
-      res.status(500).json({ message: 'Failed to set thread as pinned by user' });
-    }
-  });
+        // Get the local user from the Clerk external ID
+        const localUser = await storage.getUserByExternalId(clerkUserId);
 
         if (!localUser) {
           return res
@@ -691,6 +655,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+
+  app.post('/api/threads/:id/pinned-by-user', requireAuth(), async (req: any, res: Response) => {
+    try {
+      const threadId = req.params.id;
+      
+      // Get the Clerk user ID from the request body
+      const clerkUserId = req.body.userId;
+      
+      if (!clerkUserId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+      
+      console.log("Using Clerk user ID from request body:", clerkUserId);
+      
+      // Get the local user from the Clerk external ID
+      const localUser = await storage.getUserByExternalId(clerkUserId);
+      
+      if (!localUser) {
+        return res.status(400).json({ message: 'User not found in database' });
+      }
+      
+      console.log(`Pinned by user thread: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
+      
+      if (!threadId) {
+        return res.status(400).json({ message: 'Thread ID is required' });
+      }
+      
+      const success = await storage.pinnedByUserThread(threadId, localUser.id);
+      
+      if (!success) {
+        return res.status(400).json({ message: 'Failed to set thread as pinned by user' });
+      }
+      
+      res.json({ message: 'Thread set as pinned by user successfully' });
+    } catch (error) {
+      console.error("Error in thread pinned by user:", error);
+      res.status(500).json({ message: 'Failed to set thread as pinned by user' });
+    }
+  });
 
   app.post(
     "/api/threads/:id/like",

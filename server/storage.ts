@@ -1656,7 +1656,7 @@ export class DatabaseStorage implements IStorage {
           await tx
             .insert(threadReactions)
             .values({
-              id: crypto.randomUUID(),
+              id: uuidv4(),
               threadId,
               userId,
               type: 'PINNED_BY_USER',
@@ -1679,7 +1679,7 @@ export class DatabaseStorage implements IStorage {
   
           // Create notification for thread owner (disabled for now)
           // await tx.insert(notifications).values({
-          //   id: crypto.randomUUID(),
+          //   id: uuidv4(),
           //   userId: thread.userId, // Thread owner gets the notification
           //   type: 'PINNED_BY_USER',
           //   relatedUserId: userId, // User who marked as PINNED_BY_USER

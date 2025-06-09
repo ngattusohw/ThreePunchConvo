@@ -221,7 +221,7 @@ export default function Thread() {
       if (!currentUser) throw new Error("You must be logged in to pin posts");
       
       const response = await apiRequest("POST", `/api/threads/${threadId}/pinned-by-user`, {
-        clerkUserId: currentUser.id
+        userId: currentUser.id
       });
       
       if (!response.ok) {

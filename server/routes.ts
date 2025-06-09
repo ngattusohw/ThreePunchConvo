@@ -619,13 +619,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'User ID is required' });
       }
       
-      console.log(`Pinned by user thread: Using local user ID ${req.localUser.id} for Clerk user ${clerkUserId}`);
+      console.log("Using Clerk user ID from request body:", clerkUserId);
+      
+      // Get the local user from the Clerk external ID
+      const localUser = await storage.getUserByExternalId(clerkUserId);
+      
+      if (!localUser) {
+        return res.status(400).json({ message: 'User not found in database' });
+      }
+      
+      console.log(`Pinned by user thread: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
       
       if (!threadId) {
         return res.status(400).json({ message: 'Thread ID is required' });
       }
       
-      const success = await storage.pinnedByUserThread(threadId, req.localUser.id);
+      const success = await storage.pinnedByUserThread(threadId, localUser.id);
       
       if (!success) {
         return res.status(400).json({ message: 'Failed to set thread as pinned by user' });

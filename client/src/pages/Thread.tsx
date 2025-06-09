@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/utils";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
 import { FORUM_CATEGORIES } from "@/lib/constants";
+import ThreadPoll from "@/components/thread/poll";
 
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
@@ -395,89 +396,6 @@ export default function Thread() {
       ?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Handle poll vote
-  const submitPollVoteMutation = useMutation({
-    mutationFn: async (optionId: number) => {
-      if (!currentUser) throw new Error("You must be logged in to vote");
-      if (!displayThread.poll) throw new Error("No poll found");
-
-      // Log user information for debugging
-      console.log("Current user ID:", currentUser.id);
-      console.log("Voting on poll option ID:", optionId);
-
-      try {
-        // First, ensure the user exists in the backend database
-        console.log("Checking if user exists in backend database");
-        const userCheckResponse = await apiRequest(
-          "POST",
-          `/api/users/clerk/${currentUser.id}`,
-          {
-            firstName: currentUser.firstName,
-            lastName: currentUser.lastName,
-            email: currentUser.emailAddresses?.[0]?.emailAddress,
-            profileImageUrl: currentUser.imageUrl,
-            username: currentUser.username,
-          },
-        );
-
-        if (!userCheckResponse.ok) {
-          throw new Error("Failed to register user in backend system");
-        }
-
-        const userData = await userCheckResponse.json();
-        console.log("User check result:", userData);
-
-        // Now that we've ensured the user exists, we can proceed with voting
-        const response = await apiRequest(
-          "POST",
-          `/api/threads/${threadId}/poll/${optionId}/vote`,
-          {
-            userId: currentUser.id,
-          },
-        );
-
-        // If there's an error, try to get detailed error information
-        if (!response.ok) {
-          let errorMessage = `Error: ${response.status} ${response.statusText}`;
-          const responseText = await response.text();
-          console.error("Raw API error response:", responseText);
-
-          try {
-            const errorData = JSON.parse(responseText);
-            console.error("Parsed API error response:", errorData);
-            errorMessage = errorData.message || errorData.error || errorMessage;
-          } catch (e) {
-            console.error("Failed to parse error response as JSON");
-          }
-
-          throw new Error(errorMessage);
-        }
-
-        return response.json();
-      } catch (error) {
-        console.error("Error in poll vote:", error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/threads/id/${threadId}`],
-      });
-      toast({
-        title: "Success",
-        description: "Your vote has been recorded",
-      });
-    },
-    onError: (error: Error) => {
-      console.error("Vote error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to record vote",
-        variant: "destructive",
-      });
-    },
-  });
-
   // Add delete thread mutation
   const deleteThreadMutation = useMutation({
     mutationFn: async () => {
@@ -730,67 +648,10 @@ export default function Thread() {
 
                   {/* Thread Poll */}
                   {displayThread?.poll && (
-                    <div className="mb-6 rounded-lg bg-gray-800 p-4">
-                      <h3 className="mb-4 font-medium text-white">
-                        {displayThread.poll.question}
-                      </h3>
-                      <div className="space-y-3">
-                        {displayThread.poll.options.map((option) => {
-                          const percentage = displayThread.poll?.votesCount
-                            ? Math.round(
-                                (option.votesCount /
-                                  displayThread.poll.votesCount) *
-                                  100,
-                              )
-                            : 0;
-
-                          return (
-                            <div key={option.id} className="relative">
-                              <button
-                                onClick={() =>
-                                  submitPollVoteMutation.mutate(option.id)
-                                }
-                                disabled={
-                                  !currentUser ||
-                                  submitPollVoteMutation.isPending ||
-                                  new Date() >
-                                    new Date(displayThread.poll.expiresAt)
-                                }
-                                className="w-full"
-                              >
-                                <div className="mb-1 flex items-center justify-between">
-                                  <span className="text-sm text-gray-300">
-                                    {option.text}
-                                  </span>
-                                  <span className="text-sm text-gray-300">
-                                    {percentage}%
-                                  </span>
-                                </div>
-                                <div className="flex h-2 overflow-hidden rounded bg-gray-700 text-xs">
-                                  <div
-                                    style={{ width: `${percentage}%` }}
-                                    className={`flex flex-col justify-center whitespace-nowrap text-center text-white shadow-none ${option.id % 2 === 0 ? "bg-blue-500" : "bg-red-500"}`}
-                                  />
-                                </div>
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <p className="mt-4 text-xs text-gray-400">
-                        {displayThread.poll.votesCount} votes •
-                        {new Date() > new Date(displayThread.poll.expiresAt)
-                          ? " Poll ended"
-                          : ` ${Math.ceil((new Date(displayThread.poll.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`}
-                      </p>
-
-                      {!currentUser && (
-                        <p className="mt-2 text-xs text-gray-500">
-                          You must be logged in to vote
-                        </p>
-                      )}
-                    </div>
+                    <ThreadPoll 
+                      threadId={threadId} 
+                      poll={displayThread.poll} 
+                    />
                   )}
 
                   {/* Thread Actions */}
@@ -839,7 +700,9 @@ export default function Thread() {
                       <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 mr-1 ${displayThread.isPinnedByUser ? 'text-ufc-blue' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
                       </svg>
-                      <span className={`font-medium ${displayThread.isPinnedByUser ? 'text-ufc-blue' : ''}`}>{displayThread?.pinnedByUserCount}</span>
+                      <span className={`font-medium ${displayThread.isPinnedByUser ? 'text-ufc-blue' : ''}`}>
+                        {displayThread.user.pinnedByUserCount}
+                      </span>
                     </button>
 
                     {/* Add delete button if user is author or has permission */}

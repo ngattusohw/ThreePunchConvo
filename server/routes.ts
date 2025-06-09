@@ -1,4 +1,4 @@
-import express, { type Express, Response, NextFunction } from "express";
+import express, { type Express, Response, NextFunction, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { fetchUpcomingEvents } from "./espn-api";
@@ -913,6 +913,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
       }
     },
+  );
+
+  // New endpoint to check if a user has voted on a poll
+  app.get(
+    "/api/threads/:id/poll/check-vote",
+    async (req: Request, res: Response) => {
+      try {
+        const threadId = req.params.id;
+        const userId = req.query.userId as string;
+
+        if (!threadId || !userId) {
+          return res.status(400).json({ 
+            message: "Thread ID and user ID are required",
+            hasVoted: false
+          });
+        }
+
+        // Get poll for this thread
+        const poll = await storage.getPollByThread(threadId);
+
+        if (!poll) {
+          return res.status(404).json({ 
+            message: "Poll not found for this thread",
+            hasVoted: false
+          });
+        }
+
+        // Get the local user from the Clerk external ID
+        const localUser = await storage.getUserByExternalId(userId);
+
+        if (!localUser) {
+          return res.status(200).json({ 
+            hasVoted: false 
+          });
+        }
+
+        // Check if user has already voted on this poll
+        const existingVote = await storage.getUserPollVote(
+          poll.id,
+          localUser.id,
+        );
+
+        if (existingVote) {
+          return res.status(200).json({
+            hasVoted: true,
+            votedOptionId: existingVote.optionId,
+          });
+        } else {
+          return res.status(200).json({
+            hasVoted: false,
+          });
+        }
+      } catch (error) {
+        console.error("Error checking poll vote:", error);
+        res.status(200).json({
+          hasVoted: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
   );
 
   // Reply endpoints

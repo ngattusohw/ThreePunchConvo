@@ -47,36 +47,24 @@ export default function ThreadPoll({ threadId, poll }: ThreadPollProps) {
     const checkUserVote = async () => {
       setIsCheckingVote(true);
       try {
-        // We can check if the server returned an error when trying to vote
-        // This is a way to determine if the user has already voted
+        // Use a GET request to check voting status instead of attempting to vote
         const response = await apiRequest(
-          "POST",
-          `/api/threads/${threadId}/poll/${poll.options[0].id}/vote`,
-          {
-            userId: currentUser.id,
-          }
+          "GET",
+          `/api/threads/${threadId}/poll/check-vote?userId=${currentUser.id}`,
+          null
         );
         
         const data = await response.json();
         
-        // If the response indicates user already voted
-        if (!response.ok && data.message?.includes("already voted")) {
+        // If the user has voted, set the state accordingly
+        if (response.ok && data.hasVoted) {
           setHasVoted(true);
-          // If the response contains which option was voted for
-          if (data.optionId) {
-            setUserVotedOption(data.optionId);
+          if (data.votedOptionId) {
+            setUserVotedOption(data.votedOptionId);
           }
         }
       } catch (error) {
-        // If there's an error mentioning "already voted", it means the user has voted
-        if (error instanceof Error && error.message.includes("already voted")) {
-          setHasVoted(true);
-          // Try to extract optionId from error message if available
-          const match = error.message.match(/option\s+id\s*:\s*([a-zA-Z0-9-_]+)/i);
-          if (match && match[1]) {
-            setUserVotedOption(match[1]);
-          }
-        }
+        console.error("Error checking vote status:", error);
       } finally {
         setIsCheckingVote(false);
       }

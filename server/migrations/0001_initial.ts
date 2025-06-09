@@ -88,7 +88,7 @@ export async function up(db: any) {
       rank INTEGER,
       posts_count INTEGER NOT NULL DEFAULT 0,
       likes_count INTEGER NOT NULL DEFAULT 0,
-      pinned_by_user_count INTEGER NOT NULL DEFAULT 0,
+      potd_count INTEGER NOT NULL DEFAULT 0,
       followers_count INTEGER NOT NULL DEFAULT 0,
       following_count INTEGER NOT NULL DEFAULT 0,
       social_links JSONB
@@ -112,7 +112,7 @@ export async function up(db: any) {
       likes_count INTEGER NOT NULL DEFAULT 0,
       dislikes_count INTEGER NOT NULL DEFAULT 0,
       replies_count INTEGER NOT NULL DEFAULT 0,
-      is_pinned_by_user BOOLEAN NOT NULL DEFAULT FALSE
+      is_potd BOOLEAN NOT NULL DEFAULT FALSE
     )
   `);
 

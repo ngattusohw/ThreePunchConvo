@@ -33,18 +33,18 @@ export default function ForumContent({
   const limit = 10;
 
   // Get the current category info
-  const currentCategory = FORUM_CATEGORIES.find(cat => cat.id === category) || FORUM_CATEGORIES[0];
-  
-  // Query for Pinned threads
-  const { 
-    data: pinnedByUserThreads = [], 
-    isLoading: isPinnedByUserLoading 
-  } = useQuery<ForumThread[]>({
-    queryKey: [`/api/threads/${category}`, 'pinned'],
+  const currentCategory =
+    FORUM_CATEGORIES.find((cat) => cat.id === category) || FORUM_CATEGORIES[0];
+
+  // Query for POTD threads
+  const { data: potdThreads = [], isLoading: isPotdLoading } = useQuery<
+    ForumThread[]
+  >({
+    queryKey: [`/api/threads/${category}`, "potd"],
     queryFn: async () => {
       const params = new URLSearchParams({
-        pinnedByUserFilter: 'only',
-        sort: 'recent'
+        potdFilter: "only",
+        sort: "recent",
       });
       const response = await apiRequest(
         "GET",
@@ -52,7 +52,7 @@ export default function ForumContent({
       );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch pinned threads');
+        throw new Error("Failed to fetch POTD threads");
       }
       return response.json();
     },
@@ -60,10 +60,10 @@ export default function ForumContent({
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
-  
-  // Query for regular threads (non-pinned)
-  const { 
-    data: regularThreads = [], 
+
+  // Query for regular threads (non-POTD)
+  const {
+    data: regularThreads = [],
     isLoading: isRegularLoading,
     error,
     refetch: refetchRegularThreads,
@@ -71,7 +71,7 @@ export default function ForumContent({
     queryKey: [`/api/threads/${category}`, filterOption, timeRange, page],
     queryFn: async () => {
       const params = new URLSearchParams({
-        pinnedByUserFilter: 'exclude',
+        potdFilter: "exclude",
         sort: filterOption,
         timeRange: timeRange,
         limit: String(limit),
@@ -134,9 +134,9 @@ export default function ForumContent({
       });
     }
   }, [regularThreads, page]);
-  
-  const isLoading = isPinnedByUserLoading || isRegularLoading;
-  
+
+  const isLoading = isPotdLoading || isRegularLoading;
+
   const loadMore = () => {
     if (hasMore && !isRegularLoading) {
       setPage((prevPage) => prevPage + 1);
@@ -339,13 +339,13 @@ export default function ForumContent({
       {/* Forum Thread List */}
       {(!isLoading || page > 0 || allRegularThreads.length > 0) && !error && (
         <div className="space-y-4">
-          {(pinnedByUserThreads.length > 0 || allRegularThreads.length > 0) ? (
+          {potdThreads.length > 0 || allRegularThreads.length > 0 ? (
             <div>
-              {/* Pinned Section - only shown once at the top */}
-              {pinnedByUserThreads.length > 0 && (
+              {/* POTD Section - only shown once at the top */}
+              {potdThreads.length > 0 && (
                 <div className="mb-6">
                   <div className="space-y-4">
-                    {pinnedByUserThreads.map(thread => (
+                    {potdThreads.map((thread) => (
                       <ThreadCard key={thread.id} thread={thread} />
                     ))}
                   </div>

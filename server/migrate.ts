@@ -6,7 +6,6 @@ import * as createSessionTableMigration from "./migrations/0004_create_session_t
 import * as addClerkExternalIdMigration from "./migrations/0005_add_clerk_external_id";
 import * as addStripeIdMigration from "./migrations/0006_add_stripe_id";
 import * as addPlanTypeMigration from "./migrations/0007_add_plan_type";
-import * as renamePotdToPinnedMigration from "./migrations/0008_rename_potd_to_pinned";
 
 async function migrate() {
   try {
@@ -20,8 +19,7 @@ async function migrate() {
     await addClerkExternalIdMigration.up(db);
     await addStripeIdMigration.up(db);
     await addPlanTypeMigration.up(db);
-    await renamePotdToPinnedMigration.up(db);
-    
+
     console.log("Migrations completed successfully!");
     process.exit(0);
   } catch (error) {

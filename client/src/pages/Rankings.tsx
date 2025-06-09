@@ -149,7 +149,7 @@ export default function Rankings() {
             <div className="w-24 text-center">Status</div>
             <div className="w-20 text-center">Posts</div>
             <div className="w-20 text-center">Likes</div>
-            <div className="w-20 text-center">Pinned</div>
+            <div className="w-20 text-center">POTD</div>
             <div className="w-24 text-center">Score</div>
           </div>
 
@@ -229,7 +229,7 @@ export default function Rankings() {
                     </div>
                     <div className="w-20 text-center">
                       <span className="text-white">
-                        {rankedUser.user.pinnedByUserCount}
+                        {rankedUser.user.potdCount}
                       </span>
                     </div>
                     <div className="w-24 text-center">
@@ -306,10 +306,10 @@ export default function Rankings() {
                         <div className="text-xs text-gray-400">Likes</div>
                       </div>
                       <div className="p-1">
-                        <div className="text-white font-medium">
-                          {rankedUser.user.pinnedByUserCount}
+                        <div className="font-medium text-white">
+                          {rankedUser.user.potdCount}
                         </div>
-                        <div className="text-gray-400 text-xs">Pinned</div>
+                        <div className="text-xs text-gray-400">POTD</div>
                       </div>
                     </div>
                   </div>

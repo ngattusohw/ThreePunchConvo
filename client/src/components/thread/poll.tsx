@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/clerk-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Poll } from "@/lib/types";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ThreadPollProps {
   threadId: string;
@@ -16,14 +16,51 @@ export default function ThreadPoll({ threadId, poll }: ThreadPollProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [hasVoted, setHasVoted] = useState(false);
+  const [userVotedOption, setUserVotedOption] = useState<string | null>(null);
   const isPollExpired = new Date() > new Date(poll.expiresAt);
-
-  // Check if user has already voted - this would ideally come from backend
-  // For now, we'll track it in local state
+  
+  // Check if user has already voted by checking with the backend
   useEffect(() => {
-    // Reset the hasVoted state when poll changes
-    setHasVoted(false);
-  }, [poll.id]);
+    if (!currentUser || !poll) return;
+    
+    // Function to check if user has voted on this poll
+    const checkUserVote = async () => {
+      try {
+        // We can check if the server returned an error when trying to vote
+        // This is a way to determine if the user has already voted
+        const response = await apiRequest(
+          "POST",
+          `/api/threads/${threadId}/poll/${poll.options[0].id}/vote`,
+          {
+            userId: currentUser.id,
+          }
+        );
+        
+        const data = await response.json();
+        
+        // If the response indicates user already voted
+        if (!response.ok && data.message?.includes("already voted")) {
+          setHasVoted(true);
+          // If the response contains which option was voted for
+          if (data.optionId) {
+            setUserVotedOption(data.optionId);
+          }
+        }
+      } catch (error) {
+        // If there's an error mentioning "already voted", it means the user has voted
+        if (error instanceof Error && error.message.includes("already voted")) {
+          setHasVoted(true);
+          // Try to extract optionId from error message if available
+          const match = error.message.match(/option\s+id\s*:\s*([a-zA-Z0-9-_]+)/i);
+          if (match && match[1]) {
+            setUserVotedOption(match[1]);
+          }
+        }
+      }
+    };
+    
+    checkUserVote();
+  }, [currentUser, poll, threadId]);
 
   // Handle poll vote
   const submitPollVoteMutation = useMutation({
@@ -79,8 +116,9 @@ export default function ThreadPoll({ threadId, poll }: ThreadPollProps) {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data, optionId) => {
       setHasVoted(true);
+      setUserVotedOption(optionId);
       queryClient.invalidateQueries({
         queryKey: [`/api/threads/id/${threadId}`],
       });
@@ -90,12 +128,21 @@ export default function ThreadPoll({ threadId, poll }: ThreadPollProps) {
       });
     },
     onError: (error: Error) => {
-      console.error("Vote error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to record vote",
-        variant: "destructive",
-      });
+      // If the error message contains "already voted", it means the user has voted
+      if (error.message.includes("already voted")) {
+        setHasVoted(true);
+        toast({
+          title: "Already voted",
+          description: "You have already voted on this poll",
+        });
+      } else {
+        console.error("Vote error:", error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to record vote",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -123,20 +170,31 @@ export default function ThreadPoll({ threadId, poll }: ThreadPollProps) {
                     <div
                       style={{ width: `${percentage}%` }}
                       className={`flex flex-col justify-center whitespace-nowrap text-center text-white shadow-none ${
-                        Number(option.id.charAt(option.id.length - 1)) % 2 === 0 ? "bg-blue-500" : "bg-red-500"
+                        option.id === userVotedOption 
+                          ? "bg-[#f5c518]" // Gold for user's vote
+                          : Number(option.id.charAt(option.id.length - 1)) % 2 === 0 
+                            ? "bg-blue-500" 
+                            : "bg-green-500" // Green instead of red
                       }`}
                     />
                   </div>
                 </div>
               ) : (
-                // Show voting buttons
-                <Button
+                // Show voting buttons - using a custom button instead of the Button component
+                <button
                   onClick={() => submitPollVoteMutation.mutate(option.id)}
                   disabled={submitPollVoteMutation.isPending}
-                  className="w-full mb-2 justify-start text-left bg-gray-700 hover:bg-ufc-gold hover:text-ufc-black focus:ring-2 focus:ring-ufc-gold focus:ring-opacity-50 text-white font-medium transition-colors"
+                  className={cn(
+                    "w-full mb-2 py-2 px-4 rounded-md text-left",
+                    "bg-gray-700 text-white font-medium",
+                    "hover:bg-[#f5c518] hover:text-black",
+                    "focus:outline-none focus:ring-2 focus:ring-[#f5c518] focus:ring-opacity-50",
+                    "transition-colors duration-200",
+                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                  )}
                 >
                   {option.text}
-                </Button>
+                </button>
               )}
             </div>
           );

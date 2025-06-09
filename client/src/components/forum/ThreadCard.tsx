@@ -4,6 +4,7 @@ import { formatDate, truncateText } from "@/lib/utils";
 import { TbPinnedFilled } from "react-icons/tb";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
+import React from "react";
 
 interface ThreadCardProps {
   thread: ForumThread;
@@ -12,9 +13,9 @@ interface ThreadCardProps {
 export default function ThreadCard({ thread }: ThreadCardProps) {
   const borderColor = thread.isPinned
     ? "border-ufc-gold"
-    : thread.isPotd
-      ? "border-ufc-blue"
-      : "";
+    : thread.isPinnedByUser
+    ? "border-ufc-blue"
+    : "";
 
   return (
     <div
@@ -31,15 +32,11 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
           <div className="flex-grow">
             <div className="mb-1 flex flex-wrap items-center">
               {thread.isPinned && (
-                <span className="text-ufc-gold mr-2 rounded bg-gray-800 px-2 py-0.5 text-xs font-medium">
-                  <TbPinnedFilled />
-                </span>
-              )}
-
-              {/* TODO: Right now this is incorrectly a pin -- the POTD is incorrectly acting like the pin functionality, so for now I am just putting this icon here, In the future when we redo it we will properly show somethign here */}
-              {thread.isPotd && (
-                <span className="bg-ufc-blue mr-2 rounded px-2 py-0.5 text-xs font-bold text-black">
-                  <TbPinnedFilled />
+                <span className="bg-gray-800 text-ufc-gold text-xs px-2 py-0.5 rounded font-medium mr-2 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
+                  </svg>
+                  <span>PINNED</span>
                 </span>
               )}
 

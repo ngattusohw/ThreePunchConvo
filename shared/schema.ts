@@ -48,7 +48,7 @@ export const users = pgTable("users", {
   rank: integer("rank"),
   postsCount: integer("posts_count").notNull().default(0),
   likesCount: integer("likes_count").notNull().default(0),
-  potdCount: integer("potd_count").notNull().default(0),
+  pinnedByUserCount: integer("pinned_by_user_count").notNull().default(0),
   followersCount: integer("followers_count").notNull().default(0),
   followingCount: integer("following_count").notNull().default(0),
   socialLinks: json("social_links").$type<Record<string, string>>(),
@@ -82,7 +82,7 @@ export const threads = pgTable("threads", {
   likesCount: integer("likes_count").notNull().default(0),
   dislikesCount: integer("dislikes_count").notNull().default(0),
   repliesCount: integer("replies_count").notNull().default(0),
-  isPotd: boolean("is_potd").notNull().default(false),
+  isPinnedByUser: boolean("is_pinned_by_user").notNull().default(false),
 });
 
 // Thread media
@@ -161,16 +161,12 @@ export const replyMedia = pgTable("reply_media", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Thread reactions (likes, dislikes, POTD)
+// Thread reactions (likes, dislikes, PINNED_BY_USER)
 export const threadReactions = pgTable("thread_reactions", {
   id: text("id").primaryKey(),
-  threadId: text("thread_id")
-    .notNull()
-    .references(() => threads.id),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id),
-  type: text("type").notNull(), // LIKE, DISLIKE, POTD
+  threadId: text("thread_id").notNull().references(() => threads.id),
+  userId: text("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(), // LIKE, DISLIKE, PINNED_BY_USER
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -284,7 +280,7 @@ export const insertUserSchema = createInsertSchema(users, {
   rank: z.number().optional(),
   postsCount: z.number().optional(),
   likesCount: z.number().optional(),
-  potdCount: z.number().optional(),
+  pinnedByUserCount: z.number().optional(),
   followersCount: z.number().optional(),
   followingCount: z.number().optional(),
   socialLinks: z.record(z.string()).optional(),
@@ -307,7 +303,7 @@ export const insertThreadSchema = createInsertSchema(threads, {
   likesCount: true,
   dislikesCount: true,
   repliesCount: true,
-  isPotd: true,
+  isPinnedByUser: true,
 });
 
 export const insertReplySchema = createInsertSchema(replies).omit({

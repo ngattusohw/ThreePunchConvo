@@ -272,9 +272,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ...user,
               postsCount: user.postsCount || 0,
               likesCount: user.likesCount || 0,
-              potdCount: user.potdCount || 0,
-              status: user.status || "AMATEUR",
-            },
+              pinnedByUserCount: user.pinnedByUserCount || 0,
+              status: user.status || 'AMATEUR'
+            }
           };
         });
 
@@ -499,8 +499,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sort = (req.query.sort as string) || "recent";
       const limit = parseInt(req.query.limit as string) || 10;
       const offset = parseInt(req.query.offset as string) || 0;
-      const potdFilter = (req.query.potdFilter as string) || "include"; // 'only', 'exclude', or 'include'
-
+      const pinnedByUserFilter = req.query.pinnedByUserFilter as string || 'include'; // 'only', 'exclude', or 'include'
+      
       // Set cache control headers
       res.set({
         "Cache-Control":
@@ -511,24 +511,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Get threads with more buffer if we need to filter
-      const fetchLimit = potdFilter !== "include" ? limit + 20 : limit;
-      const threads = await storage.getThreadsByCategory(
-        categoryId,
-        sort,
-        fetchLimit,
-        offset,
-      );
-
-      // Filter threads based on POTD status
-      let filteredThreads = threads;
-      if (potdFilter === "only") {
-        filteredThreads = threads.filter((thread) => thread.isPotd);
-      } else if (potdFilter === "exclude") {
-        filteredThreads = threads.filter((thread) => !thread.isPotd);
+      const fetchLimit = pinnedByUserFilter !== 'include' ? limit + 20 : limit;
+      const threads = await storage.getThreadsByCategory(categoryId, sort, fetchLimit, offset);
+      
+      // Filter threads based on PINNED_BY_USER status
+      let filteredThreads: Thread[];
+      if (pinnedByUserFilter === 'only') {
+        filteredThreads = threads.filter(thread => thread.isPinnedByUser);
+      } else if (pinnedByUserFilter === 'exclude') {
+        filteredThreads = threads.filter(thread => !thread.isPinnedByUser);
+      } else {
+        filteredThreads = threads;
       }
 
       // Apply limit if we've filtered
-      if (potdFilter !== "include" && filteredThreads.length > limit) {
+      if (pinnedByUserFilter !== 'include' && filteredThreads.length > limit) {
         filteredThreads = filteredThreads.slice(0, limit);
       }
 
@@ -658,6 +655,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+
+  app.post('/api/threads/:id/pinned-by-user', requireAuth(), async (req: any, res: Response) => {
+    try {
+      const threadId = req.params.id;
+      
+      // Get the Clerk user ID from the request body
+      const clerkUserId = req.body.userId;
+      
+      if (!clerkUserId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+      
+      console.log("Using Clerk user ID from request body:", clerkUserId);
+      
+      // Get the local user from the Clerk external ID
+      const localUser = await storage.getUserByExternalId(clerkUserId);
+      
+      if (!localUser) {
+        return res.status(400).json({ message: 'User not found in database' });
+      }
+      
+      console.log(`Pinned by user thread: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
+      
+      if (!threadId) {
+        return res.status(400).json({ message: 'Thread ID is required' });
+      }
+      
+      const success = await storage.pinnedByUserThread(threadId, localUser.id);
+      
+      if (!success) {
+        return res.status(400).json({ message: 'Failed to set thread as pinned by user' });
+      }
+      
+      res.json({ message: 'Thread set as pinned by user successfully' });
+    } catch (error) {
+      console.error("Error in thread pinned by user:", error);
+      res.status(500).json({ message: 'Failed to set thread as pinned by user' });
+    }
+  });
 
   app.post(
     "/api/threads/:id/like",

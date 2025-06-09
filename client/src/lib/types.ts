@@ -17,7 +17,7 @@ export interface AuthUser {
   isOnline: boolean;
   postsCount: number;
   likesCount: number;
-  potdCount: number;
+  pinnedByUserCount: number;
   rank: number;
   followersCount: number;
   followingCount: number;
@@ -56,7 +56,7 @@ export interface ForumThread {
   likesCount: number;
   dislikesCount: number;
   repliesCount: number;
-  isPotd: boolean;
+  isPinnedByUser: boolean;
   media?: ThreadMedia[];
   poll?: Poll;
   hasLiked?: boolean;

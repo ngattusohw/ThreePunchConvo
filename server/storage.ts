@@ -99,7 +99,7 @@ export interface IStorage {
   // Reaction management
   likeThread(threadId: string, userId: string): Promise<boolean>;
   dislikeThread(threadId: string, userId: string): Promise<boolean>;
-  potdThread(threadId: string, userId: string): Promise<boolean>;
+  pinnedByUserThread(threadId: string, userId: string): Promise<boolean>;
   likeReply(replyId: string, userId: string): Promise<boolean>;
   dislikeReply(replyId: string, userId: string): Promise<boolean>;
 
@@ -193,7 +193,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: users.updatedAt,
           postsCount: users.postsCount,
           likesCount: users.likesCount,
-          potdCount: users.potdCount,
+          pinnedByUserCount: users.pinnedByUserCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
@@ -235,7 +235,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: users.updatedAt,
           postsCount: users.postsCount,
           likesCount: users.likesCount,
-          potdCount: users.potdCount,
+          pinnedByUserCount: users.pinnedByUserCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
@@ -277,7 +277,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: users.updatedAt,
           postsCount: users.postsCount,
           likesCount: users.likesCount,
-          potdCount: users.potdCount,
+          pinnedByUserCount: users.pinnedByUserCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
@@ -319,7 +319,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: users.updatedAt,
           postsCount: users.postsCount,
           likesCount: users.likesCount,
-          potdCount: users.potdCount,
+          pinnedByUserCount: users.pinnedByUserCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
@@ -363,7 +363,7 @@ export class DatabaseStorage implements IStorage {
         points: userData.points || 0,
         postsCount: userData.postsCount || 0,
         likesCount: userData.likesCount || 0,
-        potdCount: userData.potdCount || 0,
+        pinnedByUserCount: userData.pinnedByUserCount || 0,
         followersCount: userData.followersCount || 0,
         followingCount: userData.followingCount || 0,
         socialLinks: userData.socialLinks || {},
@@ -466,7 +466,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: users.updatedAt,
           postsCount: users.postsCount,
           likesCount: users.likesCount,
-          potdCount: users.potdCount,
+          pinnedByUserCount: users.pinnedByUserCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
@@ -542,7 +542,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: users.updatedAt,
           postsCount: users.postsCount,
           likesCount: users.likesCount,
-          potdCount: users.potdCount,
+          pinnedByUserCount: users.pinnedByUserCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
@@ -579,7 +579,7 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPotd: threads.isPotd,
+          isPinnedByUser: threads.isPinnedByUser
         })
         .from(threads)
         .where(eq(threads.id, id));
@@ -645,7 +645,7 @@ export class DatabaseStorage implements IStorage {
           rank: user.rank,
           postsCount: user.postsCount,
           likesCount: user.likesCount,
-          potdCount: user.potdCount,
+          pinnedByUserCount: user.pinnedByUserCount,
           followersCount: user.followersCount,
           followingCount: user.followingCount,
           socialLinks: user.socialLinks,
@@ -684,7 +684,7 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPotd: threads.isPotd,
+          isPinnedByUser: threads.isPinnedByUser
         })
         .from(threads)
         .where(eq(threads.categoryId, categoryId));
@@ -742,7 +742,7 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPotd: threads.isPotd,
+          isPinnedByUser: threads.isPinnedByUser
         })
         .from(threads)
         .where(eq(threads.userId, userId))
@@ -772,7 +772,7 @@ export class DatabaseStorage implements IStorage {
         likesCount: 0,
         dislikesCount: 0,
         repliesCount: 0,
-        isPotd: false,
+        isPinnedByUser: false
       };
 
       // Start a transaction to create thread and update user points
@@ -1600,109 +1600,99 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
-
-  async potdThread(threadId: string, userId: string): Promise<boolean> {
+  
+  async pinnedByUserThread(threadId: string, userId: string): Promise<boolean> {
     try {
-      // Start a transaction
-      return await db.transaction(async (tx) => {
-        // Check if user has already marked this thread as POTD
+      // Begin transaction
+      await db.transaction(async (tx) => {
+        // Check if user has already marked this thread as PINNED_BY_USER
         const existingReaction = await tx.query.threadReactions.findFirst({
           where: and(
             eq(threadReactions.threadId, threadId),
             eq(threadReactions.userId, userId),
-            eq(threadReactions.type, "POTD"),
-          ),
+            eq(threadReactions.type, 'PINNED_BY_USER')
+          )
         });
-
-        // Get the thread to check if it exists
-        const thread = await tx.query.threads.findFirst({
-          where: eq(threads.id, threadId),
-          columns: {
-            userId: true,
-            isPotd: true,
-          },
-        });
-
-        if (!thread) {
-          return false; // Thread doesn't exist
-        }
-
-        // If user has already marked as POTD, remove the POTD status
+  
         if (existingReaction) {
-          // Delete the POTD reaction
+          // Get the thread to check if it's currently set as isPinnedByUser
+          const thread = await tx.query.threads.findFirst({
+            where: eq(threads.id, threadId)
+          });
+  
+          if (!thread) throw new Error("Thread not found");
+  
+          if (thread.isPinnedByUser) {
+            // If user has already marked as PINNED_BY_USER, remove the PINNED_BY_USER status
+            
+            // Delete the PINNED_BY_USER reaction
+            await tx
+              .delete(threadReactions)
+              .where(
+                and(
+                  eq(threadReactions.threadId, threadId),
+                  eq(threadReactions.userId, userId),
+                  eq(threadReactions.type, 'PINNED_BY_USER')
+                )
+              );
+  
+            // Update thread isPinnedByUser status
+            await tx
+              .update(threads)
+              .set({ isPinnedByUser: false })
+              .where(eq(threads.id, threadId));
+  
+            // Update user's PINNED_BY_USER count only, keep the points
+            await tx
+              .update(users)
+              .set({
+                pinnedByUserCount: sql`${users.pinnedByUserCount} - 1`
+                // Points are not removed since PINNED_BY_USER is a rotating feature
+              })
+              .where(eq(users.id, userId));
+          }
+        } else {
+          // Add new PINNED_BY_USER reaction
           await tx
-            .delete(threadReactions)
-            .where(
-              and(
-                eq(threadReactions.threadId, threadId),
-                eq(threadReactions.userId, userId),
-                eq(threadReactions.type, "POTD"),
-              ),
-            );
-
-          // Update thread isPotd status
+            .insert(threadReactions)
+            .values({
+              id: uuidv4(),
+              threadId,
+              userId,
+              type: 'PINNED_BY_USER',
+            });
+  
+          // Update thread isPinnedByUser status and increment user points
           await tx
             .update(threads)
-            .set({ isPotd: false })
+            .set({ isPinnedByUser: true })
             .where(eq(threads.id, threadId));
-
-          // Update user's POTD count only, keep the points
+  
+          // Update user's points and PINNED_BY_USER count
           await tx
             .update(users)
             .set({
-              potdCount: sql`${users.potdCount} - 1`,
-              // Points are not removed since POTD is a rotating feature
+              pinnedByUserCount: sql`${users.pinnedByUserCount} + 1`,
+              points: sql`${users.points} + 40` // Add 40 points for PINNED_BY_USER
             })
-            .where(eq(users.id, thread.userId));
-
-          return true;
-        }
-
-        // Add new POTD reaction
-        await tx.insert(threadReactions).values({
-          id: uuidv4(),
-          threadId,
-          userId,
-          type: "POTD",
-          createdAt: new Date(),
-        });
-
-        // Update thread isPotd status and increment user points
-        await Promise.all([
-          // Update thread status
-          tx
-            .update(threads)
-            .set({ isPotd: true })
-            .where(eq(threads.id, threadId)),
-
-          // Update user's points and POTD count
-          tx
-            .update(users)
-            .set({
-              potdCount: sql`${users.potdCount} + 1`,
-              points: sql`${users.points} + 40`, // Add 40 points for POTD
-            })
-            .where(eq(users.id, thread.userId)),
-        ]);
-
-        // Create notification for thread owner if it's not their own thread
-        if (thread.userId !== userId) {
+            .where(eq(users.id, userId));
+  
+          // Create notification for thread owner (disabled for now)
           // await tx.insert(notifications).values({
           //   id: uuidv4(),
-          //   userId: thread.userId,
-          //   type: 'POTD',
-          //   relatedUserId: userId,
+          //   userId: thread.userId, // Thread owner gets the notification
+          //   type: 'PINNED_BY_USER',
+          //   relatedUserId: userId, // User who marked as PINNED_BY_USER
           //   threadId,
-          //   message: 'selected your thread as Post of the Day!',
+          //   message: `Your thread was selected as a Pinned Post!`,
           //   isRead: false,
-          //   createdAt: new Date()
           // });
         }
-
-        return true;
       });
+  
+      return true;
     } catch (error) {
-      console.error("Error in potdThread:", error);
+      console.error('Error in pinnedByUserThread:', error);
       return false;
     }
   }
@@ -2049,22 +2039,22 @@ export class DatabaseStorage implements IStorage {
       // Define thresholds for different statuses
       // These can be adjusted as needed
       const statusThresholds = [
-        { status: "HALL_OF_FAMER", points: 5000, posts: 200, potd: 10 },
-        { status: "CHAMPION", points: 2500, posts: 100, potd: 5 },
-        { status: "CONTENDER", points: 1000, posts: 50, potd: 2 },
-        { status: "RANKED_POSTER", points: 500, posts: 25, potd: 1 },
-        { status: "COMPETITOR", points: 250, posts: 15, potd: 0 },
-        { status: "REGIONAL_POSTER", points: 100, posts: 5, potd: 0 },
-        { status: "AMATEUR", points: 0, posts: 0, potd: 0 },
+        { status: 'HALL_OF_FAMER', points: 5000, posts: 200, pinned: 10 },
+        { status: 'CHAMPION', points: 2500, posts: 100, pinned: 5 },
+        { status: 'CONTENDER', points: 1000, posts: 50, pinned: 2 },
+        { status: 'RANKED_POSTER', points: 500, posts: 25, pinned: 1 },
+        { status: 'COMPETITOR', points: 250, posts: 15, pinned: 0 },
+        { status: 'REGIONAL_POSTER', points: 100, posts: 5, pinned: 0 },
+        { status: 'AMATEUR', points: 0, posts: 0, pinned: 0 }
       ];
 
       // Find the highest status the user qualifies for
       let newStatus = "AMATEUR";
       for (const threshold of statusThresholds) {
         if (
-          user.points >= threshold.points &&
-          user.postsCount >= threshold.posts &&
-          user.potdCount >= threshold.potd
+          user.points >= threshold.points && 
+          user.postsCount >= threshold.posts && 
+          user.pinnedByUserCount >= threshold.pinned
         ) {
           newStatus = threshold.status;
           break;
@@ -2101,13 +2091,13 @@ export class DatabaseStorage implements IStorage {
 
       // Status thresholds - same as in recalculateUserStatus
       const statusThresholds = [
-        { status: "HALL_OF_FAMER", points: 5000, posts: 200, potd: 10 },
-        { status: "CHAMPION", points: 2500, posts: 100, potd: 5 },
-        { status: "CONTENDER", points: 1000, posts: 50, potd: 2 },
-        { status: "RANKED_POSTER", points: 500, posts: 25, potd: 1 },
-        { status: "COMPETITOR", points: 250, posts: 15, potd: 0 },
-        { status: "REGIONAL_POSTER", points: 100, posts: 5, potd: 0 },
-        { status: "AMATEUR", points: 0, posts: 0, potd: 0 },
+        { status: 'HALL_OF_FAMER', points: 5000, posts: 200, pinned: 10 },
+        { status: 'CHAMPION', points: 2500, posts: 100, pinned: 5 },
+        { status: 'CONTENDER', points: 1000, posts: 50, pinned: 2 },
+        { status: 'RANKED_POSTER', points: 500, posts: 25, pinned: 1 },
+        { status: 'COMPETITOR', points: 250, posts: 15, pinned: 0 },
+        { status: 'REGIONAL_POSTER', points: 100, posts: 5, pinned: 0 },
+        { status: 'AMATEUR', points: 0, posts: 0, pinned: 0 }
       ];
 
       // Track statistics
@@ -2121,48 +2111,46 @@ export class DatabaseStorage implements IStorage {
         const userBatch = allUsers.slice(i, i + batchSize);
 
         // Process each user in the batch
-        await Promise.all(
-          userBatch.map(async (user) => {
-            try {
-              // Find the highest status the user qualifies for
-              let newStatus = "AMATEUR";
-              for (const threshold of statusThresholds) {
-                if (
-                  user.points >= threshold.points &&
-                  user.postsCount >= threshold.posts &&
-                  user.potdCount >= threshold.potd
-                ) {
-                  newStatus = threshold.status;
-                  break;
-                }
+        await Promise.all(userBatch.map(async (user) => {
+          try {
+            // Find the highest status the user qualifies for
+            let newStatus = 'AMATEUR';
+            for (const threshold of statusThresholds) {
+              if (
+                user.points >= threshold.points && 
+                user.postsCount >= threshold.posts && 
+                user.pinnedByUserCount >= threshold.pinned
+              ) {
+                newStatus = threshold.status;
+                break;
               }
-
-              // Only update if status has changed
-              if (newStatus !== user.status) {
-                const updatedUser = await this.updateUser(user.id, {
-                  status: newStatus,
-                });
-
-                if (updatedUser) {
-                  console.log(
-                    `Updated user ${user.username} status from ${user.status} to ${newStatus}`,
-                  );
-                  success++;
-                } else {
-                  console.error(
-                    `Failed to update status for user ${user.username}`,
-                  );
-                  failed++;
-                }
-              } else {
-                unchanged++;
-              }
-            } catch (userError) {
-              console.error(`Error processing user ${user.id}:`, userError);
-              failed++;
             }
-          }),
-        );
+
+            // Only update if status has changed
+            if (newStatus !== user.status) {
+              const updatedUser = await this.updateUser(user.id, {
+                status: newStatus,
+              });
+
+              if (updatedUser) {
+                console.log(
+                  `Updated user ${user.username} status from ${user.status} to ${newStatus}`,
+                );
+                success++;
+              } else {
+                console.error(
+                  `Failed to update status for user ${user.username}`,
+                );
+                failed++;
+              }
+            } else {
+              unchanged++;
+            }
+          } catch (userError) {
+            console.error(`Error processing user ${user.id}:`, userError);
+            failed++;
+          }
+        }));
       }
 
       console.log(

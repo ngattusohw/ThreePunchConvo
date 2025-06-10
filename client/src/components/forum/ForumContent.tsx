@@ -1,14 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "wouter";
 import ThreadCard from "@/components/forum/ThreadCard";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ForumThread, ForumCategory, UserStatus } from "@/lib/types";
+import { useQueryClient } from "@tanstack/react-query";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import CreatePostModal from "@/components/forum/CreatePostModal";
-import { formatDistanceToNow } from "date-fns";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
 import { dark } from "@clerk/themes";
-import { apiRequest } from "@/lib/queryClient";
+import { useThreads } from "@/api/hooks/useThreads";
 
 interface ForumContentProps {
   category?: string;
@@ -18,114 +15,35 @@ export default function ForumContent({
   category = "general",
 }: ForumContentProps) {
   const queryClient = useQueryClient();
-  const [filterOption, setFilterOption] = useState<
-    "recent" | "popular" | "new"
-  >("recent");
-  const [timeRange, setTimeRange] = useState<"all" | "week" | "month" | "year">(
-    "all",
-  );
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(0);
-  const [allRegularThreads, setAllRegularThreads] = useState<ForumThread[]>([]);
-  const [hasMore, setHasMore] = useState(true);
   const loadMoreRef = useRef<HTMLDivElement>(null);
-  const limit = 10;
-
+  
   // Get the current category info
   const currentCategory = FORUM_CATEGORIES.find(cat => cat.id === category) || FORUM_CATEGORIES[0];
   
-  // Query for Pinned threads
-  const { 
-    data: pinnedByUserThreads = [], 
-    isLoading: isPinnedByUserLoading 
-  } = useQuery<ForumThread[]>({
-    queryKey: [`/api/threads/${category}`, 'pinned'],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        pinnedByUserFilter: 'only',
-        sort: 'recent'
-      });
-      const response = await apiRequest(
-        "GET",
-        `/api/threads/${category}?${params}`,
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch pinned threads');
-      }
-      return response.json();
-    },
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-  });
-  
-  // Query for regular threads (non-pinned)
-  const { 
-    data: regularThreads = [], 
-    isLoading: isRegularLoading,
+  // Use the thread hook
+  const {
+    pinnedThreads,
+    regularThreads: allRegularThreads,
+    isLoading,
     error,
-    refetch: refetchRegularThreads,
-  } = useQuery<ForumThread[]>({
-    queryKey: [`/api/threads/${category}`, filterOption, timeRange, page],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        pinnedByUserFilter: 'exclude',
-        sort: filterOption,
-        timeRange: timeRange,
-        limit: String(limit),
-        offset: String(page * limit),
-      });
-      const response = await apiRequest(
-        "GET",
-        `/api/threads/${category}?${params}`,
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch regular threads");
-      }
-      return response.json();
-    },
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    staleTime: 0, // Consider data always stale to force refetch
+    hasMore,
+    page,
+    loadMore,
+    filterOption,
+    timeRange,
+    handleFilterChange,
+    handleTimeRangeChange
+  } = useThreads({
+    category,
+    initialFilterOption: "recent",
+    initialTimeRange: "all"
   });
-
-  // Update allRegularThreads when regularThreads changes
-  useEffect(() => {
-    if (!regularThreads || isRegularLoading) return;
-    if (regularThreads) {
-      if (page === 0) {
-        // Replace all threads when filters change (page is reset to 0)
-        setAllRegularThreads(regularThreads);
-      } else {
-        // Append new threads when loading more
-        setAllRegularThreads((prev) => [...prev, ...regularThreads]);
-      }
-
-      // Check if we have more threads to load
-      setHasMore(regularThreads.length >= limit);
-    }
-  }, [regularThreads, page, limit, category]);
-
-  // Reset pagination and force refetch when filter options change
-  // useEffect(() => {
-  //   const resetAndRefetch = async () => {
-  //     setPage(0);
-  //     console.log("help me, im here resetting")
-  //     setAllRegularThreads([]);
-  //     setHasMore(true); // Reset the hasMore flag to enable loading
-  //     await refetchRegularThreads(); // Force a refetch when filter changes
-  //   };
-
-  //   resetAndRefetch();
-  // }, [filterOption, timeRange, category, refetchRegularThreads]);
 
   // Scroll to the loading area when new content is loaded
   useEffect(() => {
-    if (page > 0 && regularThreads.length > 0 && loadMoreRef.current) {
+    if (page > 0 && allRegularThreads.length > 0 && loadMoreRef.current) {
       const previousHeight =
         loadMoreRef.current.offsetTop - window.innerHeight / 2;
       window.scrollTo({
@@ -133,47 +51,7 @@ export default function ForumContent({
         behavior: "auto",
       });
     }
-  }, [regularThreads, page]);
-  
-  const isLoading = isPinnedByUserLoading || isRegularLoading;
-  
-  const loadMore = () => {
-    if (hasMore && !isRegularLoading) {
-      setPage((prevPage) => prevPage + 1);
-    }
-  };
-
-  // Helper function to handle filter changes
-  const handleFilterChange = (newFilter: "recent" | "popular" | "new") => {
-    if (newFilter === filterOption) {
-      // If clicking the same filter, force a refresh
-      setAllRegularThreads([]);
-      setPage(0);
-      setHasMore(true);
-      setTimeout(() => {
-        refetchRegularThreads();
-      }, 0);
-    } else {
-      setFilterOption(newFilter);
-    }
-  };
-
-  // Helper function to handle time range changes
-  const handleTimeRangeChange = (
-    newTimeRange: "all" | "week" | "month" | "year",
-  ) => {
-    if (newTimeRange === timeRange) {
-      // If selecting the same time range, force a refresh
-      setAllRegularThreads([]);
-      setPage(0);
-      setHasMore(true);
-      setTimeout(() => {
-        refetchRegularThreads();
-      }, 0);
-    } else {
-      setTimeRange(newTimeRange as any);
-    }
-  };
+  }, [allRegularThreads, page]);
 
   return (
     <div className="flex-grow">
@@ -339,13 +217,13 @@ export default function ForumContent({
       {/* Forum Thread List */}
       {(!isLoading || page > 0 || allRegularThreads.length > 0) && !error && (
         <div className="space-y-4">
-          {(pinnedByUserThreads.length > 0 || allRegularThreads.length > 0) ? (
+          {(pinnedThreads.length > 0 || allRegularThreads.length > 0) ? (
             <div>
               {/* Pinned Section - only shown once at the top */}
-              {pinnedByUserThreads.length > 0 && (
+              {pinnedThreads.length > 0 && (
                 <div className="mb-6">
                   <div className="space-y-4">
-                    {pinnedByUserThreads.map(thread => (
+                    {pinnedThreads.map(thread => (
                       <ThreadCard key={thread.id} thread={thread} />
                     ))}
                   </div>
@@ -360,7 +238,7 @@ export default function ForumContent({
                   ))}
                 </div>
               ) : (
-                !isRegularLoading &&
+                !isLoading &&
                 page === 0 && (
                   <div className="py-6 text-center">
                     <p className="text-gray-400">
@@ -375,7 +253,7 @@ export default function ForumContent({
 
               {/* Load More Button with loading state */}
               <div className="mt-6 text-center">
-                {isRegularLoading && page > 0 ? (
+                {isLoading && page > 0 ? (
                   <div className="py-4">
                     <div className="border-ufc-blue mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-t-2"></div>
                   </div>
@@ -383,7 +261,7 @@ export default function ForumContent({
                   <button
                     onClick={loadMore}
                     className={`rounded-lg bg-gray-800 px-6 py-3 text-sm font-medium text-white transition hover:bg-gray-700 ${!hasMore ? "cursor-not-allowed opacity-50" : ""}`}
-                    disabled={!hasMore || isRegularLoading}
+                    disabled={!hasMore || isLoading}
                   >
                     {!hasMore ? "No More Discussions" : "Load More Discussions"}
                   </button>

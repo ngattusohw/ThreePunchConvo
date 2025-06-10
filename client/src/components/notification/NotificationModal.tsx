@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useNotifications } from "@/api/hooks/useNotifications";
 import { Notification } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -12,53 +11,7 @@ interface NotificationModalProps {
 }
 
 export default function NotificationModal({ onClose }: NotificationModalProps) {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  // Fetch notifications
-  const {
-    data: notifications,
-    isLoading,
-    error,
-  } = useQuery<Notification[]>({
-    queryKey: ["/api/notifications"],
-    // In a real app, we would fetch from the API
-  });
-
-  // For demo purposes, create mock notifications if none are returned from the API
-  const displayNotifications = notifications?.length
-    ? notifications
-    : generateMockNotifications();
-
-  // Mark all as read mutation
-  const markAllAsReadMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest(
-        "POST",
-        "/api/notifications/read-all",
-        {},
-      );
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
-      toast({
-        title: "Notifications updated",
-        description: "All notifications marked as read.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to mark notifications as read.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleMarkAllAsRead = () => {
-    markAllAsReadMutation.mutate();
-  };
+  const { notifications, isLoading, error, markAllAsRead, isMarking } = useNotifications();
 
   // Click outside to close
   const handleModalClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -105,13 +58,13 @@ export default function NotificationModal({ onClose }: NotificationModalProps) {
             <div className="py-8 text-center">
               <p className="text-red-500">Error loading notifications</p>
             </div>
-          ) : displayNotifications.length === 0 ? (
+          ) : notifications.length === 0 ? (
             <div className="py-8 text-center">
               <p className="text-gray-400">No notifications yet</p>
             </div>
           ) : (
             <ul className="space-y-4">
-              {displayNotifications.map((notification) => (
+              {notifications.map((notification) => (
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
@@ -123,9 +76,9 @@ export default function NotificationModal({ onClose }: NotificationModalProps) {
 
         <div className="bg-ufc-black border-t border-gray-800 p-4">
           <button
-            onClick={handleMarkAllAsRead}
-            disabled={markAllAsReadMutation.isPending}
-            className={`text-sm font-medium text-gray-400 hover:text-white ${markAllAsReadMutation.isPending ? "cursor-not-allowed opacity-50" : ""}`}
+            onClick={markAllAsRead}
+            disabled={isMarking}
+            className={`text-sm font-medium text-gray-400 hover:text-white ${isMarking ? "cursor-not-allowed opacity-50" : ""}`}
           >
             Mark all as read
           </button>
@@ -240,71 +193,4 @@ function NotificationItem({ notification }: NotificationItemProps) {
       </div>
     </li>
   );
-}
-
-// Helper function to generate mock notifications for demonstration
-function generateMockNotifications(): Notification[] {
-  return [
-    {
-      id: 1,
-      userId: "1",
-      type: "REPLY",
-      relatedUserId: "4",
-      relatedUser: {
-        id: "4",
-        username: "MMAHistorian",
-        avatar:
-          "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "RANKED POSTER",
-        isOnline: true,
-        postsCount: 42,
-        likesCount: 430,
-        potdCount: 2,
-        rank: 12,
-        followersCount: 38,
-        followingCount: 126,
-        role: "USER",
-      },
-      threadId: 2,
-      threadTitle: "Jones vs Aspinall: Who would win and why?",
-      replyId: 123,
-      replyPreview: "I disagree. Aspinall's ground game is underrated...",
-      isRead: false,
-      createdAt: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-    },
-    {
-      id: 2,
-      userId: "1",
-      type: "MENTION",
-      relatedUserId: "3",
-      relatedUser: {
-        id: "3",
-        username: "DustinPoirier",
-        avatar:
-          "https://images.unsplash.com/photo-1614632537197-38a17061c2bd?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=144&h=144&q=80",
-        status: "HALL OF FAMER",
-        isOnline: true,
-        postsCount: 73,
-        likesCount: 4120,
-        potdCount: 14,
-        rank: 1,
-        followersCount: 1200,
-        followingCount: 23,
-        role: "PRO",
-      },
-      threadId: 3,
-      threadTitle: "My thoughts on the upcoming UFC 300 card",
-      replyPreview: "@FighterFan84 makes a good point about the...",
-      isRead: false,
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    },
-    {
-      id: 3,
-      userId: "1",
-      type: "SYSTEM",
-      message: "Your status has been updated to CONTENDER",
-      isRead: false,
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-    },
-  ];
 }

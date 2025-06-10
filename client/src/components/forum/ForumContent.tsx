@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import ThreadCard from "@/components/forum/ThreadCard";
-import { useQueryClient } from "@tanstack/react-query";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import CreatePostModal from "@/components/forum/CreatePostModal";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
@@ -14,7 +13,6 @@ interface ForumContentProps {
 export default function ForumContent({
   category = "general",
 }: ForumContentProps) {
-  const queryClient = useQueryClient();
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const loadMoreRef = useRef<HTMLDivElement>(null);

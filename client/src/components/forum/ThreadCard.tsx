@@ -26,8 +26,17 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
 
   return (
     <div
-      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} overflow-hidden rounded-lg shadow-lg transition hover:shadow-xl`}
+      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} overflow-hidden rounded-lg shadow-lg transition hover:shadow-xl relative`}
     >
+      {/* Pinned label on the right */}
+      {(thread.isPinned || thread.isPinnedByUser) && (
+        <span className="absolute top-2 right-2 bg-gray-800 text-ufc-blue text-xs px-2 py-0.5 rounded font-medium flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
+          </svg>
+          <span>PINNED</span>
+        </span>
+      )}
       <div className="p-4">
         <div className="flex items-start">
           {/* User Avatar */}
@@ -45,20 +54,7 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
           {/* Thread Content */}
           <div className="flex-grow">
             <div className="flex items-center mb-1 flex-wrap">
-              {(thread.isPinned || thread.isPinnedByUser) && (
-                <span className="bg-gray-800 text-ufc-blue text-xs px-2 py-0.5 rounded font-medium mr-2 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
-                  </svg>
-                  <span>PINNED</span>
-                </span>
-              )}
-
-              {thread.user?.status && (
-                <StatusBadge status={thread.user.status} className="mr-2" />
-              )}
-
-              {thread.user?.role === "PRO" && (
+              {thread.user?.role === "FIGHTER" && (
                 <span className="mr-2 flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-black">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

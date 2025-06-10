@@ -1,32 +1,20 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ForumThread, ThreadReply } from "@/lib/types";
-import { fetchThreadById, fetchThreadReplies } from "../../queries/thread";
+import { ThreadReply } from "@/lib/types";
+import { fetchThreadReplies } from "../../../queries/thread";
 
-interface UseThreadDataOptions {
+interface UseThreadRepliesDataOptions {
   threadId: string;
-  userId?: string;
 }
 
-export function useThreadData({ threadId, userId }: UseThreadDataOptions) {
+export function useThreadRepliesData({ threadId }: UseThreadRepliesDataOptions) {
   const [displayReplies, setDisplayReplies] = useState<ThreadReply[]>([]);
-
-  // Fetch thread data
-  const {
-    data: thread,
-    isLoading: isThreadLoading,
-    error: threadError,
-  } = useQuery<ForumThread>({
-    queryKey: [`/api/threads/id/${threadId}`, userId],
-    queryFn: () => fetchThreadById(threadId, userId),
-    enabled: !!threadId,
-  });
 
   // Fetch thread replies
   const {
     data: replies,
-    isLoading: isRepliesLoading,
-    error: repliesError,
+    isLoading,
+    error,
   } = useQuery<ThreadReply[]>({
     queryKey: [`/api/threads/${threadId}/replies`],
     queryFn: () => fetchThreadReplies(threadId),
@@ -100,11 +88,9 @@ export function useThreadData({ threadId, userId }: UseThreadDataOptions) {
   }, [replies]);
 
   return {
-    thread,
-    isThreadLoading,
-    threadError,
-    isRepliesLoading,
-    repliesError,
+    replies,
     displayReplies,
+    isLoading,
+    error,
   };
 } 

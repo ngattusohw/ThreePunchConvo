@@ -1,4 +1,4 @@
-export * from './useThreadData.js';
+export * from './data';
 export * from './actions';
 export * from './replies';
-export * from './useThreadsList.js'; 
+export * from './list'; 

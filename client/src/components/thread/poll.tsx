@@ -1,10 +1,8 @@
-import { useState, useEffect, useRef, useMemo, memo } from "react";
+import { useEffect, useMemo, memo } from "react";
 import { useUser } from "@clerk/clerk-react";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 import { Poll } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useCheckPollVote, usePollVote } from "@/api/hooks/usePoll";
 
 interface ThreadPollProps {
   threadId: string;
@@ -29,155 +27,34 @@ function PollSkeleton() {
 
 function ThreadPoll({ threadId, poll }: ThreadPollProps) {
   const { user: currentUser } = useUser();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [hasVoted, setHasVoted] = useState(false);
-  const [userVotedOption, setUserVotedOption] = useState<string | null>(null);
   const isPollExpired = useMemo(() => new Date() > new Date(poll.expiresAt), [poll.expiresAt]);
   
   // Memoize the userId to prevent unnecessary effect runs
   const userId = currentUser?.id;
 
-  // Use React Query to check if user has voted - this will handle caching automatically
+  // Use the extracted hook to check if user has voted
   const { 
     isLoading: isCheckingVote,
     data: voteData 
-  } = useQuery({
-    queryKey: [`thread-poll-vote-check-${threadId}-${userId}`],
-    queryFn: async () => {
-      if (!userId) return { hasVoted: false, votedOptionId: null };
-      
-      const response = await apiRequest(
-        "GET",
-        `/api/threads/${threadId}/poll/check-vote?userId=${userId}`,
-        null
-      );
-      
-      if (!response.ok) {
-        throw new Error("Failed to check vote status");
-      }
-      
-      return response.json();
-    },
-    // Only run this query if we have a userId
-    enabled: !!userId,
-    // Don't refetch on window focus or other automatic triggers
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    // Cache the result for 5 minutes
-    staleTime: 5 * 60 * 1000,
-    // Don't retry on failure
-    retry: false,
-  });
+  } = useCheckPollVote(threadId, userId);
   
+  // Use the enhanced poll vote hook
+  const {
+    isPending,
+    hasVoted,
+    userVotedOption,
+    setHasVoted,
+    setUserVotedOption,
+    handleVote
+  } = usePollVote(threadId);
+
   // Update local state when vote data changes
   useEffect(() => {
     if (voteData) {
       setHasVoted(voteData.hasVoted || false);
       setUserVotedOption(voteData.votedOptionId || null);
     }
-  }, [voteData]);
-
-  // Handle poll vote
-  const submitPollVoteMutation = useMutation({
-    mutationFn: async (optionId: string) => {
-      if (!currentUser) throw new Error("You must be logged in to vote");
-      if (!poll) throw new Error("No poll found");
-
-      try {
-        // First, ensure the user exists in the backend database
-        const userCheckResponse = await apiRequest(
-          "POST",
-          `/api/users/clerk/${currentUser.id}`,
-          {
-            firstName: currentUser.firstName,
-            lastName: currentUser.lastName,
-            email: currentUser.emailAddresses?.[0]?.emailAddress,
-            profileImageUrl: currentUser.imageUrl,
-            username: currentUser.username,
-          },
-        );
-
-        if (!userCheckResponse.ok) {
-          throw new Error("Failed to register user in backend system");
-        }
-
-        // Now that we've ensured the user exists, we can proceed with voting
-        const response = await apiRequest(
-          "POST",
-          `/api/threads/${threadId}/poll/${optionId}/vote`,
-          {
-            userId: currentUser.id,
-          },
-        );
-
-        // If there's an error, try to get detailed error information
-        if (!response.ok) {
-          let errorMessage = `Error: ${response.status} ${response.statusText}`;
-          const responseText = await response.text();
-
-          try {
-            const errorData = JSON.parse(responseText);
-            errorMessage = errorData.message || errorData.error || errorMessage;
-          } catch (e) {
-            console.error("Failed to parse error response as JSON");
-          }
-
-          throw new Error(errorMessage);
-        }
-
-        return response.json();
-      } catch (error) {
-        console.error("Error in poll vote:", error);
-        throw error;
-      }
-    },
-    onSuccess: (data, optionId) => {
-      setHasVoted(true);
-      setUserVotedOption(optionId);
-      
-      // Invalidate queries to update data
-      queryClient.invalidateQueries({
-        queryKey: [`/api/threads/id/${threadId}`],
-      });
-      
-      // Also update the vote check query cache directly
-      queryClient.setQueryData(
-        [`thread-poll-vote-check-${threadId}-${userId}`], 
-        { hasVoted: true, votedOptionId: optionId }
-      );
-      
-      toast({
-        title: "Success",
-        description: "Your vote has been recorded",
-      });
-    },
-    onError: (error: Error) => {
-      // If the error message contains "already voted", it means the user has voted
-      if (error.message.includes("already voted")) {
-        setHasVoted(true);
-        
-        // Update the vote check query cache
-        queryClient.setQueryData(
-          [`thread-poll-vote-check-${threadId}-${userId}`], 
-          { hasVoted: true }
-        );
-        
-        toast({
-          title: "Already voted",
-          description: "You have already voted on this poll",
-        });
-      } else {
-        console.error("Vote error:", error);
-        toast({
-          title: "Error",
-          description: error.message || "Failed to record vote",
-          variant: "destructive",
-        });
-      }
-    },
-  });
+  }, [voteData, setHasVoted, setUserVotedOption]);
 
   // Memoize these calculations to avoid re-renders
   const shouldShowResults = useMemo(
@@ -185,7 +62,7 @@ function ThreadPoll({ threadId, poll }: ThreadPollProps) {
     [hasVoted, isPollExpired, currentUser]
   );
   
-  const isLoading = isCheckingVote || submitPollVoteMutation.isPending;
+  const isLoading = isCheckingVote || isPending;
   
   if (isLoading) {
     return <PollSkeleton />;
@@ -223,8 +100,8 @@ function ThreadPoll({ threadId, poll }: ThreadPollProps) {
               ) : (
                 // Show voting buttons - using a custom button instead of the Button component
                 <button
-                  onClick={() => submitPollVoteMutation.mutate(option.id)}
-                  disabled={submitPollVoteMutation.isPending}
+                  onClick={() => handleVote(option.id, currentUser)}
+                  disabled={isPending}
                   className={cn(
                     "w-full mb-2 py-2 px-4 rounded-md text-left",
                     "bg-gray-700 text-white font-medium",

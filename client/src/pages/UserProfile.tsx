@@ -1,62 +1,31 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { AuthUser, ForumThread } from "@/lib/types";
-// import { useUser } from "@clerk/clerk-react";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
 import ThreadCard from "@/components/forum/ThreadCard";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useUserProfile } from "@/api";
 
 export default function UserProfile() {
   const { username } = useParams<{ username: string }>();
-  // const { user:currentUser } = useUser();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"posts" | "about">("posts");
   const [isFollowing, setIsFollowing] = useState(false);
 
-  // Fetch user data
-  const {
-    data: user,
-    isLoading: isUserLoading,
-    error: userError,
-  } = useQuery<AuthUser>({
-    queryKey: [`/api/users/username/${username}`],
-    // In a real app, we would fetch from the API
-  });
+  const { 
+    user, 
+    isUserLoading, 
+    userError,
+    userPosts,
+    isPostsLoading,
+    postsError
+  } = useUserProfile(username);
 
-  // Fetch user's posts
-  const {
-    data: userPosts,
-    isLoading: isPostsLoading,
-    error: postsError,
-  } = useQuery<ForumThread[]>({
-    queryKey: [`/api/users/${user?.id}/posts`],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      try {
-        const response = await apiRequest("GET", `/api/users/${user.id}/posts`);
-        if (response instanceof Response) {
-          const data = await response.json();
-          console.log("user posts data:", data);
-          if (!Array.isArray(data)) {
-            throw new Error("Invalid response format from server");
-          }
-          return data;
-        }
-        if (!Array.isArray(response)) {
-          console.error("Invalid response format:", response);
-          throw new Error("Invalid response format from server");
-        }
-        return response;
-      } catch (error) {
-        console.error("Error fetching user posts:", error);
-        throw error;
-      }
-    },
-    enabled: !!user?.id,
-  });
+  // For demo purposes, create mock user if none is returned from the API
+  const displayUser = user;
+
+  // Use actual posts data or empty array if no posts
+  const displayPosts = userPosts || [];
 
   // Check if current user follows this user
   // useEffect(() => {
@@ -65,12 +34,6 @@ export default function UserProfile() {
   //     setIsFollowing(Math.random() > 0.5); // Mock implementation
   //   }
   // }, [currentUser, user]);
-
-  // For demo purposes, create mock user if none is returned from the API
-  const displayUser = user;
-
-  // Use actual posts data or empty array if no posts
-  const displayPosts = userPosts || [];
 
   // Handle follow/unfollow
   // const handleFollowToggle = async () => {

@@ -1,19 +1,12 @@
 import React from "react";
 import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { RankedUser } from "@/lib/types";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
+import { useTopUsers } from "@/api/hooks/useTopUsers";
 
 export default function TopUsersSidebar() {
   // Fetch top users
-  const {
-    data: topUsers,
-    isLoading,
-    error,
-  } = useQuery<RankedUser[]>({
-    queryKey: ["/api/users/top"],
-  });
+  const { topUsers, isLoading, error } = useTopUsers();
 
   const displayUsers = topUsers;
 

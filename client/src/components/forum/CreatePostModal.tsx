@@ -207,7 +207,9 @@ export default function CreatePostModal({
   };
 
   const handleAddPollOption = () => {
-    setPollOptions([...pollOptions, ""]);
+    if (pollOptions.length < 6) {
+      setPollOptions([...pollOptions, ""]);
+    }
   };
 
   const handlePollOptionChange = (index: number, value: string) => {
@@ -306,7 +308,7 @@ export default function CreatePostModal({
             </button>
           </div>
 
-          <div className="p-4">
+          <div className="p-4 max-h-[calc(100vh-10rem)] overflow-y-auto">
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <label
@@ -470,7 +472,7 @@ export default function CreatePostModal({
 
                   <div className="space-y-2">
                     <label className="mb-1 block font-medium text-gray-300">
-                      Options
+                      Options <span className="ml-1 text-sm text-gray-400">({pollOptions.length}/6)</span>
                     </label>
                     {pollOptions.map((option, index) => (
                       <div key={index} className="flex items-center space-x-2">
@@ -509,7 +511,8 @@ export default function CreatePostModal({
                     <button
                       type="button"
                       onClick={handleAddPollOption}
-                      className="text-ufc-blue mt-2 flex items-center text-sm font-medium hover:text-white"
+                      className={`text-ufc-blue mt-2 flex items-center text-sm font-medium ${pollOptions.length >= 6 ? 'opacity-50 cursor-not-allowed' : 'hover:text-white'}`}
+                      disabled={pollOptions.length >= 6}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -523,7 +526,7 @@ export default function CreatePostModal({
                           clipRule="evenodd"
                         />
                       </svg>
-                      Add Option
+                      Add Option {pollOptions.length >= 6 ? "(Max Reached)" : ""}
                     </button>
                   </div>
                 </div>

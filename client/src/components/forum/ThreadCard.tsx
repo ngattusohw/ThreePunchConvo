@@ -120,7 +120,7 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                         <div className="flex h-2 overflow-hidden rounded bg-gray-700 text-xs">
                           <div
                             style={{ width: `${percentage}%` }}
-                            className={`flex flex-col justify-center whitespace-nowrap text-center text-white shadow-none ${Number(option.id) % 2 === 0 ? "bg-blue-500" : "bg-red-500"}`}
+                            className="flex flex-col justify-center whitespace-nowrap text-center text-white shadow-none bg-blue-500"
                           />
                         </div>
                       </div>

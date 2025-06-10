@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Switch, Route } from "wouter";
 import { loadStripe } from "@stripe/stripe-js";
 import { CheckoutProvider } from "@stripe/react-stripe-js";
@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import Home from "@/pages/Home";
 import Forum from "@/pages/Forum";
-import Schedule from "@/pages/Schedule";
+// import Schedule from "@/pages/Schedule";
 import Rankings from "@/pages/Rankings";
 import UserProfile from "@/pages/UserProfile";
 import Thread from "@/pages/Thread";
@@ -41,9 +41,15 @@ function App() {
   });
   // Add an initialLoadComplete state to track when the app is ready to render
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  
+  // Add refs to track if operations have been performed
+  const userCheckPerformed = useRef(false);
+  const subscriptionCheckPerformed = useRef(false);
+  const clientSecretFetched = useRef(false);
 
   // TODO test key
   const stripePromise = useMemo(
+    // @ts-ignore - ignoring the env property error
     () => loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ""),
     [], // Only create once
   );
@@ -61,48 +67,53 @@ function App() {
 
   useEffect(() => {
     const checkOrCreateUser = async () => {
-      if (isUserLoaded && isSignedIn && user) {
-        console.log("Clerk user logged in:", user);
-        console.log("app profile: ", user?.imageUrl);
-
-        try {
-          // Check if user exists in our database, creates one if not
-          const response = await apiRequest(
-            "POST",
-            `/api/users/clerk/${user?.id}`,
-            {
-              firstName: user?.firstName,
-              lastName: user?.lastName,
-              email: user?.emailAddresses[0]?.emailAddress,
-              profileImageUrl: user?.imageUrl,
-              username: user?.username,
-            },
-          );
-
-          if (!response.ok) {
-            throw new Error(
-              `Failed to check/create user: ${response.statusText}`,
-            );
-          }
-
-          const data = await response.json();
-
-          if (data.created) {
-            console.log("Created new local user for Clerk user:", data.user);
-          } else {
-            console.log("Found existing local user:", data.user);
-          }
-
-          setLocalUser(data.user);
-          setLocalUserChecked(true);
-        } catch (error) {
-          console.error("Error checking/creating user:", error);
-          // Even if there was an error, we should mark local user check as complete
+      // Skip if already performed or conditions aren't met
+      if (userCheckPerformed.current || !isUserLoaded || !isSignedIn || !user) {
+        if (isUserLoaded && !isSignedIn) {
           setLocalUserChecked(true);
         }
-      } else if (isUserLoaded && !isSignedIn) {
-        // If user is not signed in, we don't need to check local user
+        return;
+      }
+
+      console.log("Clerk user logged in:", user);
+      console.log("app profile: ", user?.imageUrl);
+
+      try {
+        // Check if user exists in our database, creates one if not
+        const response = await apiRequest(
+          "POST",
+          `/api/users/clerk/${user?.id}`,
+          {
+            firstName: user?.firstName,
+            lastName: user?.lastName,
+            email: user?.emailAddresses[0]?.emailAddress,
+            profileImageUrl: user?.imageUrl,
+            username: user?.username,
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to check/create user: ${response.statusText}`,
+          );
+        }
+
+        const data = await response.json();
+
+        if (data.created) {
+          console.log("Created new local user for Clerk user:", data.user);
+        } else {
+          console.log("Found existing local user:", data.user);
+        }
+
+        setLocalUser(data.user);
         setLocalUserChecked(true);
+        userCheckPerformed.current = true;
+      } catch (error) {
+        console.error("Error checking/creating user:", error);
+        // Even if there was an error, we should mark local user check as complete
+        setLocalUserChecked(true);
+        userCheckPerformed.current = true;
       }
     };
 
@@ -112,57 +123,63 @@ function App() {
   // Check for user subscriptions
   useEffect(() => {
     const checkUserSubscriptions = async () => {
-      if (localUser?.stripeId) {
-        try {
-          console.log(
-            "Checking subscriptions for user with Stripe ID:",
-            localUser.stripeId,
-          );
-          const response = await apiRequest(
-            "GET",
-            `/get-subscriptions?customerId=${localUser.stripeId}&status=active`,
-          );
-
-          if (!response.ok) {
-            throw new Error(
-              `Failed to fetch subscriptions: ${response.statusText}`,
-            );
-          }
-
-          const data = await response.json();
-          const subscriptionsData = data.data || [];
-          setSubscriptions(subscriptionsData);
-
-          // Get subscription status using the utility function
-          const status = getSubscriptionStatus(subscriptionsData);
-          setSubscriptionStatus(status);
-
-          // Update the user's plan type in the database if needed
-          if (user?.id && status) {
-            // Status will be 'BASIC', 'PRO', or empty string
-            const planType = status || "FREE";
-            await updateUserPlanType(user.id, planType);
-          }
-
-          if (data.data && data.data.length > 0) {
-            console.log("User has active subscriptions:", data.data);
-            console.log("Subscription status:", status);
-          } else {
-            console.log("User has no active subscriptions");
-
-            // If no active subscriptions, downgrade to FREE plan if user is logged in
-            if (user?.id) {
-              await updateUserPlanType(user.id, "FREE");
-            }
-          }
-        } catch (error) {
-          console.error("Error checking subscriptions:", error);
-        } finally {
-          // Mark the initial load as complete when subscription check is done
-          if (!initialLoadComplete) setInitialLoadComplete(true);
+      // Skip if already performed or conditions aren't met
+      if (subscriptionCheckPerformed.current || !localUser?.stripeId || !localUserChecked) {
+        if (localUserChecked && !localUser) {
+          if (!initialLoadComplete && isUserLoaded) setInitialLoadComplete(true);
         }
-      } else if (localUserChecked) {
-        // If we've checked the local user and there's no Stripe ID, we can consider initial load complete
+        return;
+      }
+
+      try {
+        console.log(
+          "Checking subscriptions for user with Stripe ID:",
+          localUser.stripeId,
+        );
+        const response = await apiRequest(
+          "GET",
+          `/get-subscriptions?customerId=${localUser.stripeId}&status=active`,
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch subscriptions: ${response.statusText}`,
+          );
+        }
+
+        const data = await response.json();
+        const subscriptionsData = data.data || [];
+        setSubscriptions(subscriptionsData);
+
+        // Get subscription status using the utility function
+        const status = getSubscriptionStatus(subscriptionsData);
+        setSubscriptionStatus(status);
+
+        // Update the user's plan type in the database if needed
+        if (user?.id && status) {
+          // Status will be 'BASIC', 'PRO', or empty string
+          const planType = status || "FREE";
+          await updateUserPlanType(user.id, planType);
+        }
+
+        if (data.data && data.data.length > 0) {
+          console.log("User has active subscriptions:", data.data);
+          console.log("Subscription status:", status);
+        } else {
+          console.log("User has no active subscriptions");
+
+          // If no active subscriptions, downgrade to FREE plan if user is logged in
+          if (user?.id) {
+            await updateUserPlanType(user.id, "FREE");
+          }
+        }
+        
+        subscriptionCheckPerformed.current = true;
+      } catch (error) {
+        console.error("Error checking subscriptions:", error);
+        subscriptionCheckPerformed.current = true;
+      } finally {
+        // Mark the initial load as complete when subscription check is done
         if (!initialLoadComplete) setInitialLoadComplete(true);
       }
     };
@@ -222,56 +239,61 @@ function App() {
   // Fetch client secret only when user is loaded and signed in
   useEffect(() => {
     const fetchClientSecret = async () => {
+      // Skip if already performed or conditions aren't met
       if (
-        isUserLoaded &&
-        isSignedIn &&
-        user?.id &&
-        user?.emailAddresses[0]?.emailAddress
+        clientSecretFetched.current ||
+        !isUserLoaded || 
+        !isSignedIn || 
+        !user?.id || 
+        !user?.emailAddresses[0]?.emailAddress
       ) {
-        setIsLoadingClientSecret(true);
-        console.log("Fetching client secret");
-
-        try {
-          const response = await apiRequest(
-            "POST",
-            "/create-checkout-session",
-            {
-              email: user.emailAddresses[0].emailAddress,
-              clerkUserId: user.id,
-            },
-          );
-
-          if (!response.ok) {
-            throw new Error(`HTTP error ${response.status}`);
-          }
-
-          const data = await response.json();
-          console.log(
-            "Received client secret:",
-            data.clientSecret ? "Valid secret" : "No secret",
-          );
-          if (!data.clientSecret) {
-            throw new Error("No client secret received from server");
-          }
-          setClientSecret(data.clientSecret);
-          setDebugInfo((prev) => ({ ...prev, loading: false }));
-        } catch (err) {
-          console.error("Error fetching client secret:", err);
-          setClientSecret(null);
-          setDebugInfo((prev) => ({
-            loading: false,
-            error: err instanceof Error ? err.message : String(err),
-          }));
-        } finally {
+        if (isUserLoaded && !isSignedIn) {
           setIsLoadingClientSecret(false);
-          // Ensure initial load is marked as complete after client secret is loaded (or failed)
+          setDebugInfo((prev) => ({ ...prev, loading: false }));
           if (!initialLoadComplete) setInitialLoadComplete(true);
         }
-      } else if (isUserLoaded && !isSignedIn) {
-        // If user is not signed in, we don't need to fetch client secret
-        setIsLoadingClientSecret(false);
+        return;
+      }
+
+      setIsLoadingClientSecret(true);
+      console.log("Fetching client secret");
+
+      try {
+        const response = await apiRequest(
+          "POST",
+          "/create-checkout-session",
+          {
+            email: user.emailAddresses[0].emailAddress,
+            clerkUserId: user.id,
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log(
+          "Received client secret:",
+          data.clientSecret ? "Valid secret" : "No secret",
+        );
+        if (!data.clientSecret) {
+          throw new Error("No client secret received from server");
+        }
+        setClientSecret(data.clientSecret);
         setDebugInfo((prev) => ({ ...prev, loading: false }));
-        // Mark initial load as complete for non-signed in users
+        clientSecretFetched.current = true;
+      } catch (err) {
+        console.error("Error fetching client secret:", err);
+        setClientSecret(null);
+        setDebugInfo((prev) => ({
+          loading: false,
+          error: err instanceof Error ? err.message : String(err),
+        }));
+        clientSecretFetched.current = true;
+      } finally {
+        setIsLoadingClientSecret(false);
+        // Ensure initial load is marked as complete after client secret is loaded (or failed)
         if (!initialLoadComplete) setInitialLoadComplete(true);
       }
     };

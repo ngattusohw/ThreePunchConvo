@@ -352,8 +352,8 @@ export default function Thread() {
                     key={reply.id}
                     reply={reply}
                     onQuote={handleQuoteReply}
-                    onLike={() => likeReplyMutation.mutate(Number(reply.id))}
-                    onDislike={() => dislikeReplyMutation.mutate(Number(reply.id))}
+                    onLike={() => likeReplyMutation.mutate(reply.id.toString())}
+                    onDislike={() => dislikeReplyMutation.mutate(reply.id.toString())}
                     onDelete={() => deleteReplyMutation.mutate(reply.id.toString())}
                   />
                 ))}

@@ -211,7 +211,7 @@ export const submitThreadReply = async (
 };
 
 // Like a reply
-export const likeReply = async (replyId: number, userId: string) => {
+export const likeReply = async (replyId: string, userId: string) => {
   const response = await apiRequest(
     "POST",
     `/api/replies/${replyId}/like`,
@@ -230,7 +230,7 @@ export const likeReply = async (replyId: number, userId: string) => {
 };
 
 // Dislike a reply
-export const dislikeReply = async (replyId: number, userId: string) => {
+export const dislikeReply = async (replyId: string, userId: string) => {
   const response = await apiRequest(
     "POST",
     `/api/replies/${replyId}/dislike`,

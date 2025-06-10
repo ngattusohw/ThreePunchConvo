@@ -65,7 +65,7 @@ export function useThreadReplies({ threadId, userId }: UseThreadRepliesOptions) 
 
   // Handle liking a reply
   const likeReplyMutation = useMutation({
-    mutationFn: (replyId: number) => {
+    mutationFn: (replyId: string) => {
       if (!userId) throw new Error("You must be logged in to like replies");
       return likeReply(replyId, userId);
     },
@@ -85,7 +85,7 @@ export function useThreadReplies({ threadId, userId }: UseThreadRepliesOptions) 
 
   // Handle disliking a reply
   const dislikeReplyMutation = useMutation({
-    mutationFn: (replyId: number) => {
+    mutationFn: (replyId: string) => {
       if (!userId) throw new Error("You must be logged in to dislike replies");
       return dislikeReply(replyId, userId);
     },

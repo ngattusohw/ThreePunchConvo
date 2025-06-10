@@ -1,22 +1,20 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { RankedUser } from "@/lib/types";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
 import { shortenNumber } from "@/lib/utils";
+import { useTopUsers } from "@/api";
 
 export default function Rankings() {
   const [rankingFilter, setRankingFilter] = useState<string>("all");
 
   // Fetch rankings
   const {
-    data: rankedUsers,
+    topUsers: rankedUsers,
     isLoading,
     error,
-  } = useQuery<RankedUser[]>({
-    queryKey: ["/api/users/top"],
-  });
+  } = useTopUsers();
 
   // Process users to handle ties
   const processedUsers =

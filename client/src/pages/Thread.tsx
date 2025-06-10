@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ForumThread, ThreadReply } from "@/lib/types";
 import { useUser } from "@clerk/clerk-react";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
+import { useThread } from "@/api";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
 import { FORUM_CATEGORIES } from "@/lib/constants";
@@ -15,472 +14,37 @@ export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
   const { user: currentUser } = useUser();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
-  const [replyContent, setReplyContent] = useState("");
-  const [replyingTo, setReplyingTo] = useState<{
-    id: string;
-    username: string;
-  } | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  // Fetch thread data
   const {
-    data: thread,
-    isLoading: isThreadLoading,
-    error: threadError,
-  } = useQuery<ForumThread>({
-    queryKey: [`/api/threads/id/${threadId}`, currentUser?.id],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/threads/id/${threadId}${currentUser ? `?userId=${currentUser.id}` : ""}`,
-      );
-      if (!response.ok) {
-        throw new Error(`Failed to fetch thread: ${response.statusText}`);
-      }
-      return response.json();
-    },
-    enabled: !!threadId,
-  });
-
-  // Fetch thread replies
-  const {
-    data: replies,
-    isLoading: isRepliesLoading,
-    error: repliesError,
-  } = useQuery<ThreadReply[]>({
-    queryKey: [`/api/threads/${threadId}/replies`],
-    queryFn: async () => {
-      const response = await fetch(`/api/threads/${threadId}/replies`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch replies: ${response.statusText}`);
-      }
-      return response.json();
-    },
-    enabled: !!threadId,
+    thread,
+    isThreadLoading,
+    threadError,
+    displayReplies,
+    isRepliesLoading,
+    repliesError,
+    replyContent,
+    setReplyContent,
+    replyingTo,
+    setReplyingTo,
+    likeThreadMutation,
+    dislikeThreadMutation,
+    pinnedByUserThreadMutation,
+    submitReplyMutation,
+    likeReplyMutation,
+    dislikeReplyMutation,
+    handleQuoteReply,
+    deleteThreadMutation,
+    deleteReplyMutation,
+    handleReplySubmit,
+  } = useThread({ 
+    threadId: threadId || '',
+    userId: currentUser?.id 
   });
 
   // Use the actual data from the API
   const displayThread = thread;
-
-  // Organize replies into a hierarchical structure
-  const [displayReplies, setDisplayReplies] = useState<ThreadReply[]>([]);
-
-  // Process replies to create a proper threaded structure
-  useEffect(() => {
-    if (!replies) return;
-
-    // Create a map of parent IDs to their child replies
-    const replyMap = new Map<string | null, ThreadReply[]>();
-
-    // Create a map of reply IDs to usernames for showing parent info
-    const replyUserMap = new Map<string, string>();
-
-    // Initialize all possible parent IDs with empty arrays
-    replyMap.set(null, []); // Top-level replies have null parentReplyId
-
-    // Group replies by their parent ID and build username map
-    replies.forEach((reply) => {
-      const parentId = reply.parentReplyId || null;
-      if (!replyMap.has(parentId)) {
-        replyMap.set(parentId, []);
-      }
-      replyMap.get(parentId)!.push(reply);
-
-      // Store the username for this reply ID
-      replyUserMap.set(reply.id.toString(), reply.user.username);
-    });
-
-    // Function to recursively build the reply tree in the correct order
-    const buildReplyTree = (
-      parentId: string | null,
-      level: number = 0,
-    ): ThreadReply[] => {
-      const children = replyMap.get(parentId) || [];
-
-      // Sort replies by creation date (oldest first)
-      const sortedChildren = [...children].sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      );
-
-      // For each child, also include its descendants
-      const result: ThreadReply[] = [];
-
-      for (const child of sortedChildren) {
-        // Add the child itself with its level and parent username if available
-        const parentUsername = child.parentReplyId
-          ? replyUserMap.get(child.parentReplyId)
-          : undefined;
-        const childWithMeta = {
-          ...child,
-          level,
-          parentUsername,
-        };
-        result.push(childWithMeta);
-
-        // Add all of the child's descendants
-        const descendants = buildReplyTree(child.id.toString(), level + 1);
-        result.push(...descendants);
-      }
-
-      return result;
-    };
-
-    // Build the complete threaded structure starting from top-level replies
-    const threadedReplies = buildReplyTree(null);
-    setDisplayReplies(threadedReplies);
-  }, [replies]);
-
-  // Handle liking a thread
-  const likeThreadMutation = useMutation({
-    mutationFn: async () => {
-      if (!currentUser) throw new Error("You must be logged in to like posts");
-
-      const response = await apiRequest(
-        "POST",
-        `/api/threads/${threadId}/like`,
-        {
-          userId: currentUser.id,
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message ||
-            `Error: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      const wasLiked = displayThread?.hasLiked;
-      queryClient.invalidateQueries({
-        queryKey: [`/api/threads/id/${threadId}`],
-      });
-      toast({
-        title: "Success",
-        description: wasLiked ? "You unliked this post" : "You liked this post",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to like post",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle disliking a thread
-  const dislikeThreadMutation = useMutation({
-    mutationFn: async () => {
-      if (!currentUser)
-        throw new Error("You must be logged in to dislike posts");
-
-      const response = await apiRequest(
-        "POST",
-        `/api/threads/${threadId}/dislike`,
-        {
-          userId: currentUser.id,
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message ||
-            `Error: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/threads/id/${threadId}`],
-      });
-      toast({
-        title: "Success",
-        description: "You disliked this post",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to dislike post",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle post of the day
-  const pinnedByUserThreadMutation = useMutation({
-    mutationFn: async () => {
-      if (!currentUser) throw new Error("You must be logged in to pin posts");
-      
-      const response = await apiRequest("POST", `/api/threads/${threadId}/pinned-by-user`, {
-        userId: currentUser.id
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to pin post");
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      // Invalidate queries to refetch thread and related data
-      queryClient.invalidateQueries({ queryKey: [`/api/threads/id/${threadId}`] });
-      toast({
-        title: "Success!",
-        description: "Thread pin status updated.",
-        variant: "success",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to pin post",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle submitting a reply
-  const submitReplyMutation = useMutation({
-    mutationFn: async () => {
-      if (!currentUser) throw new Error("You must be logged in to reply");
-      if (!replyContent.trim()) throw new Error("Reply cannot be empty");
-
-      const response = await apiRequest(
-        "POST",
-        `/api/threads/${threadId}/replies`,
-        {
-          userId: currentUser.id,
-          content: replyContent,
-          parentReplyId: replyingTo?.id || null,
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-
-        // Check for the special upgrade required error
-        if (errorData.error === "UPGRADE_REQUIRED") {
-          throw new Error("UPGRADE_REQUIRED");
-        }
-
-        throw new Error(
-          errorData.message ||
-            `Error: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/threads/${threadId}/replies`],
-      });
-      setReplyContent("");
-      setReplyingTo(null);
-      toast({
-        title: "Success",
-        description: "Your reply has been posted",
-      });
-    },
-    onError: (error: Error) => {
-      // Special handling for the upgrade required error
-      if (error.message === "UPGRADE_REQUIRED") {
-        setShowUpgradeModal(true);
-        return;
-      }
-
-      toast({
-        title: "Error",
-        description: error.message || "Failed to post reply",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle liking a reply
-  const likeReplyMutation = useMutation({
-    mutationFn: async (replyId: number) => {
-      if (!currentUser)
-        throw new Error("You must be logged in to like replies");
-
-      const response = await apiRequest(
-        "POST",
-        `/api/replies/${replyId}/like`,
-        {
-          userId: currentUser.id,
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message ||
-            `Error: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/threads/${threadId}/replies`],
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to like reply",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle disliking a reply
-  const dislikeReplyMutation = useMutation({
-    mutationFn: async (replyId: number) => {
-      if (!currentUser)
-        throw new Error("You must be logged in to dislike replies");
-
-      const response = await apiRequest(
-        "POST",
-        `/api/replies/${replyId}/dislike`,
-        {
-          userId: currentUser.id,
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message ||
-            `Error: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/threads/${threadId}/replies`],
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to dislike reply",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle quoting a reply
-  const handleQuoteReply = (reply: ThreadReply) => {
-    setReplyingTo({
-      id: reply.id.toString(),
-      username: reply.user.username,
-    });
-
-    // Scroll to reply form
-    document
-      .getElementById("reply-form")
-      ?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  // Add delete thread mutation
-  const deleteThreadMutation = useMutation({
-    mutationFn: async () => {
-      if (!currentUser)
-        throw new Error("You must be logged in to delete this thread");
-
-      const response = await apiRequest("DELETE", `/api/threads/${threadId}`, {
-        userId: currentUser.id,
-        role: currentUser.publicMetadata?.role,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message ||
-            `Error: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Thread deleted successfully",
-      });
-      // Redirect to the forum category page
-      setLocation(`/forum/${thread?.categoryId}`);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete thread",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Add delete reply mutation
-  const deleteReplyMutation = useMutation({
-    mutationFn: async (replyId: string) => {
-      if (!currentUser)
-        throw new Error("You must be logged in to delete this reply");
-
-      const response = await apiRequest("DELETE", `/api/replies/${replyId}`, {
-        userId: currentUser.id,
-        role: currentUser.publicMetadata?.role,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message ||
-            `Error: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/threads/${threadId}/replies`],
-      });
-      toast({
-        title: "Success",
-        description: "Reply deleted successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete reply",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle replying to a thread
-  const handleReplySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Don't check plan type locally, just try to submit
-    // and let the server determine access
-    submitReplyMutation.mutate();
-  };
 
   // Function to close modal and navigate to upgrade page
   const handleUpgrade = () => {
@@ -776,11 +340,9 @@ export default function Thread() {
                     key={reply.id}
                     reply={reply}
                     onQuote={handleQuoteReply}
-                    onLike={() => likeReplyMutation.mutate(reply.id)}
-                    onDislike={() => dislikeReplyMutation.mutate(reply.id)}
-                    onDelete={() =>
-                      deleteReplyMutation.mutate(reply.id.toString())
-                    }
+                    onLike={() => likeReplyMutation.mutate(Number(reply.id))}
+                    onDislike={() => dislikeReplyMutation.mutate(Number(reply.id))}
+                    onDelete={() => deleteReplyMutation.mutate(reply.id.toString())}
                   />
                 ))}
               </div>
@@ -1239,17 +801,6 @@ function ReplyCard({
                 </svg>
                 <span className="font-medium">{reply.likesCount}</span>
               </button>
-
-              {/* <button
-                onClick={onDislike}
-                disabled={!currentUser}
-                className="flex items-center text-gray-400 hover:text-red-500 transition"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2" />
-                </svg>
-                <span className="font-medium">{reply.dislikesCount}</span>
-              </button> */}
 
               <button
                 onClick={() => {

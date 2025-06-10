@@ -649,6 +649,7 @@ export default function Thread() {
                   {/* Thread Poll */}
                   {displayThread?.poll && (
                     <ThreadPoll 
+                      key={`poll-${threadId}`}
                       threadId={threadId} 
                       poll={displayThread.poll} 
                     />
@@ -708,8 +709,8 @@ export default function Thread() {
                     {/* Add delete button if user is author or has permission */}
                     {currentUser &&
                       (currentUser.id === displayThread?.userId ||
-                        currentUser.role === "ADMIN" ||
-                        currentUser.role === "MODERATOR") && (
+                        (currentUser.publicMetadata?.role as string) === "ADMIN" ||
+                        (currentUser.publicMetadata?.role as string) === "MODERATOR") && (
                         <button
                           onClick={() => {
                             if (
@@ -973,8 +974,8 @@ export default function Thread() {
               </div>
             )}
 
-            {(currentUser?.role === "ADMIN" ||
-              currentUser?.role === "MODERATOR") && (
+            {(currentUser?.publicMetadata?.role as string === "ADMIN" ||
+              currentUser?.publicMetadata?.role as string === "MODERATOR") && (
               <div className="mt-4 border-t border-gray-800 pt-4">
                 <h3 className="mb-2 text-lg font-bold text-white">
                   Moderation
@@ -1119,8 +1120,8 @@ function ReplyCard({
   const canDeleteReply =
     currentUser &&
     (currentUser.id === reply.userId ||
-      currentUser.role === "ADMIN" ||
-      currentUser.role === "MODERATOR");
+      (currentUser.publicMetadata?.role as string) === "ADMIN" ||
+      (currentUser.publicMetadata?.role as string) === "MODERATOR");
 
   return (
     <div

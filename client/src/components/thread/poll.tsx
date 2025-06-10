@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo, memo } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -27,51 +27,57 @@ function PollSkeleton() {
   );
 }
 
-export default function ThreadPoll({ threadId, poll }: ThreadPollProps) {
+function ThreadPoll({ threadId, poll }: ThreadPollProps) {
   const { user: currentUser } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [hasVoted, setHasVoted] = useState(false);
   const [userVotedOption, setUserVotedOption] = useState<string | null>(null);
-  const [isCheckingVote, setIsCheckingVote] = useState(true);
-  const isPollExpired = new Date() > new Date(poll.expiresAt);
+  const isPollExpired = useMemo(() => new Date() > new Date(poll.expiresAt), [poll.expiresAt]);
   
-  // Check if user has already voted by checking with the backend
-  useEffect(() => {
-    if (!currentUser || !poll) {
-      setIsCheckingVote(false);
-      return;
-    }
-    
-    // Function to check if user has voted on this poll
-    const checkUserVote = async () => {
-      setIsCheckingVote(true);
-      try {
-        // Use a GET request to check voting status instead of attempting to vote
-        const response = await apiRequest(
-          "GET",
-          `/api/threads/${threadId}/poll/check-vote?userId=${currentUser.id}`,
-          null
-        );
-        
-        const data = await response.json();
-        
-        // If the user has voted, set the state accordingly
-        if (response.ok && data.hasVoted) {
-          setHasVoted(true);
-          if (data.votedOptionId) {
-            setUserVotedOption(data.votedOptionId);
-          }
-        }
-      } catch (error) {
-        console.error("Error checking vote status:", error);
-      } finally {
-        setIsCheckingVote(false);
+  // Memoize the userId to prevent unnecessary effect runs
+  const userId = currentUser?.id;
+
+  // Use React Query to check if user has voted - this will handle caching automatically
+  const { 
+    isLoading: isCheckingVote,
+    data: voteData 
+  } = useQuery({
+    queryKey: [`thread-poll-vote-check-${threadId}-${userId}`],
+    queryFn: async () => {
+      if (!userId) return { hasVoted: false, votedOptionId: null };
+      
+      const response = await apiRequest(
+        "GET",
+        `/api/threads/${threadId}/poll/check-vote?userId=${userId}`,
+        null
+      );
+      
+      if (!response.ok) {
+        throw new Error("Failed to check vote status");
       }
-    };
-    
-    checkUserVote();
-  }, [currentUser, poll, threadId]);
+      
+      return response.json();
+    },
+    // Only run this query if we have a userId
+    enabled: !!userId,
+    // Don't refetch on window focus or other automatic triggers
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    // Cache the result for 5 minutes
+    staleTime: 5 * 60 * 1000,
+    // Don't retry on failure
+    retry: false,
+  });
+  
+  // Update local state when vote data changes
+  useEffect(() => {
+    if (voteData) {
+      setHasVoted(voteData.hasVoted || false);
+      setUserVotedOption(voteData.votedOptionId || null);
+    }
+  }, [voteData]);
 
   // Handle poll vote
   const submitPollVoteMutation = useMutation({
@@ -130,9 +136,18 @@ export default function ThreadPoll({ threadId, poll }: ThreadPollProps) {
     onSuccess: (data, optionId) => {
       setHasVoted(true);
       setUserVotedOption(optionId);
+      
+      // Invalidate queries to update data
       queryClient.invalidateQueries({
         queryKey: [`/api/threads/id/${threadId}`],
       });
+      
+      // Also update the vote check query cache directly
+      queryClient.setQueryData(
+        [`thread-poll-vote-check-${threadId}-${userId}`], 
+        { hasVoted: true, votedOptionId: optionId }
+      );
+      
       toast({
         title: "Success",
         description: "Your vote has been recorded",
@@ -142,6 +157,13 @@ export default function ThreadPoll({ threadId, poll }: ThreadPollProps) {
       // If the error message contains "already voted", it means the user has voted
       if (error.message.includes("already voted")) {
         setHasVoted(true);
+        
+        // Update the vote check query cache
+        queryClient.setQueryData(
+          [`thread-poll-vote-check-${threadId}-${userId}`], 
+          { hasVoted: true }
+        );
+        
         toast({
           title: "Already voted",
           description: "You have already voted on this poll",
@@ -157,7 +179,12 @@ export default function ThreadPoll({ threadId, poll }: ThreadPollProps) {
     },
   });
 
-  const shouldShowResults = hasVoted || isPollExpired || !currentUser;
+  // Memoize these calculations to avoid re-renders
+  const shouldShowResults = useMemo(
+    () => hasVoted || isPollExpired || !currentUser, 
+    [hasVoted, isPollExpired, currentUser]
+  );
+  
   const isLoading = isCheckingVote || submitPollVoteMutation.isPending;
   
   if (isLoading) {
@@ -188,9 +215,7 @@ export default function ThreadPoll({ threadId, poll }: ThreadPollProps) {
                       className={`flex flex-col justify-center whitespace-nowrap text-center text-white shadow-none ${
                         option.id === userVotedOption 
                           ? "bg-[#f5c518]" // Gold for user's vote
-                          : Number(option.id.charAt(option.id.length - 1)) % 2 === 0 
-                            ? "bg-blue-500" 
-                            : "bg-green-500" // Green instead of red
+                          : "bg-blue-500" 
                       }`}
                     />
                   </div>
@@ -235,3 +260,6 @@ export default function ThreadPoll({ threadId, poll }: ThreadPollProps) {
     </div>
   );
 }
+
+// Use memo to prevent unnecessary re-renders
+export default memo(ThreadPoll);

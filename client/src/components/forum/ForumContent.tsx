@@ -18,6 +18,7 @@ export default function ForumContent({
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef(0);
   
   // Get the current category info
   const currentCategory = FORUM_CATEGORIES.find(cat => cat.id === category) || FORUM_CATEGORIES[0];
@@ -41,13 +42,19 @@ export default function ForumContent({
     initialTimeRange: "all"
   });
 
-  // Scroll to the loading area when new content is loaded
+  // Store current scroll position before loading more
+  const handleLoadMore = () => {
+    // Save current scroll position before loading more
+    scrollPositionRef.current = window.scrollY;
+    loadMore();
+  };
+
+  // Maintain scroll position when new content is loaded
   useEffect(() => {
-    if (page > 0 && allRegularThreads.length > 0 && loadMoreRef.current) {
-      const previousHeight =
-        loadMoreRef.current.offsetTop - window.innerHeight / 2;
+    if (page > 0 && scrollPositionRef.current > 0) {
+      // Restore the previous scroll position
       window.scrollTo({
-        top: previousHeight,
+        top: scrollPositionRef.current,
         behavior: "auto",
       });
     }
@@ -259,7 +266,7 @@ export default function ForumContent({
                   </div>
                 ) : (
                   <button
-                    onClick={loadMore}
+                    onClick={handleLoadMore}
                     className={`rounded-lg bg-gray-800 px-6 py-3 text-sm font-medium text-white transition hover:bg-gray-700 ${!hasMore ? "cursor-not-allowed opacity-50" : ""}`}
                     disabled={!hasMore || isLoading}
                   >

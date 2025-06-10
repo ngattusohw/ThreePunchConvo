@@ -1,11 +1,10 @@
 import React from "react";
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
-import { useUser, useAuth } from "@clerk/clerk-react";
+import { useUser } from "@clerk/clerk-react";
 import ImageUpload from "@/components/ui/image-upload";
+import { useCreatePost } from "@/api";
 
 interface CreatePostModalProps {
   onClose: () => void;
@@ -18,8 +17,6 @@ export default function CreatePostModal({
 }: CreatePostModalProps) {
   const { toast } = useToast();
   const { user } = useUser();
-  const { getToken } = useAuth();
-  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState(categoryId);
@@ -27,124 +24,24 @@ export default function CreatePostModal({
 
   // Image attachment state - now using validated files
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [uploadingImages, setUploadingImages] = useState(false);
-
-  // Upload images to Volume and return URLs
-  const uploadImages = async (files: File[]): Promise<string[]> => {
-    const uploadPromises = files.map(async (file) => {
-      const formData = new FormData();
-      formData.append('image', file);
-      
-      // Get Clerk token for authentication
-      const token = await getToken();
-      
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to upload ${file.name}`);
-      }
-      
-      const data = await response.json();
-      return data.url;
-    });
-    
-    return Promise.all(uploadPromises);
-  };
 
   // Simple poll state
   const [includePoll, setIncludePoll] = useState(false);
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
 
-  // Create new post mutation
-  const createPostMutation = useMutation({
-    mutationFn: async ({
-      title,
-      content,
-      categoryId,
-      poll,
-    }: {
-      title: string;
-      content: string;
-      categoryId: string;
-      poll?: {
-        question: string;
-        options: string[];
-      };
-    }) => {
-      if (!user) {
-        throw new Error("You must be logged in to create a post");
-      }
-
-      // Upload images first if any are selected
-      let mediaUrls: string[] = [];
-      if (selectedImages.length > 0) {
-        setUploadingImages(true);
-        try {
-          mediaUrls = await uploadImages(selectedImages);
-        } finally {
-          setUploadingImages(false);
-        }
-      }
-
-      // Create media objects for the post
-      const media = mediaUrls.map(url => ({
-        type: 'IMAGE',
-        url: url
-      }));
-
-      const response = await apiRequest("POST", "/api/threads", {
-        title,
-        content,
-        categoryId,
-        userId: user.id,
-        poll: includePoll ? poll : undefined,
-        media: media.length > 0 ? media : undefined,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        if (errorData.error === "UPGRADE_REQUIRED") {
-          throw errorData; // Throw the complete error object
-        }
-        throw new Error(errorData.message || "Failed to create post");
-      }
-
-      return response.json();
-    },
+  // Use the new custom hook
+  const { 
+    createPost, 
+    isPending, 
+    isUploading 
+  } = useCreatePost({
     onSuccess: () => {
-      // Invalidate the threads query to refetch the thread list
-      queryClient.invalidateQueries({ queryKey: [`/api/threads/${category}`] });
-
-      toast({
-        title: "Success!",
-        description: "Your post has been created.",
-        variant: "default",
-      });
       onClose();
     },
-    onError: (error: any) => {
-      // Direct check for UPGRADE_REQUIRED error object
-      if (error && error.error === "UPGRADE_REQUIRED") {
-        // Show the upgrade modal
-        setShowUpgradeModal(true);
-        return;
-      }
-
-      // Show a regular error toast for other errors
-      toast({
-        title: "Error",
-        description:
-          error.message || "Failed to create post. Please try again.",
-        variant: "destructive",
-      });
-    },
+    onUpgradeRequired: () => {
+      setShowUpgradeModal(true);
+    }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -188,7 +85,7 @@ export default function CreatePostModal({
         return;
       }
 
-      createPostMutation.mutate({
+      createPost({
         title,
         content,
         categoryId: category,
@@ -196,12 +93,14 @@ export default function CreatePostModal({
           question: pollQuestion,
           options: validOptions,
         },
+        selectedImages,
       });
     } else {
-      createPostMutation.mutate({
+      createPost({
         title,
         content,
         categoryId: category,
+        selectedImages,
       });
     }
   };
@@ -568,10 +467,10 @@ export default function CreatePostModal({
                 </button>
                 <button
                   type="submit"
-                  disabled={createPostMutation.isPending || uploadingImages}
-                  className={`bg-ufc-blue hover:bg-ufc-blue-dark rounded-lg px-4 py-2 text-sm text-black transition ${createPostMutation.isPending || uploadingImages ? "cursor-not-allowed opacity-70" : ""}`}
+                  disabled={isPending || isUploading}
+                  className={`bg-ufc-blue hover:bg-ufc-blue-dark rounded-lg px-4 py-2 text-sm text-black transition ${isPending || isUploading ? "cursor-not-allowed opacity-70" : ""}`}
                 >
-                  {uploadingImages ? (
+                  {isUploading ? (
                     <span className="flex items-center">
                       <svg
                         className="-ml-1 mr-2 h-4 w-4 animate-spin text-white"
@@ -595,7 +494,7 @@ export default function CreatePostModal({
                       </svg>
                       Uploading Images...
                     </span>
-                  ) : createPostMutation.isPending ? (
+                  ) : isPending ? (
                     <span className="flex items-center">
                       <svg
                         className="-ml-1 mr-2 h-4 w-4 animate-spin text-white"

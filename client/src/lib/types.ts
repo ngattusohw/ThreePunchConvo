@@ -1,5 +1,5 @@
 // User related types
-export type UserRole = "ADMIN" | "MODERATOR" | "PRO" | "USER" | "PREMIUM_USER";
+export type UserRole = "ADMIN" | "MODERATOR" | "PRO" | "USER" | "PREMIUM_USER" | "FIGHTER";
 export type UserStatus =
   | "HALL OF FAMER"
   | "CHAMPION"

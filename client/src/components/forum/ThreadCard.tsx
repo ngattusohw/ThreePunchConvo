@@ -17,6 +17,13 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
     ? "border-ufc-blue"
     : "";
 
+  // Get user status rank for display below avatar
+  const userRank = thread.user?.status || "";
+  
+  // Check if the user is not a fighter (role is not "FIGHTER")
+  // Since the UserRole type doesn't include "FIGHTER", we need to check differently
+  const isFighter = thread.user?.role === "FIGHTER";
+
   return (
     <div
       className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} overflow-hidden rounded-lg shadow-lg transition hover:shadow-xl`}
@@ -24,8 +31,15 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
       <div className="p-4">
         <div className="flex items-start">
           {/* User Avatar */}
-          <div className="mr-3 flex-shrink-0">
+          <div className="mr-3 flex-shrink-0 flex flex-col items-center">
             <UserAvatar user={thread.user} size="md" />
+            {userRank && (
+              <span className="mt-1 text-xs text-gray-400 text-center">
+                {userRank.length > 10 
+                  ? userRank.substring(0, 8) + "..." 
+                  : userRank}
+              </span>
+            )}
           </div>
 
           {/* Thread Content */}
@@ -77,6 +91,13 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
               <span className="font-medium text-white">
                 {thread.user?.username || "Unknown User"}
               </span>
+              
+              {thread.user?.rank !== undefined && !isFighter && (
+                <span className="ml-2 text-sm text-ufc-blue font-medium">
+                  FC: {thread.user.rank.toFixed(2)}
+                </span>
+              )}
+              
               <span className="ml-2 text-sm text-gray-400">
                 · {formatDate(thread.createdAt)}
               </span>

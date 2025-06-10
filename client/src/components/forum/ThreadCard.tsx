@@ -1,11 +1,10 @@
+import React from "react";
 import { Link } from "wouter";
 import { ForumThread } from "@/lib/types";
 import { formatDate, truncateText } from "@/lib/utils";
-import { TbPinnedFilled } from "react-icons/tb";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
 import MediaPreview from "@/components/ui/media-preview";
-import React from "react";
 
 interface ThreadCardProps {
   thread: ForumThread;

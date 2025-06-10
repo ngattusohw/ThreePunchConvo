@@ -4,6 +4,7 @@ import { formatDate, truncateText } from "@/lib/utils";
 import { TbPinnedFilled } from "react-icons/tb";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
+import MediaPreview from "@/components/ui/media-preview";
 import React from "react";
 
 interface ThreadCardProps {
@@ -119,7 +120,7 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                         <div className="flex h-2 overflow-hidden rounded bg-gray-700 text-xs">
                           <div
                             style={{ width: `${percentage}%` }}
-                            className={`flex flex-col justify-center whitespace-nowrap text-center text-white shadow-none ${option.id % 2 === 0 ? "bg-blue-500" : "bg-red-500"}`}
+                            className={`flex flex-col justify-center whitespace-nowrap text-center text-white shadow-none ${Number(option.id) % 2 === 0 ? "bg-blue-500" : "bg-red-500"}`}
                           />
                         </div>
                       </div>
@@ -148,11 +149,18 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
             {/* Thread Media Preview */}
             {thread.media && thread.media.length > 0 && (
               <div className="mb-4 overflow-hidden rounded-lg">
-                <img
-                  src={thread.media[0].url}
-                  alt={`Media for ${thread.title}`}
-                  className="h-48 w-full object-cover"
+                <MediaPreview 
+                  media={thread.media[0]} 
+                  threadTitle={thread.title}
                 />
+                {thread.media.length > 1 && (
+                  <div className="mt-2 text-sm text-gray-400 flex items-center">
+                    <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    +{thread.media.length - 1} more {thread.media.length === 2 ? 'image' : 'images'}
+                  </div>
+                )}
               </div>
             )}
 

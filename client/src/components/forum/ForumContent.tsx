@@ -4,7 +4,7 @@ import { FORUM_CATEGORIES } from "@/lib/constants";
 import CreatePostModal from "@/components/forum/CreatePostModal";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
 import { dark } from "@clerk/themes";
-import { useThreads } from "@/api/hooks/useThreads";
+import { useThreadsList } from "@/api/hooks/threads";
 
 interface ForumContentProps {
   category?: string;
@@ -34,7 +34,7 @@ export default function ForumContent({
     timeRange,
     handleFilterChange,
     handleTimeRangeChange
-  } = useThreads({
+  } = useThreadsList({
     category,
     initialFilterOption: "recent",
     initialTimeRange: "all"

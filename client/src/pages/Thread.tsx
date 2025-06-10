@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
-import { ForumThread, ThreadReply } from "@/lib/types";
+import { ThreadReply } from "@/lib/types";
 import { useUser } from "@clerk/clerk-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
-import { useThread } from "@/api";
+import { useThreadData, useThreadReplies, useThreadActions } from "@/api/hooks/threads";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
 import { FORUM_CATEGORIES } from "@/lib/constants";
@@ -15,32 +15,44 @@ export default function Thread() {
   const { user: currentUser } = useUser();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const {
     thread,
     isThreadLoading,
     threadError,
-    displayReplies,
     isRepliesLoading,
     repliesError,
+    displayReplies,
+  } = useThreadData({ 
+    threadId: threadId || '',
+    userId: currentUser?.id 
+  });
+  
+  const {
     replyContent,
     setReplyContent,
     replyingTo,
     setReplyingTo,
-    likeThreadMutation,
-    dislikeThreadMutation,
-    pinnedByUserThreadMutation,
+    showUpgradeModal,
+    setShowUpgradeModal,
     submitReplyMutation,
     likeReplyMutation,
     dislikeReplyMutation,
-    handleQuoteReply,
-    deleteThreadMutation,
     deleteReplyMutation,
+    handleQuoteReply,
     handleReplySubmit,
-  } = useThread({ 
+  } = useThreadReplies({
     threadId: threadId || '',
-    userId: currentUser?.id 
+    userId: currentUser?.id
+  });
+  
+  const {
+    likeThreadMutation,
+    pinnedByUserThreadMutation,
+    deleteThreadMutation
+  } = useThreadActions({
+    threadId: threadId || '',
+    userId: currentUser?.id
   });
 
   // Use the actual data from the API
@@ -282,7 +294,7 @@ export default function Thread() {
                                 "Are you sure you want to delete this thread? This action cannot be undone.",
                               )
                             ) {
-                              deleteThreadMutation.mutate();
+                              deleteThreadMutation.mutate(currentUser?.publicMetadata?.role as string);
                             }
                           }}
                           className="ml-auto flex items-center text-gray-400 transition hover:text-red-500"

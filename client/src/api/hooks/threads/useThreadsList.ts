@@ -1,21 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ForumThread } from '@/lib/types';
-import { fetchPinnedThreads, fetchRegularThreads } from '../queries/thread';
+import { fetchPinnedThreads, fetchRegularThreads } from '../../queries/thread';
 
-interface UseThreadsOptions {
+interface UseThreadsListOptions {
   category: string;
   initialFilterOption?: "recent" | "popular" | "new";
   initialTimeRange?: "all" | "week" | "month" | "year";
   limit?: number;
 }
 
-export function useThreads({
+export function useThreadsList({
   category,
   initialFilterOption = "recent",
   initialTimeRange = "all",
   limit = 10
-}: UseThreadsOptions) {
+}: UseThreadsListOptions) {
   const [filterOption, setFilterOption] = useState<"recent" | "popular" | "new">(initialFilterOption);
   const [timeRange, setTimeRange] = useState<"all" | "week" | "month" | "year">(initialTimeRange);
   const [page, setPage] = useState(0);

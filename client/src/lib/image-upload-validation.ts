@@ -20,9 +20,9 @@ export interface ImageValidationResult {
 
 // Default rules for forum thread images
 export const DEFAULT_IMAGE_RULES: ImageUploadRules = {
-  maxFileSize: 10 * 1024 * 1024, // 10MB
-  maxWidth: 4096,
-  maxHeight: 4096,
+  maxFileSize: 25 * 1024 * 1024, // 25MB (increased from 10MB for iPhone photos)
+  maxWidth: 6000, // Increased from 4096 to handle iPhone photos (up to 4032x3024 and beyond)
+  maxHeight: 6000, // Increased from 4096 to handle iPhone photos
   minWidth: 50,
   minHeight: 50,
   allowedFormats: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
@@ -192,8 +192,8 @@ function formatFileSize(bytes: number): string {
  */
 export async function compressImageIfNeeded(
   file: File, 
-  maxWidth: number = 1920, 
-  maxHeight: number = 1080, 
+  maxWidth: number = 1920, // Good balance for web display
+  maxHeight: number = 1920, // Made square to handle both orientations
   quality: number = 0.8
 ): Promise<File> {
   return new Promise((resolve, reject) => {
@@ -204,19 +204,31 @@ export async function compressImageIfNeeded(
     img.onload = () => {
       const { width, height } = img;
       
+      // For very large images (like iPhone photos), be more aggressive
+      let targetMaxWidth = maxWidth;
+      let targetMaxHeight = maxHeight;
+      let targetQuality = quality;
+      
+      // If it's a very large image (likely from phone), use more aggressive compression
+      if (width > 3000 || height > 3000) {
+        targetMaxWidth = Math.min(maxWidth, 1920);
+        targetMaxHeight = Math.min(maxHeight, 1920);
+        targetQuality = 0.7; // Lower quality for very large images
+      }
+      
       // Calculate new dimensions while maintaining aspect ratio
       let newWidth = width;
       let newHeight = height;
       
-      if (width > maxWidth || height > maxHeight) {
+      if (width > targetMaxWidth || height > targetMaxHeight) {
         const aspectRatio = width / height;
         
         if (width > height) {
-          newWidth = maxWidth;
-          newHeight = maxWidth / aspectRatio;
+          newWidth = targetMaxWidth;
+          newHeight = targetMaxWidth / aspectRatio;
         } else {
-          newHeight = maxHeight;
-          newWidth = maxHeight * aspectRatio;
+          newHeight = targetMaxHeight;
+          newWidth = targetMaxHeight * aspectRatio;
         }
       }
       
@@ -233,13 +245,17 @@ export async function compressImageIfNeeded(
               type: file.type,
               lastModified: Date.now()
             });
+            
+            console.log(`Compressed ${file.name}: ${Math.round(file.size / 1024)}KB → ${Math.round(blob.size / 1024)}KB`);
+            console.log(`Resized from ${width}×${height} to ${newWidth}×${newHeight}`);
+            
             resolve(compressedFile);
           } else {
             reject(new Error('Failed to compress image'));
           }
         },
         file.type,
-        quality
+        targetQuality
       );
     };
     

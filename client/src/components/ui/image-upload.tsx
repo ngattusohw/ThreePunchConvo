@@ -36,7 +36,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     handleFileSelection
   } = useImageUpload({
     rules: uploadRules,
-    autoCompress: false,
+    autoCompress: true,
     onValidationComplete: (results) => {
       console.log('Validation completed:', results);
     },

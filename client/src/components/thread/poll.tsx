@@ -1,7 +1,5 @@
-import { useState, useEffect, useRef, useMemo, memo } from "react";
+import { useEffect, useMemo, memo } from "react";
 import { useUser } from "@clerk/clerk-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
 import { Poll } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useCheckPollVote, usePollVote } from "@/api/hooks/usePoll";
@@ -29,10 +27,6 @@ function PollSkeleton() {
 
 function ThreadPoll({ threadId, poll }: ThreadPollProps) {
   const { user: currentUser } = useUser();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [hasVoted, setHasVoted] = useState(false);
-  const [userVotedOption, setUserVotedOption] = useState<string | null>(null);
   const isPollExpired = useMemo(() => new Date() > new Date(poll.expiresAt), [poll.expiresAt]);
   
   // Memoize the userId to prevent unnecessary effect runs
@@ -44,58 +38,23 @@ function ThreadPoll({ threadId, poll }: ThreadPollProps) {
     data: voteData 
   } = useCheckPollVote(threadId, userId);
   
+  // Use the enhanced poll vote hook
+  const {
+    isPending,
+    hasVoted,
+    userVotedOption,
+    setHasVoted,
+    setUserVotedOption,
+    handleVote
+  } = usePollVote(threadId);
+
   // Update local state when vote data changes
   useEffect(() => {
     if (voteData) {
       setHasVoted(voteData.hasVoted || false);
       setUserVotedOption(voteData.votedOptionId || null);
     }
-  }, [voteData]);
-
-  // Use the extracted hook to handle poll voting
-  const submitPollVoteMutation = usePollVote(threadId);
-  
-  // Add custom callbacks for the poll vote
-  const handleVote = (optionId: string) => {
-    submitPollVoteMutation.mutate(
-      { optionId, currentUser },
-      {
-        onSuccess: () => {
-          setHasVoted(true);
-          setUserVotedOption(optionId);
-          
-          toast({
-            title: "Success",
-            description: "Your vote has been recorded",
-          });
-        },
-        onError: (error: Error) => {
-          // If the error message contains "already voted", it means the user has voted
-          if (error.message.includes("already voted")) {
-            setHasVoted(true);
-            
-            // Update the vote check query cache
-            queryClient.setQueryData(
-              [`thread-poll-vote-check-${threadId}-${userId}`], 
-              { hasVoted: true }
-            );
-            
-            toast({
-              title: "Already voted",
-              description: "You have already voted on this poll",
-            });
-          } else {
-            console.error("Vote error:", error);
-            toast({
-              title: "Error",
-              description: error.message || "Failed to record vote",
-              variant: "destructive",
-            });
-          }
-        }
-      }
-    );
-  };
+  }, [voteData, setHasVoted, setUserVotedOption]);
 
   // Memoize these calculations to avoid re-renders
   const shouldShowResults = useMemo(
@@ -103,7 +62,7 @@ function ThreadPoll({ threadId, poll }: ThreadPollProps) {
     [hasVoted, isPollExpired, currentUser]
   );
   
-  const isLoading = isCheckingVote || submitPollVoteMutation.isPending;
+  const isLoading = isCheckingVote || isPending;
   
   if (isLoading) {
     return <PollSkeleton />;
@@ -141,8 +100,8 @@ function ThreadPoll({ threadId, poll }: ThreadPollProps) {
               ) : (
                 // Show voting buttons - using a custom button instead of the Button component
                 <button
-                  onClick={() => handleVote(option.id)}
-                  disabled={submitPollVoteMutation.isPending}
+                  onClick={() => handleVote(option.id, currentUser)}
+                  disabled={isPending}
                   className={cn(
                     "w-full mb-2 py-2 px-4 rounded-md text-left",
                     "bg-gray-700 text-white font-medium",

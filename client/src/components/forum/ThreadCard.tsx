@@ -10,6 +10,28 @@ interface ThreadCardProps {
   thread: ForumThread;
 }
 
+// Function to determine status color based on user status
+const getStatusColorClass = (status: string): string => {
+  switch (status) {
+    case "HALL OF FAMER":
+      return "text-amber-300"; // Gold for hall of famers
+    case "CHAMPION":
+      return "text-purple-400"; // Purple for champions
+    case "CONTENDER":
+      return "text-red-400"; // Red for contenders
+    case "RANKED POSTER":
+      return "text-orange-400"; // Orange for ranked posters
+    case "COMPETITOR":
+      return "text-green-400"; // Green for competitors
+    case "REGIONAL POSTER":
+      return "text-blue-400"; // Blue for regional posters
+    case "AMATEUR":
+      return "text-cyan-400"; // Cyan for amateurs
+    default:
+      return "text-gray-400"; // Gray as fallback
+  }
+};
+
 export default function ThreadCard({ thread }: ThreadCardProps) {
   const borderColor = thread.isPinned
     ? "border-ufc-gold"
@@ -23,6 +45,9 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
   // Check if the user is not a fighter (role is not "FIGHTER")
   // Since the UserRole type doesn't include "FIGHTER", we need to check differently
   const isFighter = thread.user?.role === "FIGHTER";
+    
+  // Get the appropriate status color class
+  const statusColorClass = userRank ? getStatusColorClass(userRank) : "text-gray-400";
 
   return (
     <div
@@ -34,7 +59,7 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
             <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
           </svg>
-          <span>PINNED</span>
+          <span className="hidden md:inline">PINNED</span>
         </span>
       )}
       <div className="p-4">
@@ -43,7 +68,7 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
           <div className="mr-3 flex-shrink-0 flex flex-col items-center">
             <UserAvatar user={thread.user} size="md" />
             {userRank && (
-              <span className="mt-1 text-xs text-gray-400 text-center">
+              <span className={`mt-1 text-xs ${statusColorClass} text-center`}>
                 {userRank.length > 10 
                   ? userRank.substring(0, 8) + "..." 
                   : userRank}
@@ -53,7 +78,7 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
 
           {/* Thread Content */}
           <div className="flex-grow">
-            <div className="flex items-center mb-1 flex-wrap">
+            <div className="flex items-center mb-1 flex-wrap gap-2">
               {thread.user?.role === "FIGHTER" && (
                 <span className="mr-2 flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-black">
                   <svg
@@ -64,7 +89,7 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                   >
                     <path
                       fillRule="evenodd"
-                      d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723a3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                       clipRule="evenodd"
                     />
                   </svg>
@@ -85,17 +110,27 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
               )}
 
               <span className="font-medium text-white">
-                {thread.user?.username || "Unknown User"}
+                <span className="md:hidden">
+                  {thread.user?.username && thread.user.username.length > 15 
+                    ? thread.user.username.substring(0, 13) + "..." 
+                    : thread.user?.username || "Unknown User"}
+                </span>
+                <span className="hidden md:inline">
+                  {thread.user?.username || "Unknown User"}
+                </span>
               </span>
               
               {thread.user?.rank !== undefined && !isFighter && (
-                <span className="ml-2 text-sm text-ufc-blue font-medium">
-                  FC: {thread.user.rank.toFixed(2)}
-                </span>
+                  <div className="bg-gradient-to-br from-orange-500 to-orange-400 text-white text-xs font-bold px-2 py-1 rounded-xl inline-flex items-center gap-1 shadow-lg shadow-orange-500/30">
+                        <div className="w-3 h-3 bg-white rounded-full inline-block">
+
+                        </div>
+                        FC: {thread.user.rank}
+                  </div>
               )}
               
-              <span className="ml-2 text-sm text-gray-400">
-                · {formatDate(thread.createdAt)}
+              <span className="text-sm text-gray-400">
+            · {formatDate(thread.createdAt)}
               </span>
             </div>
 

@@ -7,9 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 interface UseCreatePostOptions {
   onSuccess?: () => void;
   onUpgradeRequired?: () => void;
+  categoryId: string;
 }
 
-export function useCreatePost({ onSuccess, onUpgradeRequired }: UseCreatePostOptions = {}) {
+export function useCreatePost({ onSuccess, onUpgradeRequired, categoryId }: UseCreatePostOptions) {
   const { toast } = useToast();
   const { user } = useUser();
   const { getToken } = useAuth();
@@ -70,8 +71,16 @@ export function useCreatePost({ onSuccess, onUpgradeRequired }: UseCreatePostOpt
       return createThread(params);
     },
     onSuccess: () => {
-      // Invalidate the threads query to refetch the thread list
-      queryClient.invalidateQueries({ queryKey: ["**/api/threads/**"] });
+      // Invalidate the specific thread queries to refetch the thread list
+      // Invalidate pinned threads query
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/threads/${categoryId}`, 'pinned'] 
+      });
+      
+      // Invalidate regular threads queries for this category - all filter options
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/threads/${categoryId}`] 
+      });
 
       toast({
         title: "Success!",

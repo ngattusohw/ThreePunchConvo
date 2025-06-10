@@ -41,7 +41,8 @@ export default function CreatePostModal({
     },
     onUpgradeRequired: () => {
       setShowUpgradeModal(true);
-    }
+    },
+    categoryId: category
   });
 
   const handleSubmit = (e: React.FormEvent) => {

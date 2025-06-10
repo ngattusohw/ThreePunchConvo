@@ -5,6 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useAuth } from "@clerk/clerk-react";
+import ImageUpload from "@/components/ui/image-upload";
 
 interface CreatePostModalProps {
   onClose: () => void;
@@ -24,7 +25,7 @@ export default function CreatePostModal({
   const [category, setCategory] = useState(categoryId);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  // Image attachment state
+  // Image attachment state - now using validated files
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
 
@@ -230,6 +231,11 @@ export default function CreatePostModal({
     }, 100);
   };
 
+  const handleImageSelection = (validatedFiles: File[]) => {
+    // Replace existing image with new one (since limit is now 1)
+    setSelectedImages(validatedFiles);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       {showUpgradeModal ? (
@@ -357,11 +363,24 @@ export default function CreatePostModal({
                 />
               </div>
 
+              {/* Image Upload Section */}
+              <div className="mb-4">
+                <label className="mb-2 block font-medium text-gray-300">
+                  Image (Optional)
+                </label>
+                <ImageUpload
+                  onFilesSelected={handleImageSelection}
+                  multiple={false}
+                  variant="default"
+                  className="w-full"
+                />
+              </div>
+
               {/* Image Preview Section */}
               {selectedImages.length > 0 && (
                 <div className="mb-4">
                   <label className="mb-2 block font-medium text-gray-300">
-                    Selected Images ({selectedImages.length}/5)
+                    Selected Image
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {selectedImages.map((file, index) => (
@@ -374,7 +393,7 @@ export default function CreatePostModal({
                         <button
                           type="button"
                           onClick={() => {
-                            setSelectedImages(prev => prev.filter((_, i) => i !== index));
+                            setSelectedImages([]);
                           }}
                           className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
                         >
@@ -387,6 +406,28 @@ export default function CreatePostModal({
                   </div>
                 </div>
               )}
+
+              {/* Fallback simple upload for debugging */}
+              <div className="mt-2">
+                <button 
+                  type="button" 
+                  onClick={() => document.getElementById('simple-image-upload')?.click()}
+                  className="text-sm text-gray-400 hover:text-white underline"
+                >
+                  Or use simple upload (fallback)
+                </button>
+                <input
+                  id="simple-image-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    console.log('Simple upload files:', files.length);
+                    setSelectedImages(files.slice(0, 1));
+                  }}
+                />
+              </div>
 
               {includePoll && (
                 <div className="mb-4 rounded-lg bg-gray-800 p-4">
@@ -490,36 +531,6 @@ export default function CreatePostModal({
 
               <div className="mb-4">
                 <div className="flex space-x-4">
-                  <button 
-                    type="button" 
-                    onClick={() => document.getElementById('image-upload')?.click()}
-                    className="flex items-center text-gray-300 hover:text-white"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Add Image ({selectedImages.length})
-                  </button>
-
-                  <input
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      setSelectedImages(prev => [...prev, ...files].slice(0, 5)); // Max 5 images
-                    }}
-                  />
-
-                  {/* <button type="button" className="flex items-center text-gray-300 hover:text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Add Emoji
-                  </button> */}
-
                   <button
                     type="button"
                     onClick={() => setIncludePoll(!includePoll)}

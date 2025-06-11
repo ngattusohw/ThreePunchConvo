@@ -1,7 +1,9 @@
 import { useParams } from "wouter";
+import { useState, useEffect } from "react";
 import ForumCategories from "@/components/forum/ForumCategories";
 import ForumContent from "@/components/forum/ForumContent";
 import TopUsersSidebar from "@/components/sidebar/TopUsersSidebar";
+import CreatePostModal from "@/components/forum/CreatePostModal";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 
 export default function Forum() {
@@ -13,6 +15,60 @@ export default function Forum() {
   const isValidCategory = FORUM_CATEGORIES.some((cat) => cat.id === categoryId);
   const validCategoryId = isValidCategory ? categoryId : "general";
 
+  // Persistent modal state that survives component re-renders
+  const [createPostModalOpen, setCreatePostModalOpen] = useState(() => {
+    // Initialize from sessionStorage to persist across re-renders
+    try {
+      return sessionStorage.getItem('createPostModalOpen') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Persist modal state to sessionStorage whenever it changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('createPostModalOpen', createPostModalOpen.toString());
+    } catch (error) {
+      console.warn('Failed to save modal state to sessionStorage:', error);
+    }
+  }, [createPostModalOpen]);
+
+  // Clear modal state on page unload to prevent stale state
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      try {
+        sessionStorage.removeItem('createPostModalOpen');
+      } catch (error) {
+        console.warn('Failed to clear modal state from sessionStorage:', error);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  const openModal = () => {
+    console.log('Opening modal from Forum page');
+    setCreatePostModalOpen(true);
+  };
+
+  const closeModal = () => {
+    console.log('Closing modal from Forum page');
+    setCreatePostModalOpen(false);
+  };
+
+  console.log('Forum page rendered, category:', validCategoryId, 'modal open:', createPostModalOpen);
+
+  // Debug: Track what's causing Forum re-renders
+  useEffect(() => {
+    console.log('Forum component mounted or categoryId changed:', categoryId);
+  }, [categoryId]);
+
+  useEffect(() => {
+    console.log('Forum params changed:', params);
+  }, [params]);
+
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="flex flex-col md:flex-row md:space-x-6">
@@ -20,7 +76,11 @@ export default function Forum() {
         <ForumCategories />
 
         {/* Center - Forum Content */}
-        <ForumContent category={validCategoryId} />
+        <ForumContent 
+          category={validCategoryId} 
+          onOpenModal={openModal}
+          modalOpen={createPostModalOpen}
+        />
 
         {/* Right Sidebar - Schedule and Rankings */}
         <aside className="hidden w-80 flex-shrink-0 space-y-6 xl:block">
@@ -31,6 +91,14 @@ export default function Forum() {
           <TopUsersSidebar />
         </aside>
       </div>
+
+      {/* Modal at page level */}
+      {createPostModalOpen && (
+        <CreatePostModal
+          onClose={closeModal}
+          categoryId={validCategoryId}
+        />
+      )}
     </div>
   );
 }

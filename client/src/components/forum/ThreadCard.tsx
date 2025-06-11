@@ -122,9 +122,10 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
               
               {thread.user?.rank !== undefined && !isFighter && (
                   <div className="bg-gradient-to-br from-orange-500 to-orange-400 text-white text-xs font-bold px-2 py-1 rounded-xl inline-flex items-center gap-1 shadow-lg shadow-orange-500/30">
-                        <div className="w-3 h-3 bg-white rounded-full inline-block">
-
-                        </div>
+                        {/* <div className="w-3 h-3 bg-white rounded-full inline-block">
+                        </div> */}
+                        {/* <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAvklEQVR4nM3SwUqCURCG4aeNuM47cO+ie4hwJYhJV5CEkQVKChFJ66DLcO1VuPQeBMFFi/YJijCLw+H/FdrUBwPDzLxzDuc7/CfVMcQLVljjDY/oFAFnuME7vrA7Epc53DoBpDHJ4deCoWVJfpfD02h8JkPTkryLShFcBqT5PS5+A2/j5a9TeBTNZ3xH9KO2CZt2WGCOpxQ+xwNquEIT1agdFn7E6WP8lPmd62BL7sIs/sVJNdBDG7cYxI3+WHsTQ1Q7qzdMlAAAAABJRU5ErkJggg==" alt="forward-punch"></img> */}
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25"><path d="M18.5 5a5.497 5.497 0 0 1-5.5 5.5 5.49 5.49 0 0 1 5.5 5.5 5.497 5.497 0 0 1 5.5-5.5A5.497 5.497 0 0 1 18.5 5zM6.5 12A5.497 5.497 0 0 1 12 6.5 5.497 5.497 0 0 1 6.5 1 5.497 5.497 0 0 1 1 6.5a5.489 5.489 0 0 1 3.1.95A5.5 5.5 0 0 1 6.5 12zM10.5 13A5.497 5.497 0 0 1 5 18.5a5.49 5.49 0 0 1 5.5 5.5 5.497 5.497 0 0 1 5.5-5.5 5.497 5.497 0 0 1-5.5-5.5z" className="fill:#232326"/></svg>
                         FC: {thread.user.rank}
                   </div>
               )}

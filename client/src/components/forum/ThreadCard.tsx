@@ -122,13 +122,6 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
               
               {thread.user?.rank !== undefined && !isFighter && (
                   <div className="bg-gradient-to-br from-orange-500 to-orange-400 text-white text-xs font-bold px-2 py-1 rounded-xl inline-flex items-center gap-1 shadow-lg shadow-orange-500/30">
-                        {/* <div className="w-3 h-3 bg-white rounded-full inline-block">
-                        </div> */}
-                        {/* <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAvklEQVR4nM3SwUqCURCG4aeNuM47cO+ie4hwJYhJV5CEkQVKChFJ66DLcO1VuPQeBMFFi/YJijCLw+H/FdrUBwPDzLxzDuc7/CfVMcQLVljjDY/oFAFnuME7vrA7Epc53DoBpDHJ4deCoWVJfpfD02h8JkPTkryLShFcBqT5PS5+A2/j5a9TeBTNZ3xH9KO2CZt2WGCOpxQ+xwNquEIT1agdFn7E6WP8lPmd62BL7sIs/sVJNdBDG7cYxI3+WHsTQ1Q7qzdMlAAAAABJRU5ErkJggg==" alt="forward-punch"></img> */}
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="currentColor" class="size-5">
-  <path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
-</svg>
-
                         FC: {thread.user.rank}
                   </div>
               )}

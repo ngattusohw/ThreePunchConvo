@@ -10,6 +10,45 @@ import { useCreatePost } from "@/api";
 const globalFileStorage = new Map<string, File>();
 const TEMP_FILE_KEY = 'createPost_tempFile';
 
+// Reusable form field component (defined outside to prevent recreation)
+const FormField = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="mb-4">
+    <label className="mb-2 block font-medium text-gray-300">{label}</label>
+    {children}
+  </div>
+);
+
+// Action buttons component (defined outside to prevent recreation)
+const ActionButtons = ({ 
+  onClose, 
+  isPending, 
+  isUploading 
+}: { 
+  onClose: () => void; 
+  isPending: boolean; 
+  isUploading: boolean; 
+}) => (
+  <div className="border-t border-gray-800 p-4 flex-shrink-0">
+    <div className="flex justify-end space-x-3">
+      <button
+        type="button"
+        onClick={onClose}
+        className="rounded-lg bg-gray-700 px-4 py-2 text-sm text-white transition hover:bg-gray-600"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        form="create-post-form"
+        disabled={isPending || isUploading}
+        className={`bg-ufc-blue hover:bg-ufc-blue-dark rounded-lg px-4 py-2 text-sm text-black transition ${isPending || isUploading ? "cursor-not-allowed opacity-70" : ""}`}
+      >
+        {isUploading ? "Uploading Images..." : isPending ? "Creating..." : "Create Post"}
+      </button>
+    </div>
+  </div>
+);
+
 interface CreatePostModalProps {
   onClose: () => void;
   categoryId: string;
@@ -250,37 +289,6 @@ export default function CreatePostModal({
       onClose();
     }
   };
-
-  // Reusable input component
-  const FormField = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div className="mb-4">
-      <label className="mb-2 block font-medium text-gray-300">{label}</label>
-      {children}
-    </div>
-  );
-
-  // Action buttons component
-  const ActionButtons = () => (
-    <div className="border-t border-gray-800 p-4 flex-shrink-0">
-      <div className="flex justify-end space-x-3">
-        <button
-          type="button"
-          onClick={handleClose}
-          className="rounded-lg bg-gray-700 px-4 py-2 text-sm text-white transition hover:bg-gray-600"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          form="create-post-form"
-          disabled={isPending || isUploading}
-          className={`bg-ufc-blue hover:bg-ufc-blue-dark rounded-lg px-4 py-2 text-sm text-black transition ${isPending || isUploading ? "cursor-not-allowed opacity-70" : ""}`}
-        >
-          {isUploading ? "Uploading Images..." : isPending ? "Creating..." : "Create Post"}
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <div 
@@ -564,7 +572,7 @@ export default function CreatePostModal({
             </form>
           </div>
 
-          <ActionButtons />
+          <ActionButtons onClose={handleClose} isPending={isPending} isUploading={isUploading} />
         </div>
       )}
     </div>

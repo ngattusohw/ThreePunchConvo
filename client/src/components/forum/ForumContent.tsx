@@ -1,40 +1,23 @@
 import { useState, useEffect, useRef } from "react";
 import ThreadCard from "@/components/forum/ThreadCard";
 import { FORUM_CATEGORIES } from "@/lib/constants";
+import CreatePostModal from "@/components/forum/CreatePostModal";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
 import { dark } from "@clerk/themes";
 import { useThreadsList } from "@/api/hooks/threads";
 
 interface ForumContentProps {
   category?: string;
-  onOpenModal?: () => void;
-  modalOpen?: boolean;
 }
 
 export default function ForumContent({
   category = "general",
-  onOpenModal,
-  modalOpen = false,
 }: ForumContentProps) {
+  const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef(0);
   
-  // Debug: Track when ForumContent re-renders
-  useEffect(() => {
-    console.log('ForumContent re-rendered, modal state:', modalOpen);
-  });
-
-  // Debug: Track modal state changes
-  useEffect(() => {
-    console.log('Modal state changed in ForumContent:', modalOpen);
-  }, [modalOpen]);
-
-  // Debug: Track category changes
-  useEffect(() => {
-    console.log('Category changed in ForumContent:', category);
-  }, [category]);
-
   // Get the current category info
   const currentCategory = FORUM_CATEGORIES.find(cat => cat.id === category) || FORUM_CATEGORIES[0];
   
@@ -75,16 +58,6 @@ export default function ForumContent({
     }
   }, [allRegularThreads, page]);
 
-  // Use parent's modal handler or fallback to console log
-  const handleOpenModal = () => {
-    console.log('Modal open requested in ForumContent');
-    if (onOpenModal) {
-      onOpenModal();
-    } else {
-      console.warn('No onOpenModal handler provided to ForumContent');
-    }
-  };
-
   return (
     <div className="flex-grow">
       {/* Forum Header and Actions */}
@@ -114,7 +87,7 @@ export default function ForumContent({
           </div> */}
           <SignedIn>
             <button
-              onClick={handleOpenModal}
+              onClick={() => setCreatePostModalOpen(true)}
               className="bg-ufc-blue hover:bg-ufc-blue-dark flex flex-shrink-0 items-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-black transition"
             >
               <svg
@@ -306,7 +279,7 @@ export default function ForumContent({
                 No discussions found in this category.
               </p>
               <button
-                onClick={handleOpenModal}
+                onClick={() => setCreatePostModalOpen(true)}
                 className="bg-ufc-blue hover:bg-ufc-blue-dark mt-4 rounded-lg px-6 py-3 text-sm font-medium text-black transition"
               >
                 Start a New Discussion
@@ -314,6 +287,14 @@ export default function ForumContent({
             </div>
           )}
         </div>
+      )}
+
+      {/* Create Post Modal */}
+      {createPostModalOpen && (
+        <CreatePostModal
+          onClose={() => setCreatePostModalOpen(false)}
+          categoryId={category}
+        />
       )}
     </div>
   );

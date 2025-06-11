@@ -46,6 +46,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   });
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
@@ -123,6 +126,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         onChange={handleFileChange}
         className="hidden"
         disabled={disabled}
+        form=""
       />
 
       <div

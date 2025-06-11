@@ -25,110 +25,44 @@ export default function CreatePostModal({
   // Track if the modal is being intentionally closed vs just remounting
   const intentionalCloseRef = useRef(false);
   
-  // Persistent form state that survives component remounts
-  const [title, setTitle] = useState(() => {
-    try {
-      return sessionStorage.getItem('createPost_title') || "";
-    } catch {
-      return "";
-    }
-  });
-  
-  const [content, setContent] = useState(() => {
-    try {
-      return sessionStorage.getItem('createPost_content') || "";
-    } catch {
-      return "";
-    }
-  });
-  
-  const [category, setCategory] = useState(() => {
-    try {
-      return sessionStorage.getItem('createPost_category') || categoryId;
-    } catch {
-      return categoryId;
-    }
-  });
-  
+  // Consolidated form state with automatic persistence
+  const [formData, setFormData] = useState(() => ({
+    title: sessionStorage.getItem('createPost_title') || "",
+    content: sessionStorage.getItem('createPost_content') || "",
+    category: sessionStorage.getItem('createPost_category') || categoryId,
+    includePoll: sessionStorage.getItem('createPost_includePoll') === 'true',
+    pollQuestion: sessionStorage.getItem('createPost_pollQuestion') || "",
+    pollOptions: (() => {
+      try {
+        const saved = sessionStorage.getItem('createPost_pollOptions');
+        return saved ? JSON.parse(saved) : ["", ""];
+      } catch {
+        return ["", ""];
+      }
+    })()
+  }));
+
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-
-  // Image attachment state
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  
-  // Simple poll state with persistence
-  const [includePoll, setIncludePoll] = useState(() => {
-    try {
-      return sessionStorage.getItem('createPost_includePoll') === 'true';
-    } catch {
-      return false;
-    }
-  });
-  
-  const [pollQuestion, setPollQuestion] = useState(() => {
-    try {
-      return sessionStorage.getItem('createPost_pollQuestion') || "";
-    } catch {
-      return "";
-    }
-  });
-  
-  const [pollOptions, setPollOptions] = useState<string[]>(() => {
-    try {
-      const saved = sessionStorage.getItem('createPost_pollOptions');
-      return saved ? JSON.parse(saved) : ["", ""];
-    } catch {
-      return ["", ""];
-    }
-  });
 
-  // Save form state to sessionStorage whenever it changes
+  // Auto-persist form data whenever it changes
   useEffect(() => {
     try {
-      sessionStorage.setItem('createPost_title', title);
+      sessionStorage.setItem('createPost_title', formData.title);
+      sessionStorage.setItem('createPost_content', formData.content);
+      sessionStorage.setItem('createPost_category', formData.category);
+      sessionStorage.setItem('createPost_includePoll', formData.includePoll.toString());
+      sessionStorage.setItem('createPost_pollQuestion', formData.pollQuestion);
+      sessionStorage.setItem('createPost_pollOptions', JSON.stringify(formData.pollOptions));
     } catch (error) {
-      console.warn('Failed to save title to sessionStorage:', error);
+      console.warn('Failed to persist form data:', error);
     }
-  }, [title]);
+  }, [formData]);
 
-  useEffect(() => {
-    try {
-      sessionStorage.setItem('createPost_content', content);
-    } catch (error) {
-      console.warn('Failed to save content to sessionStorage:', error);
-    }
-  }, [content]);
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem('createPost_category', category);
-    } catch (error) {
-      console.warn('Failed to save category to sessionStorage:', error);
-    }
-  }, [category]);
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem('createPost_includePoll', includePoll.toString());
-    } catch (error) {
-      console.warn('Failed to save includePoll to sessionStorage:', error);
-    }
-  }, [includePoll]);
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem('createPost_pollQuestion', pollQuestion);
-    } catch (error) {
-      console.warn('Failed to save pollQuestion to sessionStorage:', error);
-    }
-  }, [pollQuestion]);
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem('createPost_pollOptions', JSON.stringify(pollOptions));
-    } catch (error) {
-      console.warn('Failed to save pollOptions to sessionStorage:', error);
-    }
-  }, [pollOptions]);
+  // Helper to update form data
+  const updateFormData = (updates: Partial<typeof formData>) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+  };
 
   // Clear form data when modal is intentionally closed
   const clearFormData = () => {
@@ -189,13 +123,13 @@ export default function CreatePostModal({
     onUpgradeRequired: () => {
       setShowUpgradeModal(true);
     },
-    categoryId: category
+    categoryId: formData.category
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim()) {
+    if (!formData.title.trim()) {
       toast({
         title: "Error",
         description: "Please enter a title for your post.",
@@ -204,7 +138,7 @@ export default function CreatePostModal({
       return;
     }
 
-    if (!content.trim()) {
+    if (!formData.content.trim()) {
       toast({
         title: "Error",
         description: "Please enter some content for your post.",
@@ -213,8 +147,8 @@ export default function CreatePostModal({
       return;
     }
 
-    if (includePoll) {
-      if (!pollQuestion.trim()) {
+    if (formData.includePoll) {
+      if (!formData.pollQuestion.trim()) {
         toast({
           title: "Error",
           description: "Please enter a question for your poll.",
@@ -223,7 +157,7 @@ export default function CreatePostModal({
         return;
       }
 
-      const validOptions = pollOptions.filter((option) => option.trim());
+      const validOptions = formData.pollOptions.filter((option) => option.trim());
       if (validOptions.length < 2) {
         toast({
           title: "Error",
@@ -234,42 +168,42 @@ export default function CreatePostModal({
       }
 
       createPost({
-        title,
-        content,
-        categoryId: category,
+        title: formData.title,
+        content: formData.content,
+        categoryId: formData.category,
         poll: {
-          question: pollQuestion,
+          question: formData.pollQuestion,
           options: validOptions,
         },
         selectedImages,
       });
     } else {
       createPost({
-        title,
-        content,
-        categoryId: category,
+        title: formData.title,
+        content: formData.content,
+        categoryId: formData.category,
         selectedImages,
       });
     }
   };
 
   const handleAddPollOption = () => {
-    if (pollOptions.length < 6) {
-      setPollOptions([...pollOptions, ""]);
+    if (formData.pollOptions.length < 6) {
+      updateFormData({ pollOptions: [...formData.pollOptions, ""] });
     }
   };
 
   const handlePollOptionChange = (index: number, value: string) => {
-    const newOptions = [...pollOptions];
+    const newOptions = [...formData.pollOptions];
     newOptions[index] = value;
-    setPollOptions(newOptions);
+    updateFormData({ pollOptions: newOptions });
   };
 
   const handleRemovePollOption = (index: number) => {
-    if (pollOptions.length <= 2) return;
-    const newOptions = [...pollOptions];
+    if (formData.pollOptions.length <= 2) return;
+    const newOptions = [...formData.pollOptions];
     newOptions.splice(index, 1);
-    setPollOptions(newOptions);
+    updateFormData({ pollOptions: newOptions });
   };
 
   const handleUpgrade = () => {
@@ -316,6 +250,37 @@ export default function CreatePostModal({
       onClose();
     }
   };
+
+  // Reusable input component
+  const FormField = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div className="mb-4">
+      <label className="mb-2 block font-medium text-gray-300">{label}</label>
+      {children}
+    </div>
+  );
+
+  // Action buttons component
+  const ActionButtons = () => (
+    <div className="border-t border-gray-800 p-4 flex-shrink-0">
+      <div className="flex justify-end space-x-3">
+        <button
+          type="button"
+          onClick={handleClose}
+          className="rounded-lg bg-gray-700 px-4 py-2 text-sm text-white transition hover:bg-gray-600"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          form="create-post-form"
+          disabled={isPending || isUploading}
+          className={`bg-ufc-blue hover:bg-ufc-blue-dark rounded-lg px-4 py-2 text-sm text-black transition ${isPending || isUploading ? "cursor-not-allowed opacity-70" : ""}`}
+        >
+          {isUploading ? "Uploading Images..." : isPending ? "Creating..." : "Create Post"}
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div 
@@ -392,34 +357,22 @@ export default function CreatePostModal({
 
           <div className="flex-1 overflow-y-auto p-4">
             <form id="create-post-form" onSubmit={handleSubmit} className="space-y-4">
-              <div className="mb-4">
-                <label
-                  htmlFor="post-title"
-                  className="mb-2 block font-medium text-gray-300"
-                >
-                  Title
-                </label>
+              <FormField label="Title">
                 <input
                   type="text"
                   id="post-title"
                   placeholder="What's your topic about?"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  value={formData.title}
+                  onChange={(e) => updateFormData({ title: e.target.value })}
                   className="focus:ring-ufc-blue w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:outline-none focus:ring-1"
                 />
-              </div>
+              </FormField>
 
-              <div className="mb-4">
-                <label
-                  htmlFor="post-category"
-                  className="mb-2 block font-medium text-gray-300"
-                >
-                  Category
-                </label>
+              <FormField label="Category">
                 <select
                   id="post-category"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  value={formData.category}
+                  onChange={(e) => updateFormData({ category: e.target.value })}
                   className="focus:ring-ufc-blue w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:outline-none focus:ring-1"
                 >
                   {FORUM_CATEGORIES.map((cat) => (
@@ -428,44 +381,32 @@ export default function CreatePostModal({
                     </option>
                   ))}
                 </select>
-              </div>
+              </FormField>
 
-              <div className="mb-4">
-                <label
-                  htmlFor="post-content"
-                  className="mb-2 block font-medium text-gray-300"
-                >
-                  Content
-                </label>
+              <FormField label="Content">
                 <textarea
                   id="post-content"
                   rows={6}
                   placeholder="Share your thoughts..."
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
+                  value={formData.content}
+                  onChange={(e) => updateFormData({ content: e.target.value })}
                   className="focus:ring-ufc-blue w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:outline-none focus:ring-1"
                 />
-              </div>
+              </FormField>
 
               {/* Image Upload Section */}
-              <div className="mb-4">
-                <label className="mb-2 block font-medium text-gray-300">
-                  Image (Optional)
-                </label>
+              <FormField label="Image (Optional)">
                 <ImageUpload
                   onFilesSelected={handleImageSelection}
                   multiple={false}
                   variant="default"
                   className="w-full"
                 />
-              </div>
+              </FormField>
 
               {/* Image Preview Section */}
               {selectedImages.length > 0 && (
-                <div className="mb-4">
-                  <label className="mb-2 block font-medium text-gray-300">
-                    Selected Image
-                  </label>
+                <FormField label="Selected Image">
                   <div className="flex flex-wrap gap-2">
                     {selectedImages.map((file, index) => (
                       <div key={index} className="relative">
@@ -491,11 +432,11 @@ export default function CreatePostModal({
                       </div>
                     ))}
                   </div>
-                </div>
+                </FormField>
               )}
 
-              {includePoll && (
-                <div className="mb-4 rounded-lg bg-gray-800 p-4">
+              {formData.includePoll && (
+                <FormField label="Poll">
                   <div className="mb-3 flex items-center justify-between">
                     <label
                       htmlFor="poll-question"
@@ -505,7 +446,7 @@ export default function CreatePostModal({
                     </label>
                     <button
                       type="button"
-                      onClick={() => setIncludePoll(false)}
+                      onClick={() => updateFormData({ includePoll: false })}
                       className="text-gray-400 hover:text-white"
                     >
                       <svg
@@ -527,17 +468,17 @@ export default function CreatePostModal({
                       type="text"
                       id="poll-question"
                       placeholder="Ask a question..."
-                      value={pollQuestion}
-                      onChange={(e) => setPollQuestion(e.target.value)}
+                      value={formData.pollQuestion}
+                      onChange={(e) => updateFormData({ pollQuestion: e.target.value })}
                       className="focus:ring-ufc-blue w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-white focus:outline-none focus:ring-1"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="mb-1 block font-medium text-gray-300">
-                      Options <span className="ml-1 text-sm text-gray-400">({pollOptions.length}/6)</span>
+                      Options <span className="ml-1 text-sm text-gray-400">({formData.pollOptions.length}/6)</span>
                     </label>
-                    {pollOptions.map((option, index) => (
+                    {formData.pollOptions.map((option, index) => (
                       <div key={index} className="flex items-center space-x-2">
                         <input
                           type="text"
@@ -548,7 +489,7 @@ export default function CreatePostModal({
                           }
                           className="focus:ring-ufc-blue flex-grow rounded-lg border border-gray-600 bg-gray-700 px-4 py-2 text-white focus:outline-none focus:ring-1"
                         />
-                        {pollOptions.length > 2 && (
+                        {formData.pollOptions.length > 2 && (
                           <button
                             type="button"
                             onClick={() => handleRemovePollOption(index)}
@@ -574,8 +515,8 @@ export default function CreatePostModal({
                     <button
                       type="button"
                       onClick={handleAddPollOption}
-                      className={`text-ufc-blue mt-2 flex items-center text-sm font-medium ${pollOptions.length >= 6 ? 'opacity-50 cursor-not-allowed' : 'hover:text-white'}`}
-                      disabled={pollOptions.length >= 6}
+                      className={`text-ufc-blue mt-2 flex items-center text-sm font-medium ${formData.pollOptions.length >= 6 ? 'opacity-50 cursor-not-allowed' : 'hover:text-white'}`}
+                      disabled={formData.pollOptions.length >= 6}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -589,18 +530,18 @@ export default function CreatePostModal({
                           clipRule="evenodd"
                         />
                       </svg>
-                      Add Option {pollOptions.length >= 6 ? "(Max Reached)" : ""}
+                      Add Option {formData.pollOptions.length >= 6 ? "(Max Reached)" : ""}
                     </button>
                   </div>
-                </div>
+                </FormField>
               )}
 
               <div>
                 <div className="flex space-x-4">
                   <button
                     type="button"
-                    onClick={() => setIncludePoll(!includePoll)}
-                    className={`flex items-center ${includePoll ? "text-ufc-blue" : "text-gray-300 hover:text-white"}`}
+                    onClick={() => updateFormData({ includePoll: !formData.includePoll })}
+                    className={`flex items-center ${formData.includePoll ? "text-ufc-blue" : "text-gray-300 hover:text-white"}`}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -616,83 +557,14 @@ export default function CreatePostModal({
                         d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
                       />
                     </svg>
-                    {includePoll ? "Remove Poll" : "Create Poll"}
+                    {formData.includePoll ? "Remove Poll" : "Create Poll"}
                   </button>
                 </div>
               </div>
             </form>
           </div>
 
-          {/* Action buttons - always visible at bottom */}
-          <div className="border-t border-gray-800 p-4 flex-shrink-0">
-            <div className="flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="rounded-lg bg-gray-700 px-4 py-2 text-sm text-white transition hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="create-post-form"
-                disabled={isPending || isUploading}
-                className={`bg-ufc-blue hover:bg-ufc-blue-dark rounded-lg px-4 py-2 text-sm text-black transition ${isPending || isUploading ? "cursor-not-allowed opacity-70" : ""}`}
-              >
-                {isUploading ? (
-                  <span className="flex items-center">
-                    <svg
-                      className="-ml-1 mr-2 h-4 w-4 animate-spin text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Uploading Images...
-                  </span>
-                ) : isPending ? (
-                  <span className="flex items-center">
-                    <svg
-                      className="-ml-1 mr-2 h-4 w-4 animate-spin text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Creating...
-                  </span>
-                ) : (
-                  "Create Post"
-                )}
-              </button>
-            </div>
-          </div>
+          <ActionButtons />
         </div>
       )}
     </div>

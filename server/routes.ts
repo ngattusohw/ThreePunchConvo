@@ -827,13 +827,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!success) {
           return res
             .status(400)
-            .json({ message: "Failed to set thread as POTD" });
+            .json({ message: "Failed to set thread as Post of the Day" });
         }
 
-        res.json({ message: "Thread set as POTD successfully" });
+        res.json({ message: "Thread set as Post of the Day successfully" });
       } catch (error) {
         console.error("Error in thread POTD:", error);
-        res.status(500).json({ message: "Failed to set thread as POTD" });
+        res.status(500).json({ message: "Failed to set thread as Post of the Day" });
       }
     },
   );

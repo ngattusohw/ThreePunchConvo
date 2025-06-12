@@ -176,6 +176,25 @@ export const toggleThreadPinByUser = async (threadId: string, userId: string) =>
   return response.json();
 };
 
+// Mark a thread as Post of the Day
+export const potdThread = async (threadId: string, userId: string) => {
+  const response = await apiRequest(
+    "POST",
+    `/api/threads/${threadId}/potd`,
+    { userId }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.message || 
+        `Error: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json();
+};
+
 // Submit a reply to a thread
 export const submitThreadReply = async (
   threadId: string, 

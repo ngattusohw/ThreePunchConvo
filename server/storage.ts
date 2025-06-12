@@ -100,6 +100,7 @@ export interface IStorage {
   likeThread(threadId: string, userId: string): Promise<boolean>;
   dislikeThread(threadId: string, userId: string): Promise<boolean>;
   pinnedByUserThread(threadId: string, userId: string): Promise<boolean>;
+  potdThread(threadId: string, userId: string): Promise<boolean>;
   likeReply(replyId: string, userId: string): Promise<boolean>;
   dislikeReply(replyId: string, userId: string): Promise<boolean>;
 
@@ -1693,6 +1694,75 @@ export class DatabaseStorage implements IStorage {
       return true;
     } catch (error) {
       console.error('Error in pinnedByUserThread:', error);
+      return false;
+    }
+  }
+
+  async potdThread(threadId: string, userId: string): Promise<boolean> {
+    try {
+      // Begin transaction
+      return await db.transaction(async (tx) => {
+        // Check if user has already used POTD today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Set to beginning of day
+        
+        const recentPotd = await tx.query.threadReactions.findFirst({
+          where: and(
+            eq(threadReactions.userId, userId),
+            eq(threadReactions.type, 'POTD'),
+            sql`${threadReactions.createdAt} >= ${today}`
+          ),
+        });
+        
+        if (recentPotd) {
+          // User has already used their POTD for today
+          return false;
+        }
+        
+        // Check if thread exists
+        const thread = await tx.query.threads.findFirst({
+          where: eq(threads.id, threadId),
+          columns: {
+            userId: true,
+          },
+        });
+        
+        if (!thread) {
+          return false; // Thread doesn't exist
+        }
+        
+        // Add POTD reaction
+        await tx.insert(threadReactions).values({
+          id: uuidv4(),
+          threadId,
+          userId,
+          type: 'POTD',
+          createdAt: new Date(),
+        });
+        
+        // Update thread and give extra points (more than a regular like)
+        await tx
+          .update(threads)
+          .set({
+            likesCount: sql`${threads.likesCount} + 5`, // Give 5x the value of a regular like
+          })
+          .where(eq(threads.id, threadId));
+        
+        // Add bonus points for thread owner (if not marking their own thread)
+        if (thread.userId !== userId) {
+          await tx
+            .update(users)
+            .set({
+              points: sql`${users.points} + 5`, // Changed from 10 to 5 points for POTD
+              likesCount: sql`${users.likesCount} + 5`, // Also increase like count
+            })
+            .where(eq(users.id, thread.userId));
+        }
+        
+        return true;
+      });
+    } catch (error) {
+      console.error('Error in potdThread:', error);
       return false;
     }
   }

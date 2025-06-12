@@ -1,36 +1,14 @@
 import React from "react";
 import { Link } from "wouter";
 import { ForumThread } from "@/lib/types";
-import { formatDate, truncateText } from "@/lib/utils";
+import { truncateText } from "@/lib/utils";
 import UserAvatar from "@/components/ui/user-avatar";
-import StatusBadge from "@/components/ui/status-badge";
 import MediaPreview from "@/components/ui/media-preview";
+import UserThreadHeader from "@/components/ui/user-thread-header";
 
 interface ThreadCardProps {
   thread: ForumThread;
 }
-
-// Function to determine status color based on user status
-const getStatusColorClass = (status: string): string => {
-  switch (status) {
-    case "HALL OF FAMER":
-      return "text-amber-300"; // Gold for hall of famers
-    case "CHAMPION":
-      return "text-purple-400"; // Purple for champions
-    case "CONTENDER":
-      return "text-red-400"; // Red for contenders
-    case "RANKED POSTER":
-      return "text-orange-400"; // Orange for ranked posters
-    case "COMPETITOR":
-      return "text-green-400"; // Green for competitors
-    case "REGIONAL POSTER":
-      return "text-blue-400"; // Blue for regional posters
-    case "AMATEUR":
-      return "text-cyan-400"; // Cyan for amateurs
-    default:
-      return "text-gray-400"; // Gray as fallback
-  }
-};
 
 export default function ThreadCard({ thread }: ThreadCardProps) {
   const borderColor = thread.isPinned
@@ -39,96 +17,25 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
     ? "border-ufc-blue"
     : "";
 
-  // Get user status rank for display below avatar
-  const userRank = thread.user?.status || "";
-  
-  // Check if the user is not a fighter (role is not "FIGHTER")
-  // Since the UserRole type doesn't include "FIGHTER", we need to check differently
-  const isFighter = thread.user?.role === "FIGHTER";
-    
-  // Get the appropriate status color class
-  const statusColorClass = userRank ? getStatusColorClass(userRank) : "text-gray-400";
-
   return (
     <div
       className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} overflow-hidden rounded-lg shadow-lg transition hover:shadow-xl relative`}
     >
-      {/* Pinned label on the right */}
-      {(thread.isPinned || thread.isPinnedByUser) && (
-        <span className="absolute top-2 right-2 bg-gray-800 text-ufc-blue text-xs px-2 py-0.5 rounded font-medium flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
-          </svg>
-          <span className="hidden md:inline">PINNED</span>
-        </span>
-      )}
       <div className="p-4">
         <div className="flex items-start">
-          {/* User Avatar */}
-          <div className="mr-3 flex-shrink-0 flex flex-col items-center">
-            <UserAvatar user={thread.user} size="md" />
-            {userRank && (
-              <span className={`mt-1 text-xs ${statusColorClass} text-center`}>
-                {userRank.length > 10 
-                  ? userRank.substring(0, 8) + "..." 
-                  : userRank}
-              </span>
-            )}
-          </div>
-
           {/* Thread Content */}
           <div className="flex-grow">
-            <div className="flex items-center mb-1 flex-wrap gap-2">
-              {thread.user?.role === "FIGHTER" && (
-                <span className="mr-2 flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-black">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="mr-1 h-3 w-3"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723a3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  VERIFIED
-                </span>
-              )}
-
-              {thread.user?.role === "ADMIN" && (
-                <span className="bg-ufc-gold text-ufc-black mr-2 rounded px-2 py-0.5 text-xs font-bold">
-                  ADMIN
-                </span>
-              )}
-
-              {thread.user?.role === "MODERATOR" && (
-                <span className="mr-2 rounded bg-green-600 px-2 py-0.5 text-xs font-bold text-white">
-                  MOD
-                </span>
-              )}
-
-              <span className="font-medium text-white">
-                <span className="md:hidden">
-                  {thread.user?.username && thread.user.username.length > 15 
-                    ? thread.user.username.substring(0, 13) + "..." 
-                    : thread.user?.username || "Unknown User"}
-                </span>
-                <span className="hidden md:inline">
-                  {thread.user?.username || "Unknown User"}
-                </span>
-              </span>
-              
-              {thread.user?.rank !== undefined && !isFighter && (
-                  <div className="bg-gradient-to-br from-orange-500 to-orange-400 text-white text-xs font-bold px-2 py-1 rounded-xl inline-flex items-center gap-1 shadow-lg shadow-orange-500/30">
-                        FC: {thread.user.rank}
-                  </div>
-              )}
-              
-              <span className="text-sm text-gray-400">
-            · {formatDate(thread.createdAt)}
-              </span>
+            {/* Thread header with user info */}
+            <div className="mb-2">
+              <UserThreadHeader 
+                user={thread.user}
+                createdAt={thread.createdAt}
+                isPinned={thread.isPinned}
+                isPinnedByUser={thread.isPinnedByUser}
+                showAvatar={true}
+                size="md"
+                pinnedPosition="right"
+              />
             </div>
 
             <Link href={`/thread/${thread.id}`}>
@@ -249,15 +156,6 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                 </svg>
                 {thread.likesCount}
               </div>
-
-              {/* {thread.dislikesCount > 0 && (
-                <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2" />
-                  </svg>
-                  {thread.dislikesCount}
-                </div>
-              )} */}
             </div>
           </div>
         </div>

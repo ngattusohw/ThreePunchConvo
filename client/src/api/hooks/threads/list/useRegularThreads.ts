@@ -8,13 +8,15 @@ interface UseRegularThreadsOptions {
   filterOption: "recent" | "popular" | "new";
   timeRange: "all" | "week" | "month" | "year";
   limit: number;
+  userId?: string;
 }
 
 export function useRegularThreads({
   category,
   filterOption,
   timeRange,
-  limit
+  limit,
+  userId
 }: UseRegularThreadsOptions) {
   const [page, setPage] = useState(0);
   const [allRegularThreads, setAllRegularThreads] = useState<ForumThread[]>([]);
@@ -27,20 +29,20 @@ export function useRegularThreads({
     error,
     refetch: refetchRegularThreads,
   } = useQuery<ForumThread[]>({
-    queryKey: [`/api/threads/${category}`, filterOption, timeRange, page],
-    queryFn: () => fetchRegularThreads(category, filterOption, timeRange, page, limit),
+    queryKey: [`/api/threads/${category}`, filterOption, timeRange, page, userId],
+    queryFn: () => fetchRegularThreads(category, filterOption, timeRange, page, limit, userId),
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     staleTime: 0, // Consider data always stale to force refetch
   });
 
-  // Reset page when filter or time range changes
+  // Reset page when filter, time range, or user changes
   useEffect(() => {
     setPage(0);
     setAllRegularThreads([]);
     setHasMore(true);
-  }, [filterOption, timeRange]);
+  }, [filterOption, timeRange, userId]);
 
   // Update allRegularThreads when regularThreads changes
   useEffect(() => {

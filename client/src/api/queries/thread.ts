@@ -1,11 +1,16 @@
 import { ForumThread, ThreadReply } from "@/lib/types";
 import { apiRequest } from "@/lib/queryClient";
 
-export const fetchPinnedThreads = async (category: string) => {
+export const fetchPinnedThreads = async (category: string, userId?: string) => {
   const params = new URLSearchParams({
     pinnedByUserFilter: 'only',
     sort: 'recent'
   });
+  
+  // Add userId param if available
+  if (userId) {
+    params.append('userId', userId);
+  }
   
   const response = await apiRequest(
     "GET",
@@ -24,7 +29,8 @@ export const fetchRegularThreads = async (
   filterOption: "recent" | "popular" | "new",
   timeRange: "all" | "week" | "month" | "year",
   page: number,
-  limit: number
+  limit: number,
+  userId?: string
 ) => {
   const params = new URLSearchParams({
     pinnedByUserFilter: 'exclude',
@@ -33,6 +39,11 @@ export const fetchRegularThreads = async (
     limit: String(limit),
     offset: String(page * limit),
   });
+  
+  // Add userId param if available
+  if (userId) {
+    params.append('userId', userId);
+  }
   
   const response = await apiRequest(
     "GET",

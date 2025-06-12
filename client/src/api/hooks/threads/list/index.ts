@@ -7,13 +7,15 @@ interface UseThreadsListOptions {
   initialFilterOption?: "recent" | "popular" | "new";
   initialTimeRange?: "all" | "week" | "month" | "year";
   limit?: number;
+  userId?: string;
 }
 
 export function useThreadsList({
   category,
   initialFilterOption = "recent",
   initialTimeRange = "all",
-  limit = 10
+  limit = 10,
+  userId
 }: UseThreadsListOptions) {
   const {
     filterOption,
@@ -28,7 +30,7 @@ export function useThreadsList({
   const { 
     pinnedThreads,
     isPinnedLoading 
-  } = usePinnedThreads({ category });
+  } = usePinnedThreads({ category, userId });
   
   const {
     regularThreads,
@@ -41,7 +43,8 @@ export function useThreadsList({
     category,
     filterOption,
     timeRange,
-    limit
+    limit,
+    userId
   });
 
   return {

@@ -501,6 +501,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 10;
       const offset = parseInt(req.query.offset as string) || 0;
       const pinnedByUserFilter = req.query.pinnedByUserFilter as string || 'include'; // 'only', 'exclude', or 'include'
+      const clerkUserId = req.query.userId as string | undefined;
       
       // Set cache control headers
       res.set({
@@ -510,6 +511,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         Expires: "0",
         "Surrogate-Control": "no-store",
       });
+
+      // Convert Clerk user ID to local user ID if provided
+      let localUserId = undefined;
+      if (clerkUserId) {
+        console.log("Looking up user by externalId for thread list:", clerkUserId);
+        const localUser = await storage.getUserByExternalId(clerkUserId);
+        if (localUser) {
+          console.log(`Thread list: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
+          localUserId = localUser.id;
+        } else {
+          console.log(`No local user found for Clerk user ${clerkUserId}`);
+        }
+      }
 
       // Get threads with more buffer if we need to filter
       const fetchLimit = pinnedByUserFilter !== 'include' ? limit + 20 : limit;
@@ -530,44 +544,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filteredThreads = filteredThreads.slice(0, limit);
       }
 
-      // Fetch user for each thread
+      // Fetch full thread data with user details for each thread
       const threadsWithUser = await Promise.all(
         filteredThreads.map(async (thread) => {
-          const user = await storage.getUser(thread.userId);
-
-          if (!user) {
-            return { ...thread, user: null };
+          // Get the full thread data including hasLiked and hasPotd status
+          const fullThreadData = await storage.getThread(thread.id, localUserId);
+          
+          if (!fullThreadData) {
+            return null;
           }
-
-          // Don't return user password
-          const { password, ...userWithoutPassword } = user;
-
-          // Get thread media
-          const media = await storage.getMediaByThread(thread.id);
-
-          // Get thread poll
-          const poll = await storage.getPollByThread(thread.id);
-
-          let pollWithOptions;
-          if (poll) {
-            // Get poll options
-            const options = await storage.getPollOptions(poll.id);
-            pollWithOptions = {
-              ...poll,
-              options,
-            };
-          }
-
-          return {
-            ...thread,
-            user: userWithoutPassword,
-            media: media || [],
-            poll: pollWithOptions,
-          };
+          
+          return fullThreadData;
         }),
       );
 
-      res.json(threadsWithUser);
+      // Filter out any null values from threads that couldn't be fetched
+      const validThreads = threadsWithUser.filter(thread => thread !== null);
+
+      res.json(validThreads);
     } catch (error) {
       console.error("Error fetching threads:", error);
       res.status(500).json({ message: "Failed to fetch threads" });

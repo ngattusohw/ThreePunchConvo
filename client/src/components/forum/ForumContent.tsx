@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import ThreadCard from "@/components/forum/ThreadCard";
 import { FORUM_CATEGORIES } from "@/lib/constants";
-import { SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/clerk-react";
 import { dark } from "@clerk/themes";
 import { useThreadsList } from "@/api/hooks/threads";
 
@@ -19,6 +19,7 @@ export default function ForumContent({
   const [searchQuery, setSearchQuery] = useState("");
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef(0);
+  const { user: currentUser } = useUser();
   
   // Debug: Track when ForumContent re-renders
   useEffect(() => {
@@ -54,7 +55,8 @@ export default function ForumContent({
   } = useThreadsList({
     category,
     initialFilterOption: "recent",
-    initialTimeRange: "all"
+    initialTimeRange: "all",
+    userId: currentUser?.id
   });
 
   // Store current scroll position before loading more

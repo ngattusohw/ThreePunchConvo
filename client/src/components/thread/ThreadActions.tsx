@@ -39,11 +39,11 @@ export default function ThreadActions({
       <button
         onClick={onLike}
         disabled={!currentUser}
-        className="flex items-center text-gray-400 transition hover:text-green-500"
+        className={`flex items-center ${thread.hasLiked ? 'text-green-500' : 'text-gray-400'} transition hover:text-green-500`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className={`mr-1 ${iconSize} ${thread.hasLiked ? 'text-green-500' : ''}`}
+          className={`mr-1 ${iconSize}`}
           fill={thread.hasLiked ? 'currentColor' : 'none'}
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -64,12 +64,12 @@ export default function ThreadActions({
       <button
         onClick={onPotd}
         disabled={!currentUser}
-        className="flex items-center text-gray-400 transition hover:text-yellow-500"
+        className={`flex items-center ${thread.hasPotd ? 'text-yellow-500' : 'text-gray-400'} transition hover:text-yellow-500`}
         title="Mark as Post of the Day (once per day)"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className={`mr-1 ${iconSize} ${thread.hasPotd ? 'text-yellow-500' : ''}`}
+          className={`mr-1 ${iconSize}`}
           fill={thread.hasPotd ? 'currentColor' : 'none'}
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -81,7 +81,7 @@ export default function ThreadActions({
             d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
           />
         </svg>
-        <span className={`font-medium ${textSize} ${thread.hasPotd ? 'text-yellow-500' : ''}`}>
+        <span className={`font-medium ${textSize}`}>
           {thread.potdCount || 0}
         </span>
       </button>
@@ -89,10 +89,10 @@ export default function ThreadActions({
       <button
         onClick={onPin}
         disabled={!currentUser}
-        className="flex items-center text-gray-400 hover:text-ufc-blue transition"
+        className={`flex items-center ${(thread.isPinnedByUser || thread.isPinned) ? 'text-ufc-blue' : 'text-gray-400'} transition hover:text-ufc-blue`}
       >
         <svg xmlns="http://www.w3.org/2000/svg"
-          className={`${iconSize} mr-1 ${(thread.isPinnedByUser || thread.isPinned) ? 'text-ufc-blue' : ''}`}
+          className={`${iconSize} mr-1`}
           fill={(thread.isPinnedByUser || thread.isPinned) ? 'currentColor' : 'none'}
           viewBox="0 0 24 24"
           stroke="currentColor">

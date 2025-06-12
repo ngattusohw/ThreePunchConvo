@@ -1,19 +1,18 @@
-import { useState } from "react";
+import react from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { ThreadReply } from "@/lib/types";
 import { useUser } from "@clerk/clerk-react";
-import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
-import { useThreadData, useThreadReplies, useThreadActions } from "@/api/hooks/threads";
+import { useThreadData, useThreadReplies } from "@/api/hooks/threads";
 import UserAvatar from "@/components/ui/user-avatar";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import ThreadPoll from "@/components/thread/poll";
 import UserThreadHeader from "@/components/ui/user-thread-header";
+import ThreadActions from "@/components/thread/ThreadActions";
 
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
   const { user: currentUser } = useUser();
-  const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   const {
@@ -46,17 +45,12 @@ export default function Thread() {
     userId: currentUser?.id
   });
   
-  const {
-    likeThreadMutation,
-    pinnedByUserThreadMutation,
-    deleteThreadMutation
-  } = useThreadActions({
-    threadId: threadId || '',
-    userId: currentUser?.id
-  });
-
   // Use the actual data from the API
   const displayThread = thread;
+
+  // Debug - log thread data
+  console.log("Thread data received:", displayThread);
+  console.log("Thread object in render:", thread);
 
   // Function to close modal and navigate to upgrade page
   const handleUpgrade = () => {
@@ -175,90 +169,10 @@ export default function Thread() {
                   )}
 
                   {/* Thread Actions */}
-                  <div className="mb-6 flex items-center space-x-4">
-                    <button
-                      onClick={() => likeThreadMutation.mutate()}
-                      disabled={!currentUser}
-                      className="flex items-center text-gray-400 transition hover:text-green-500"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="mr-1 h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
-                        />
-                      </svg>
-                      <span className="font-medium">
-                        {displayThread?.likesCount}
-                      </span>
-                    </button>
-
-                    {/* Hiding dislike button for now */}
-                    {/* <button
-                      onClick={() => dislikeThreadMutation.mutate()}
-                      disabled={!currentUser}
-                      className="flex items-center text-gray-400 hover:text-red-500 transition"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2" />
-                      </svg>
-                      <span className="font-medium">{displayThread?.dislikesCount}</span>
-                    </button> */}
-
-                    <button
-                      onClick={() => pinnedByUserThreadMutation.mutate()}
-                      disabled={!currentUser}
-                      className="flex items-center text-gray-400 hover:text-ufc-blue transition"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 mr-1 ${displayThread.isPinnedByUser ? 'text-ufc-blue' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
-                      </svg>
-                      <span className={`font-medium ${displayThread.isPinnedByUser ? 'text-ufc-blue' : ''}`}>
-                        {displayThread.user.pinnedByUserCount}
-                      </span>
-                    </button>
-
-                    {/* Add delete button if user is author or has permission */}
-                    {currentUser &&
-                      (currentUser.id === displayThread?.userId ||
-                        (currentUser.publicMetadata?.role as string) === "ADMIN" ||
-                        (currentUser.publicMetadata?.role as string) === "MODERATOR") && (
-                        <button
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                "Are you sure you want to delete this thread? This action cannot be undone.",
-                              )
-                            ) {
-                              deleteThreadMutation.mutate(threadId);
-                            }
-                          }}
-                          className="ml-auto flex items-center text-gray-400 transition hover:text-red-500"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="mr-1 h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                          Delete Thread
-                        </button>
-                      )}
+                  <div className="mb-6">
+                    <ThreadActions 
+                      thread={displayThread}
+                    />
                   </div>
                 </div>
               </div>

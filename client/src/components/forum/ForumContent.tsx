@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import ThreadCard from "@/components/forum/ThreadCard";
 import { FORUM_CATEGORIES } from "@/lib/constants";
-import { SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/clerk-react";
 import { dark } from "@clerk/themes";
 import { useThreadsList } from "@/api/hooks/threads";
 
@@ -19,22 +19,9 @@ export default function ForumContent({
   const [searchQuery, setSearchQuery] = useState("");
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef(0);
+  const shouldRestoreScrollRef = useRef(false);
+  const { user: currentUser } = useUser();
   
-  // Debug: Track when ForumContent re-renders
-  useEffect(() => {
-    console.log('ForumContent re-rendered, modal state:', modalOpen);
-  });
-
-  // Debug: Track modal state changes
-  useEffect(() => {
-    console.log('Modal state changed in ForumContent:', modalOpen);
-  }, [modalOpen]);
-
-  // Debug: Track category changes
-  useEffect(() => {
-    console.log('Category changed in ForumContent:', category);
-  }, [category]);
-
   // Get the current category info
   const currentCategory = FORUM_CATEGORIES.find(cat => cat.id === category) || FORUM_CATEGORIES[0];
   
@@ -54,30 +41,37 @@ export default function ForumContent({
   } = useThreadsList({
     category,
     initialFilterOption: "recent",
-    initialTimeRange: "all"
+    initialTimeRange: "all",
+    userId: currentUser?.id
   });
+
+  // Filter out pinned threads from regular threads to prevent duplicate keys
+  const filteredRegularThreads = allRegularThreads.filter(thread => 
+    !pinnedThreads.some(pinnedThread => pinnedThread.id === thread.id)
+  );
 
   // Store current scroll position before loading more
   const handleLoadMore = () => {
     // Save current scroll position before loading more
     scrollPositionRef.current = window.scrollY;
+    shouldRestoreScrollRef.current = true;
     loadMore();
   };
 
   // Maintain scroll position when new content is loaded
   useEffect(() => {
-    if (page > 0 && scrollPositionRef.current > 0) {
+    if (shouldRestoreScrollRef.current && scrollPositionRef.current > 0) {
       // Restore the previous scroll position
       window.scrollTo({
         top: scrollPositionRef.current,
         behavior: "auto",
       });
+      shouldRestoreScrollRef.current = false;
     }
-  }, [allRegularThreads, page]);
+  }, [allRegularThreads.length, page]);
 
   // Use parent's modal handler or fallback to console log
   const handleOpenModal = () => {
-    console.log('Modal open requested in ForumContent');
     if (onOpenModal) {
       onOpenModal();
     } else {
@@ -249,7 +243,7 @@ export default function ForumContent({
       {/* Forum Thread List */}
       {(!isLoading || page > 0 || allRegularThreads.length > 0) && !error && (
         <div className="space-y-4">
-          {(pinnedThreads.length > 0 || allRegularThreads.length > 0) ? (
+          {(pinnedThreads.length > 0 || filteredRegularThreads.length > 0) ? (
             <div>
               {/* Pinned Section - only shown once at the top */}
               {pinnedThreads.length > 0 && (
@@ -263,9 +257,9 @@ export default function ForumContent({
               )}
 
               {/* Regular Threads Section - grows with infinite scrolling */}
-              {allRegularThreads.length > 0 ? (
+              {filteredRegularThreads.length > 0 ? (
                 <div className="space-y-4">
-                  {allRegularThreads.map((thread) => (
+                  {filteredRegularThreads.map((thread) => (
                     <ThreadCard key={thread.id} thread={thread} />
                   ))}
                 </div>

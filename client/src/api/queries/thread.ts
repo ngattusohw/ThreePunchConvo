@@ -1,11 +1,16 @@
 import { ForumThread, ThreadReply } from "@/lib/types";
 import { apiRequest } from "@/lib/queryClient";
 
-export const fetchPinnedThreads = async (category: string) => {
+export const fetchPinnedThreads = async (category: string, userId?: string) => {
   const params = new URLSearchParams({
     pinnedByUserFilter: 'only',
     sort: 'recent'
   });
+  
+  // Add userId param if available
+  if (userId) {
+    params.append('userId', userId);
+  }
   
   const response = await apiRequest(
     "GET",
@@ -24,7 +29,8 @@ export const fetchRegularThreads = async (
   filterOption: "recent" | "popular" | "new",
   timeRange: "all" | "week" | "month" | "year",
   page: number,
-  limit: number
+  limit: number,
+  userId?: string
 ) => {
   const params = new URLSearchParams({
     pinnedByUserFilter: 'exclude',
@@ -33,6 +39,11 @@ export const fetchRegularThreads = async (
     limit: String(limit),
     offset: String(page * limit),
   });
+  
+  // Add userId param if available
+  if (userId) {
+    params.append('userId', userId);
+  }
   
   const response = await apiRequest(
     "GET",
@@ -111,7 +122,9 @@ export const fetchThreadById = async (threadId: string, userId?: string) => {
   if (!response.ok) {
     throw new Error(`Failed to fetch thread: ${response.statusText}`);
   }
-  return response.json() as Promise<ForumThread>;
+  const threadData = await response.json();
+  console.log("API thread response:", threadData);
+  return threadData as ForumThread;
 };
 
 // Fetch thread replies
@@ -173,6 +186,25 @@ export const toggleThreadPinByUser = async (threadId: string, userId: string) =>
     throw new Error("Failed to pin post");
   }
   
+  return response.json();
+};
+
+// Mark a thread as Post of the Day
+export const potdThread = async (threadId: string, userId: string) => {
+  const response = await apiRequest(
+    "POST",
+    `/api/threads/${threadId}/potd`,
+    { userId }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.message || 
+        `Error: ${response.status} ${response.statusText}`
+    );
+  }
+
   return response.json();
 };
 

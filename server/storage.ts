@@ -100,6 +100,7 @@ export interface IStorage {
   likeThread(threadId: string, userId: string): Promise<boolean>;
   dislikeThread(threadId: string, userId: string): Promise<boolean>;
   pinnedByUserThread(threadId: string, userId: string): Promise<boolean>;
+  potdThread(threadId: string, userId: string): Promise<boolean>;
   likeReply(replyId: string, userId: string): Promise<boolean>;
   dislikeReply(replyId: string, userId: string): Promise<boolean>;
 
@@ -141,6 +142,7 @@ type ThreadWithAssociatedData = Thread & {
     options: PollOption[];
   };
   hasLiked: boolean;
+  hasPotd: boolean;
 };
 
 // Database implementation of the storage interface
@@ -579,7 +581,8 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPinnedByUser: threads.isPinnedByUser
+          isPinnedByUser: threads.isPinnedByUser,
+          potdCount: threads.potdCount
         })
         .from(threads)
         .where(eq(threads.id, id));
@@ -611,15 +614,26 @@ export class DatabaseStorage implements IStorage {
 
       // Check if the current user has liked this thread
       let hasLiked = false;
+      let hasPotd = false;
       if (currentUserId) {
-        const existingReaction = await db.query.threadReactions.findFirst({
+        const existingLikeReaction = await db.query.threadReactions.findFirst({
           where: and(
             eq(threadReactions.threadId, id),
             eq(threadReactions.userId, currentUserId),
             eq(threadReactions.type, "LIKE"),
           ),
         });
-        hasLiked = !!existingReaction;
+        hasLiked = !!existingLikeReaction;
+        
+        // Check if the current user has marked this thread as POTD
+        const existingPotdReaction = await db.query.threadReactions.findFirst({
+          where: and(
+            eq(threadReactions.threadId, id),
+            eq(threadReactions.userId, currentUserId),
+            eq(threadReactions.type, "POTD"),
+          ),
+        });
+        hasPotd = !!existingPotdReaction;
       }
 
       // Return thread with associated data
@@ -653,6 +667,7 @@ export class DatabaseStorage implements IStorage {
         media: [], //media || [],
         poll: pollWithOptions,
         hasLiked,
+        hasPotd,
       };
     } catch (error) {
       console.error("Error getting thread:", error);
@@ -684,7 +699,8 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPinnedByUser: threads.isPinnedByUser
+          isPinnedByUser: threads.isPinnedByUser,
+          potdCount: threads.potdCount
         })
         .from(threads)
         .where(eq(threads.categoryId, categoryId));
@@ -742,7 +758,8 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPinnedByUser: threads.isPinnedByUser
+          isPinnedByUser: threads.isPinnedByUser,
+          potdCount: threads.potdCount
         })
         .from(threads)
         .where(eq(threads.userId, userId))
@@ -772,7 +789,8 @@ export class DatabaseStorage implements IStorage {
         likesCount: 0,
         dislikesCount: 0,
         repliesCount: 0,
-        isPinnedByUser: false
+        isPinnedByUser: false,
+        potdCount: 0
       };
 
       // Start a transaction to create thread and update user points
@@ -1694,6 +1712,78 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error in pinnedByUserThread:', error);
       return false;
+    }
+  }
+
+  async potdThread(threadId: string, userId: string): Promise<boolean> {
+    try {
+      // Begin transaction
+      return await db.transaction(async (tx) => {
+        try {
+          // Check if user has already used POTD today
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); // Set to beginning of day
+          
+          const recentPotd = await tx.query.threadReactions.findFirst({
+            where: and(
+              eq(threadReactions.userId, userId),
+              eq(threadReactions.type, 'POTD'),
+              sql`${threadReactions.createdAt} >= ${today}`
+            ),
+          });
+          
+          if (recentPotd) {
+            // User has already used their POTD for today
+            throw new Error("You've already used your Post of the Day for today");
+          }
+          
+          // Check if thread exists
+          const thread = await tx.query.threads.findFirst({
+            where: eq(threads.id, threadId),
+            columns: {
+              userId: true,
+            },
+          });
+          
+          if (!thread) {
+            throw new Error("Thread not found");
+          }
+          
+          // Add POTD reaction
+          await tx.insert(threadReactions).values({
+            id: uuidv4(),
+            threadId,
+            userId,
+            type: 'POTD',
+            createdAt: new Date(),
+          });
+          
+          // Update thread potdCount directly with SQL to avoid type issues
+          await tx.execute(
+            sql`UPDATE threads SET potd_count = potd_count + 1 WHERE id = ${threadId}`
+          );
+          
+          // Add bonus points for thread owner (if not marking their own thread)
+          if (thread.userId !== userId) {
+            await tx.execute(
+              sql`UPDATE users SET points = points + 5 WHERE id = ${thread.userId}`
+            );
+          }
+          
+          return true;
+        } catch (txError) {
+          console.error("Transaction error in potdThread:", txError);
+          throw txError; // Rethrow to trigger rollback
+        }
+      });
+    } catch (error) {
+      console.error('Error in potdThread:', error);
+      // Convert the error to a more specific message
+      if (error instanceof Error) {
+        throw error; // Rethrow original error with message
+      } else {
+        throw new Error("Failed to set thread as Post of the Day");
+      }
     }
   }
 

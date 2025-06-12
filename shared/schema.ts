@@ -83,6 +83,7 @@ export const threads = pgTable("threads", {
   dislikesCount: integer("dislikes_count").notNull().default(0),
   repliesCount: integer("replies_count").notNull().default(0),
   isPinnedByUser: boolean("is_pinned_by_user").notNull().default(false),
+  potdCount: integer("potd_count").notNull().default(0),
 });
 
 // Thread media
@@ -304,6 +305,7 @@ export const insertThreadSchema = createInsertSchema(threads, {
   dislikesCount: true,
   repliesCount: true,
   isPinnedByUser: true,
+  potdCount: true,
 });
 
 export const insertReplySchema = createInsertSchema(replies).omit({

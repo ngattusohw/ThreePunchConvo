@@ -7,6 +7,7 @@ import * as addClerkExternalIdMigration from "./migrations/0005_add_clerk_extern
 import * as addStripeIdMigration from "./migrations/0006_add_stripe_id";
 import * as addPlanTypeMigration from "./migrations/0007_add_plan_type";
 import * as renamePotdToPinnedMigration from "./migrations/0008_rename_potd_to_pinned";
+import * as addPotdCountMigration from "./migrations/0009_add_potd_count";
 
 async function migrate() {
   try {
@@ -21,6 +22,7 @@ async function migrate() {
     await addStripeIdMigration.up(db);
     await addPlanTypeMigration.up(db);
     await renamePotdToPinnedMigration.up(db);
+    await addPotdCountMigration.up(db);
     
     console.log("Migrations completed successfully!");
     process.exit(0);

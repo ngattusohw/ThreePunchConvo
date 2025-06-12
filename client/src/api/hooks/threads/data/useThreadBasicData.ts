@@ -15,7 +15,10 @@ export function useThreadBasicData({ threadId, userId }: UseThreadBasicDataOptio
     error,
   } = useQuery<ForumThread>({
     queryKey: [`/api/threads/id/${threadId}`, userId],
-    queryFn: () => fetchThreadById(threadId, userId),
+    queryFn: () => fetchThreadById(threadId, userId).then(data => {
+      console.log("Thread data received in hook:", data, "userId:", userId);
+      return data;
+    }),
     enabled: !!threadId,
   });
 

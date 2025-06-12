@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "wouter";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
+import FCBadge from "@/components/ui/fc-badge";
 import ThreadCard from "@/components/forum/ThreadCard";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/api";
@@ -116,6 +117,8 @@ export default function UserProfile() {
               <h1 className="text-xl font-bold text-white md:text-2xl">
                 {displayUser.username}
               </h1>
+
+              <FCBadge rank={displayUser.rank} size="md" />
 
               {displayUser.role === "PRO" && (
                 <span className="flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">
@@ -322,6 +325,10 @@ export default function UserProfile() {
                     #{displayUser.rank}
                   </span>
                   <span className="text-xs text-gray-400">Community Rank</span>
+                </div>
+                <div className="rounded-lg bg-gray-800 px-3 py-2">
+                  <FCBadge rank={displayUser.rank} size="lg" />
+                  <span className="text-xs text-gray-400 block mt-1">Fighter Cred</span>
                 </div>
                 <div className="rounded-lg bg-gray-800 px-3 py-2">
                   <div className="mb-1 block">

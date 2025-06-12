@@ -1,29 +1,30 @@
 import { useUser } from "@clerk/clerk-react";
 import { ForumThread } from "@/lib/types";
+import { useThreadActions } from "@/api/hooks/threads";
 
 interface ThreadActionsProps {
   thread: ForumThread;
-  onLike: () => void;
-  onPotd: () => void;
-  onPin: () => void;
-  onDelete?: () => void;
   size?: "sm" | "md" | "lg";
-  showDelete?: boolean;
   className?: string;
 }
 
 export default function ThreadActions({
   thread,
-  onLike,
-  onPotd,
-  onPin,
-  onDelete,
   size = "md",
-  showDelete = false,
   className = "",
 }: ThreadActionsProps) {
   const { user: currentUser } = useUser();
   
+  const {
+    likeThreadMutation,
+    potdThreadMutation,
+    pinnedByUserThreadMutation,
+    deleteThreadMutation
+  } = useThreadActions({
+    threadId: thread.id || '',
+    userId: currentUser?.id
+  });
+    
   // Determine icon sizes based on the size prop
   const iconSize = size === "sm" ? "h-4 w-4" : size === "lg" ? "h-6 w-6" : "h-5 w-5";
   const textSize = size === "sm" ? "text-xs" : size === "lg" ? "text-base" : "text-sm";
@@ -37,7 +38,7 @@ export default function ThreadActions({
   return (
     <div className={`flex items-center space-x-4 ${className}`}>
       <button
-        onClick={onLike}
+        onClick={()=>likeThreadMutation.mutate()}
         disabled={!currentUser}
         className={`flex items-center ${thread.hasLiked ? 'text-green-500' : 'text-gray-400'} transition hover:text-green-500`}
       >
@@ -62,7 +63,7 @@ export default function ThreadActions({
 
       {/* Post of the Day button */}
       <button
-        onClick={onPotd}
+        onClick={()=>potdThreadMutation.mutate()}
         disabled={!currentUser}
         className={`flex items-center ${thread.hasPotd ? 'text-yellow-500' : 'text-gray-400'} transition hover:text-yellow-500`}
         title="Mark as Post of the Day (once per day)"
@@ -87,7 +88,7 @@ export default function ThreadActions({
       </button>
 
       <button
-        onClick={onPin}
+        onClick={()=>pinnedByUserThreadMutation.mutate()}
         disabled={!currentUser}
         className={`flex items-center ${(thread.isPinnedByUser || thread.isPinned) ? 'text-ufc-blue' : 'text-gray-400'} transition hover:text-ufc-blue`}
       >
@@ -101,9 +102,9 @@ export default function ThreadActions({
       </button>
 
       {/* Add delete button if user is author or has permission */}
-      {showDelete && canDeleteThread && onDelete && (
+      {canDeleteThread && (
         <button
-          onClick={onDelete}
+          onClick={()=>deleteThreadMutation.mutate(thread.id)}
           className="ml-auto flex items-center text-gray-400 transition hover:text-red-500"
         >
           <svg

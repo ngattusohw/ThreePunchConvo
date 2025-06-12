@@ -1,10 +1,9 @@
-import { useState } from "react";
+import react from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { ThreadReply } from "@/lib/types";
 import { useUser } from "@clerk/clerk-react";
-import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
-import { useThreadData, useThreadReplies, useThreadActions } from "@/api/hooks/threads";
+import { useThreadData, useThreadReplies } from "@/api/hooks/threads";
 import UserAvatar from "@/components/ui/user-avatar";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import ThreadPoll from "@/components/thread/poll";
@@ -46,16 +45,6 @@ export default function Thread() {
     userId: currentUser?.id
   });
   
-  const {
-    likeThreadMutation,
-    potdThreadMutation,
-    pinnedByUserThreadMutation,
-    deleteThreadMutation
-  } = useThreadActions({
-    threadId: threadId || '',
-    userId: currentUser?.id
-  });
-
   // Use the actual data from the API
   const displayThread = thread;
 
@@ -182,19 +171,6 @@ export default function Thread() {
                   <div className="mb-6">
                     <ThreadActions 
                       thread={displayThread}
-                      onLike={() => likeThreadMutation.mutate()}
-                      onPotd={() => potdThreadMutation.mutate()}
-                      onPin={() => pinnedByUserThreadMutation.mutate()}
-                      onDelete={() => {
-                        if (
-                          window.confirm(
-                            "Are you sure you want to delete this thread? This action cannot be undone.",
-                          )
-                        ) {
-                          deleteThreadMutation.mutate(threadId);
-                        }
-                      }}
-                      showDelete={true}
                     />
                   </div>
                 </div>

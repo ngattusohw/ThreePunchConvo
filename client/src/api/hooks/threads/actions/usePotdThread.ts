@@ -26,10 +26,16 @@ export function usePotdThread({ threadId, userId }: UsePotdThreadOptions) {
       });
     },
     onError: (error: Error) => {
-      if (error.message.includes("already used")) {
+      if (error.message.includes("already used") || error.message.includes("You've already used your Post of the Day")) {
         toast({
-          title: "Limit Reached",
-          description: "You've already used your Post of the Day for today",
+          title: "Daily Limit Reached",
+          description: "You've already marked a post as Post of the Day today. Try again tomorrow!",
+          variant: "destructive",
+        });
+      } else if (error.message.includes("Thread not found")) {
+        toast({
+          title: "Post Not Found",
+          description: "The post you're trying to mark couldn't be found.",
           variant: "destructive",
         });
       } else {

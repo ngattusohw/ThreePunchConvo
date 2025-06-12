@@ -16,6 +16,7 @@ import {
   insertMediaSchema,
   insertNotificationSchema,
   PollOption,
+  Thread,
 } from "@shared/schema";
 import { requireAuth } from "@clerk/express";
 import { ensureLocalUser, requirePaidPlan } from "./auth";
@@ -822,18 +823,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Thread ID is required" });
         }
 
-        const success = await storage.potdThread(threadId, localUser.id);
-
-        if (!success) {
-          return res
-            .status(400)
-            .json({ message: "Failed to set thread as Post of the Day" });
+        try {
+          await storage.potdThread(threadId, localUser.id);
+          res.json({ message: "Thread set as Post of the Day successfully" });
+        } catch (potdError) {
+          console.error("Error in thread POTD:", potdError);
+          
+          // Check for specific error messages and return appropriate status codes
+          if (potdError instanceof Error) {
+            if (potdError.message.includes("already used")) {
+              return res.status(400).json({ 
+                message: potdError.message,
+                code: "ALREADY_USED_POTD"
+              });
+            } else if (potdError.message.includes("Thread not found")) {
+              return res.status(404).json({ 
+                message: "Thread not found",
+                code: "THREAD_NOT_FOUND"
+              });
+            }
+          }
+          
+          // Generic error case
+          res.status(400).json({ 
+            message: potdError instanceof Error ? potdError.message : "Failed to set thread as Post of the Day",
+            code: "POTD_ERROR"
+          });
         }
-
-        res.json({ message: "Thread set as Post of the Day successfully" });
       } catch (error) {
         console.error("Error in thread POTD:", error);
-        res.status(500).json({ message: "Failed to set thread as Post of the Day" });
+        res.status(500).json({ 
+          message: "Server error while processing POTD request",
+          code: "SERVER_ERROR"
+        });
       }
     },
   );

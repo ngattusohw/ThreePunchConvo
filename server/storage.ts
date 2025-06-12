@@ -1706,67 +1706,71 @@ export class DatabaseStorage implements IStorage {
     try {
       // Begin transaction
       return await db.transaction(async (tx) => {
-        // Check if user has already used POTD today
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Set to beginning of day
-        
-        const recentPotd = await tx.query.threadReactions.findFirst({
-          where: and(
-            eq(threadReactions.userId, userId),
-            eq(threadReactions.type, 'POTD'),
-            sql`${threadReactions.createdAt} >= ${today}`
-          ),
-        });
-        
-        if (recentPotd) {
-          // User has already used their POTD for today
-          return false;
+        try {
+          // Check if user has already used POTD today
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); // Set to beginning of day
+          
+          const recentPotd = await tx.query.threadReactions.findFirst({
+            where: and(
+              eq(threadReactions.userId, userId),
+              eq(threadReactions.type, 'POTD'),
+              sql`${threadReactions.createdAt} >= ${today}`
+            ),
+          });
+          
+          if (recentPotd) {
+            // User has already used their POTD for today
+            throw new Error("You've already used your Post of the Day for today");
+          }
+          
+          // Check if thread exists
+          const thread = await tx.query.threads.findFirst({
+            where: eq(threads.id, threadId),
+            columns: {
+              userId: true,
+            },
+          });
+          
+          if (!thread) {
+            throw new Error("Thread not found");
+          }
+          
+          // Add POTD reaction
+          await tx.insert(threadReactions).values({
+            id: uuidv4(),
+            threadId,
+            userId,
+            type: 'POTD',
+            createdAt: new Date(),
+          });
+          
+          // Update thread potdCount directly with SQL to avoid type issues
+          await tx.execute(
+            sql`UPDATE threads SET potd_count = potd_count + 1 WHERE id = ${threadId}`
+          );
+          
+          // Add bonus points for thread owner (if not marking their own thread)
+          if (thread.userId !== userId) {
+            await tx.execute(
+              sql`UPDATE users SET points = points + 5 WHERE id = ${thread.userId}`
+            );
+          }
+          
+          return true;
+        } catch (txError) {
+          console.error("Transaction error in potdThread:", txError);
+          throw txError; // Rethrow to trigger rollback
         }
-        
-        // Check if thread exists
-        const thread = await tx.query.threads.findFirst({
-          where: eq(threads.id, threadId),
-          columns: {
-            userId: true,
-          },
-        });
-        
-        if (!thread) {
-          return false; // Thread doesn't exist
-        }
-        
-        // Add POTD reaction
-        await tx.insert(threadReactions).values({
-          id: uuidv4(),
-          threadId,
-          userId,
-          type: 'POTD',
-          createdAt: new Date(),
-        });
-        
-        // Update thread with separate potdCount (instead of just increasing likes)
-        await tx
-          .update(threads)
-          .set({
-            potdCount: sql`${threads.potdCount} + 1`,
-          })
-          .where(eq(threads.id, threadId));
-        
-        // Add bonus points for thread owner (if not marking their own thread)
-        if (thread.userId !== userId) {
-          await tx
-            .update(users)
-            .set({
-              points: sql`${users.points} + 5`, // 5 points for POTD
-            })
-            .where(eq(users.id, thread.userId));
-        }
-        
-        return true;
       });
     } catch (error) {
       console.error('Error in potdThread:', error);
-      return false;
+      // Convert the error to a more specific message
+      if (error instanceof Error) {
+        throw error; // Rethrow original error with message
+      } else {
+        throw new Error("Failed to set thread as Post of the Day");
+      }
     }
   }
 

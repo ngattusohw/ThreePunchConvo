@@ -19,6 +19,7 @@ export default function ForumContent({
   const [searchQuery, setSearchQuery] = useState("");
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef(0);
+  const shouldRestoreScrollRef = useRef(false);
   const { user: currentUser } = useUser();
   
   // Get the current category info
@@ -53,19 +54,21 @@ export default function ForumContent({
   const handleLoadMore = () => {
     // Save current scroll position before loading more
     scrollPositionRef.current = window.scrollY;
+    shouldRestoreScrollRef.current = true;
     loadMore();
   };
 
   // Maintain scroll position when new content is loaded
   useEffect(() => {
-    if (page > 0 && scrollPositionRef.current > 0) {
+    if (shouldRestoreScrollRef.current && scrollPositionRef.current > 0) {
       // Restore the previous scroll position
       window.scrollTo({
         top: scrollPositionRef.current,
         behavior: "auto",
       });
+      shouldRestoreScrollRef.current = false;
     }
-  }, [allRegularThreads, page]);
+  }, [allRegularThreads.length, page]);
 
   // Use parent's modal handler or fallback to console log
   const handleOpenModal = () => {

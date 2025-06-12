@@ -18,11 +18,11 @@ export function useLikeThread({ threadId, userId }: UseLikeThreadOptions) {
       return likeThread(threadId, userId);
     },
     onSuccess: (data, _, context) => {
-      // Get the current like state from thread lists if thread detail is not available
+      // Get the current like state from thread lists
       let currentHasLiked = false;
       let currentLikesCount = 0;
       
-      // Try to find the thread in thread lists to get current state
+      // Try to find the thread in all thread-related queries
       const allQueries = queryClient.getQueryCache().findAll();
       
       for (const query of allQueries) {
@@ -52,7 +52,7 @@ export function useLikeThread({ threadId, userId }: UseLikeThreadOptions) {
         });
       }
 
-      // Update all thread list queries that are arrays of threads
+      // Update all thread list queries that contain the thread
       const threadQueryKeysToUpdate = queryClient.getQueryCache().findAll({
         predicate: (query) => {
           // Only update queries for thread lists (not thread detail)
@@ -67,10 +67,9 @@ export function useLikeThread({ threadId, userId }: UseLikeThreadOptions) {
 
       threadQueryKeysToUpdate.forEach(query => {
         queryClient.setQueryData(query.queryKey, (oldData: any) => {
-          if (!Array.isArray(oldData)) {
-            return oldData;
-          }
+          if (!oldData || !Array.isArray(oldData)) return oldData;
           
+          // Update the thread in the array
           return oldData.map((thread: ForumThread) =>
             thread.id === threadId
               ? { ...thread, hasLiked, likesCount }

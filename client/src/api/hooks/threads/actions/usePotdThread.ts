@@ -17,13 +17,10 @@ export function usePotdThread({ threadId, userId }: UsePotdThreadOptions) {
       if (!userId) throw new Error("You must be logged in to mark posts as Post of the Day");
       return potdThread(threadId, userId);
     },
-    onMutate: async () => {
-      console.log("🚀 POTD optimistic update starting for thread:", threadId);
+    onSuccess: (data, _, context) => {
+      console.log("🎉 POTD mutation successful");
       
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: [`/api/threads/id/${threadId}`, userId] });
-      
-      // Get current thread data
+      // Get the current thread data to apply optimistic update only on success
       const previousThread = queryClient.getQueryData<ForumThread>([`/api/threads/id/${threadId}`, userId]);
       
       // Get the current POTD state from thread lists if thread detail is not available
@@ -58,9 +55,9 @@ export function usePotdThread({ threadId, userId }: UsePotdThreadOptions) {
         ? currentPotdCount + 1 
         : Math.max(0, currentPotdCount - 1);
       
-      console.log("🔄 Updating to - hasPotd:", hasPotd, "potdCount:", potdCount);
+      console.log("🔄 Applying optimistic update on success - hasPotd:", hasPotd, "potdCount:", potdCount);
       
-      // Optimistically update the UI
+      // Apply optimistic update only on successful response
       if (previousThread) {
         queryClient.setQueryData([`/api/threads/id/${threadId}`, userId], {
           ...previousThread,
@@ -95,12 +92,8 @@ export function usePotdThread({ threadId, userId }: UsePotdThreadOptions) {
         }
       });
       
-      console.log("🎯 POTD optimistic update complete - updated", updatedQueries, "queries");
+      console.log("🎯 POTD optimistic update applied on success - updated", updatedQueries, "queries");
       
-      return { previousThread };
-    },
-    onSuccess: (_, __, context) => {
-      console.log("🎉 POTD mutation successful");
       // Show success toast
       toast({
         title: "Success!",
@@ -114,11 +107,9 @@ export function usePotdThread({ threadId, userId }: UsePotdThreadOptions) {
     },
     onError: (error: Error, _, context) => {
       console.log("❌ POTD mutation failed:", error.message);
-      // Revert optimistic update if there was an error
-      if (context?.previousThread) {
-        queryClient.setQueryData([`/api/threads/id/${threadId}`, userId], context.previousThread);
-        console.log("🔄 Reverted optimistic update");
-      }
+      
+      // Don't apply any optimistic updates on error
+      // The UI will remain in its current state
       
       console.error("POTD mutation error:", error);
       if (error.message.includes("already used") || error.message.includes("You've already used your Post of the Day")) {

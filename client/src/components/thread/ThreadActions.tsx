@@ -40,8 +40,8 @@ export default function ThreadActions({
     <div className={`flex items-center space-x-4 ${className}`}>
       <button
         onClick={()=>likeThreadMutation.mutate()}
-        disabled={!currentUser || thread.hasLiked}
-        className={`flex items-center ${thread.hasLiked ? 'text-green-500' : 'text-gray-400'} transition ${currentUser ? 'hover:text-green-500' : ''}`}
+        disabled={!currentUser || likeThreadMutation.isPending || thread.hasLiked}
+        className={`flex items-center ${thread.hasLiked ? 'text-green-500' : 'text-gray-400'} transition ${currentUser && !likeThreadMutation.isPending ? 'hover:text-green-500' : ''}`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -67,13 +67,13 @@ export default function ThreadActions({
         onClick={() => {
           potdThreadMutation.mutate();
         }}
-        disabled={!currentUser || thread.hasPotd}
-        className={`flex items-center ${thread.hasPotd ? 'text-yellow-500' : 'text-gray-400'} transition ${currentUser ? 'hover:text-yellow-500' : ''}`}
+        disabled={!currentUser || thread.hasPotd || potdThreadMutation.isPending}
+        className={`flex items-center ${thread.hasPotd ? 'text-yellow-500' : 'text-gray-400'} transition ${currentUser && !potdThreadMutation.isPending ? 'hover:text-yellow-500' : ''}`}
         title="Mark as Post of the Day (once per day)"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className={`mr-1 ${iconSize}`}
+          className={`mr-1 ${iconSize} ${potdThreadMutation.isPending ? 'animate-spin' : ''}`}
           fill={thread.hasPotd ? 'currentColor' : 'none'}
           viewBox="0 0 24 24"
           stroke="currentColor"

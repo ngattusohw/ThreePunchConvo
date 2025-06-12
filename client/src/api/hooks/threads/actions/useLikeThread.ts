@@ -17,33 +17,22 @@ export function useLikeThread({ threadId, userId }: UseLikeThreadOptions) {
       if (!userId) throw new Error("You must be logged in to like posts");
       return likeThread(threadId, userId);
     },
-    onMutate: async () => {
-      // Cancel any outgoing refetches for this specific thread
-      await queryClient.cancelQueries({ queryKey: [`/api/threads/id/${threadId}`, userId] });
-
-      // Optimistically update the thread detail
-      const previousThread = queryClient.getQueryData<ForumThread>([`/api/threads/id/${threadId}`, userId]);
-      
+    onSuccess: (data, _, context) => {
       // Get the current like state from thread lists if thread detail is not available
       let currentHasLiked = false;
       let currentLikesCount = 0;
       
-      if (previousThread) {
-        currentHasLiked = previousThread.hasLiked;
-        currentLikesCount = previousThread.likesCount;
-      } else {
-        // Try to find the thread in thread lists to get current state
-        const allQueries = queryClient.getQueryCache().findAll();
-        
-        for (const query of allQueries) {
-          const data = queryClient.getQueryData(query.queryKey);
-          if (Array.isArray(data)) {
-            const threadInList = data.find((t: ForumThread) => t.id === threadId);
-            if (threadInList) {
-              currentHasLiked = threadInList.hasLiked;
-              currentLikesCount = threadInList.likesCount;
-              break;
-            }
+      // Try to find the thread in thread lists to get current state
+      const allQueries = queryClient.getQueryCache().findAll();
+      
+      for (const query of allQueries) {
+        const data = queryClient.getQueryData(query.queryKey);
+        if (Array.isArray(data)) {
+          const threadInList = data.find((t: ForumThread) => t.id === threadId);
+          if (threadInList) {
+            currentHasLiked = threadInList.hasLiked;
+            currentLikesCount = threadInList.likesCount;
+            break;
           }
         }
       }
@@ -54,6 +43,7 @@ export function useLikeThread({ threadId, userId }: UseLikeThreadOptions) {
         : Math.max(0, currentLikesCount - 1);
 
       // Update thread detail if it exists
+      const previousThread = queryClient.getQueryData<ForumThread>([`/api/threads/id/${threadId}`, userId]);
       if (previousThread) {
         queryClient.setQueryData([`/api/threads/id/${threadId}`, userId], {
           ...previousThread,
@@ -89,9 +79,6 @@ export function useLikeThread({ threadId, userId }: UseLikeThreadOptions) {
         });
       });
 
-      return { previousThread };
-    },
-    onSuccess: (data, _, context) => {
       // Toast notification for success
       const wasLiked = data?.wasLiked;
       
@@ -106,10 +93,8 @@ export function useLikeThread({ threadId, userId }: UseLikeThreadOptions) {
       });
     },
     onError: (error: Error, _, context) => {
-      // Revert back to previous data if there was an error
-      if (context?.previousThread) {
-        queryClient.setQueryData([`/api/threads/id/${threadId}`, userId], context.previousThread);
-      }
+      // Don't apply any optimistic updates on error
+      // The UI will remain in its current state
       
       toast({
         title: "Error",

@@ -53,8 +53,12 @@ export function useRegularThreads({
         // Replace all threads when filters change (page is reset to 0)
         setAllRegularThreads(regularThreads);
       } else {
-        // Append new threads when loading more
-        setAllRegularThreads((prev) => [...prev, ...regularThreads]);
+        // Append new threads when loading more, ensuring no duplicates
+        setAllRegularThreads((prev) => {
+          const existingIds = new Set(prev.map(thread => thread.id));
+          const newThreads = regularThreads.filter(thread => !existingIds.has(thread.id));
+          return [...prev, ...newThreads];
+        });
       }
 
       // Check if we have more threads to load

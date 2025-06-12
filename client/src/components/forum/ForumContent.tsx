@@ -44,6 +44,11 @@ export default function ForumContent({
     userId: currentUser?.id
   });
 
+  // Filter out pinned threads from regular threads to prevent duplicate keys
+  const filteredRegularThreads = allRegularThreads.filter(thread => 
+    !pinnedThreads.some(pinnedThread => pinnedThread.id === thread.id)
+  );
+
   // Store current scroll position before loading more
   const handleLoadMore = () => {
     // Save current scroll position before loading more
@@ -235,7 +240,7 @@ export default function ForumContent({
       {/* Forum Thread List */}
       {(!isLoading || page > 0 || allRegularThreads.length > 0) && !error && (
         <div className="space-y-4">
-          {(pinnedThreads.length > 0 || allRegularThreads.length > 0) ? (
+          {(pinnedThreads.length > 0 || filteredRegularThreads.length > 0) ? (
             <div>
               {/* Pinned Section - only shown once at the top */}
               {pinnedThreads.length > 0 && (
@@ -249,9 +254,9 @@ export default function ForumContent({
               )}
 
               {/* Regular Threads Section - grows with infinite scrolling */}
-              {allRegularThreads.length > 0 ? (
+              {filteredRegularThreads.length > 0 ? (
                 <div className="space-y-4">
-                  {allRegularThreads.map((thread) => (
+                  {filteredRegularThreads.map((thread) => (
                     <ThreadCard key={thread.id} thread={thread} />
                   ))}
                 </div>

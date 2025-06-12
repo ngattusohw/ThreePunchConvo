@@ -41,7 +41,7 @@ export default function ThreadActions({
       <button
         onClick={()=>likeThreadMutation.mutate()}
         disabled={!currentUser || likeThreadMutation.isPending || thread.hasLiked}
-        className={`flex items-center ${thread.hasLiked ? 'text-green-500' : 'text-gray-400'} transition ${currentUser && !likeThreadMutation.isPending ? 'hover:text-green-500' : ''}`}
+        className={`flex items-center ${thread.hasLiked ? 'text-green-500' : 'text-gray-400'} transition ${currentUser && !likeThreadMutation.isPending ? 'hover:text-green-500' : ''} ${likeThreadMutation.isPending ? 'text-green-500 opacity-50' : ''}`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

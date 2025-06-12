@@ -19,88 +19,98 @@ export function useLikeThread({ threadId, userId }: UseLikeThreadOptions) {
       return likeThread(threadId, userId);
     },
     onMutate: async () => {
-      // Cancel any outgoing refetches
+      console.log("LIKE: onMutate started");
+      
+      // Cancel any outgoing refetches for this specific thread
       await queryClient.cancelQueries({ queryKey: [`/api/threads/id/${threadId}`, userId] });
-      
-      // Get current thread data
+
+      // Optimistically update the thread detail
       const previousThread = queryClient.getQueryData<ForumThread>([`/api/threads/id/${threadId}`, userId]);
-      console.log("LIKE: Previous thread data from cache:", previousThread);
+      console.log("LIKE: Previous thread data:", previousThread);
       
-      // Optimistically update the UI
+      // Get the current like state from thread lists if thread detail is not available
+      let currentHasLiked = false;
+      let currentLikesCount = 0;
+      
       if (previousThread) {
-        const hasLiked = !previousThread.hasLiked;
-        const likesCount = hasLiked 
-          ? previousThread.likesCount + 1 
-          : Math.max(0, previousThread.likesCount - 1);
+        currentHasLiked = previousThread.hasLiked;
+        currentLikesCount = previousThread.likesCount;
+      } else {
+        // Try to find the thread in thread lists to get current state
+        const allQueries = queryClient.getQueryCache().findAll();
+        console.log("LIKE: All queries in cache:", allQueries.map(q => q.queryKey));
         
-        console.log(`LIKE: Optimistically updating thread ${threadId} - hasLiked: ${hasLiked}, likesCount: ${likesCount}`);
-        
+        for (const query of allQueries) {
+          const data = queryClient.getQueryData(query.queryKey);
+          if (Array.isArray(data)) {
+            const threadInList = data.find((t: ForumThread) => t.id === threadId);
+            if (threadInList) {
+              currentHasLiked = threadInList.hasLiked;
+              currentLikesCount = threadInList.likesCount;
+              console.log(`LIKE: Found thread in list, current state: hasLiked=${currentHasLiked}, likesCount=${currentLikesCount}`);
+              break;
+            }
+          }
+        }
+      }
+      
+      const hasLiked = !currentHasLiked;
+      const likesCount = hasLiked
+        ? currentLikesCount + 1
+        : Math.max(0, currentLikesCount - 1);
+
+      console.log(`LIKE: Updating thread ${threadId} - hasLiked: ${hasLiked}, likesCount: ${likesCount}`);
+
+      // Update thread detail if it exists
+      if (previousThread) {
         queryClient.setQueryData([`/api/threads/id/${threadId}`, userId], {
           ...previousThread,
           hasLiked,
           likesCount,
         });
-        
-        // Update thread in any list views by finding all thread list queries
-        const threadQueryKeysToUpdate = queryClient.getQueryCache().findAll({
-          predicate: (query) => {
-            // Match any query that has /api/threads in the key and isn't a specific thread ID
-            return (
-              query.queryKey[0] &&
-              typeof query.queryKey[0] === 'string' &&
-              query.queryKey[0].includes('/api/threads') &&
-              !query.queryKey[0].includes(`/id/${threadId}`)
-            );
-          }
-        });
-        
-        console.log("LIKE: Found thread query keys to update:", threadQueryKeysToUpdate.map(q => q.queryKey));
-        
-        // Update each matching query's data
-        threadQueryKeysToUpdate.forEach(query => {
-          const oldData = queryClient.getQueryData(query.queryKey);
-          console.log(`LIKE: Updating query key ${JSON.stringify(query.queryKey)}, current data:`, oldData);
-          
-          queryClient.setQueryData(query.queryKey, (oldData: any) => {
-            if (!oldData) return oldData;
-            
-            // Handle both regular and pinned threads
-            if (oldData.regularThreads) {
-              const updatedData = {
-                ...oldData,
-                regularThreads: oldData.regularThreads.map((thread: ForumThread) => 
-                  thread.id === threadId 
-                    ? { ...thread, hasLiked, likesCount } 
-                    : thread
-                ),
-                pinnedThreads: oldData.pinnedThreads?.map((thread: ForumThread) => 
-                  thread.id === threadId 
-                    ? { ...thread, hasLiked, likesCount } 
-                    : thread
-                ) || [],
-              };
-              console.log(`LIKE: Updated regular/pinned threads data:`, updatedData);
-              return updatedData;
-            }
-            
-            // Handle case where it's just an array of threads
-            if (Array.isArray(oldData)) {
-              const updatedData = oldData.map((thread: ForumThread) => 
-                thread.id === threadId 
-                  ? { ...thread, hasLiked, likesCount } 
-                  : thread
-              );
-              console.log(`LIKE: Updated array data:`, updatedData);
-              return updatedData;
-            }
-            
-            return oldData;
-          });
-        });
-      } else {
-        console.log(`LIKE: No thread data found in cache for thread ${threadId}`);
       }
+
+      // Update all thread list queries that are arrays of threads
+      const allQueries = queryClient.getQueryCache().findAll();
+      console.log("LIKE: All queries in cache:", allQueries.map(q => q.queryKey));
       
+      const threadQueryKeysToUpdate = queryClient.getQueryCache().findAll({
+        predicate: (query) => {
+          // Only update queries for thread lists (not thread detail)
+          const matches = (
+            query.queryKey[0] &&
+            typeof query.queryKey[0] === 'string' &&
+            query.queryKey[0].startsWith('/api/threads/') &&
+            !query.queryKey[0].includes('/id/')
+          );
+          console.log(`LIKE: Query ${JSON.stringify(query.queryKey)} matches: ${matches}`);
+          return matches;
+        }
+      });
+
+      console.log("LIKE: Found thread list queries to update:", threadQueryKeysToUpdate.map(q => q.queryKey));
+
+      threadQueryKeysToUpdate.forEach(query => {
+        const oldData = queryClient.getQueryData(query.queryKey);
+        console.log(`LIKE: Updating query ${JSON.stringify(query.queryKey)}, old data:`, oldData);
+        
+        queryClient.setQueryData(query.queryKey, (oldData: any) => {
+          if (!Array.isArray(oldData)) {
+            console.log(`LIKE: Query ${JSON.stringify(query.queryKey)} is not an array, skipping`);
+            return oldData;
+          }
+          
+          const updatedData = oldData.map((thread: ForumThread) =>
+            thread.id === threadId
+              ? { ...thread, hasLiked, likesCount }
+              : thread
+          );
+          
+          console.log(`LIKE: Updated query ${JSON.stringify(query.queryKey)}, new data:`, updatedData);
+          return updatedData;
+        });
+      });
+
       return { previousThread };
     },
     onSuccess: (data, _, context) => {

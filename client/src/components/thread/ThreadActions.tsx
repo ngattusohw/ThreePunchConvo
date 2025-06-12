@@ -40,7 +40,7 @@ export default function ThreadActions({
       <button
         onClick={()=>likeThreadMutation.mutate()}
         disabled={!currentUser}
-        className={`flex items-center ${thread.hasLiked ? 'text-green-500' : 'text-gray-400'} transition hover:text-green-500`}
+        className={`flex items-center ${thread.hasLiked ? 'text-green-500' : 'text-gray-400'} transition ${currentUser ? 'hover:text-green-500' : ''}`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -65,7 +65,7 @@ export default function ThreadActions({
       <button
         onClick={()=>potdThreadMutation.mutate()}
         disabled={!currentUser}
-        className={`flex items-center ${thread.hasPotd ? 'text-yellow-500' : 'text-gray-400'} transition hover:text-yellow-500`}
+        className={`flex items-center ${thread.hasPotd ? 'text-yellow-500' : 'text-gray-400'} transition ${currentUser ? 'hover:text-yellow-500' : ''}`}
         title="Mark as Post of the Day (once per day)"
       >
         <svg
@@ -90,7 +90,7 @@ export default function ThreadActions({
       <button
         onClick={()=>pinnedByUserThreadMutation.mutate()}
         disabled={!currentUser}
-        className={`flex items-center ${(thread.isPinnedByUser || thread.isPinned) ? 'text-ufc-blue' : 'text-gray-400'} transition hover:text-ufc-blue`}
+        className={`flex items-center ${(thread.isPinnedByUser || thread.isPinned) ? 'text-ufc-blue' : 'text-gray-400'} transition ${currentUser ? 'hover:text-ufc-blue' : ''}`}
       >
         <svg xmlns="http://www.w3.org/2000/svg"
           className={`${iconSize} mr-1`}
@@ -105,6 +105,7 @@ export default function ThreadActions({
       {canDeleteThread && (
         <button
           onClick={()=>deleteThreadMutation.mutate(thread.id)}
+          disabled={!currentUser}
           className="ml-auto flex items-center text-gray-400 transition hover:text-red-500"
         >
           <svg

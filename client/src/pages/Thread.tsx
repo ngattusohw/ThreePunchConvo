@@ -50,6 +50,7 @@ export default function Thread() {
 
   // Debug - log thread data
   console.log("Thread data received:", displayThread);
+  console.log("Thread object in render:", thread);
 
   // Function to close modal and navigate to upgrade page
   const handleUpgrade = () => {

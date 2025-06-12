@@ -11,7 +11,6 @@ interface UserThreadHeaderProps {
   createdAt: string | Date;
   isPinned?: boolean;
   isPinnedByUser?: boolean;
-  showAvatar?: boolean;
   showStatus?: boolean;
   size?: 'sm' | 'md' | 'lg';
   pinnedPosition?: 'right' | 'inline';
@@ -22,7 +21,6 @@ export default function UserThreadHeader({
   createdAt,
   isPinned = false,
   isPinnedByUser = false,
-  showAvatar = true,
   showStatus = true,
   size = 'md',
   pinnedPosition = 'inline'
@@ -77,71 +75,70 @@ export default function UserThreadHeader({
       )}
       
       {/* User Avatar */}
-      {showAvatar && (
-        <div className="mr-3 flex-shrink-0 flex flex-col items-center">
-          <UserAvatar user={user as AuthUser} size={size} />
-          {showStatus && user?.status && (
-            <span className={`mt-1 text-xs ${statusColorClass} text-center`}>
-              {user.status.length > 10 
-                ? user.status.substring(0, 8) + "..." 
-                : user.status}
+      <div className="mr-3 flex-shrink-0 flex flex-col items-center">
+        <UserAvatar user={user as AuthUser} size={size} />
+      </div>
+      
+      <div className="flex flex-col space-y-1">
+        {/* Top line: Status and FC Badge */}
+        <div className="flex items-center gap-2">
+          {/* User badges */}
+          {showStatus && (
+            <StatusBadge status={user?.status || ""} />
+          )}
+          
+          {user?.role === "FIGHTER" && (
+            <span className="flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="mr-1 h-3 w-3"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              VERIFIED
             </span>
           )}
+
+          {user?.role === "ADMIN" && (
+            <span className="bg-ufc-gold text-ufc-black rounded px-2 py-0.5 text-xs font-bold">
+              ADMIN
+            </span>
+          )}
+
+          {user?.role === "MODERATOR" && (
+            <span className="rounded bg-green-600 px-2 py-0.5 text-xs font-bold text-white">
+              MOD
+            </span>
+          )}
+          
+          {/* FC Badge */}
+          {user?.rank !== undefined && !isFighter && (
+            <FCBadge rank={user.rank} size={size === 'lg' ? 'lg' : size === 'sm' ? 'sm' : 'md'} />
+          )}
         </div>
-      )}
-      
-      {/* User badges */}
-      {!showAvatar && showStatus && (
-        <StatusBadge status={user?.status || ""} />
-      )}
-      
-      {user?.role === "FIGHTER" && (
-        <span className="flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="mr-1 h-3 w-3"
-            viewBox="0 0 20 20"
-            fill="currentColor"
+        
+        {/* Bottom line: Username and Date */}
+        <div className="flex items-center gap-2">
+          {/* Username */}
+          <Link
+            href={`/user/${user?.username}`}
+            className="hover:text-ufc-blue font-medium text-white transition"
           >
-            <path
-              fillRule="evenodd"
-              d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clipRule="evenodd"
-            />
-          </svg>
-          VERIFIED
-        </span>
-      )}
-
-      {user?.role === "ADMIN" && (
-        <span className="bg-ufc-gold text-ufc-black rounded px-2 py-0.5 text-xs font-bold">
-          ADMIN
-        </span>
-      )}
-
-      {user?.role === "MODERATOR" && (
-        <span className="rounded bg-green-600 px-2 py-0.5 text-xs font-bold text-white">
-          MOD
-        </span>
-      )}
-      
-      {/* Username */}
-      <Link
-        href={`/user/${user?.username}`}
-        className="hover:text-ufc-blue font-medium text-white transition"
-      >
-        {user?.username}
-      </Link>
-      
-      {/* FC Badge */}
-      {user?.rank !== undefined && !isFighter && (
-        <FCBadge rank={user.rank} size={size === 'lg' ? 'lg' : size === 'sm' ? 'sm' : 'md'} />
-      )}
-      
-      {/* Date */}
-      <span className="text-sm text-gray-400">
-        {formatDate(createdAt)}
-      </span>
+            {user?.username}
+          </Link>
+          
+          {/* Date */}
+          <span className="text-sm text-gray-400">
+          · {formatDate(createdAt)}
+          </span>
+        </div>
+      </div>
     </div>
   );
 } 

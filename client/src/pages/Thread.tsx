@@ -6,8 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
 import { useThreadData, useThreadReplies, useThreadActions } from "@/api/hooks/threads";
 import UserAvatar from "@/components/ui/user-avatar";
-import StatusBadge from "@/components/ui/status-badge";
-import FCBadge from "@/components/ui/fc-badge";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import ThreadPoll from "@/components/thread/poll";
 import UserThreadHeader from "@/components/ui/user-thread-header";
@@ -137,10 +135,6 @@ export default function Thread() {
             <div className="p-5">
               {/* Thread Header */}
               <div className="flex items-start">
-                <div className="mr-4 flex-shrink-0">
-                  <UserAvatar user={displayThread.user} size="lg" />
-                </div>
-
                 <div className="flex-grow">
                   <div className="mb-2">
                     <UserThreadHeader 
@@ -148,7 +142,6 @@ export default function Thread() {
                       createdAt={displayThread.createdAt}
                       isPinned={displayThread.isPinned}
                       isPinnedByUser={displayThread.isPinnedByUser}
-                      showAvatar={false}
                       pinnedPosition="right"
                     />
                   </div>
@@ -633,13 +626,13 @@ function ReplyCard({
 
   // Use fixed indentation classes based on level
   let indentationClass = "";
-  if (level === 1) indentationClass = "ml-4 border-l-2 border-gray-700 pl-4";
+  if (level === 1) indentationClass = "ml-4 border-l-2 border-gray-700";
   else if (level === 2)
-    indentationClass = "ml-8 border-l-2 border-gray-600 pl-4";
+    indentationClass = "ml-8 border-l-2 border-gray-600";
   else if (level === 3)
-    indentationClass = "ml-12 border-l-2 border-gray-600 pl-4";
+    indentationClass = "ml-12 border-l-2 border-gray-600";
   else if (level >= 4)
-    indentationClass = "ml-16 border-l-2 border-gray-600 pl-4";
+    indentationClass = "ml-16 border-l-2 border-gray-600";
 
   const canDeleteReply =
     currentUser &&
@@ -675,16 +668,11 @@ function ReplyCard({
       )}
       <div className="p-4">
         <div className="flex items-start">
-          <div className="mr-3 flex-shrink-0">
-            <UserAvatar user={reply.user} size="md" />
-          </div>
-
           <div className="flex-grow">
             <div className="mb-2">
               <UserThreadHeader 
                 user={reply.user}
                 createdAt={reply.createdAt}
-                showAvatar={false}
                 pinnedPosition="inline"
               />
             </div>

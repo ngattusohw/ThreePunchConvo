@@ -32,7 +32,7 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                 createdAt={thread.createdAt}
                 isPinned={thread.isPinned}
                 isPinnedByUser={thread.isPinnedByUser}
-                showAvatar={true}
+                showStatus={true}
                 size="md"
                 pinnedPosition="right"
               />

@@ -577,13 +577,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/threads/id/:id", async (req: Request, res: Response) => {
     try {
       const threadId = req.params.id;
-      const userId = req.query.userId as string | undefined;
+      const clerkUserId = req.query.userId as string | undefined;
 
       if (!threadId) {
         return res.status(400).json({ message: "Invalid thread ID" });
       }
 
-      const thread = await storage.getThread(threadId, userId);
+      let localUserId = undefined;
+      
+      // Convert Clerk user ID to local user ID if provided
+      if (clerkUserId) {
+        console.log("Looking up user by externalId for thread view:", clerkUserId);
+        const localUser = await storage.getUserByExternalId(clerkUserId);
+        if (localUser) {
+          console.log(`Thread view: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
+          localUserId = localUser.id;
+        } else {
+          console.log(`No local user found for Clerk user ${clerkUserId}`);
+        }
+      }
+
+      const thread = await storage.getThread(threadId, localUserId);
 
       if (!thread) {
         return res.status(404).json({ message: "Thread not found" });
@@ -591,6 +605,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(thread);
     } catch (error) {
+      console.error("Error fetching thread:", error);
       res.status(500).json({ message: "Failed to fetch thread" });
     }
   });
@@ -824,7 +839,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         try {
+          console.log(`Starting POTD operation for thread ${threadId} by user ${localUser.id}`);
           await storage.potdThread(threadId, localUser.id);
+          console.log(`POTD set successfully for thread ${threadId} by user ${localUser.id}`);
+          
+          // Verify the update by fetching the thread with this user
+          const updatedThread = await storage.getThread(threadId, localUser.id);
+          console.log(`After POTD, hasPotd flag: ${updatedThread?.hasPotd}, potdCount: ${updatedThread?.potdCount}`);
+          
           res.json({ message: "Thread set as Post of the Day successfully" });
         } catch (potdError) {
           console.error("Error in thread POTD:", potdError);

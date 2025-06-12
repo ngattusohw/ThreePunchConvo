@@ -142,6 +142,7 @@ type ThreadWithAssociatedData = Thread & {
     options: PollOption[];
   };
   hasLiked: boolean;
+  hasPotd: boolean;
 };
 
 // Database implementation of the storage interface
@@ -613,15 +614,26 @@ export class DatabaseStorage implements IStorage {
 
       // Check if the current user has liked this thread
       let hasLiked = false;
+      let hasPotd = false;
       if (currentUserId) {
-        const existingReaction = await db.query.threadReactions.findFirst({
+        const existingLikeReaction = await db.query.threadReactions.findFirst({
           where: and(
             eq(threadReactions.threadId, id),
             eq(threadReactions.userId, currentUserId),
             eq(threadReactions.type, "LIKE"),
           ),
         });
-        hasLiked = !!existingReaction;
+        hasLiked = !!existingLikeReaction;
+        
+        // Check if the current user has marked this thread as POTD
+        const existingPotdReaction = await db.query.threadReactions.findFirst({
+          where: and(
+            eq(threadReactions.threadId, id),
+            eq(threadReactions.userId, currentUserId),
+            eq(threadReactions.type, "POTD"),
+          ),
+        });
+        hasPotd = !!existingPotdReaction;
       }
 
       // Return thread with associated data
@@ -655,6 +667,7 @@ export class DatabaseStorage implements IStorage {
         media: [], //media || [],
         poll: pollWithOptions,
         hasLiked,
+        hasPotd,
       };
     } catch (error) {
       console.error("Error getting thread:", error);

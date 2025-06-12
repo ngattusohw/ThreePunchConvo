@@ -13,7 +13,6 @@ import UserThreadHeader from "@/components/ui/user-thread-header";
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
   const { user: currentUser } = useUser();
-  const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   const {
@@ -58,6 +57,9 @@ export default function Thread() {
 
   // Use the actual data from the API
   const displayThread = thread;
+
+  // Debug - log thread data
+  console.log("Thread data received:", displayThread);
 
   // Function to close modal and navigate to upgrade page
   const handleUpgrade = () => {
@@ -203,15 +205,18 @@ export default function Thread() {
 
                     {/* Post of the Day button */}
                     <button
-                      onClick={() => potdThreadMutation.mutate()}
+                      onClick={() => {
+                        console.log("Current hasPotd value:", displayThread.hasPotd);
+                        potdThreadMutation.mutate();
+                      }}
                       disabled={!currentUser}
                       className="flex items-center text-gray-400 transition hover:text-yellow-500"
                       title="Mark as Post of the Day (once per day)"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="mr-1 h-5 w-5"
-                        fill="none"
+                        className={`mr-1 h-5 w-5 ${displayThread.hasPotd ? 'text-yellow-500' : ''}`}
+                        fill={displayThread.hasPotd ? 'currentColor' : 'none'}
                         viewBox="0 0 24 24"
                         stroke="currentColor"
                       >
@@ -222,8 +227,8 @@ export default function Thread() {
                           d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
                         />
                       </svg>
-                      <span className="font-medium">
-                        POTD
+                      <span className={`font-medium ${displayThread.hasPotd ? 'text-yellow-500' : ''}`}>
+                        {displayThread.potdCount || 0}
                       </span>
                     </button>
 
@@ -232,12 +237,13 @@ export default function Thread() {
                       disabled={!currentUser}
                       className="flex items-center text-gray-400 hover:text-ufc-blue transition"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 mr-1 ${displayThread.isPinnedByUser ? 'text-ufc-blue' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg"
+                        className={`h-5 w-5 mr-1 ${(displayThread.isPinnedByUser || displayThread.isPinned) ? 'text-ufc-blue' : ''}`}
+                        fill={(displayThread.isPinnedByUser || displayThread.isPinned) ? 'text-ufc-blue' : 'none'}
+                        viewBox="0 0 24 24"
+                        stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
                       </svg>
-                      <span className={`font-medium ${displayThread.isPinnedByUser ? 'text-ufc-blue' : ''}`}>
-                        {displayThread.user.pinnedByUserCount}
-                      </span>
                     </button>
 
                     {/* Add delete button if user is author or has permission */}

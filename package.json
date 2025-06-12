@@ -12,8 +12,8 @@
     "db:generate": "drizzle-kit generate",
     "db:reset": "drizzle-kit drop && drizzle-kit push",
     "migrate": "tsx server/migrate.ts",
+    "migrate:potd": "tsx server/migrate_potd.ts",
     "migrate:rename": "tsx server/run_rename_migration.ts",
-    "migrate:rename-sql": "tsx server/run_rename_sql.ts"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.31.6",

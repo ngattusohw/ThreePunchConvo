@@ -580,7 +580,8 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPinnedByUser: threads.isPinnedByUser
+          isPinnedByUser: threads.isPinnedByUser,
+          potdCount: threads.potdCount
         })
         .from(threads)
         .where(eq(threads.id, id));
@@ -685,7 +686,8 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPinnedByUser: threads.isPinnedByUser
+          isPinnedByUser: threads.isPinnedByUser,
+          potdCount: threads.potdCount
         })
         .from(threads)
         .where(eq(threads.categoryId, categoryId));
@@ -743,7 +745,8 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPinnedByUser: threads.isPinnedByUser
+          isPinnedByUser: threads.isPinnedByUser,
+          potdCount: threads.potdCount
         })
         .from(threads)
         .where(eq(threads.userId, userId))
@@ -773,7 +776,8 @@ export class DatabaseStorage implements IStorage {
         likesCount: 0,
         dislikesCount: 0,
         repliesCount: 0,
-        isPinnedByUser: false
+        isPinnedByUser: false,
+        potdCount: 0
       };
 
       // Start a transaction to create thread and update user points
@@ -1740,11 +1744,11 @@ export class DatabaseStorage implements IStorage {
           createdAt: new Date(),
         });
         
-        // Update thread and give extra points (more than a regular like)
+        // Update thread with separate potdCount (instead of just increasing likes)
         await tx
           .update(threads)
           .set({
-            likesCount: sql`${threads.likesCount} + 5`, // Give 5x the value of a regular like
+            potdCount: sql`${threads.potdCount} + 1`,
           })
           .where(eq(threads.id, threadId));
         
@@ -1753,8 +1757,7 @@ export class DatabaseStorage implements IStorage {
           await tx
             .update(users)
             .set({
-              points: sql`${users.points} + 5`, // Changed from 10 to 5 points for POTD
-              likesCount: sql`${users.likesCount} + 5`, // Also increase like count
+              points: sql`${users.points} + 5`, // 5 points for POTD
             })
             .where(eq(users.id, thread.userId));
         }

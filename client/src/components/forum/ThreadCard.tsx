@@ -7,12 +7,15 @@ import MediaPreview from "@/components/ui/media-preview";
 import UserThreadHeader from "@/components/ui/user-thread-header";
 import ThreadActions from "@/components/thread/ThreadActions";
 import { useThreadActions } from "@/api/hooks/threads";
+import { useUser } from "@clerk/clerk-react";
 
 interface ThreadCardProps {
   thread: ForumThread;
 }
 
 export default function ThreadCard({ thread }: ThreadCardProps) {
+  const { user: currentUser } = useUser();
+  
   const {
     likeThreadMutation,
     potdThreadMutation,
@@ -20,7 +23,7 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
     deleteThreadMutation
   } = useThreadActions({
     threadId: thread.id || '',
-    userId: thread.userId
+    userId: currentUser?.id
   });
 
   const borderColor = thread.isPinned

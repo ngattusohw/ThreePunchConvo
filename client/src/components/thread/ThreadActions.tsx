@@ -40,7 +40,7 @@ export default function ThreadActions({
     <div className={`flex items-center space-x-4 ${className}`}>
       <button
         onClick={()=>likeThreadMutation.mutate()}
-        disabled={!currentUser}
+        disabled={!currentUser || thread.hasLiked}
         className={`flex items-center ${thread.hasLiked ? 'text-green-500' : 'text-gray-400'} transition ${currentUser ? 'hover:text-green-500' : ''}`}
       >
         <svg
@@ -65,10 +65,9 @@ export default function ThreadActions({
       {/* Post of the Day button */}
       <button
         onClick={() => {
-          console.log("⭐ POTD button clicked for thread:", thread.id, "Current hasPotd:", thread.hasPotd, "potdCount:", thread.potdCount);
           potdThreadMutation.mutate();
         }}
-        disabled={!currentUser}
+        disabled={!currentUser || thread.hasPotd}
         className={`flex items-center ${thread.hasPotd ? 'text-yellow-500' : 'text-gray-400'} transition ${currentUser ? 'hover:text-yellow-500' : ''}`}
         title="Mark as Post of the Day (once per day)"
       >

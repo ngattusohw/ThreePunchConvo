@@ -19,9 +19,6 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
     ? "border-ufc-blue"
     : "";
 
-  // Debug log to see if thread data is updating
-  console.log(`ThreadCard ${thread.id}: hasLiked=${thread.hasLiked}, likesCount=${thread.likesCount}`);
-
   return (
     <div
       className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} overflow-hidden rounded-lg shadow-lg transition hover:shadow-xl relative`}

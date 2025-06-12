@@ -5,12 +5,24 @@ import { truncateText } from "@/lib/utils";
 import UserAvatar from "@/components/ui/user-avatar";
 import MediaPreview from "@/components/ui/media-preview";
 import UserThreadHeader from "@/components/ui/user-thread-header";
+import ThreadActions from "@/components/thread/ThreadActions";
+import { useThreadActions } from "@/api/hooks/threads";
 
 interface ThreadCardProps {
   thread: ForumThread;
 }
 
 export default function ThreadCard({ thread }: ThreadCardProps) {
+  const {
+    likeThreadMutation,
+    potdThreadMutation,
+    pinnedByUserThreadMutation,
+    deleteThreadMutation
+  } = useThreadActions({
+    threadId: thread.id || '',
+    userId: thread.userId
+  });
+
   const borderColor = thread.isPinned
     ? "border-ufc-gold"
     : thread.isPinnedByUser
@@ -119,9 +131,10 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
               </div>
             )}
 
-            {/* Thread Stats */}
-            <div className="flex flex-wrap items-center space-x-4 text-sm text-gray-400">
-              <div className="flex items-center">
+            {/* Thread Stats and Actions */}
+            <div className="flex items-center justify-between">
+              {/* Thread reply count */}
+              <div className="flex items-center text-sm text-gray-400">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="mr-1 h-5 w-5"
@@ -139,23 +152,15 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                 {thread.repliesCount} replies
               </div>
 
-              <div className="flex items-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="mr-1 h-5 w-5 text-green-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
-                  />
-                </svg>
-                {thread.likesCount}
-              </div>
+              {/* Thread Actions */}
+              <ThreadActions 
+                thread={thread}
+                onLike={() => likeThreadMutation.mutate()}
+                onPotd={() => potdThreadMutation.mutate()}
+                onPin={() => pinnedByUserThreadMutation.mutate()}
+                size="sm"
+                className="ml-2"
+              />
             </div>
           </div>
         </div>

@@ -9,6 +9,7 @@ import UserAvatar from "@/components/ui/user-avatar";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import ThreadPoll from "@/components/thread/poll";
 import UserThreadHeader from "@/components/ui/user-thread-header";
+import ThreadActions from "@/components/thread/ThreadActions";
 
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
@@ -178,108 +179,23 @@ export default function Thread() {
                   )}
 
                   {/* Thread Actions */}
-                  <div className="mb-6 flex items-center space-x-4">
-                    <button
-                      onClick={() => likeThreadMutation.mutate()}
-                      disabled={!currentUser}
-                      className="flex items-center text-gray-400 transition hover:text-green-500"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className={`mr-1 h-5 w-5 ${displayThread.hasLiked ? 'text-green-500' : ''}`}
-                        fill={displayThread.hasLiked ? 'currentColor' : 'none'}
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
-                        />
-                      </svg>
-                      <span className="font-medium">
-                        {displayThread?.likesCount}
-                      </span>
-                    </button>
-
-                    {/* Post of the Day button */}
-                    <button
-                      onClick={() => {
-                        console.log("Current hasPotd value:", displayThread.hasPotd);
-                        potdThreadMutation.mutate();
+                  <div className="mb-6">
+                    <ThreadActions 
+                      thread={displayThread}
+                      onLike={() => likeThreadMutation.mutate()}
+                      onPotd={() => potdThreadMutation.mutate()}
+                      onPin={() => pinnedByUserThreadMutation.mutate()}
+                      onDelete={() => {
+                        if (
+                          window.confirm(
+                            "Are you sure you want to delete this thread? This action cannot be undone.",
+                          )
+                        ) {
+                          deleteThreadMutation.mutate(threadId);
+                        }
                       }}
-                      disabled={!currentUser}
-                      className="flex items-center text-gray-400 transition hover:text-yellow-500"
-                      title="Mark as Post of the Day (once per day)"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className={`mr-1 h-5 w-5 ${displayThread.hasPotd ? 'text-yellow-500' : ''}`}
-                        fill={displayThread.hasPotd ? 'currentColor' : 'none'}
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                        />
-                      </svg>
-                      <span className={`font-medium ${displayThread.hasPotd ? 'text-yellow-500' : ''}`}>
-                        {displayThread.potdCount || 0}
-                      </span>
-                    </button>
-
-                    <button
-                      onClick={() => pinnedByUserThreadMutation.mutate()}
-                      disabled={!currentUser}
-                      className="flex items-center text-gray-400 hover:text-ufc-blue transition"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg"
-                        className={`h-5 w-5 mr-1 ${(displayThread.isPinnedByUser || displayThread.isPinned) ? 'text-ufc-blue' : ''}`}
-                        fill={(displayThread.isPinnedByUser || displayThread.isPinned) ? 'currentColor' : 'none'}
-                        viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
-                      </svg>
-                    </button>
-
-                    {/* Add delete button if user is author or has permission */}
-                    {currentUser &&
-                      (currentUser.id === displayThread?.userId ||
-                        (currentUser.publicMetadata?.role as string) === "ADMIN" ||
-                        (currentUser.publicMetadata?.role as string) === "MODERATOR") && (
-                        <button
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                "Are you sure you want to delete this thread? This action cannot be undone.",
-                              )
-                            ) {
-                              deleteThreadMutation.mutate(threadId);
-                            }
-                          }}
-                          className="ml-auto flex items-center text-gray-400 transition hover:text-red-500"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="mr-1 h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                          Delete Thread
-                        </button>
-                      )}
+                      showDelete={true}
+                    />
                   </div>
                 </div>
               </div>

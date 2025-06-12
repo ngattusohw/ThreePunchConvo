@@ -6,9 +6,9 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
 import { useThreadData, useThreadReplies, useThreadActions } from "@/api/hooks/threads";
 import UserAvatar from "@/components/ui/user-avatar";
-import StatusBadge from "@/components/ui/status-badge";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import ThreadPoll from "@/components/thread/poll";
+import UserThreadHeader from "@/components/ui/user-thread-header";
 
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
@@ -135,72 +135,15 @@ export default function Thread() {
             <div className="p-5">
               {/* Thread Header */}
               <div className="flex items-start">
-                <div className="mr-4 flex-shrink-0">
-                  <UserAvatar user={displayThread.user} size="lg" />
-                </div>
-
                 <div className="flex-grow">
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    {displayThread.isPinned && (
-                      <span className="bg-gray-800 text-ufc-blue text-xs px-2 py-0.5 rounded font-medium flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
-                        </svg>
-                        PINNED
-                      </span>
-                    )}
-
-                    {displayThread.isPinnedByUser && (
-                      <span className="bg-gray-800 text-ufc-blue text-xs px-2 py-0.5 rounded font-medium flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
-                        </svg>
-                        PINNED
-                      </span>
-                    )}
-
-                    <StatusBadge status={displayThread.user.status} />
-
-                    {displayThread?.user?.role === "PRO" && (
-                      <span className="flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="mr-1 h-3 w-3"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        VERIFIED
-                      </span>
-                    )}
-
-                    {displayThread?.user?.role === "ADMIN" && (
-                      <span className="bg-ufc-gold text-ufc-black rounded px-2 py-0.5 text-xs font-bold">
-                        ADMIN
-                      </span>
-                    )}
-
-                    {displayThread?.user?.role === "MODERATOR" && (
-                      <span className="rounded bg-green-600 px-2 py-0.5 text-xs font-bold text-white">
-                        MOD
-                      </span>
-                    )}
-
-                    <Link
-                      href={`/user/${displayThread?.user?.username}`}
-                      className="hover:text-ufc-blue font-medium text-white transition"
-                    >
-                      {displayThread?.user?.username}
-                    </Link>
-
-                    <span className="text-sm text-gray-400">
-                      {formatDate(displayThread.createdAt)}
-                    </span>
+                  <div className="mb-2">
+                    <UserThreadHeader 
+                      user={displayThread.user}
+                      createdAt={displayThread.createdAt}
+                      isPinned={displayThread.isPinned}
+                      isPinnedByUser={displayThread.isPinnedByUser}
+                      pinnedPosition="right"
+                    />
                   </div>
 
                   <h1 className="mb-4 text-2xl font-bold text-white">
@@ -294,7 +237,7 @@ export default function Thread() {
                                 "Are you sure you want to delete this thread? This action cannot be undone.",
                               )
                             ) {
-                              deleteThreadMutation.mutate(currentUser?.publicMetadata?.role as string);
+                              deleteThreadMutation.mutate(threadId);
                             }
                           }}
                           className="ml-auto flex items-center text-gray-400 transition hover:text-red-500"
@@ -683,13 +626,13 @@ function ReplyCard({
 
   // Use fixed indentation classes based on level
   let indentationClass = "";
-  if (level === 1) indentationClass = "ml-4 border-l-2 border-gray-700 pl-4";
+  if (level === 1) indentationClass = "ml-4 border-l-2 border-gray-700";
   else if (level === 2)
-    indentationClass = "ml-8 border-l-2 border-gray-600 pl-4";
+    indentationClass = "ml-8 border-l-2 border-gray-600";
   else if (level === 3)
-    indentationClass = "ml-12 border-l-2 border-gray-600 pl-4";
+    indentationClass = "ml-12 border-l-2 border-gray-600";
   else if (level >= 4)
-    indentationClass = "ml-16 border-l-2 border-gray-600 pl-4";
+    indentationClass = "ml-16 border-l-2 border-gray-600";
 
   const canDeleteReply =
     currentUser &&
@@ -725,54 +668,13 @@ function ReplyCard({
       )}
       <div className="p-4">
         <div className="flex items-start">
-          <div className="mr-3 flex-shrink-0">
-            <UserAvatar user={reply.user} size="md" />
-          </div>
-
           <div className="flex-grow">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <StatusBadge status={reply.user.status} />
-
-              {reply.user.role === "PRO" && (
-                <span className="flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="mr-1 h-3 w-3"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  VERIFIED
-                </span>
-              )}
-
-              {reply.user.role === "ADMIN" && (
-                <span className="bg-ufc-gold text-ufc-black rounded px-2 py-0.5 text-xs font-bold">
-                  ADMIN
-                </span>
-              )}
-
-              {reply.user.role === "MODERATOR" && (
-                <span className="rounded bg-green-600 px-2 py-0.5 text-xs font-bold text-white">
-                  MOD
-                </span>
-              )}
-
-              <Link
-                href={`/user/${reply.user.username}`}
-                className="hover:text-ufc-blue font-medium text-white transition"
-              >
-                {reply.user.username}
-              </Link>
-
-              <span className="text-sm text-gray-400">
-                {formatDate(reply.createdAt)}
-              </span>
+            <div className="mb-2">
+              <UserThreadHeader 
+                user={reply.user}
+                createdAt={reply.createdAt}
+                pinnedPosition="inline"
+              />
             </div>
 
             <div className="mb-4 whitespace-pre-line text-gray-300">

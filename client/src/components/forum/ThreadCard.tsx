@@ -1,10 +1,10 @@
 import React from "react";
 import { Link } from "wouter";
 import { ForumThread } from "@/lib/types";
-import { formatDate, truncateText } from "@/lib/utils";
+import { truncateText } from "@/lib/utils";
 import UserAvatar from "@/components/ui/user-avatar";
-import StatusBadge from "@/components/ui/status-badge";
 import MediaPreview from "@/components/ui/media-preview";
+import UserThreadHeader from "@/components/ui/user-thread-header";
 
 interface ThreadCardProps {
   thread: ForumThread;
@@ -19,67 +19,23 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
 
   return (
     <div
-      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} overflow-hidden rounded-lg shadow-lg transition hover:shadow-xl`}
+      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} overflow-hidden rounded-lg shadow-lg transition hover:shadow-xl relative`}
     >
       <div className="p-4">
         <div className="flex items-start">
-          {/* User Avatar */}
-          <div className="mr-3 flex-shrink-0">
-            <UserAvatar user={thread.user} size="md" />
-          </div>
-
           {/* Thread Content */}
           <div className="flex-grow">
-            <div className="flex items-center mb-1 flex-wrap">
-              {(thread.isPinned || thread.isPinnedByUser) && (
-                <span className="bg-gray-800 text-ufc-blue text-xs px-2 py-0.5 rounded font-medium mr-2 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
-                  </svg>
-                  <span>PINNED</span>
-                </span>
-              )}
-
-              {thread.user?.status && (
-                <StatusBadge status={thread.user.status} className="mr-2" />
-              )}
-
-              {thread.user?.role === "PRO" && (
-                <span className="mr-2 flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-black">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="mr-1 h-3 w-3"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  VERIFIED
-                </span>
-              )}
-
-              {thread.user?.role === "ADMIN" && (
-                <span className="bg-ufc-gold text-ufc-black mr-2 rounded px-2 py-0.5 text-xs font-bold">
-                  ADMIN
-                </span>
-              )}
-
-              {thread.user?.role === "MODERATOR" && (
-                <span className="mr-2 rounded bg-green-600 px-2 py-0.5 text-xs font-bold text-white">
-                  MOD
-                </span>
-              )}
-
-              <span className="font-medium text-white">
-                {thread.user?.username || "Unknown User"}
-              </span>
-              <span className="ml-2 text-sm text-gray-400">
-                · {formatDate(thread.createdAt)}
-              </span>
+            {/* Thread header with user info */}
+            <div className="mb-2">
+              <UserThreadHeader 
+                user={thread.user}
+                createdAt={thread.createdAt}
+                isPinned={thread.isPinned}
+                isPinnedByUser={thread.isPinnedByUser}
+                showStatus={true}
+                size="md"
+                pinnedPosition="right"
+              />
             </div>
 
             <Link href={`/thread/${thread.id}`}>
@@ -200,15 +156,6 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                 </svg>
                 {thread.likesCount}
               </div>
-
-              {/* {thread.dislikesCount > 0 && (
-                <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2" />
-                  </svg>
-                  {thread.dislikesCount}
-                </div>
-              )} */}
             </div>
           </div>
         </div>

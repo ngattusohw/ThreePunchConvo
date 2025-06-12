@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ForumThread } from '@/lib/types';
 import { fetchRegularThreads } from '../../../queries/thread';
 
@@ -21,6 +21,7 @@ export function useRegularThreads({
   const [page, setPage] = useState(0);
   const [allRegularThreads, setAllRegularThreads] = useState<ForumThread[]>([]);
   const [hasMore, setHasMore] = useState(true);
+  const queryClient = useQueryClient();
 
   // Query for regular threads (non-pinned)
   const { 
@@ -65,6 +66,37 @@ export function useRegularThreads({
       setHasMore(regularThreads.length >= limit);
     }
   }, [regularThreads, page, limit, isRegularLoading]);
+
+  // Subscribe to cache updates to keep local state in sync
+  useEffect(() => {
+    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      if (event.type === 'updated' && event.query) {
+        const queryKey = event.query.queryKey;
+        // Check if this is a thread list query that might affect our data
+        if (
+          Array.isArray(queryKey) &&
+          queryKey[0] &&
+          typeof queryKey[0] === 'string' &&
+          queryKey[0].startsWith('/api/threads/') &&
+          !queryKey[0].includes('/id/')
+        ) {
+          // Force a re-render by updating the local state with the latest cache data
+          const cacheData = queryClient.getQueryData(queryKey);
+          if (Array.isArray(cacheData)) {
+            setAllRegularThreads(prev => {
+              // Update any threads that exist in both arrays
+              return prev.map(thread => {
+                const updatedThread = cacheData.find(t => t.id === thread.id);
+                return updatedThread || thread;
+              });
+            });
+          }
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [queryClient]);
 
   // Load more threads
   const loadMore = () => {

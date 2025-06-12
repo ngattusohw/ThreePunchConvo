@@ -85,11 +85,6 @@ export function useLikeThread({ threadId, userId }: UseLikeThreadOptions) {
         title: "Success",
         description: wasLiked ? "You unliked this post" : "You liked this post",
       });
-      
-      // We still invalidate to ensure data consistency
-      queryClient.invalidateQueries({
-        queryKey: [`/api/threads/id/${threadId}`, userId],
-      });
     },
     onError: (error: Error, _, context) => {
       // Don't apply any optimistic updates on error

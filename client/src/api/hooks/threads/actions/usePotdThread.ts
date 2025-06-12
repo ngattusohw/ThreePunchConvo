@@ -18,77 +18,89 @@ export function usePotdThread({ threadId, userId }: UsePotdThreadOptions) {
       return potdThread(threadId, userId);
     },
     onMutate: async () => {
+      console.log("🚀 POTD optimistic update starting for thread:", threadId);
+      
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: [`/api/threads/id/${threadId}`, userId] });
       
       // Get current thread data
       const previousThread = queryClient.getQueryData<ForumThread>([`/api/threads/id/${threadId}`, userId]);
       
+      // Get the current POTD state from thread lists if thread detail is not available
+      let currentHasPotd = false;
+      let currentPotdCount = 0;
+      
+      if (previousThread) {
+        currentHasPotd = previousThread.hasPotd;
+        currentPotdCount = previousThread.potdCount || 0;
+        console.log("📊 Found thread in cache - current hasPotd:", currentHasPotd, "potdCount:", currentPotdCount);
+      } else {
+        // Try to find the thread in thread lists to get current state
+        const allQueries = queryClient.getQueryCache().findAll();
+        console.log("🔍 Searching thread lists for thread:", threadId, "Found", allQueries.length, "queries");
+        
+        for (const query of allQueries) {
+          const data = queryClient.getQueryData(query.queryKey);
+          if (Array.isArray(data)) {
+            const threadInList = data.find((t: ForumThread) => t.id === threadId);
+            if (threadInList) {
+              currentHasPotd = threadInList.hasPotd;
+              currentPotdCount = threadInList.potdCount || 0;
+              console.log("📊 Found thread in list - current hasPotd:", currentHasPotd, "potdCount:", currentPotdCount);
+              break;
+            }
+          }
+        }
+      }
+      
+      const hasPotd = !currentHasPotd;
+      const potdCount = hasPotd 
+        ? currentPotdCount + 1 
+        : Math.max(0, currentPotdCount - 1);
+      
+      console.log("🔄 Updating to - hasPotd:", hasPotd, "potdCount:", potdCount);
+      
       // Optimistically update the UI
       if (previousThread) {
-        const hasPotd = !previousThread.hasPotd;
-        const potdCount = hasPotd 
-          ? (previousThread.potdCount || 0) + 1 
-          : Math.max(0, (previousThread.potdCount || 0) - 1);
-        
         queryClient.setQueryData([`/api/threads/id/${threadId}`, userId], {
           ...previousThread,
           hasPotd,
           potdCount,
         });
-        
-        // Update thread in any list views by finding all thread list queries
-        const threadQueryKeysToUpdate = queryClient.getQueryCache().findAll({
-          predicate: (query) => {
-            // Match any query that has /api/threads in the key and isn't a specific thread ID
-            return (
-              query.queryKey[0] &&
-              typeof query.queryKey[0] === 'string' &&
-              query.queryKey[0].includes('/api/threads') &&
-              !query.queryKey[0].includes(`/id/${threadId}`)
-            );
-          }
-        });
-        
-        // Update each matching query's data
-        threadQueryKeysToUpdate.forEach(query => {
-          queryClient.setQueryData(query.queryKey, (oldData: any) => {
-            if (!oldData) return oldData;
-            
-            // Handle both regular and pinned threads
-            if (oldData.regularThreads) {
-              return {
-                ...oldData,
-                regularThreads: oldData.regularThreads.map((thread: ForumThread) => 
-                  thread.id === threadId 
-                    ? { ...thread, hasPotd, potdCount } 
-                    : thread
-                ),
-                pinnedThreads: oldData.pinnedThreads?.map((thread: ForumThread) => 
-                  thread.id === threadId 
-                    ? { ...thread, hasPotd, potdCount } 
-                    : thread
-                ) || [],
-              };
-            }
-            
-            // Handle case where it's just an array of threads
-            if (Array.isArray(oldData)) {
-              return oldData.map((thread: ForumThread) => 
-                thread.id === threadId 
-                  ? { ...thread, hasPotd, potdCount } 
-                  : thread
-              );
-            }
-            
-            return oldData;
-          });
-        });
+        console.log("✅ Updated thread detail cache");
       }
+      
+      // Update all thread list queries that contain this thread
+      const allQueries = queryClient.getQueryCache().findAll();
+      let updatedQueries = 0;
+      
+      allQueries.forEach(query => {
+        const data = queryClient.getQueryData(query.queryKey);
+        if (!data) return;
+        
+        // Handle case where it's just an array of threads (pinned threads)
+        if (Array.isArray(data)) {
+          const updatedData = data.map((thread: ForumThread) => 
+            thread.id === threadId 
+              ? { ...thread, hasPotd, potdCount } 
+              : thread
+          );
+          
+          // Only update if there were changes
+          if (JSON.stringify(data) !== JSON.stringify(updatedData)) {
+            queryClient.setQueryData(query.queryKey, updatedData);
+            updatedQueries++;
+            console.log("✅ Updated thread list cache:", query.queryKey[0]);
+          }
+        }
+      });
+      
+      console.log("🎯 POTD optimistic update complete - updated", updatedQueries, "queries");
       
       return { previousThread };
     },
     onSuccess: (_, __, context) => {
+      console.log("🎉 POTD mutation successful");
       // Show success toast
       toast({
         title: "Success!",
@@ -101,9 +113,11 @@ export function usePotdThread({ threadId, userId }: UsePotdThreadOptions) {
       });
     },
     onError: (error: Error, _, context) => {
+      console.log("❌ POTD mutation failed:", error.message);
       // Revert optimistic update if there was an error
       if (context?.previousThread) {
         queryClient.setQueryData([`/api/threads/id/${threadId}`, userId], context.previousThread);
+        console.log("🔄 Reverted optimistic update");
       }
       
       console.error("POTD mutation error:", error);

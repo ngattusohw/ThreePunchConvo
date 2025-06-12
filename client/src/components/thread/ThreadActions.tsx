@@ -1,6 +1,7 @@
 import { useUser } from "@clerk/clerk-react";
 import { ForumThread } from "@/lib/types";
 import { useThreadActions } from "@/api/hooks/threads";
+import { useEffect } from "react";
 
 interface ThreadActionsProps {
   thread: ForumThread;
@@ -24,7 +25,7 @@ export default function ThreadActions({
     threadId: thread.id || '',
     userId: currentUser?.id
   });
-    
+
   // Determine icon sizes based on the size prop
   const iconSize = size === "sm" ? "h-4 w-4" : size === "lg" ? "h-6 w-6" : "h-5 w-5";
   const textSize = size === "sm" ? "text-xs" : size === "lg" ? "text-base" : "text-sm";
@@ -63,7 +64,10 @@ export default function ThreadActions({
 
       {/* Post of the Day button */}
       <button
-        onClick={()=>potdThreadMutation.mutate()}
+        onClick={() => {
+          console.log("⭐ POTD button clicked for thread:", thread.id, "Current hasPotd:", thread.hasPotd, "potdCount:", thread.potdCount);
+          potdThreadMutation.mutate();
+        }}
         disabled={!currentUser}
         className={`flex items-center ${thread.hasPotd ? 'text-yellow-500' : 'text-gray-400'} transition ${currentUser ? 'hover:text-yellow-500' : ''}`}
         title="Mark as Post of the Day (once per day)"

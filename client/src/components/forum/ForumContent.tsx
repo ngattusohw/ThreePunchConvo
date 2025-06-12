@@ -21,21 +21,6 @@ export default function ForumContent({
   const scrollPositionRef = useRef(0);
   const { user: currentUser } = useUser();
   
-  // Debug: Track when ForumContent re-renders
-  useEffect(() => {
-    console.log('ForumContent re-rendered, modal state:', modalOpen);
-  });
-
-  // Debug: Track modal state changes
-  useEffect(() => {
-    console.log('Modal state changed in ForumContent:', modalOpen);
-  }, [modalOpen]);
-
-  // Debug: Track category changes
-  useEffect(() => {
-    console.log('Category changed in ForumContent:', category);
-  }, [category]);
-
   // Get the current category info
   const currentCategory = FORUM_CATEGORIES.find(cat => cat.id === category) || FORUM_CATEGORIES[0];
   
@@ -79,7 +64,6 @@ export default function ForumContent({
 
   // Use parent's modal handler or fallback to console log
   const handleOpenModal = () => {
-    console.log('Modal open requested in ForumContent');
     if (onOpenModal) {
       onOpenModal();
     } else {

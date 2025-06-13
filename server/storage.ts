@@ -601,7 +601,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Get thread media
-      // const media = await this.getMediaByThread(id);
+      const media = await this.getMediaByThread(id);
 
       // Get thread poll and its options
       const poll = await this.getPollByThread(id);
@@ -644,6 +644,8 @@ export class DatabaseStorage implements IStorage {
           username: user.username,
           email: user.email,
           externalId: user.externalId,
+          stripeId: user.stripeId,
+          planType: user.planType,
           avatar: user.avatar,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -664,7 +666,7 @@ export class DatabaseStorage implements IStorage {
           followingCount: user.followingCount,
           socialLinks: user.socialLinks,
         },
-        media: [], //media || [],
+        media: media || [],
         poll: pollWithOptions,
         hasLiked,
         hasPotd,

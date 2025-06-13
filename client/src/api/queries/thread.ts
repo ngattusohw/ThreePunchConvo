@@ -50,6 +50,7 @@ export const fetchRegularThreads = async (
     `/api/threads/${category}?${params}`,
   );
 
+
   if (!response.ok) {
     throw new Error("Failed to fetch regular threads");
   }

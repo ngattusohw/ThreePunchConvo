@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchNotifications, markAllNotificationsAsRead, generateMockNotifications } from "../queries/notification";
+import { fetchNotifications, markAllNotificationsAsRead } from "../queries/notification";
 import { Notification } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,7 +16,7 @@ export function useNotifications() {
   // Get notifications with fallback to mock data if empty
   const notifications = notificationsQuery.data?.length
     ? notificationsQuery.data
-    : generateMockNotifications();
+    : [];
 
   // Mark all as read mutation
   const markAllAsReadMutation = useMutation({

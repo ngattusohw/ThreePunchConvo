@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { dark } from "@clerk/themes";
-import NotificationModal from "@/components/notification/NotificationModal";
+import NotificationBell from "@/components/ui/notification-bell";
 import MobileNavigation from "@/components/layout/MobileNavigation";
 import { formatUsername } from "@/lib/utils";
 import { UserStatus } from "@/lib/types";
@@ -14,7 +14,6 @@ export default function Header() {
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   // Placeholder function for when we need to fetch additional user data from our database
   const getUserStatus = (userId: string) => {
@@ -85,7 +84,7 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             {isSignedIn && user ? (
               <>
-                {/* TODO notifications */}
+                <NotificationBell />
 
                 <div className="relative flex items-center space-x-2">
                   {user.username && (
@@ -133,9 +132,6 @@ export default function Header() {
 
       {mobileMenuOpen && (
         <MobileNavigation onClose={() => setMobileMenuOpen(false)} />
-      )}
-      {notificationsOpen && (
-        <NotificationModal onClose={() => setNotificationsOpen(false)} />
       )}
     </header>
   );

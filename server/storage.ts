@@ -1092,6 +1092,14 @@ export class DatabaseStorage implements IStorage {
 
       // Start a transaction
       const [newReply] = await db.transaction(async (tx) => {
+        // Get the thread to find the owner
+        const thread = await tx.query.threads.findFirst({
+          where: eq(threads.id, replyValues.threadId),
+          columns: {
+            userId: true,
+          },
+        });
+
         // Create the reply
         const [reply] = await tx
           .insert(replies)
@@ -1106,6 +1114,20 @@ export class DatabaseStorage implements IStorage {
             lastActivityAt: new Date(),
           })
           .where(eq(threads.id, replyValues.threadId));
+
+        // Create notification for thread owner (if not replying to their own thread)
+        if (thread && thread.userId !== replyValues.userId) {
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: thread.userId,
+            type: 'REPLY',
+            relatedUserId: replyValues.userId,
+            threadId: replyValues.threadId,
+            replyId: replyValues.id,
+            isRead: false,
+            createdAt: new Date()
+          });
+        }
 
         return [reply];
       });
@@ -1513,16 +1535,15 @@ export class DatabaseStorage implements IStorage {
             .where(eq(users.id, thread.userId));
 
           // Create notification for thread owner
-          // await tx.insert(notifications).values({
-          //   id: uuidv4(),
-          //   userId: thread.userId,
-          //   type: 'LIKE',
-          //   relatedUserId: userId,
-          //   threadId,
-          //   message: 'liked your thread',
-          //   isRead: false,
-          //   createdAt: new Date()
-          // });
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: thread.userId,
+            type: 'LIKE',
+            relatedUserId: userId,
+            threadId,
+            isRead: false,
+            createdAt: new Date()
+          });
         }
 
         return true;
@@ -1875,17 +1896,16 @@ export class DatabaseStorage implements IStorage {
             .where(eq(users.id, reply.userId));
 
           // Create notification for reply owner
-          // await tx.insert(notifications).values({
-          //   id: uuidv4(),
-          //   userId: reply.userId,
-          //   type: 'LIKE_REPLY',
-          //   relatedUserId: userId,
-          //   threadId: reply.threadId,
-          //   replyId,
-          //   message: 'liked your reply',
-          //   isRead: false,
-          //   createdAt: new Date()
-          // });
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: reply.userId,
+            type: 'LIKE',
+            relatedUserId: userId,
+            threadId: reply.threadId,
+            replyId,
+            isRead: false,
+            createdAt: new Date()
+          });
         }
 
         return true;
@@ -2013,9 +2033,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getNotifications(userId: string): Promise<Notification[]> {
-    // Temporary stub
-    console.log("getNotifications not fully implemented", userId);
-    return [];
+    try {
+      const notifications = await db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt));
+
+      return notifications;
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      return [];
+    }
   }
 
   async createNotification(
@@ -2053,9 +2082,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markAllNotificationsAsRead(userId: string): Promise<boolean> {
-    // Temporary stub
-    console.log("markAllNotificationsAsRead not fully implemented", userId);
-    return false;
+    try {
+      await db
+        .update(notifications)
+        .set({ isRead: true })
+        .where(eq(notifications.userId, userId));
+
+      return true;
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      return false;
+    }
   }
 
   async getMMAEvents(limit: number, offset: number): Promise<MMAEvent[]> {
@@ -2278,3 +2315,4 @@ export class DatabaseStorage implements IStorage {
 
 // Use database storage implementation
 export const storage = new DatabaseStorage();
+

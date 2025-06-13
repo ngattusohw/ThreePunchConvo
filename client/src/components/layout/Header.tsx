@@ -84,8 +84,6 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             {isSignedIn && user ? (
               <>
-                <NotificationBell />
-
                 <div className="relative flex items-center space-x-2">
                   {user.username && (
                     <Link
@@ -95,12 +93,7 @@ export default function Header() {
                       {formatUsername(user.username)}
                     </Link>
                   )}
-
-                  {user.id && (
-                    <span className="hidden md:block">
-                      <StatusBadge status={getUserStatus(user.id)} />
-                    </span>
-                  )}
+                  <NotificationBell />
 
                   <UserButton afterSignOutUrl="/" />
                 </div>

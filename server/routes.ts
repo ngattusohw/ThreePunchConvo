@@ -526,13 +526,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      console.log('I AM HERE');
-
       // Get threads with more buffer if we need to filter
       const fetchLimit = pinnedByUserFilter !== 'include' ? limit + 20 : limit;
       const threads = await storage.getThreadsByCategory(categoryId, sort, fetchLimit, offset);
-
-      console.log('alex!', threads);
       
       // Filter threads based on PINNED_BY_USER status
       let filteredThreads: Thread[];

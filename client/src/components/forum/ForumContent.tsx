@@ -45,8 +45,6 @@ export default function ForumContent({
     userId: currentUser?.id
   });
 
-  console.log('jig', allRegularThreads);
-
   // Filter out pinned threads from regular threads to prevent duplicate keys
   const filteredRegularThreads = allRegularThreads.filter(thread => 
     !pinnedThreads.some(pinnedThread => pinnedThread.id === thread.id)

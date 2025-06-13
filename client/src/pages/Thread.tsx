@@ -9,6 +9,7 @@ import { FORUM_CATEGORIES } from "@/lib/constants";
 import ThreadPoll from "@/components/thread/poll";
 import UserThreadHeader from "@/components/ui/user-thread-header";
 import ThreadActions from "@/components/thread/ThreadActions";
+import MediaPreview from "../components/ui/media-preview";
 
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
@@ -151,10 +152,9 @@ export default function Thread() {
                   {/* Thread Media */}
                   {displayThread.media && displayThread.media.length > 0 && (
                     <div className="mb-6">
-                      <img
-                        src={displayThread.media[0].url}
-                        alt={`Media for ${displayThread.title}`}
-                        className="max-h-96 w-auto rounded-lg"
+                      <MediaPreview
+                        media={displayThread.media[0]}
+                        threadTitle={displayThread.title}
                       />
                     </div>
                   )}

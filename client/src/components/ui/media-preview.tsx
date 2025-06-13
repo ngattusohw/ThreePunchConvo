@@ -15,6 +15,7 @@ const MediaPreview = ({ media, threadTitle }: MediaPreviewProps) => {
   const [hasError, setHasError] = React.useState(false);
   const [errorDetails, setErrorDetails] = React.useState<string>('');
   const [naturalDimensions, setNaturalDimensions] = React.useState({ width: 0, height: 0 });
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
 
   const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
@@ -86,7 +87,7 @@ const MediaPreview = ({ media, threadTitle }: MediaPreviewProps) => {
 
   // Get appropriate CSS classes based on image characteristics
   const getImageClasses = () => {
-    let classes = "transition-opacity duration-300";
+    let classes = "transition-opacity duration-300 cursor-pointer";
     
     if (isSmall) {
       // Small images: don't stretch, center them
@@ -119,33 +120,60 @@ const MediaPreview = ({ media, threadTitle }: MediaPreviewProps) => {
   }
 
   return (
-    <div className="relative">
-      {isLoading && (
-        <div className="flex items-center justify-center h-32 bg-gray-800 rounded-lg absolute inset-0 z-10">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    <>
+      <div className="relative">
+        {isLoading && (
+          <div className="flex items-center justify-center h-32 bg-gray-800 rounded-lg absolute inset-0 z-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        )}
+        <img
+          src={media.url}
+          alt={`Media for ${threadTitle}`}
+          className={`${getImageClasses()} ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+          onLoad={handleLoad}
+          onError={handleError}
+          loading="lazy"
+          onClick={() => setIsModalOpen(true)}
+        />
+        {/* Show file type indicator for GIFs and other special formats */}
+        {media.url.toLowerCase().includes('.gif') && !isLoading && !hasError && (
+          <div className="absolute top-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+            GIF
+          </div>
+        )}
+        {/* Show dimensions for very large images */}
+        {!isLoading && !hasError && (naturalDimensions.width > 1920 || naturalDimensions.height > 1080) && (
+          <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+            {naturalDimensions.width} × {naturalDimensions.height}
+          </div>
+        )}
+      </div>
+
+      {/* Modal for full-size image */}
+      {isModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh]">
+            <button
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+              onClick={() => setIsModalOpen(false)}
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <img
+              src={media.url}
+              alt={`Media for ${threadTitle}`}
+              className="max-w-full max-h-[90vh] object-contain"
+            />
+          </div>
         </div>
       )}
-      <img
-        src={media.url}
-        alt={`Media for ${threadTitle}`}
-        className={`${getImageClasses()} ${isLoading ? 'opacity-0' : 'opacity-100'}`}
-        onLoad={handleLoad}
-        onError={handleError}
-        loading="lazy"
-      />
-      {/* Show file type indicator for GIFs and other special formats */}
-      {media.url.toLowerCase().includes('.gif') && !isLoading && !hasError && (
-        <div className="absolute top-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-          GIF
-        </div>
-      )}
-      {/* Show dimensions for very large images */}
-      {!isLoading && !hasError && (naturalDimensions.width > 1920 || naturalDimensions.height > 1080) && (
-        <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-          {naturalDimensions.width} × {naturalDimensions.height}
-        </div>
-      )}
-    </div>
+    </>
   );
 };
 

@@ -42,11 +42,6 @@ export default function NotificationModal({ onClose }: NotificationModalProps) {
     markAsRead(notification.id);
   };
 
-  const handleNotificationDismiss = (notification: Notification) => {
-    // Mark the notification as read
-    markAsRead(notification.id);
-  };
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
@@ -124,6 +119,13 @@ interface NotificationItemProps {
 }
 
 function NotificationItem({ notification, onClick }: NotificationItemProps) {
+  const { markAsRead } = useNotifications();
+  
+  const handleNotificationDismiss = (notification: Notification) => {
+    // Mark the notification as read
+    markAsRead(notification.id);
+  };
+
   return (
     <li
       className={`flex items-start p-3 ${notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} rounded-lg cursor-pointer hover:bg-opacity-70 transition-all`}
@@ -241,6 +243,22 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
           {formatDate(notification.createdAt)}
         </span>
       </div>
+      <button onClick={() => handleNotificationDismiss(notification)} className="text-gray-400 hover:text-white">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
     </li>
   );
 }

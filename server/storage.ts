@@ -2014,9 +2014,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markNotificationAsRead(id: string): Promise<boolean> {
-    // Temporary stub
-    console.log("markNotificationAsRead not fully implemented", id);
-    return false;
+    try {
+      await db
+        .update(notifications)
+        .set({ isRead: true })
+        .where(eq(notifications.id, id));
+
+      return true;
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      return false;
+    }
   }
 
   async markAllNotificationsAsRead(userId: string): Promise<boolean> {

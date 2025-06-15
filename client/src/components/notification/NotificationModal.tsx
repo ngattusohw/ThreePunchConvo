@@ -42,6 +42,11 @@ export default function NotificationModal({ onClose }: NotificationModalProps) {
     markAsRead(notification.id);
   };
 
+  const handleNotificationDismiss = (notification: Notification) => {
+    // Mark the notification as read
+    markAsRead(notification.id);
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
@@ -184,14 +189,29 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
               <span className="font-medium text-white">
                 {notification.relatedUser.username}
               </span>{" "}
-              liked your post{" "}
-              <Link
-                href={`/thread/${notification.threadId}`}
-                className="text-ufc-blue hover:underline"
-                onClick={(e) => e.stopPropagation()}
-              >
-                "{notification.threadTitle}"
-              </Link>
+              {notification.replyId ? (
+                <>
+                  liked your reply{" "}
+                  <Link
+                    href={`/thread/${notification.threadId}`}
+                    className="text-ufc-blue hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    "{notification.replyPreview}"
+                  </Link>
+                </>
+              ) : (
+                <>
+                  liked your post{" "}
+                  <Link
+                    href={`/thread/${notification.threadId}`}
+                    className="text-ufc-blue hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    "{notification.threadTitle}"
+                  </Link>
+                </>
+              )}
             </p>
           )}
 
@@ -211,8 +231,8 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
           </p>
         )}
 
-        {notification.replyPreview && (
-          <p className="mt-1 text-sm text-gray-400">
+        {notification.replyPreview && !notification.replyId && (
+            <p className="mt-1 text-sm text-gray-400">
             {notification.replyPreview}
           </p>
         )}

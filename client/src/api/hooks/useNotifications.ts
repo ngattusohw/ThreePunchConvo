@@ -16,7 +16,7 @@ export function useNotifications() {
   // Get notifications with fallback to mock data if empty
   const notifications = notificationsQuery.data?.length
     ? notificationsQuery.data
-    : generateMockNotifications();
+    : [];
 
   // Mark all as read mutation
   const markAllAsReadMutation = useMutation({

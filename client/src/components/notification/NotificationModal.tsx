@@ -39,7 +39,18 @@ export default function NotificationModal({ onClose }: NotificationModalProps) {
 
   const handleNotificationClick = (notification: Notification) => {
     // Mark the notification as read
-    markAsRead(notification.id);
+    // markAsRead(notification.id);
+    
+    // Navigate to the thread with replyId if available
+    if (notification.threadId) {
+      const url = notification.replyId 
+        ? `/thread/${notification.threadId}?replyId=${notification.replyId}`
+        : `/thread/${notification.threadId}`;
+      
+      // Use window.location to navigate and close modal
+      window.location.href = url;
+      onClose();
+    }
   };
 
   return (

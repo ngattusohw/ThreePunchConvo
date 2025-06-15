@@ -1,4 +1,4 @@
-import react from "react";
+import react, { useEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { ThreadReply } from "@/lib/types";
 import { useUser } from "@clerk/clerk-react";
@@ -51,7 +51,7 @@ function ThreadMetadata({ thread }: { thread: any }) {
 }
 
 export default function Thread() {
-  const { threadId } = useParams<{ threadId: string }>();
+  const { threadId, replyId } = useParams<{ threadId: string; replyId?: string }>();
   const { user: currentUser } = useUser();
   const [, setLocation] = useLocation();
 
@@ -87,6 +87,29 @@ export default function Thread() {
   
   // Use the actual data from the API
   const displayThread = thread;
+
+  // Scroll to specific reply if replyId is provided in URL
+  useEffect(() => {
+    if (replyId && displayReplies.length > 0 && !isRepliesLoading) {
+      // Find the reply element by ID
+      const replyElement = document.getElementById(`reply-${replyId}`);
+      if (replyElement) {
+        // Add a small delay to ensure the page is fully rendered
+        setTimeout(() => {
+          replyElement.scrollIntoView({ 
+            behavior: "smooth", 
+            block: "center" 
+          });
+          
+          // Add a temporary highlight effect
+          replyElement.classList.add("ring-2", "ring-ufc-blue", "ring-opacity-50");
+          setTimeout(() => {
+            replyElement.classList.remove("ring-2", "ring-ufc-blue", "ring-opacity-50");
+          }, 2000);
+        }, 500);
+      }
+    }
+  }, [replyId, displayReplies.length, isRepliesLoading]);
 
   // Debug - log thread data
   console.log("Thread data received:", displayThread);
@@ -600,7 +623,8 @@ function ReplyCard({
 
   return (
     <div
-      className={`bg-dark-gray overflow-hidden rounded-lg shadow-lg ${indentationClass} ${level > 0 ? "mt-2" : "mt-4"}`}
+      id={`reply-${reply.id}`}
+      className={`bg-dark-gray overflow-hidden rounded-lg shadow-lg ${indentationClass} ${level > 0 ? "mt-2" : "mt-4"} transition-all duration-300`}
     >
       {level > 0 && reply.parentUsername && (
         <div className="flex items-center bg-gray-800 px-4 py-1 text-xs text-gray-400">

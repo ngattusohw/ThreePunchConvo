@@ -1090,11 +1090,6 @@ export class DatabaseStorage implements IStorage {
         dislikesCount: 0,
       };
 
-      console.log("Creating reply with values:", {
-        ...replyValues,
-        content: replyValues.content.substring(0, 50) + "...", // Truncate for logging
-      });
-
       // Start a transaction
       const [newReply] = await db.transaction(async (tx) => {
         // Get the thread to find the owner
@@ -1104,10 +1099,6 @@ export class DatabaseStorage implements IStorage {
             userId: true,
           },
         });
-
-        console.log("Found thread:", thread);
-        console.log("Reply userId:", replyValues.userId);
-        console.log("Thread userId:", thread?.userId);
 
         // Create the reply
         const [reply] = await tx
@@ -1492,37 +1483,7 @@ export class DatabaseStorage implements IStorage {
         }
 
         if (existingReaction) {
-          // User has already liked this thread - remove the like
-          await tx
-            .delete(threadReactions)
-            .where(
-              and(
-                eq(threadReactions.threadId, threadId),
-                eq(threadReactions.userId, userId),
-                eq(threadReactions.type, "LIKE"),
-              ),
-            );
-
-          // Decrease thread likes count
-          await tx
-            .update(threads)
-            .set({
-              likesCount: sql`${threads.likesCount} - 1`,
-            })
-            .where(eq(threads.id, threadId));
-
-          // Remove points and decrement likesCount from thread owner (if not liking their own thread)
-          if (thread.userId !== userId) {
-            await tx
-              .update(users)
-              .set({
-                points: sql`${users.points} - 2`,
-                likesCount: sql`${users.likesCount} - 1`, // Track total likes received
-              })
-              .where(eq(users.id, thread.userId));
-          }
-
-          return true;
+          return false; // already liked thread
         }
 
         // Create new like reaction
@@ -1855,36 +1816,8 @@ export class DatabaseStorage implements IStorage {
         }
 
         if (existingReaction) {
-          // User has already liked this reply - remove the like
-          await tx
-            .delete(replyReactions)
-            .where(
-              and(
-                eq(replyReactions.replyId, replyId),
-                eq(replyReactions.userId, userId),
-                eq(replyReactions.type, "LIKE"),
-              ),
-            );
-
-          // Decrease reply likes count
-          await tx
-            .update(replies)
-            .set({
-              likesCount: sql`${replies.likesCount} - 1`,
-            })
-            .where(eq(replies.id, replyId));
-
-          // Remove points from reply owner (if not liking their own reply)
-          if (reply.userId !== userId) {
-            await tx
-              .update(users)
-              .set({
-                points: sql`${users.points} - 1`, // 1 point for a reply like
-              })
-              .where(eq(users.id, reply.userId));
-          }
-
-          return true;
+          // User has already liked this reply
+          return false;
         }
 
         // Create new like reaction
@@ -1961,26 +1894,8 @@ export class DatabaseStorage implements IStorage {
         }
 
         if (existingReaction) {
-          // User has already disliked this reply - remove the dislike
-          await tx
-            .delete(replyReactions)
-            .where(
-              and(
-                eq(replyReactions.replyId, replyId),
-                eq(replyReactions.userId, userId),
-                eq(replyReactions.type, "DISLIKE"),
-              ),
-            );
-
-          // Decrease reply dislikes count
-          await tx
-            .update(replies)
-            .set({
-              dislikesCount: sql`${replies.dislikesCount} - 1`,
-            })
-            .where(eq(replies.id, replyId));
-
-          return true;
+          // User has already disliked this reply
+          return false;
         }
 
         // Create new dislike reaction
@@ -2002,17 +1917,17 @@ export class DatabaseStorage implements IStorage {
 
         // Create notification for reply owner (if not disliking their own reply)
         if (reply.userId !== userId) {
-          // await tx.insert(notifications).values({
-          //   id: uuidv4(),
-          //   userId: reply.userId,
-          //   type: 'DISLIKE_REPLY',
-          //   relatedUserId: userId,
-          //   threadId: reply.threadId,
-          //   replyId,
-          //   message: 'disliked your reply',
-          //   isRead: false,
-          //   createdAt: new Date()
-          // });
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: reply.userId,
+            type: 'DISLIKE_REPLY',
+            relatedUserId: userId,
+            threadId: reply.threadId,
+            replyId,
+            message: 'disliked your reply',
+            isRead: false,
+            createdAt: new Date()
+          });
         }
 
         return true;

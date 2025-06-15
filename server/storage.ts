@@ -1090,6 +1090,11 @@ export class DatabaseStorage implements IStorage {
         dislikesCount: 0,
       };
 
+      console.log("Creating reply with values:", {
+        ...replyValues,
+        content: replyValues.content.substring(0, 50) + "...", // Truncate for logging
+      });
+
       // Start a transaction
       const [newReply] = await db.transaction(async (tx) => {
         // Get the thread to find the owner
@@ -1099,6 +1104,10 @@ export class DatabaseStorage implements IStorage {
             userId: true,
           },
         });
+
+        console.log("Found thread:", thread);
+        console.log("Reply userId:", replyValues.userId);
+        console.log("Thread userId:", thread?.userId);
 
         // Create the reply
         const [reply] = await tx
@@ -1117,16 +1126,25 @@ export class DatabaseStorage implements IStorage {
 
         // Create notification for thread owner (if not replying to their own thread)
         if (thread && thread.userId !== replyValues.userId) {
-          await tx.insert(notifications).values({
-            id: uuidv4(),
-            userId: thread.userId,
-            type: 'REPLY',
-            relatedUserId: replyValues.userId,
-            threadId: replyValues.threadId,
-            replyId: replyValues.id,
-            isRead: false,
-            createdAt: new Date()
-          });
+          console.log("Creating notification for thread owner:", thread.userId);
+          try {
+            await tx.insert(notifications).values({
+              id: uuidv4(),
+              userId: thread.userId,
+              type: 'REPLY',
+              relatedUserId: replyValues.userId,
+              threadId: replyValues.threadId,
+              replyId: replyValues.id,
+              isRead: false,
+              createdAt: new Date()
+            });
+            console.log("Notification created successfully");
+          } catch (notificationError) {
+            console.error("Error creating notification:", notificationError);
+            throw notificationError;
+          }
+        } else {
+          console.log("No notification created - same user or no thread found");
         }
 
         return [reply];
@@ -2034,13 +2052,18 @@ export class DatabaseStorage implements IStorage {
 
   async getNotifications(userId: string): Promise<Notification[]> {
     try {
-      const notifications = await db
+      console.log("Fetching notifications for userId:", userId);
+      
+      const userNotifications = await db
         .select()
         .from(notifications)
         .where(eq(notifications.userId, userId))
         .orderBy(desc(notifications.createdAt));
 
-      return notifications;
+      console.log("Found notifications:", userNotifications.length);
+      console.log("Notifications:", userNotifications);
+
+      return userNotifications;
     } catch (error) {
       console.error("Error fetching notifications:", error);
       return [];

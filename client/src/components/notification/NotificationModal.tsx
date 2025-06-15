@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useNotifications } from "@/api/hooks/useNotifications";
 import { Notification } from "@/lib/types";
@@ -11,13 +11,35 @@ interface NotificationModalProps {
 }
 
 export default function NotificationModal({ onClose }: NotificationModalProps) {
-  const { notifications, isLoading, error, markAllAsRead, isMarking } = useNotifications();
+  const { notifications, isLoading, error, markAllAsRead, markAsRead, isMarking } = useNotifications();
+
+  // Auto-close modal when all notifications are cleared
+  useEffect(() => {
+    if (notifications.length === 0 && !isLoading) {
+      // Small delay to show the "All caught up" message briefly
+      const timer = setTimeout(() => {
+        onClose();
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [notifications.length, isLoading, onClose]);
 
   // Click outside to close
   const handleModalClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
+  };
+
+  const handleClearAll = async () => {
+    await markAllAsRead();
+    // Modal will auto-close via useEffect when notifications become empty
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    // Mark the notification as read
+    markAsRead(notification.id);
   };
 
   return (
@@ -60,7 +82,7 @@ export default function NotificationModal({ onClose }: NotificationModalProps) {
             </div>
           ) : notifications.length === 0 ? (
             <div className="py-8 text-center">
-              <p className="text-gray-400">No notifications yet</p>
+              <p className="text-gray-400">All caught up! No new notifications.</p>
             </div>
           ) : (
             <ul className="space-y-4">
@@ -68,21 +90,24 @@ export default function NotificationModal({ onClose }: NotificationModalProps) {
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
+                  onClick={() => handleNotificationClick(notification)}
                 />
               ))}
             </ul>
           )}
         </div>
 
-        <div className="bg-ufc-black border-t border-gray-800 p-4">
-          <button
-            onClick={markAllAsRead}
-            disabled={isMarking}
-            className={`text-sm font-medium text-gray-400 hover:text-white ${isMarking ? "cursor-not-allowed opacity-50" : ""}`}
-          >
-            Mark all as read
-          </button>
-        </div>
+        {notifications.length > 0 && (
+          <div className="bg-ufc-black border-t border-gray-800 p-4">
+            <button
+              onClick={handleClearAll}
+              disabled={isMarking}
+              className={`text-sm font-medium text-gray-400 hover:text-white ${isMarking ? "cursor-not-allowed opacity-50" : ""}`}
+            >
+              {isMarking ? "Clearing..." : "Clear all notifications"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -90,12 +115,14 @@ export default function NotificationModal({ onClose }: NotificationModalProps) {
 
 interface NotificationItemProps {
   notification: Notification;
+  onClick: () => void;
 }
 
-function NotificationItem({ notification }: NotificationItemProps) {
+function NotificationItem({ notification, onClick }: NotificationItemProps) {
   return (
     <li
-      className={`flex items-start p-3 ${notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} rounded-lg`}
+      className={`flex items-start p-3 ${notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} rounded-lg cursor-pointer hover:bg-opacity-70 transition-all`}
+      onClick={onClick}
     >
       {notification.type === "SYSTEM" ? (
         <div className="bg-ufc-blue mr-3 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-bold text-black">
@@ -113,7 +140,7 @@ function NotificationItem({ notification }: NotificationItemProps) {
         </div>
       )}
 
-      <div>
+      <div className="flex-1">
         {notification.type === "REPLY" &&
           notification.relatedUser &&
           notification.threadTitle && (
@@ -125,6 +152,7 @@ function NotificationItem({ notification }: NotificationItemProps) {
               <Link
                 href={`/thread/${notification.threadId}`}
                 className="text-ufc-blue hover:underline"
+                onClick={(e) => e.stopPropagation()}
               >
                 "{notification.threadTitle}"
               </Link>
@@ -142,6 +170,7 @@ function NotificationItem({ notification }: NotificationItemProps) {
               <Link
                 href={`/thread/${notification.threadId}`}
                 className="text-ufc-blue hover:underline"
+                onClick={(e) => e.stopPropagation()}
               >
                 "{notification.threadTitle}"
               </Link>
@@ -159,6 +188,7 @@ function NotificationItem({ notification }: NotificationItemProps) {
               <Link
                 href={`/thread/${notification.threadId}`}
                 className="text-ufc-blue hover:underline"
+                onClick={(e) => e.stopPropagation()}
               >
                 "{notification.threadTitle}"
               </Link>

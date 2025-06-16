@@ -1,4 +1,4 @@
-import react, { useEffect } from "react";
+import react, { useEffect, useRef } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { ThreadReply } from "@/lib/types";
 import { useUser } from "@clerk/clerk-react";
@@ -54,6 +54,7 @@ export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
   const { user: currentUser } = useUser();
   const [, setLocation] = useLocation();
+  const hasScrolledToReply = useRef(false);
 
   const {
     thread,
@@ -88,9 +89,9 @@ export default function Thread() {
   // Use the actual data from the API
   const displayThread = thread;
 
-  // Scroll to specific reply if replyId is provided in URL query params
+  // Scroll to specific reply if replyId is provided in URL query params (only on first load)
   useEffect(() => {
-    if (displayReplies.length > 0 && !isRepliesLoading) {
+    if (displayReplies.length > 0 && !isRepliesLoading && !hasScrolledToReply.current) {
       const queryString = window.location.search;
       const urlParams = new URLSearchParams(queryString);
       const replyId = urlParams.get("replyId");
@@ -99,6 +100,9 @@ export default function Thread() {
         // Find the reply element by ID
         const replyElement = document.getElementById(`reply-${replyId}`);
         if (replyElement) {
+          // Mark that we've scrolled so it doesn't happen again
+          hasScrolledToReply.current = true;
+          
           // Add a small delay to ensure the page is fully rendered
           setTimeout(() => {
             replyElement.scrollIntoView({ 
@@ -116,6 +120,11 @@ export default function Thread() {
       }
     }
   }, [displayReplies.length, isRepliesLoading]);
+
+  // Reset the scroll flag when the threadId changes (new thread)
+  useEffect(() => {
+    hasScrolledToReply.current = false;
+  }, [threadId]);
 
   // Debug - log thread data
   console.log("Thread data received:", displayThread);

@@ -588,6 +588,7 @@ function ReplyCard({
 
   return (
     <div
+      id={`reply-${reply.id}`}
       className={`bg-dark-gray overflow-hidden rounded-lg shadow-lg ${indentationClass} ${level > 0 ? "mt-2" : "mt-4"}`}
     >
       {level > 0 && reply.parentUsername && (

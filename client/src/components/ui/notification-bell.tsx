@@ -1,24 +1,39 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNotifications } from "@/api/hooks/useNotifications";
-import NotificationModal from "@/components/notification/NotificationModal";
+import NotificationDropdown from "@/components/notification/NotificationDropdown";
 
 export default function NotificationBell() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { allNotifications } = useNotifications();
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Count unread notifications
   const unreadCount = allNotifications.filter(n => !n.isRead).length;
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const handleBellClick = () => {
-    setIsModalOpen(true);
+    setIsDropdownOpen(!isDropdownOpen);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  const handleCloseDropdown = () => {
+    setIsDropdownOpen(false);
   };
 
   return (
-    <>
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={handleBellClick}
         className="relative p-2 text-gray-400 hover:text-white transition-colors"
@@ -36,7 +51,11 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {isModalOpen && <NotificationModal onClose={handleCloseModal} />}
-    </>
+      {isDropdownOpen && (
+        <div className="absolute right-0 top-full mt-2 w-96 bg-dark-gray rounded-lg shadow-xl border border-gray-800 z-50">
+          <NotificationDropdown onClose={handleCloseDropdown} />
+        </div>
+      )}
+    </div>
   );
 } 

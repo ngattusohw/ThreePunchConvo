@@ -99,6 +99,8 @@ export interface ThreadReply {
   likesCount: number;
   dislikesCount: number;
   media?: ThreadMedia[];
+  level?: number;
+  parentUsername?: string;
 }
 
 // Notification types

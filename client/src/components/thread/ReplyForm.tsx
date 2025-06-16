@@ -1,10 +1,20 @@
 import react from "react";
-import { UserResource } from "@clerk/clerk-react";
 import { useThreadReplies } from "@/api/hooks/threads";
 
 interface ReplyFormProps {
   threadId: string;
-  currentUser?: UserResource;
+  currentUser?: {
+    id: string;
+    username: string;
+    emailAddresses: any[];
+    firstName: string;
+    lastName: string;
+    imageUrl: string;
+    emailAddress: string;
+    fullName: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
   replyingTo: { id: string; username: string } | null;
   setReplyingTo: (replyingTo: { id: string; username: string } | null) => void;
 }

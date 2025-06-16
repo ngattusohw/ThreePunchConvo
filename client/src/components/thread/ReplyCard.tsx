@@ -25,22 +25,27 @@ export default function ReplyCard({
 
   // Calculate indentation based on the reply's level in the thread
   const level = reply.level || 0;
+  
+  // Debug logging
+  console.log(`ReplyCard ${reply.id}:`, { 
+    level, 
+    parentUsername: reply.parentUsername, 
+    parentReplyId: reply.parentReplyId 
+  });
 
   // Use fixed indentation classes based on level
   let indentationClass = "";
-  if (level === 1) indentationClass = "ml-4 border-l-2 border-gray-700";
+  if (level === 1) indentationClass = "ml-6 border-l-4 border-gray-600";
   else if (level === 2)
-    indentationClass = "ml-8 border-l-2 border-gray-600";
+    indentationClass = "ml-12 border-l-4 border-gray-500";
   else if (level === 3)
-    indentationClass = "ml-12 border-l-2 border-gray-600";
+    indentationClass = "ml-18 border-l-4 border-gray-400";
   else if (level >= 4)
-    indentationClass = "ml-16 border-l-2 border-gray-600";
+    indentationClass = "ml-24 border-l-4 border-gray-300";
 
   const canDeleteReply =
     currentUser &&
-    (currentUser.id === reply.userId ||
-      (currentUser.originalUser?.publicMetadata?.role as string) === "ADMIN" ||
-      (currentUser.originalUser?.publicMetadata?.role as string) === "MODERATOR");
+    (currentUser.id === reply.userId);
 
   return (
     <div

@@ -89,16 +89,19 @@ export default function Thread() {
   // Use the actual data from the API
   const displayThread = thread;
 
+  // Get replyId from URL query params
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+  const replyId = urlParams.get("replyId");
+
   // Scroll to specific reply if replyId is provided in URL query params (only on first load)
   useEffect(() => {
-    if (displayReplies.length > 0 && !isRepliesLoading && !hasScrolledToReply.current) {
-      const queryString = window.location.search;
-      const urlParams = new URLSearchParams(queryString);
-      const replyId = urlParams.get("replyId");
-      
-      if (replyId) {
-        // Find the reply element by ID
+    if (replyId && displayReplies.length > 0 && !isRepliesLoading && !hasScrolledToReply.current) {
+      // Function to attempt scrolling to the reply
+      const attemptScrollToReply = () => {
         const replyElement = document.getElementById(`reply-${replyId}`);
+        console.log("Looking for reply element:", `reply-${replyId}`, replyElement);
+        
         if (replyElement) {
           // Mark that we've scrolled so it doesn't happen again
           hasScrolledToReply.current = true;
@@ -116,10 +119,27 @@ export default function Thread() {
               replyElement.classList.remove("ring-2", "ring-ufc-blue", "ring-opacity-50");
             }, 2000);
           }, 500);
+          return true; // Element found and scroll initiated
         }
+        return false; // Element not found
+      };
+
+      // Try immediately first
+      if (!attemptScrollToReply()) {
+        // If element not found, retry with a small delay
+        const retryInterval = setInterval(() => {
+          if (attemptScrollToReply()) {
+            clearInterval(retryInterval);
+          }
+        }, 100);
+
+        // Stop retrying after 3 seconds to avoid infinite loops
+        setTimeout(() => {
+          clearInterval(retryInterval);
+        }, 3000);
       }
     }
-  }, [displayReplies.length, isRepliesLoading]);
+  }, [replyId, displayReplies.length, isRepliesLoading]);
 
   // Reset the scroll flag when the threadId changes (new thread)
   useEffect(() => {

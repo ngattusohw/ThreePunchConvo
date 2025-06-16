@@ -40,7 +40,7 @@ export default function NotificationModal({ onClose }: NotificationModalProps) {
 
   const handleNotificationClick = (notification: Notification) => {
     // Mark the notification as read
-    // markAsRead(notification.id);
+    markAsRead(notification.id);
     
     // Navigate to the thread with replyId if available
     if (notification.threadId) {

@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ReplyFormProps {
   threadId: string;
+  isLoading: boolean;
   currentUser?: {
     id: string;
     username: string;
@@ -27,7 +28,8 @@ export default function ReplyForm({
   threadId,
   currentUser, 
   replyingTo,
-  setReplyingTo
+  setReplyingTo,
+  isLoading,
 }: ReplyFormProps) {
   
   const [replyContent, setReplyContent] = useState("");
@@ -54,6 +56,7 @@ export default function ReplyForm({
   // Handle form submission
   const handleReplySubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return; // Prevent submission when loading
     submitReplyMutation.mutate();
   };
 
@@ -70,7 +73,8 @@ export default function ReplyForm({
           <button
             type="button"
             onClick={handleCancelReply}
-            className="text-sm text-gray-400 hover:text-white"
+            disabled={isLoading}
+            className="text-sm text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
@@ -113,7 +117,8 @@ export default function ReplyForm({
         value={replyContent}
         onChange={(e) => setReplyContent(e.target.value)}
         placeholder="Write your reply here..."
-        className="focus:ring-ufc-blue min-h-[150px] w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-gray-300 focus:outline-none focus:ring-1"
+        disabled={isLoading}
+        className="focus:ring-ufc-blue min-h-[150px] w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-gray-300 focus:outline-none focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed"
         required
       />
 
@@ -123,14 +128,14 @@ export default function ReplyForm({
 
         <button
           type="submit"
-          disabled={submitReplyMutation.isPending || !replyContent.trim()}
+          disabled={isLoading || submitReplyMutation.isPending || !replyContent.trim()}
           className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-            submitReplyMutation.isPending || !replyContent.trim()
+            isLoading || submitReplyMutation.isPending || !replyContent.trim()
               ? "cursor-not-allowed bg-gray-700 text-white opacity-50"
               : "bg-ufc-blue hover:bg-ufc-blue-dark text-black"
           }`}
         >
-          {submitReplyMutation.isPending ? "Posting..." : "Post reply"}
+          {isLoading ? "Loading..." : submitReplyMutation.isPending ? "Posting..." : "Post reply"}
         </button>
       </div>
     </form>

@@ -92,6 +92,8 @@ export default function Thread() {
     threadId: threadId || '',
     userId: currentUser?.id
   });
+
+  const isLoading = isThreadLoading || isRepliesLoading;
   
   // Use the actual data from the API
   const displayThread = thread;
@@ -358,6 +360,7 @@ export default function Thread() {
                 currentUser={currentUser}
                 replyingTo={replyingTo}
                 setReplyingTo={setReplyingTo}
+                isLoading={isLoading}
               />
             )}
           </div>

@@ -1,4 +1,4 @@
-import react, { useState } from "react";
+import react from "react";
 import { UserResource } from "@clerk/clerk-react";
 import { useThreadReplies } from "@/api/hooks/threads";
 

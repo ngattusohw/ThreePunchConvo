@@ -1,5 +1,5 @@
 import { useEffect, useMemo, memo } from "react";
-import { useUser } from "@clerk/clerk-react";
+import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { Poll } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useCheckPollVote, usePollVote } from "@/api/hooks/usePoll";
@@ -26,7 +26,7 @@ function PollSkeleton() {
 }
 
 function ThreadPoll({ threadId, poll }: ThreadPollProps) {
-  const { user: currentUser } = useUser();
+  const { user: currentUser } = useMemoizedUser();
   const isPollExpired = useMemo(() => new Date() > new Date(poll.expiresAt), [poll.expiresAt]);
   
   // Memoize the userId to prevent unnecessary effect runs

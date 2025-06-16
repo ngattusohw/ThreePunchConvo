@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useUser, useAuth } from "@clerk/clerk-react";
+import { useAuth } from "@clerk/clerk-react";
+import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { createThread, uploadImages, CreateThreadParams } from "../queries/thread";
 import { useToast } from "@/hooks/use-toast";
 
@@ -12,7 +13,7 @@ interface UseCreatePostOptions {
 
 export function useCreatePost({ onSuccess, onUpgradeRequired, categoryId }: UseCreatePostOptions) {
   const { toast } = useToast();
-  const { user } = useUser();
+  const { user } = useMemoizedUser();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
   

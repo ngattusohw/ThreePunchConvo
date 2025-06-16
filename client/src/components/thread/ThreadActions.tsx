@@ -1,4 +1,4 @@
-import { useUser } from "@clerk/clerk-react";
+import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { ForumThread } from "@/lib/types";
 import { useThreadActions } from "@/api/hooks/threads";
 import { useEffect, useState } from "react";
@@ -16,10 +16,10 @@ export default function ThreadActions({
   size = "md",
   className = "",
 }: ThreadActionsProps) {
-  const { user: currentUser } = useUser();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isShareSubmenuOpen, setIsShareSubmenuOpen] = useState(false);
   const { toast } = useToast();
+  const { user: currentUser } = useMemoizedUser();
   
   const {
     likeThreadMutation,

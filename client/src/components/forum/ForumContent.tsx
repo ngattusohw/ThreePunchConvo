@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import ThreadCard from "@/components/forum/ThreadCard";
 import { FORUM_CATEGORIES } from "@/lib/constants";
-import { SignedIn, SignedOut, SignInButton, useUser } from "@clerk/clerk-react";
+import { useMemoizedUser } from "@/hooks/useMemoizedUser";
+import { SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
 import { dark } from "@clerk/themes";
 import { useThreadsList } from "@/api/hooks/threads";
 
@@ -20,7 +21,7 @@ export default function ForumContent({
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef(0);
   const shouldRestoreScrollRef = useRef(false);
-  const { user: currentUser } = useUser();
+  const { user: currentUser } = useMemoizedUser();
   
   // Get the current category info
   const currentCategory = FORUM_CATEGORIES.find(cat => cat.id === category) || FORUM_CATEGORIES[0];

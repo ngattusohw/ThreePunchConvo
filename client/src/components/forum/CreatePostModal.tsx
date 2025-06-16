@@ -2,7 +2,6 @@ import React from "react";
 import { useState, useEffect, useRef } from "react";
 import { FORUM_CATEGORIES } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
-import { useUser } from "@clerk/clerk-react";
 import ImageUpload from "@/components/ui/image-upload";
 import { useCreatePost } from "@/api";
 
@@ -59,7 +58,6 @@ export default function CreatePostModal({
   categoryId,
 }: CreatePostModalProps) {
   const { toast } = useToast();
-  const { user } = useUser();
   
   // Track if the modal is being intentionally closed vs just remounting
   const intentionalCloseRef = useRef(false);

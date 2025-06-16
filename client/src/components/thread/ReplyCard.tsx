@@ -26,6 +26,13 @@ export default function ReplyCard({
   // Calculate indentation based on the reply's level in the thread
   const level = reply.level || 0;
 
+    // Debug logging
+    console.log(`ReplyCard ${reply.id}:`, { 
+        level, 
+        parentUsername: reply.parentUsername, 
+        parentReplyId: reply.parentReplyId 
+      });
+
   // Use fixed indentation classes based on level
   let indentationClass = "";
   if (level === 1) indentationClass = "ml-6 border-l-4 border-gray-600";

@@ -125,9 +125,7 @@ function App() {
     const checkUserSubscriptions = async () => {
       // Skip if already performed or conditions aren't met
       if (subscriptionCheckPerformed.current || !localUser?.stripeId || !localUserChecked) {
-        if (localUserChecked && !localUser) {
-          if (!initialLoadComplete && isUserLoaded) setInitialLoadComplete(true);
-        }
+        if (localUserChecked && !localUser && isUserLoaded) setInitialLoadComplete(true);
         return;
       }
 
@@ -218,8 +216,8 @@ function App() {
           `Plan type updated from ${data.previousPlan} to ${data.newPlan}`,
         );
 
-        // Update local user state if the plan changed
-        if (localUser && data.user) {
+        // Only update local user state if the plan actually changed
+        if (localUser && data.user && data.previousPlan !== data.newPlan) {
           setLocalUser({
             ...localUser,
             planType: data.newPlan,

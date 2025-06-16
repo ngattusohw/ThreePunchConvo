@@ -53,7 +53,7 @@ function ThreadMetadata({ thread }: { thread: any }) {
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
   const { user: currentUser } = useUser();
-  const [, setLocation] = useLocation();
+  const [location] = useLocation();
   const hasScrolledToReply = useRef(false);
 
   const {
@@ -89,18 +89,20 @@ export default function Thread() {
   // Use the actual data from the API
   const displayThread = thread;
 
-  // Get replyId from URL query params
-  const queryString = window.location.search;
-  const urlParams = new URLSearchParams(queryString);
-  const replyId = urlParams.get("replyId");
-
   // Scroll to specific reply if replyId is provided in URL query params (only on first load)
   useEffect(() => {
+
+        // Get replyId from URL query params inside the effect
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const replyId = urlParams.get("replyId");
+        
+        console.log("Effect triggered - replyId:", replyId, "location:", location);
+        
     if (replyId && displayReplies.length > 0 && !isRepliesLoading && !hasScrolledToReply.current) {
       // Function to attempt scrolling to the reply
       const attemptScrollToReply = () => {
         const replyElement = document.getElementById(`reply-${replyId}`);
-        console.log("Looking for reply element:", `reply-${replyId}`, replyElement);
         
         if (replyElement) {
           // Mark that we've scrolled so it doesn't happen again
@@ -139,12 +141,13 @@ export default function Thread() {
         }, 3000);
       }
     }
-  }, [replyId, displayReplies.length, isRepliesLoading]);
+  }, [location, displayReplies.length, isRepliesLoading]);
 
-  // Reset the scroll flag when the threadId changes (new thread)
+  // Reset the scroll flag when the threadId or replyId changes
   useEffect(() => {
     hasScrolledToReply.current = false;
-  }, [threadId]);
+    console.log("Reset scroll flag - threadId:", threadId, "location:", location);
+  }, [threadId, location]);
 
   // Debug - log thread data
   console.log("Thread data received:", displayThread);

@@ -320,7 +320,9 @@ export default function Thread() {
                   <ReplyCard
                     key={reply.id}
                     reply={reply}
-                    onQuote={handleQuoteReply}
+                    onQuote={(reply) => {
+                      handleQuoteReply(reply);
+                    }}
                     onLike={() => likeReplyMutation.mutate(reply.id.toString())}
                     onDislike={() => dislikeReplyMutation.mutate(reply.id.toString())}
                     onDelete={() => deleteReplyMutation.mutate(reply.id.toString())}

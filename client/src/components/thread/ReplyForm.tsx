@@ -1,5 +1,7 @@
 import react from "react";
-import { useThreadReplies } from "@/api/hooks/threads";
+import { useState } from "react";
+import { useSubmitReply } from "@/api/hooks/threads/replies/useSubmitReply";
+import { useToast } from "@/hooks/use-toast";
 
 interface ReplyFormProps {
   threadId: string;
@@ -14,6 +16,7 @@ interface ReplyFormProps {
     fullName: string;
     createdAt: Date;
     updatedAt: Date;
+    publicMetadata?: any;
   };
   replyingTo: { id: string; username: string } | null;
   setReplyingTo: (replyingTo: { id: string; username: string } | null) => void;
@@ -26,21 +29,32 @@ export default function ReplyForm({
   replyingTo,
   setReplyingTo
 }: ReplyFormProps) {
-  // Use the hook locally but with a stable threadId to prevent re-creation
-  const {
+  
+  const [replyContent, setReplyContent] = useState("");
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const { toast } = useToast();
+
+  // Use the submit reply hook directly
+  const submitReplyMutation = useSubmitReply({
+    threadId,
+    userId: currentUser?.id,
     replyContent,
+    replyingTo,
     setReplyContent,
-    handleReplySubmit,
-    submitReplyMutation
-  } = useThreadReplies({
-    threadId: threadId,
-    userId: currentUser?.id
+    setReplyingTo,
+    setShowUpgradeModal,
   });
 
   // Handle cancel reply
   const handleCancelReply = () => {
     setReplyingTo(null);
     setReplyContent("");
+  };
+
+  // Handle form submission
+  const handleReplySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitReplyMutation.mutate();
   };
 
   return (

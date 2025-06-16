@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useNotifications } from "@/api/hooks/useNotifications";
 import { Notification } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
@@ -12,6 +12,7 @@ interface NotificationModalProps {
 
 export default function NotificationModal({ onClose }: NotificationModalProps) {
   const { notifications, isLoading, error, markAllAsRead, markAsRead, isMarking } = useNotifications();
+  const [, setLocation] = useLocation();
 
   // Auto-close modal when all notifications are cleared
   useEffect(() => {
@@ -47,8 +48,8 @@ export default function NotificationModal({ onClose }: NotificationModalProps) {
         ? `/thread/${notification.threadId}?replyId=${notification.replyId}`
         : `/thread/${notification.threadId}`;
       
-      // Use window.location to navigate and close modal
-      window.location.href = url;
+      // Use wouter's setLocation to navigate and close modal
+      setLocation(url);
       onClose();
     }
   };
@@ -167,13 +168,9 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
                 {notification.relatedUser.username}
               </span>{" "}
               replied to your post{" "}
-              <Link
-                href={`/thread/${notification.threadId}`}
-                className="text-ufc-blue hover:underline"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <span className="text-ufc-blue">
                 "{notification.threadTitle}"
-              </Link>
+              </span>
             </p>
           )}
 
@@ -185,13 +182,9 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
                 {notification.relatedUser.username}
               </span>{" "}
               mentioned you in a post{" "}
-              <Link
-                href={`/thread/${notification.threadId}`}
-                className="text-ufc-blue hover:underline"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <span className="text-ufc-blue">
                 "{notification.threadTitle}"
-              </Link>
+              </span>
             </p>
           )}
 
@@ -205,24 +198,16 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
               {notification.replyId ? (
                 <>
                   liked your reply{" "}
-                  <Link
-                    href={`/thread/${notification.threadId}`}
-                    className="text-ufc-blue hover:underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <span className="text-ufc-blue">
                     "{notification.replyPreview}"
-                  </Link>
+                  </span>
                 </>
               ) : (
                 <>
                   liked your post{" "}
-                  <Link
-                    href={`/thread/${notification.threadId}`}
-                    className="text-ufc-blue hover:underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <span className="text-ufc-blue">
                     "{notification.threadTitle}"
-                  </Link>
+                  </span>
                 </>
               )}
             </p>
@@ -254,22 +239,28 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
           {formatDate(notification.createdAt)}
         </span>
       </div>
-      <button onClick={() => handleNotificationDismiss(notification)} className="text-gray-400 hover:text-white">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+      <button 
+        onClick={(e) => {
+          e.stopPropagation();
+          handleNotificationDismiss(notification);
+        }} 
+        className="text-gray-400 hover:text-white"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
     </li>
   );
 }

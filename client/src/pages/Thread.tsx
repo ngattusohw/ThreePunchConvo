@@ -51,7 +51,7 @@ function ThreadMetadata({ thread }: { thread: any }) {
 }
 
 export default function Thread() {
-  const { threadId, replyId } = useParams<{ threadId: string; replyId?: string }>();
+  const { threadId } = useParams<{ threadId: string }>();
   const { user: currentUser } = useUser();
   const [, setLocation] = useLocation();
 
@@ -88,28 +88,34 @@ export default function Thread() {
   // Use the actual data from the API
   const displayThread = thread;
 
-  // Scroll to specific reply if replyId is provided in URL
+  // Scroll to specific reply if replyId is provided in URL query params
   useEffect(() => {
-    if (replyId && displayReplies.length > 0 && !isRepliesLoading) {
-      // Find the reply element by ID
-      const replyElement = document.getElementById(`reply-${replyId}`);
-      if (replyElement) {
-        // Add a small delay to ensure the page is fully rendered
-        setTimeout(() => {
-          replyElement.scrollIntoView({ 
-            behavior: "smooth", 
-            block: "center" 
-          });
-          
-          // Add a temporary highlight effect
-          replyElement.classList.add("ring-2", "ring-ufc-blue", "ring-opacity-50");
+    if (displayReplies.length > 0 && !isRepliesLoading) {
+      const queryString = window.location.search;
+      const urlParams = new URLSearchParams(queryString);
+      const replyId = urlParams.get("replyId");
+      
+      if (replyId) {
+        // Find the reply element by ID
+        const replyElement = document.getElementById(`reply-${replyId}`);
+        if (replyElement) {
+          // Add a small delay to ensure the page is fully rendered
           setTimeout(() => {
-            replyElement.classList.remove("ring-2", "ring-ufc-blue", "ring-opacity-50");
-          }, 2000);
-        }, 500);
+            replyElement.scrollIntoView({ 
+              behavior: "smooth", 
+              block: "center" 
+            });
+            
+            // Add a temporary highlight effect
+            replyElement.classList.add("ring-2", "ring-ufc-blue", "ring-opacity-50");
+            setTimeout(() => {
+              replyElement.classList.remove("ring-2", "ring-ufc-blue", "ring-opacity-50");
+            }, 2000);
+          }, 500);
+        }
       }
     }
-  }, [replyId, displayReplies.length, isRepliesLoading]);
+  }, [displayReplies.length, isRepliesLoading]);
 
   // Debug - log thread data
   console.log("Thread data received:", displayThread);

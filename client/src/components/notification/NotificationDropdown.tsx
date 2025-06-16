@@ -201,6 +201,21 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
             </p>
           )}
 
+        {notification.type === "POTD" &&
+          notification.relatedUser &&
+          notification.threadTitle && (
+            <p className="text-gray-300">
+              <span className="font-medium text-white">
+                {notification.relatedUser.username}
+              </span>{" "}
+              marked your post{" "}
+              <span className="text-ufc-blue">
+                "{notification.threadTitle}"
+              </span>{" "}
+              as their Post of the Day
+            </p>
+          )}
+
         {notification.type === "FOLLOW" && notification.relatedUser && (
           <p className="text-gray-300">
             <span className="font-medium text-white">

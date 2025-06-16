@@ -107,7 +107,7 @@ export interface ThreadReply {
 export interface Notification {
   id: string;
   userId: string;
-  type: "REPLY" | "MENTION" | "LIKE" | "SYSTEM" | "FOLLOW";
+  type: "REPLY" | "MENTION" | "LIKE" | "SYSTEM" | "FOLLOW" | "POTD";
   relatedUserId?: string;
   relatedUser?: AuthUser;
   threadId?: string;

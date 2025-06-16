@@ -1609,7 +1609,6 @@ export class DatabaseStorage implements IStorage {
           //   threadId,
           //   message: 'disliked your thread',
           //   isRead: false,
-          //   createdAt: new Date()
           // });
         }
 
@@ -1770,6 +1769,17 @@ export class DatabaseStorage implements IStorage {
             await tx.execute(
               sql`UPDATE users SET points = points + 5 WHERE id = ${thread.userId}`
             );
+
+            // Create notification for thread owner
+            await tx.insert(notifications).values({
+              id: uuidv4(),
+              userId: thread.userId,
+              type: 'POTD',
+              relatedUserId: userId,
+              threadId,
+              isRead: false,
+              createdAt: new Date()
+            });
           }
           
           return true;

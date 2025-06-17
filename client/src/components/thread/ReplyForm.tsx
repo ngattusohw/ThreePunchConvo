@@ -2,6 +2,7 @@ import react from "react";
 import { useState } from "react";
 import { useSubmitReply } from "@/api/hooks/threads/replies/useSubmitReply";
 import { useToast } from "@/hooks/use-toast";
+import { useUserProfile } from "@/api/hooks/useUserProfile";
 
 interface ReplyFormProps {
   threadId: string;
@@ -31,10 +32,20 @@ export default function ReplyForm({
   setReplyingTo,
   isLoading,
 }: ReplyFormProps) {
-  
+  console.log("currentUser: ", currentUser);
+  const { hasPaidPlan, isPlanLoading } = useUserProfile(currentUser?.username);
+
   const [replyContent, setReplyContent] = useState("");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { toast } = useToast();
+
+  const handleUpgrade = () => {
+    // Keep the modal open until we navigate to avoid 404 flash
+    // Use setTimeout to let the current event loop complete before navigation
+    setTimeout(() => {
+      window.location.href = "/checkout";
+    }, 100);
+  };
 
   // Use the submit reply hook directly
   const submitReplyMutation = useSubmitReply({
@@ -82,7 +93,7 @@ export default function ReplyForm({
       )}
 
       {/* Show upgrade warning for free users */}
-      {currentUser?.publicMetadata?.planType === "FREE" && (
+      {!hasPaidPlan && (
         <div className="mb-3 rounded border-l-4 border-yellow-500 bg-gray-800 p-3">
           <div className="flex items-center">
             <svg
@@ -117,26 +128,34 @@ export default function ReplyForm({
         value={replyContent}
         onChange={(e) => setReplyContent(e.target.value)}
         placeholder="Write your reply here..."
-        disabled={isLoading}
+        disabled={isLoading || isPlanLoading}
         className="focus:ring-ufc-blue min-h-[150px] w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-gray-300 focus:outline-none focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed"
         required
       />
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex items-center justify-end">
         <div className="flex space-x-3">
-        </div>
 
+      {!hasPaidPlan && (
+        <button
+          onClick={handleUpgrade}
+          className="bg-ufc-blue hover:bg-ufc-blue-dark rounded-lg px-4 py-2 text-sm font-medium transition"
+        >
+          Upgrade Now
+        </button>
+      )}
         <button
           type="submit"
-          disabled={isLoading || submitReplyMutation.isPending || !replyContent.trim()}
+          disabled={isLoading || submitReplyMutation.isPending || !replyContent.trim() || isPlanLoading || !hasPaidPlan}
           className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-            isLoading || submitReplyMutation.isPending || !replyContent.trim()
+            isLoading || submitReplyMutation.isPending || !replyContent.trim() || isPlanLoading || !hasPaidPlan
               ? "cursor-not-allowed bg-gray-700 text-white opacity-50"
               : "bg-ufc-blue hover:bg-ufc-blue-dark text-black"
           }`}
         >
           {isLoading ? "Loading..." : submitReplyMutation.isPending ? "Posting..." : "Post reply"}
         </button>
+        </div>
       </div>
     </form>
   );

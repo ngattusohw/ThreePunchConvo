@@ -2,6 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { AuthUser, ForumThread } from '@/lib/types';
 import { fetchUserByUsername, fetchUserPosts } from '../queries/user';
 
+// Add a function to fetch user plan
+const fetchUserPlan = async (userId: string) => {
+  const response = await fetch(`/api/users/${userId}/plan`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch user plan');
+  }
+  return response.json();
+};
+
 export function useUserProfile(username: string) {
   // Fetch user data
   const {
@@ -25,6 +34,17 @@ export function useUserProfile(username: string) {
     enabled: !!user?.id,
   });
 
+  // Fetch user's plan status
+  const {
+    data: userPlan,
+    isLoading: isPlanLoading,
+    error: planError,
+  } = useQuery<{ userId: string; username: string; planType: string }>({
+    queryKey: [`/api/users/${user?.id}/plan`],
+    queryFn: () => fetchUserPlan(user?.id || ''),
+    enabled: !!user?.id,
+  });
+
   return {
     user,
     isUserLoading,
@@ -32,5 +52,12 @@ export function useUserProfile(username: string) {
     userPosts,
     isPostsLoading,
     postsError,
+    userPlan,
+    isPlanLoading,
+    planError,
+    // Helper function to check if user has paid plan
+    hasPaidPlan: userPlan?.planType && userPlan.planType !== 'FREE',
+    // Helper function to get plan type
+    planType: userPlan?.planType || 'FREE',
   };
 } 

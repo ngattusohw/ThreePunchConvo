@@ -5,8 +5,15 @@ import ForumContent from "@/components/forum/ForumContent";
 import TopUsersSidebar from "@/components/sidebar/TopUsersSidebar";
 import CreatePostModal from "@/components/forum/CreatePostModal";
 import { FORUM_CATEGORIES } from "@/lib/constants";
+import { useUserProfile } from "@/api/hooks/useUserProfile";
+import { useMemoizedUser } from "@/hooks/useMemoizedUser";
+import UpgradeModal from "@/components/forum/UpgradeModal";
 
 export default function Forum() {
+  const { user: currentUser } = useMemoizedUser();
+
+  const { hasPaidPlan } = useUserProfile(currentUser?.username);
+
   // Get the category ID from URL params
   const params = useParams<{ categoryId?: string }>();
   const categoryId = params.categoryId || "general";
@@ -14,6 +21,8 @@ export default function Forum() {
   // Validate the category exists, default to general if not found
   const isValidCategory = FORUM_CATEGORIES.some((cat) => cat.id === categoryId);
   const validCategoryId = isValidCategory ? categoryId : "general";
+
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Persistent modal state that survives component re-renders
   const [createPostModalOpen, setCreatePostModalOpen] = useState(() => {
@@ -50,7 +59,12 @@ export default function Forum() {
 
   const openModal = () => {
     console.log('Opening modal from Forum page');
-    setCreatePostModalOpen(true);
+    if (!hasPaidPlan) {
+      console.log('Showing upgrade modal from Forum page');
+      setShowUpgradeModal(true);
+    } else {
+      setCreatePostModalOpen(true);
+    }
   };
 
   const closeModal = () => {
@@ -96,6 +110,11 @@ export default function Forum() {
         <CreatePostModal
           onClose={closeModal}
           categoryId={validCategoryId}
+        />
+      )}
+      {showUpgradeModal && (
+        <UpgradeModal
+          setShowUpgradeModal={setShowUpgradeModal}
         />
       )}
     </div>

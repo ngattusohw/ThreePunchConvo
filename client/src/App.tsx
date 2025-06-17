@@ -351,7 +351,7 @@ function App() {
             ) : (
               <Switch>
                 {/* Public Routes - Always accessible */}
-                <Route path="/" component={Home} />
+                <Route path="/" component={Forum} />
                 <Route path="/forum" component={Forum} />
                 <Route path="/auth" component={AuthPage} />
                 <Route path="/login" component={AuthPage} />

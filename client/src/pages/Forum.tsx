@@ -74,7 +74,6 @@ export default function Forum() {
       <div className="flex flex-col md:flex-row md:space-x-6">
         {/* Left Sidebar - Categories */}
         <ForumCategories />
-
         {/* Center - Forum Content */}
         <ForumContent 
           category={validCategoryId} 

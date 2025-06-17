@@ -10,6 +10,45 @@ import ThreadPoll from "@/components/thread/poll";
 import UserThreadHeader from "@/components/ui/user-thread-header";
 import ThreadActions from "@/components/thread/ThreadActions";
 import MediaPreview from "../components/ui/media-preview";
+import { Helmet } from "react-helmet";
+
+// Separate component for metadata
+function ThreadMetadata({ thread }: { thread: any }) {
+  // Get image URL and ensure it's publicly accessible
+  const imageUrl = thread?.media?.find(m => m.type === "IMAGE")?.url;
+  const fullImageUrl = imageUrl?.startsWith('http') 
+    ? imageUrl 
+    : imageUrl 
+      ? `https://threepunchconvo-production.up.railway.app${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`
+      : undefined;
+
+  // Debug logging
+  console.log('Image URL:', fullImageUrl);
+
+  // Ensure we have a valid URL
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://threepunchconvo.com';
+
+  // Ensure all values are strings and sanitized
+  const title = thread?.title ? String(thread.title).trim() : 'Thread - ThreePunchConvo';
+  const description = thread?.content ? String(thread.content).substring(0, 200).trim() : 'Check out this thread on ThreePunchConvo';
+
+  return (
+    <Helmet>
+      <title>{title}</title>
+      <meta name="description" content={description} />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:type" content="article" />
+      <meta property="og:url" content={currentUrl} />
+      {fullImageUrl && <meta property="og:image" content={fullImageUrl} />}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content="@ThreePunchConvo" />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      {fullImageUrl && <meta name="twitter:image" content={fullImageUrl} />}
+    </Helmet>
+  );
+}
 
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
@@ -97,8 +136,13 @@ export default function Thread() {
     );
   }
 
+  // Only render metadata when we have thread data
+  const metadata = <ThreadMetadata thread={thread} />;
+
   return (
     <div className="container mx-auto px-4 py-6">
+      {metadata}
+
       <div className="flex flex-col lg:flex-row lg:space-x-6">
         {/* Main Content */}
         <div className="lg:flex-grow">

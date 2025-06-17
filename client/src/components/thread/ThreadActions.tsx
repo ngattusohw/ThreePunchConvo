@@ -73,7 +73,7 @@ export default function ThreadActions({
   const handleShareOnX = () => {
     const baseUrl = window.location.origin;
     const threadUrl = `${baseUrl}/thread/${thread.id}`;
-    const tweetText = encodeURIComponent(`Check out this ThreePunchConvo thread: ${thread.title}`);
+    const tweetText = encodeURIComponent(`Check out this 3PunchConvo thread: ${thread.title}`);
     const tweetUrl = `https://twitter.com/intent/tweet?text=${tweetText}&url=${encodeURIComponent(threadUrl)}`;
     window.open(tweetUrl, '_blank');
     setIsShareSubmenuOpen(false);

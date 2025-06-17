@@ -1,8 +1,8 @@
-# ThreePunchConvo Architecture
+# 3PunchConvo Architecture
 
 ## Overview
 
-**ThreePunchConvo** is a specialized **MMA (Mixed Martial Arts) forum platform** built for fight discussion, polls, media sharing, and community engagement. Built with React SPA, Express.js API, PostgreSQL database, and **Clerk authentication**.
+**3PunchConvo** is a specialized **MMA (Mixed Martial Arts) forum platform** built for fight discussion, polls, media sharing, and community engagement. Built with React SPA, Express.js API, PostgreSQL database, and **Clerk authentication**.
 
 ## Key Implementation Details
 

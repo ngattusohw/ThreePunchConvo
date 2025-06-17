@@ -1092,6 +1092,14 @@ export class DatabaseStorage implements IStorage {
 
       // Start a transaction
       const [newReply] = await db.transaction(async (tx) => {
+        // Get the thread to find the owner
+        const thread = await tx.query.threads.findFirst({
+          where: eq(threads.id, replyValues.threadId),
+          columns: {
+            userId: true,
+          },
+        });
+
         // Create the reply
         const [reply] = await tx
           .insert(replies)
@@ -1106,6 +1114,29 @@ export class DatabaseStorage implements IStorage {
             lastActivityAt: new Date(),
           })
           .where(eq(threads.id, replyValues.threadId));
+
+        // Create notification for thread owner (if not replying to their own thread)
+        if (thread && thread.userId !== replyValues.userId) {
+          console.log("Creating notification for thread owner:", thread.userId);
+          try {
+            await tx.insert(notifications).values({
+              id: uuidv4(),
+              userId: thread.userId,
+              type: 'REPLY',
+              relatedUserId: replyValues.userId,
+              threadId: replyValues.threadId,
+              replyId: replyValues.id,
+              isRead: false,
+              createdAt: new Date()
+            });
+            console.log("Notification created successfully");
+          } catch (notificationError) {
+            console.error("Error creating notification:", notificationError);
+            throw notificationError;
+          }
+        } else {
+          console.log("No notification created - same user or no thread found");
+        }
 
         return [reply];
       });
@@ -1452,37 +1483,7 @@ export class DatabaseStorage implements IStorage {
         }
 
         if (existingReaction) {
-          // User has already liked this thread - remove the like
-          await tx
-            .delete(threadReactions)
-            .where(
-              and(
-                eq(threadReactions.threadId, threadId),
-                eq(threadReactions.userId, userId),
-                eq(threadReactions.type, "LIKE"),
-              ),
-            );
-
-          // Decrease thread likes count
-          await tx
-            .update(threads)
-            .set({
-              likesCount: sql`${threads.likesCount} - 1`,
-            })
-            .where(eq(threads.id, threadId));
-
-          // Remove points and decrement likesCount from thread owner (if not liking their own thread)
-          if (thread.userId !== userId) {
-            await tx
-              .update(users)
-              .set({
-                points: sql`${users.points} - 2`,
-                likesCount: sql`${users.likesCount} - 1`, // Track total likes received
-              })
-              .where(eq(users.id, thread.userId));
-          }
-
-          return true;
+          return false; // already liked thread
         }
 
         // Create new like reaction
@@ -1513,16 +1514,15 @@ export class DatabaseStorage implements IStorage {
             .where(eq(users.id, thread.userId));
 
           // Create notification for thread owner
-          // await tx.insert(notifications).values({
-          //   id: uuidv4(),
-          //   userId: thread.userId,
-          //   type: 'LIKE',
-          //   relatedUserId: userId,
-          //   threadId,
-          //   message: 'liked your thread',
-          //   isRead: false,
-          //   createdAt: new Date()
-          // });
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: thread.userId,
+            type: 'LIKE',
+            relatedUserId: userId,
+            threadId,
+            isRead: false,
+            createdAt: new Date()
+          });
         }
 
         return true;
@@ -1609,7 +1609,6 @@ export class DatabaseStorage implements IStorage {
           //   threadId,
           //   message: 'disliked your thread',
           //   isRead: false,
-          //   createdAt: new Date()
           // });
         }
 
@@ -1770,6 +1769,17 @@ export class DatabaseStorage implements IStorage {
             await tx.execute(
               sql`UPDATE users SET points = points + 5 WHERE id = ${thread.userId}`
             );
+
+            // Create notification for thread owner
+            await tx.insert(notifications).values({
+              id: uuidv4(),
+              userId: thread.userId,
+              type: 'POTD',
+              relatedUserId: userId,
+              threadId,
+              isRead: false,
+              createdAt: new Date()
+            });
           }
           
           return true;
@@ -1816,36 +1826,8 @@ export class DatabaseStorage implements IStorage {
         }
 
         if (existingReaction) {
-          // User has already liked this reply - remove the like
-          await tx
-            .delete(replyReactions)
-            .where(
-              and(
-                eq(replyReactions.replyId, replyId),
-                eq(replyReactions.userId, userId),
-                eq(replyReactions.type, "LIKE"),
-              ),
-            );
-
-          // Decrease reply likes count
-          await tx
-            .update(replies)
-            .set({
-              likesCount: sql`${replies.likesCount} - 1`,
-            })
-            .where(eq(replies.id, replyId));
-
-          // Remove points from reply owner (if not liking their own reply)
-          if (reply.userId !== userId) {
-            await tx
-              .update(users)
-              .set({
-                points: sql`${users.points} - 1`, // 1 point for a reply like
-              })
-              .where(eq(users.id, reply.userId));
-          }
-
-          return true;
+          // User has already liked this reply
+          return false;
         }
 
         // Create new like reaction
@@ -1875,17 +1857,16 @@ export class DatabaseStorage implements IStorage {
             .where(eq(users.id, reply.userId));
 
           // Create notification for reply owner
-          // await tx.insert(notifications).values({
-          //   id: uuidv4(),
-          //   userId: reply.userId,
-          //   type: 'LIKE_REPLY',
-          //   relatedUserId: userId,
-          //   threadId: reply.threadId,
-          //   replyId,
-          //   message: 'liked your reply',
-          //   isRead: false,
-          //   createdAt: new Date()
-          // });
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: reply.userId,
+            type: 'LIKE',
+            relatedUserId: userId,
+            threadId: reply.threadId,
+            replyId,
+            isRead: false,
+            createdAt: new Date()
+          });
         }
 
         return true;
@@ -1923,26 +1904,8 @@ export class DatabaseStorage implements IStorage {
         }
 
         if (existingReaction) {
-          // User has already disliked this reply - remove the dislike
-          await tx
-            .delete(replyReactions)
-            .where(
-              and(
-                eq(replyReactions.replyId, replyId),
-                eq(replyReactions.userId, userId),
-                eq(replyReactions.type, "DISLIKE"),
-              ),
-            );
-
-          // Decrease reply dislikes count
-          await tx
-            .update(replies)
-            .set({
-              dislikesCount: sql`${replies.dislikesCount} - 1`,
-            })
-            .where(eq(replies.id, replyId));
-
-          return true;
+          // User has already disliked this reply
+          return false;
         }
 
         // Create new dislike reaction
@@ -1964,17 +1927,17 @@ export class DatabaseStorage implements IStorage {
 
         // Create notification for reply owner (if not disliking their own reply)
         if (reply.userId !== userId) {
-          // await tx.insert(notifications).values({
-          //   id: uuidv4(),
-          //   userId: reply.userId,
-          //   type: 'DISLIKE_REPLY',
-          //   relatedUserId: userId,
-          //   threadId: reply.threadId,
-          //   replyId,
-          //   message: 'disliked your reply',
-          //   isRead: false,
-          //   createdAt: new Date()
-          // });
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: reply.userId,
+            type: 'DISLIKE_REPLY',
+            relatedUserId: userId,
+            threadId: reply.threadId,
+            replyId,
+            message: 'disliked your reply',
+            isRead: false,
+            createdAt: new Date()
+          });
         }
 
         return true;
@@ -2013,9 +1976,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getNotifications(userId: string): Promise<Notification[]> {
-    // Temporary stub
-    console.log("getNotifications not fully implemented", userId);
-    return [];
+    try {
+      console.log("Fetching notifications for userId:", userId);
+      
+      const userNotifications = await db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt));
+
+      console.log("Found notifications:", userNotifications.length);
+      console.log("Notifications:", userNotifications);
+
+      return userNotifications;
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      return [];
+    }
   }
 
   async createNotification(
@@ -2047,15 +2024,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markNotificationAsRead(id: string): Promise<boolean> {
-    // Temporary stub
-    console.log("markNotificationAsRead not fully implemented", id);
-    return false;
+    try {
+      await db
+        .update(notifications)
+        .set({ isRead: true })
+        .where(eq(notifications.id, id));
+
+      return true;
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      return false;
+    }
   }
 
   async markAllNotificationsAsRead(userId: string): Promise<boolean> {
-    // Temporary stub
-    console.log("markAllNotificationsAsRead not fully implemented", userId);
-    return false;
+    try {
+      await db
+        .update(notifications)
+        .set({ isRead: true })
+        .where(eq(notifications.userId, userId));
+
+      return true;
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      return false;
+    }
   }
 
   async getMMAEvents(limit: number, offset: number): Promise<MMAEvent[]> {
@@ -2278,3 +2271,4 @@ export class DatabaseStorage implements IStorage {
 
 // Use database storage implementation
 export const storage = new DatabaseStorage();
+

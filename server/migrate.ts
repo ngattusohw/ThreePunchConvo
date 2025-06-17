@@ -8,6 +8,7 @@ import * as addStripeIdMigration from "./migrations/0006_add_stripe_id";
 import * as addPlanTypeMigration from "./migrations/0007_add_plan_type";
 import * as renamePotdToPinnedMigration from "./migrations/0008_rename_potd_to_pinned";
 import * as addPotdCountMigration from "./migrations/0009_add_potd_count";
+import * as createNotificationsTableMigration from "./migrations/0011_create_notifications_table";
 
 async function migrate() {
   try {
@@ -23,6 +24,7 @@ async function migrate() {
     await addPlanTypeMigration.up(db);
     await renamePotdToPinnedMigration.up(db);
     await addPotdCountMigration.up(db);
+    await createNotificationsTableMigration.up(db);
     
     console.log("Migrations completed successfully!");
     process.exit(0);

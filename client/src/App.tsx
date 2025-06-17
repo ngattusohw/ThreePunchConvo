@@ -6,7 +6,6 @@ import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import Home from "@/pages/Home";
 import Forum from "@/pages/Forum";
-// import Schedule from "@/pages/Schedule";
 import Rankings from "@/pages/Rankings";
 import UserProfile from "@/pages/UserProfile";
 import Thread from "@/pages/Thread";
@@ -15,16 +14,15 @@ import NotFound from "@/pages/not-found";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { ProtectedRoute } from "@/lib/protected-route";
-import { useUser, useAuth } from "@clerk/clerk-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getSubscriptionStatus } from "@/lib/utils";
 import CheckoutForm from "./components/payment/CheckoutForm";
 import { Return } from "./components/payment/Return";
 import { ForumSkeleton } from "./components/skeletons/ForumSkeleton";
+import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 
 function App() {
-  const { isSignedIn, user, isLoaded: isUserLoaded } = useUser();
-  const { userId } = useAuth();
+  const { user, isSignedIn, isLoaded: isUserLoaded, userId } = useMemoizedUser();
   const [localUserChecked, setLocalUserChecked] = useState(false);
   const [isLoadingClientSecret, setIsLoadingClientSecret] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -86,7 +84,7 @@ function App() {
           {
             firstName: user?.firstName,
             lastName: user?.lastName,
-            email: user?.emailAddresses[0]?.emailAddress,
+            email: user?.emailAddress,
             profileImageUrl: user?.imageUrl,
             username: user?.username,
           },
@@ -118,16 +116,14 @@ function App() {
     };
 
     checkOrCreateUser();
-  }, [isUserLoaded, isSignedIn, user]);
+  }, [isUserLoaded, isSignedIn, user?.id, user?.firstName, user?.lastName, user?.emailAddress, user?.imageUrl, user?.username]);
 
   // Check for user subscriptions
   useEffect(() => {
     const checkUserSubscriptions = async () => {
       // Skip if already performed or conditions aren't met
       if (subscriptionCheckPerformed.current || !localUser?.stripeId || !localUserChecked) {
-        if (localUserChecked && !localUser) {
-          if (!initialLoadComplete && isUserLoaded) setInitialLoadComplete(true);
-        }
+        if (localUserChecked && !localUser && isUserLoaded) setInitialLoadComplete(true);
         return;
       }
 
@@ -218,8 +214,8 @@ function App() {
           `Plan type updated from ${data.previousPlan} to ${data.newPlan}`,
         );
 
-        // Update local user state if the plan changed
-        if (localUser && data.user) {
+        // Only update local user state if the plan actually changed
+        if (localUser && data.user && data.previousPlan !== data.newPlan) {
           setLocalUser({
             ...localUser,
             planType: data.newPlan,
@@ -245,7 +241,7 @@ function App() {
         !isUserLoaded || 
         !isSignedIn || 
         !user?.id || 
-        !user?.emailAddresses[0]?.emailAddress
+        !user?.emailAddress
       ) {
         if (isUserLoaded && !isSignedIn) {
           setIsLoadingClientSecret(false);
@@ -263,7 +259,7 @@ function App() {
           "POST",
           "/create-checkout-session",
           {
-            email: user.emailAddresses[0].emailAddress,
+            email: user.emailAddress,
             clerkUserId: user.id,
           },
         );
@@ -312,7 +308,7 @@ function App() {
     isUserLoaded,
     isSignedIn,
     user?.id,
-    user?.emailAddresses,
+    user?.emailAddress,
     initialLoadComplete,
   ]);
 
@@ -355,7 +351,7 @@ function App() {
             ) : (
               <Switch>
                 {/* Public Routes - Always accessible */}
-                <Route path="/" component={Home} />
+                <Route path="/" component={Forum} />
                 <Route path="/forum" component={Forum} />
                 <Route path="/auth" component={AuthPage} />
                 <Route path="/login" component={AuthPage} />

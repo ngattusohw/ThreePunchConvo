@@ -1,7 +1,6 @@
-import react from "react";
+import react, { useEffect, useRef, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
-import { ThreadReply } from "@/lib/types";
-import { useUser } from "@clerk/clerk-react";
+import { Helmet } from "react-helmet";
 import { formatDate } from "@/lib/utils";
 import { useThreadData, useThreadReplies } from "@/api/hooks/threads";
 import UserAvatar from "@/components/ui/user-avatar";
@@ -10,7 +9,8 @@ import ThreadPoll from "@/components/thread/poll";
 import UserThreadHeader from "@/components/ui/user-thread-header";
 import ThreadActions from "@/components/thread/ThreadActions";
 import MediaPreview from "../components/ui/media-preview";
-import { Helmet } from "react-helmet";
+import ReplyForm from "@/components/thread/ReplyForm";
+import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 
 // Separate component for metadata
 function ThreadMetadata({ thread }: { thread: any }) {
@@ -50,10 +50,17 @@ function ThreadMetadata({ thread }: { thread: any }) {
   );
 }
 
+
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
-  const { user: currentUser } = useUser();
-  const [, setLocation] = useLocation();
+  const { user: currentUser } = useMemoizedUser();
+  const [location, setLocation] = useLocation();
+  const hasScrolledToReply = useRef(false);
+
+  // Extract replyId from URL query params once
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+  const replyId = urlParams.get("replyId");
 
   const {
     thread,
@@ -68,25 +75,87 @@ export default function Thread() {
   });
   
   const {
-    replyContent,
-    setReplyContent,
     replyingTo,
-    setReplyingTo,
     showUpgradeModal,
     setShowUpgradeModal,
-    submitReplyMutation,
     likeReplyMutation,
     dislikeReplyMutation,
     deleteReplyMutation,
     handleQuoteReply,
+    replyContent,
+    setReplyContent,
+    setReplyingTo,
     handleReplySubmit,
+    submitReplyMutation,
   } = useThreadReplies({
     threadId: threadId || '',
     userId: currentUser?.id
   });
+
+  const isLoading = isThreadLoading || isRepliesLoading;
   
   // Use the actual data from the API
   const displayThread = thread;
+
+  // Scroll to specific reply if replyId is provided in URL query params (only on first load)
+  useEffect(() => {
+    console.log("Effect triggered - replyId:", replyId, "location:", location);
+        
+    if (replyId && displayReplies.length > 0 && !isRepliesLoading && !hasScrolledToReply.current) {
+      // Function to attempt scrolling to the reply
+      const attemptScrollToReply = () => {
+        const replyElement = document.getElementById(`reply-${replyId}`);
+        
+        if (replyElement) {
+          // Mark that we've scrolled so it doesn't happen again
+          hasScrolledToReply.current = true;
+          
+          // Add a small delay to ensure the page is fully rendered
+          setTimeout(() => {
+            replyElement.scrollIntoView({ 
+              behavior: "smooth", 
+              block: "center" 
+            });
+            
+            // Add a temporary highlight effect
+            replyElement.classList.add("ring-2", "ring-ufc-blue", "ring-opacity-50");
+            setTimeout(() => {
+              replyElement.classList.remove("ring-2", "ring-ufc-blue", "ring-opacity-50");
+            }, 2000);
+          }, 500);
+
+          // Remove the replyId from the URL after successful scroll
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete("replyId");
+          setLocation(newUrl.pathname + newUrl.search, { replace: true });
+          
+          return true; // Element found and scroll initiated
+        }
+        return false; // Element not found
+      };
+
+      // Try immediately first
+      if (!attemptScrollToReply()) {
+        // If element not found, retry with a small delay
+        const retryInterval = setInterval(() => {
+          if (attemptScrollToReply()) {
+            clearInterval(retryInterval);
+          }
+        }, 100);
+
+        // Stop retrying after 3 seconds to avoid infinite loops
+        setTimeout(() => {
+          clearInterval(retryInterval);
+        }, 3000);
+      }
+    }
+  }, [replyId, displayReplies.length, isRepliesLoading, setLocation]);
+
+  // Reset the scroll flag when the threadId changes
+  useEffect(() => {
+    hasScrolledToReply.current = false;
+    console.log("Reset scroll flag - threadId:", threadId);
+  }, [threadId]);
 
   // Debug - log thread data
   console.log("Thread data received:", displayThread);
@@ -283,101 +352,13 @@ export default function Thread() {
                 </Link>
               </div>
             ) : (
-              <form onSubmit={handleReplySubmit}>
-                {replyingTo && (
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm text-gray-400">
-                      Replying to{" "}
-                      <span className="text-ufc-blue">
-                        {replyingTo.username}
-                      </span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setReplyingTo(null);
-                        setReplyContent("");
-                      }}
-                      className="text-sm text-gray-400 hover:text-white"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
-
-                {/* Show upgrade warning for free users */}
-                {currentUser?.publicMetadata?.planType === "FREE" && (
-                  <div className="mb-3 rounded border-l-4 border-yellow-500 bg-gray-800 p-3">
-                    <div className="flex items-center">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="mr-2 h-5 w-5 text-yellow-500"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <p className="text-sm text-gray-300">
-                        You're on a{" "}
-                        <span className="font-bold text-yellow-500">
-                          Free Plan
-                        </span>
-                        .
-                        <span className="text-gray-400">
-                          {" "}
-                          Upgrade to post replies.
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <textarea
-                  id="reply-input"
-                  value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
-                  placeholder="Write your reply here..."
-                  className="focus:ring-ufc-blue min-h-[150px] w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-gray-300 focus:outline-none focus:ring-1"
-                  required
-                />
-
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="flex space-x-3">
-                    {/* <button type="button" className="text-gray-400 hover:text-white flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      Image
-                    </button>
-                    <button type="button" className="text-gray-400 hover:text-white flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Emoji
-                    </button> */}
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={
-                      submitReplyMutation.isPending || !replyContent.trim()
-                    }
-                    className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                      submitReplyMutation.isPending || !replyContent.trim()
-                        ? "cursor-not-allowed bg-gray-700 text-white opacity-50"
-                        : "bg-ufc-blue hover:bg-ufc-blue-dark text-black"
-                    }`}
-                  >
-                    {submitReplyMutation.isPending
-                      ? "Posting..."
-                      : "Post reply"}
-                  </button>
-                </div>
-              </form>
+              <ReplyForm 
+                threadId={threadId}
+                currentUser={currentUser}
+                replyingTo={replyingTo}
+                setReplyingTo={setReplyingTo}
+                isLoading={isLoading}
+              />
             )}
           </div>
         </div>
@@ -449,8 +430,8 @@ export default function Thread() {
               </div>
             )}
 
-            {(currentUser?.publicMetadata?.role as string === "ADMIN" ||
-              currentUser?.publicMetadata?.role as string === "MODERATOR") && (
+            {(currentUser?.originalUser?.publicMetadata?.role as string === "ADMIN" ||
+              currentUser?.originalUser?.publicMetadata?.role as string === "MODERATOR") && (
               <div className="mt-4 border-t border-gray-800 pt-4">
                 <h3 className="mb-2 text-lg font-bold text-white">
                   Moderation
@@ -559,6 +540,13 @@ export default function Thread() {
   );
 }
 
+// Helper function to get category name
+function getCategoryName(categoryId: string): string {
+  const category = FORUM_CATEGORIES.find((cat) => cat.id === categoryId);
+  return category?.name || "Unknown Category";
+}
+
+
 interface ReplyCardProps {
   reply: ThreadReply & {
     level?: number;
@@ -577,7 +565,7 @@ function ReplyCard({
   onDislike,
   onDelete,
 }: ReplyCardProps) {
-  const { user: currentUser } = useUser();
+  const { user: currentUser } = useMemoizedUser();
 
   // Calculate indentation based on the reply's level in the thread
   const level = reply.level || 0;
@@ -600,6 +588,7 @@ function ReplyCard({
 
   return (
     <div
+      id={`reply-${reply.id}`}
       className={`bg-dark-gray overflow-hidden rounded-lg shadow-lg ${indentationClass} ${level > 0 ? "mt-2" : "mt-4"}`}
     >
       {level > 0 && reply.parentUsername && (
@@ -737,10 +726,4 @@ function ReplyCard({
       </div>
     </div>
   );
-}
-
-// Helper function to get category name
-function getCategoryName(categoryId: string): string {
-  const category = FORUM_CATEGORIES.find((cat) => cat.id === categoryId);
-  return category?.name || "Unknown Category";
 }

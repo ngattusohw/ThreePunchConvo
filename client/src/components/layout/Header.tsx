@@ -1,34 +1,21 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { dark } from "@clerk/themes";
-import NotificationModal from "@/components/notification/NotificationModal";
+import NotificationBell from "@/components/ui/notification-bell";
 import MobileNavigation from "@/components/layout/MobileNavigation";
 import { formatUsername } from "@/lib/utils";
-import { UserStatus } from "@/lib/types";
-import StatusBadge from "@/components/ui/status-badge";
 import logoImage from "@/assets/3PC-Logo-FullColor-RGB.png";
-import { SignInButton, UserButton, useAuth, useUser } from "@clerk/clerk-react";
+import { SignInButton, UserButton } from "@clerk/clerk-react";
+import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 
 export default function Header() {
   const [location] = useLocation();
-  const { isSignedIn, isLoaded } = useAuth();
-  const { user } = useUser();
+  const { user, isSignedIn, isLoaded } = useMemoizedUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-
-  // Placeholder function for when we need to fetch additional user data from our database
-  const getUserStatus = (userId: string) => {
-    // Here you would fetch the user's status from your database
-    // This is just a placeholder implementation
-    return "AMATEUR" as UserStatus;
-  };
 
   if (!isLoaded) {
     return null; // Or a loading spinner
   }
-
-  console.log("isSignedIn", isSignedIn);
-  console.log("user", user);
 
   return (
     <header className="bg-ufc-black sticky top-0 z-50 border-b border-gray-800">
@@ -85,8 +72,6 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             {isSignedIn && user ? (
               <>
-                {/* TODO notifications */}
-
                 <div className="relative flex items-center space-x-2">
                   {user.username && (
                     <Link
@@ -96,12 +81,7 @@ export default function Header() {
                       {formatUsername(user.username)}
                     </Link>
                   )}
-
-                  {user.id && (
-                    <span className="hidden md:block">
-                      <StatusBadge status={getUserStatus(user.id)} />
-                    </span>
-                  )}
+                  <NotificationBell />
 
                   <UserButton afterSignOutUrl="/" />
                 </div>
@@ -133,9 +113,6 @@ export default function Header() {
 
       {mobileMenuOpen && (
         <MobileNavigation onClose={() => setMobileMenuOpen(false)} />
-      )}
-      {notificationsOpen && (
-        <NotificationModal onClose={() => setNotificationsOpen(false)} />
       )}
     </header>
   );

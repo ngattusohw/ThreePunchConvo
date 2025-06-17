@@ -29,7 +29,7 @@ function ThreadMetadata({ thread }: { thread: any }) {
   const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://threepunchconvo.com';
 
   // Ensure all values are strings and sanitized
-  const title = thread?.title ? String(thread.title).trim() : 'Thread - ThreePunchConvo';
+  const title = thread?.title ? String(thread.title).trim() : 'Thread - 3PunchConvo';
   const description = thread?.content ? String(thread.content).substring(0, 200).trim() : 'Check out this thread on ThreePunchConvo';
 
   return (
@@ -42,7 +42,7 @@ function ThreadMetadata({ thread }: { thread: any }) {
       <meta property="og:url" content={currentUrl} />
       {fullImageUrl && <meta property="og:image" content={fullImageUrl} />}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:site" content="@ThreePunchConvo" />
+      <meta name="twitter:site" content="@3PunchConvo" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       {fullImageUrl && <meta name="twitter:image" content={fullImageUrl} />}

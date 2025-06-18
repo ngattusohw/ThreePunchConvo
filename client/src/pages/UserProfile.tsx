@@ -120,7 +120,7 @@ export default function UserProfile() {
 
               <FCBadge rank={displayUser.rank} size="md" />
 
-              {displayUser.role === "PRO" && (
+              {displayUser.role === "FIGHTER" && (
                 <span className="flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

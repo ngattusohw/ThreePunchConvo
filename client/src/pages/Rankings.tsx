@@ -187,7 +187,7 @@ export default function Rankings() {
                           {rankedUser.user.username}
                         </Link>
 
-                        {rankedUser.user.role === "PRO" && (
+                        {rankedUser.user.role === "FIGHTER" && (
                           <div className="mt-1 flex items-center">
                             <span className="flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">
                               <svg
@@ -269,7 +269,7 @@ export default function Rankings() {
                         <div className="mt-1 flex items-center space-x-2">
                           <StatusBadge status={rankedUser.user.status} />
 
-                          {rankedUser.user.role === "PRO" && (
+                          {rankedUser.user.role === "FIGHTER" && (
                             <span className="flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"

@@ -1411,11 +1411,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requireAuth(),
     async (req: Request, res: Response) => {
       try {
+
         const userId = req.params.id;
         const { role, updatedBy } = req.body;
 
         // Validate input
         if (!userId || !role) {
+          console.log("Validation failed: missing userId or role");
           return res
             .status(400)
             .json({ message: "User ID and role are required" });
@@ -1425,12 +1427,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const validRoles = [
           "ADMIN",
           "MODERATOR",
-          "PRO",
+          "FIGHTER",
           "USER",
           "PREMIUM_USER",
         ];
 
         if (!validRoles.includes(role)) {
+          console.log("Validation failed: invalid role", role);
           return res.status(400).json({
             message: "Invalid role value",
             validRoles,
@@ -1470,11 +1473,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .status(500)
             .json({ message: "Failed to update user role" });
         }
-
-        // Log the role change for audit purposes
-        console.log(
-          `User role updated: ${userToUpdate.username} (${userId}) from ${userToUpdate.role} to ${role} by admin ${admin.username} (${updatedBy})`,
-        );
 
         // Don't return password in response
         const { password, ...userWithoutPassword } = updatedUser;

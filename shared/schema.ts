@@ -39,7 +39,7 @@ export const users = pgTable("users", {
   bio: text("bio"),
   profileImageUrl: text("profile_image_url"),
   updatedAt: timestamp("updated_at").defaultNow(),
-  role: text("role").notNull().default("USER"), // USER, MODERATOR, ADMIN, PRO, PREMIUM_USER
+  role: text("role").notNull().default("USER"), // USER, MODERATOR, ADMIN, FIGHTER, PREMIUM_USER
   status: text("status").notNull().default("AMATEUR"), // AMATEUR, REGIONAL_POSTER, COMPETITOR, RANKED_POSTER, CONTENDER, CHAMPION, HALL_OF_FAMER
   createdAt: timestamp("created_at").notNull().defaultNow(),
   isOnline: boolean("is_online").notNull().default(false),

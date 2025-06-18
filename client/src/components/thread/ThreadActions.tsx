@@ -1,6 +1,7 @@
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { ForumThread } from "@/lib/types";
 import { useThreadActions } from "@/api/hooks/threads";
+import { useUserProfile } from "@/api/hooks/useUserProfile";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import PopupMenu from './PopupMenu';
@@ -19,7 +20,8 @@ export default function ThreadActions({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isShareSubmenuOpen, setIsShareSubmenuOpen] = useState(false);
   const { toast } = useToast();
-  const { user: currentUser } = useMemoizedUser();
+  const { user: clerkUser } = useMemoizedUser();
+  const { user: currentUser } = useUserProfile(clerkUser?.username || '');
   
   const {
     likeThreadMutation,
@@ -38,10 +40,13 @@ export default function ThreadActions({
   const canDeleteThread =
     currentUser &&
     (currentUser.id === thread?.userId ||
-      (currentUser.publicMetadata?.role as string) === "ADMIN" ||
-      (currentUser.publicMetadata?.role as string) === "MODERATOR");
+      (currentUser.role === "ADMIN" ||
+      currentUser.role === "MODERATOR"));
 
   const canEditThread = currentUser && currentUser.id === thread?.userId;
+
+  // Check if user is admin for pinned functionality
+  const isAdmin = currentUser?.role === "ADMIN";
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -134,19 +139,22 @@ export default function ThreadActions({
         </span>
       </button>
 
-      <button
-        onClick={()=>pinnedByUserThreadMutation.mutate()}
-        disabled={!currentUser}
-        className={`flex items-center ${(thread.isPinnedByUser || thread.isPinned) ? 'text-ufc-blue' : 'text-gray-400'} transition ${currentUser ? 'hover:text-ufc-blue' : ''}`}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg"
-          className={`${iconSize} mr-1`}
-          fill={(thread.isPinnedByUser || thread.isPinned) ? 'currentColor' : 'none'}
-          viewBox="0 0 24 24"
-          stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
-        </svg>
-      </button>
+      {/* Pin button - only show for admins */}
+      {isAdmin && (
+        <button
+          onClick={()=>pinnedByUserThreadMutation.mutate()}
+          disabled={!currentUser}
+          className={`flex items-center ${(thread.isPinnedByUser || thread.isPinned) ? 'text-ufc-blue' : 'text-gray-400'} transition ${currentUser ? 'hover:text-ufc-blue' : ''}`}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg"
+            className={`${iconSize} mr-1`}
+            fill={(thread.isPinnedByUser || thread.isPinned) ? 'currentColor' : 'none'}
+            viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
+          </svg>
+        </button>
+      )}
 
       {/* Add delete button if user is author or has permission */}
       {canDeleteThread && (

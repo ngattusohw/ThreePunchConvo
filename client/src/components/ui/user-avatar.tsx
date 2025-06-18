@@ -63,7 +63,7 @@ export default function UserAvatar({
   }
 
   // For pro users with verified status
-  if (user?.role === "PRO") {
+  if (user?.role === "FIGHTER") {
     return (
       <div className={cn("relative", className)}>
         <img

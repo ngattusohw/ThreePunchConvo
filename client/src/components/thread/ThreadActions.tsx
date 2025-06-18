@@ -160,7 +160,7 @@ export default function ThreadActions({
       {/* Add delete button if user is author or has permission */}
       {canDeleteThread && (
         <button
-          onClick={()=>deleteThreadMutation.mutate(thread.id)}
+          onClick={()=>deleteThreadMutation.mutate(currentUser?.role)}
           disabled={!currentUser}
           className="ml-auto flex items-center text-gray-400 transition hover:text-red-500"
         >

@@ -1014,6 +1014,9 @@ export class DatabaseStorage implements IStorage {
         // Delete all thread replies
         await tx.delete(replies).where(eq(replies.threadId, id));
 
+        // Delete all notifications that reference this thread
+        await tx.delete(notifications).where(eq(notifications.threadId, id));
+
         // Finally, delete the thread itself
         await tx.delete(threads).where(eq(threads.id, id));
       });

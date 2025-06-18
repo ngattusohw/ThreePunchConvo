@@ -10,7 +10,6 @@ interface UserThreadHeaderProps {
   user: Partial<AuthUser>;
   createdAt: string | Date;
   isPinned?: boolean;
-  isPinnedByUser?: boolean;
   showStatus?: boolean;
   size?: 'sm' | 'md' | 'lg';
   pinnedPosition?: 'right' | 'inline';
@@ -20,7 +19,6 @@ export default function UserThreadHeader({
   user,
   createdAt,
   isPinned = false,
-  isPinnedByUser = false,
   showStatus = true,
   size = 'md',
   pinnedPosition = 'inline'
@@ -55,7 +53,7 @@ export default function UserThreadHeader({
   return (
     <div className="flex items-center flex-wrap gap-2 relative">
       {/* Pinned badge - for right position (absolute) */}
-      {pinnedPosition === 'right' && (isPinned || isPinnedByUser) && (
+      {pinnedPosition === 'right' && isPinned && (
         <span className="absolute top-0 right-0 bg-gray-800 text-ufc-blue text-xs px-2 py-0.5 rounded font-medium flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
             <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />
@@ -65,7 +63,7 @@ export default function UserThreadHeader({
       )}
       
       {/* Pinned badge - for inline position */}
-      {pinnedPosition === 'inline' && (isPinned || isPinnedByUser) && (
+      {pinnedPosition === 'inline' && isPinned && (
         <span className="bg-gray-800 text-ufc-blue text-xs px-2 py-0.5 rounded font-medium flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
             <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z" />

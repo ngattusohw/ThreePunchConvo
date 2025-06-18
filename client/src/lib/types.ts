@@ -56,7 +56,6 @@ export interface ForumThread {
   likesCount: number;
   dislikesCount: number;
   repliesCount: number;
-  isPinnedByUser: boolean;
   potdCount: number;
   hasPotd?: boolean;
   media?: ThreadMedia[];

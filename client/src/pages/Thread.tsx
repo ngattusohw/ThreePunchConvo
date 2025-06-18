@@ -239,7 +239,7 @@ export default function Thread() {
           </div>
 
           {/* Thread Card */}
-          <div className={`bg-dark-gray ${displayThread.isPinnedByUser ? 'border-l-4 border-ufc-blue' : ''} rounded-lg overflow-hidden shadow-lg mb-6`}>
+          <div className={`bg-dark-gray ${displayThread.isPinned ? 'border-l-4 border-ufc-blue' : ''} rounded-lg overflow-hidden shadow-lg mb-6`}>
             <div className="p-5">
               {/* Thread Header */}
               <div className="flex items-start">
@@ -249,7 +249,6 @@ export default function Thread() {
                       user={displayThread.user}
                       createdAt={displayThread.createdAt}
                       isPinned={displayThread.isPinned}
-                      isPinnedByUser={displayThread.isPinnedByUser}
                       pinnedPosition="right"
                     />
                   </div>
@@ -418,7 +417,7 @@ export default function Thread() {
               </div>
             </div>
 
-            {displayThread.isPinnedByUser && (
+            {displayThread.isPinned && (
               <div className="bg-gray-800 p-3 rounded-lg mb-4">
                 <div className="flex items-center text-ufc-blue mb-1">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
@@ -426,7 +425,7 @@ export default function Thread() {
                   </svg>
                   <span className="font-medium">PINNED</span>
                 </div>
-                <p className="text-gray-300 text-sm">This post has been selected as PINNED by the community!</p>
+                <p className="text-gray-300 text-sm">This post has been pinned by an administrator.</p>
               </div>
             )}
 

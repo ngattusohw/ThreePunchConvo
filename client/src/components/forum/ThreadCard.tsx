@@ -15,8 +15,6 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
 
   const borderColor = thread.isPinned
     ? "border-ufc-gold"
-    : thread.isPinnedByUser
-    ? "border-ufc-blue"
     : "";
 
   return (
@@ -33,7 +31,6 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                 user={thread.user}
                 createdAt={thread.createdAt}
                 isPinned={thread.isPinned}
-                isPinnedByUser={thread.isPinnedByUser}
                 showStatus={true}
                 size="md"
                 pinnedPosition="right"

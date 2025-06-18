@@ -581,7 +581,6 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPinnedByUser: threads.isPinnedByUser,
           potdCount: threads.potdCount
         })
         .from(threads)
@@ -701,27 +700,26 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPinnedByUser: threads.isPinnedByUser,
           potdCount: threads.potdCount
         })
         .from(threads)
         .where(eq(threads.categoryId, categoryId));
 
-      // Add sorting based on the sort parameter
+      // Add sorting based on the sort parameter, but always prioritize pinned threads
       const sortedQuery = (() => {
         switch (sort) {
           case "recent":
-            return baseQuery.orderBy(desc(threads.lastActivityAt));
+            return baseQuery.orderBy(desc(threads.isPinned), desc(threads.lastActivityAt));
           case "popular":
-            return baseQuery.orderBy(desc(threads.viewCount));
+            return baseQuery.orderBy(desc(threads.isPinned), desc(threads.viewCount));
           case "new":
-            return baseQuery.orderBy(desc(threads.createdAt));
+            return baseQuery.orderBy(desc(threads.isPinned), desc(threads.createdAt));
           case "likes":
-            return baseQuery.orderBy(desc(threads.likesCount));
+            return baseQuery.orderBy(desc(threads.isPinned), desc(threads.likesCount));
           case "replies":
-            return baseQuery.orderBy(desc(threads.repliesCount));
+            return baseQuery.orderBy(desc(threads.isPinned), desc(threads.repliesCount));
           default:
-            return baseQuery.orderBy(desc(threads.lastActivityAt));
+            return baseQuery.orderBy(desc(threads.isPinned), desc(threads.lastActivityAt));
         }
       })();
 
@@ -760,7 +758,6 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPinnedByUser: threads.isPinnedByUser,
           potdCount: threads.potdCount
         })
         .from(threads)
@@ -791,7 +788,6 @@ export class DatabaseStorage implements IStorage {
         likesCount: 0,
         dislikesCount: 0,
         repliesCount: 0,
-        isPinnedByUser: false,
         potdCount: 0
       };
 

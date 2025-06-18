@@ -14,7 +14,7 @@ export default function Forum() {
 
   const { hasPaidPlan } = useUserProfile(currentUser?.username);
 
-  // Get the category ID from URL params
+  // Get the category ID from URL params - test
   const params = useParams<{ categoryId?: string }>();
   const categoryId = params.categoryId || "general";
 

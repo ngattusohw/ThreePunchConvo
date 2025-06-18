@@ -31,7 +31,7 @@ import {
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool, db } from "./db";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 export interface IStorage {
@@ -1010,6 +1010,20 @@ export class DatabaseStorage implements IStorage {
 
         // Delete all thread media
         await tx.delete(threadMedia).where(eq(threadMedia.threadId, id));
+
+        // Find all reply IDs for this thread
+        const threadReplyIds = await tx
+          .select({ id: replies.id })
+          .from(replies)
+          .where(eq(replies.threadId, id));
+        const replyIds = threadReplyIds.map(r => r.id);
+
+        if (replyIds.length > 0) {
+          // Delete all notifications that reference these replies
+          await tx.delete(notifications).where(
+            inArray(notifications.replyId, replyIds)
+          );
+        }
 
         // Delete all thread replies
         await tx.delete(replies).where(eq(replies.threadId, id));

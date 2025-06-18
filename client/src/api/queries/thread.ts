@@ -283,11 +283,11 @@ export const dislikeReply = async (replyId: string, userId: string) => {
 };
 
 // Delete a thread
-export const deleteThread = async (threadId: string, userId: string, role?: string) => {
+export const deleteThread = async (threadId: string, userId: string) => {
   const response = await apiRequest(
     "DELETE", 
     `/api/threads/${threadId}`, 
-    { userId, role }
+    { userId }
   );
 
   if (!response.ok) {

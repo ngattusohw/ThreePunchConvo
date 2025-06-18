@@ -604,7 +604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res: Response) => {
       try {
         const threadId = req.params.id;
-        const { userId: clerkUserId, role } = req.body;
+        const { userId: clerkUserId } = req.body;
 
         if (!clerkUserId) {
           return res.status(400).json({ message: "User ID is required" });
@@ -638,8 +638,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Only thread author, moderators, and admins can delete threads
         if (
           thread.userId !== localUser.id &&
-          role !== "MODERATOR" &&
-          role !== "ADMIN"
+          localUser.role !== "MODERATOR" &&
+          localUser.role !== "ADMIN"
         ) {
           return res
             .status(403)

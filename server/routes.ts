@@ -275,6 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               postsCount: user.postsCount || 0,
               likesCount: user.likesCount || 0,
               pinnedByUserCount: user.pinnedByUserCount || 0,
+              pinnedCount: user.pinnedCount || 0,
               status: user.status || 'AMATEUR'
             }
           };
@@ -690,7 +691,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Thread ID is required' });
       }
       
-      // Get current thread to check pin status
+      // Get current thread to check pin status and get thread owner
       const currentThread = await storage.getThread(threadId);
       if (!currentThread) {
         return res.status(404).json({ message: 'Thread not found' });
@@ -698,7 +699,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Toggle the pin status
       const newPinStatus = !currentThread.isPinned;
-      const success = await storage.updateThread(threadId, { isPinned: newPinStatus });
+      
+      // Update thread pin status and increment/decrement pinnedCount for thread owner
+      const success = await storage.updateThreadPinStatus(threadId, newPinStatus, currentThread.userId);
       
       if (!success) {
         return res.status(400).json({ message: 'Failed to update thread pin status' });

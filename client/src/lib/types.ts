@@ -18,6 +18,7 @@ export interface AuthUser {
   postsCount: number;
   likesCount: number;
   pinnedByUserCount: number;
+  pinnedCount: number;
   rank: number;
   followersCount: number;
   followingCount: number;

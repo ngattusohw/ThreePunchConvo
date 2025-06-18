@@ -132,6 +132,12 @@ export interface IStorage {
     failed: number;
     unchanged: number;
   }>;
+
+  updateThreadPinStatus(
+    threadId: string,
+    isPinned: boolean,
+    threadOwnerId: string,
+  ): Promise<boolean>;
 }
 
 // Extended Thread type that includes associated data
@@ -196,6 +202,7 @@ export class DatabaseStorage implements IStorage {
           postsCount: users.postsCount,
           likesCount: users.likesCount,
           pinnedByUserCount: users.pinnedByUserCount,
+          pinnedCount: users.pinnedCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
@@ -238,6 +245,7 @@ export class DatabaseStorage implements IStorage {
           postsCount: users.postsCount,
           likesCount: users.likesCount,
           pinnedByUserCount: users.pinnedByUserCount,
+          pinnedCount: users.pinnedCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
@@ -280,6 +288,7 @@ export class DatabaseStorage implements IStorage {
           postsCount: users.postsCount,
           likesCount: users.likesCount,
           pinnedByUserCount: users.pinnedByUserCount,
+          pinnedCount: users.pinnedCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
@@ -322,6 +331,7 @@ export class DatabaseStorage implements IStorage {
           postsCount: users.postsCount,
           likesCount: users.likesCount,
           pinnedByUserCount: users.pinnedByUserCount,
+          pinnedCount: users.pinnedCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
@@ -366,6 +376,7 @@ export class DatabaseStorage implements IStorage {
         postsCount: userData.postsCount || 0,
         likesCount: userData.likesCount || 0,
         pinnedByUserCount: userData.pinnedByUserCount || 0,
+        pinnedCount: userData.pinnedCount || 0,
         followersCount: userData.followersCount || 0,
         followingCount: userData.followingCount || 0,
         socialLinks: userData.socialLinks || {},
@@ -661,6 +672,7 @@ export class DatabaseStorage implements IStorage {
           postsCount: user.postsCount,
           likesCount: user.likesCount,
           pinnedByUserCount: user.pinnedByUserCount,
+          pinnedCount: user.pinnedCount,
           followersCount: user.followersCount,
           followingCount: user.followingCount,
           socialLinks: user.socialLinks,
@@ -818,7 +830,47 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // TODO test
+  async updateThreadPinStatus(
+    threadId: string,
+    isPinned: boolean,
+    threadOwnerId: string,
+  ): Promise<boolean> {
+    try {
+      // Start a transaction to update thread and user pinnedCount
+      await db.transaction(async (tx) => {
+        // Update the thread's pin status
+        await tx
+          .update(threads)
+          .set({ isPinned })
+          .where(eq(threads.id, threadId));
+
+        // Update the thread owner's pinnedCount
+        if (isPinned) {
+          // Increment pinnedCount when pinning
+          await tx
+            .update(users)
+            .set({
+              pinnedCount: sql`${users.pinnedCount} + 1`
+            })
+            .where(eq(users.id, threadOwnerId));
+        } else {
+          // Decrement pinnedCount when unpinning (but don't go below 0)
+          await tx
+            .update(users)
+            .set({
+              pinnedCount: sql`GREATEST(${users.pinnedCount} - 1, 0)`
+            })
+            .where(eq(users.id, threadOwnerId));
+        }
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error updating thread pin status:", error);
+      return false;
+    }
+  }
+
   async updateThread(
     id: string,
     threadData: Partial<Thread>,
@@ -1981,9 +2033,6 @@ export class DatabaseStorage implements IStorage {
         .where(eq(notifications.userId, userId))
         .orderBy(desc(notifications.createdAt));
 
-      console.log("Found notifications:", userNotifications.length);
-      console.log("Notifications:", userNotifications);
-
       return userNotifications;
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -2135,7 +2184,7 @@ export class DatabaseStorage implements IStorage {
         if (
           user.points >= threshold.points && 
           user.postsCount >= threshold.posts && 
-          user.pinnedByUserCount >= threshold.pinned
+          user.pinnedCount >= threshold.pinned
         ) {
           newStatus = threshold.status;
           break;
@@ -2200,7 +2249,7 @@ export class DatabaseStorage implements IStorage {
               if (
                 user.points >= threshold.points && 
                 user.postsCount >= threshold.posts && 
-                user.pinnedByUserCount >= threshold.pinned
+                user.pinnedCount >= threshold.pinned
               ) {
                 newStatus = threshold.status;
                 break;

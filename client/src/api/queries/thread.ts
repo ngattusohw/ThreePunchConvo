@@ -3,7 +3,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 export const fetchPinnedThreads = async (category: string, userId?: string) => {
   const params = new URLSearchParams({
-    pinnedByUserFilter: 'only',
+    pinned: 'true',
     sort: 'recent'
   });
   
@@ -175,16 +175,17 @@ export const dislikeThread = async (threadId: string, userId: string) => {
   return response.json();
 };
 
-// Toggle pin status for a thread by user
-export const toggleThreadPinByUser = async (threadId: string, userId: string) => {
+// Toggle pin status for a thread (admin only)
+export const toggleThreadPin = async (threadId: string, userId: string) => {
   const response = await apiRequest(
     "POST", 
-    `/api/threads/${threadId}/pinned-by-user`,
+    `/api/threads/${threadId}/pin`,
     { userId }
   );
   
   if (!response.ok) {
-    throw new Error("Failed to pin post");
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "Failed to update thread pin status");
   }
   
   return response.json();
@@ -282,11 +283,11 @@ export const dislikeReply = async (replyId: string, userId: string) => {
 };
 
 // Delete a thread
-export const deleteThread = async (threadId: string, userId: string, role?: string) => {
+export const deleteThread = async (threadId: string, userId: string) => {
   const response = await apiRequest(
     "DELETE", 
     `/api/threads/${threadId}`, 
-    { userId, role }
+    { userId }
   );
 
   if (!response.ok) {

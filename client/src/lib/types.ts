@@ -1,5 +1,5 @@
 // User related types
-export type UserRole = "ADMIN" | "MODERATOR" | "PRO" | "USER" | "PREMIUM_USER" | "FIGHTER";
+export type UserRole = "ADMIN" | "MODERATOR" | "USER" | "PREMIUM_USER" | "FIGHTER";
 export type UserStatus =
   | "HALL OF FAMER"
   | "CHAMPION"
@@ -18,6 +18,7 @@ export interface AuthUser {
   postsCount: number;
   likesCount: number;
   pinnedByUserCount: number;
+  pinnedCount: number;
   rank: number;
   followersCount: number;
   followingCount: number;
@@ -56,7 +57,6 @@ export interface ForumThread {
   likesCount: number;
   dislikesCount: number;
   repliesCount: number;
-  isPinnedByUser: boolean;
   potdCount: number;
   hasPotd?: boolean;
   media?: ThreadMedia[];
@@ -107,7 +107,7 @@ export interface ThreadReply {
 export interface Notification {
   id: string;
   userId: string;
-  type: "REPLY" | "MENTION" | "LIKE" | "SYSTEM" | "FOLLOW" | "POTD";
+  type: "REPLY" | "MENTION" | "LIKE" | "SYSTEM" | "FOLLOW" | "POTD" | "THREAD_PINNED";
   relatedUserId?: string;
   relatedUser?: AuthUser;
   threadId?: string;

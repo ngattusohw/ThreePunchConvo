@@ -20,8 +20,11 @@ import CheckoutForm from "./components/payment/CheckoutForm";
 import { Return } from "./components/payment/Return";
 import { ForumSkeleton } from "./components/skeletons/ForumSkeleton";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
+import { useAuth } from '@clerk/clerk-react';
 
-function App() {
+function App() {  
+  const { getToken } = useAuth();
+
   const { user, isSignedIn, isLoaded: isUserLoaded, userId } = useMemoizedUser();
   const [localUserChecked, setLocalUserChecked] = useState(false);
   const [isLoadingClientSecret, setIsLoadingClientSecret] = useState(false);
@@ -51,6 +54,12 @@ function App() {
     () => loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ""),
     [], // Only create once
   );
+
+  useEffect(() => {
+    getToken().then(token => {
+      console.log('Your token:', token);
+    });
+  }, []);
 
   // Clear React Query cache when auth state changes (on logout)
   useEffect(() => {

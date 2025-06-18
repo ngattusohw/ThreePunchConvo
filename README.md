@@ -215,6 +215,74 @@ This application uses Clerk for authentication. Follow these steps to set it up:
    npm run dev
    ```
 
+## API Authentication and Token Management
+
+### Getting Your Clerk Token
+
+To make authenticated API requests, you'll need your Clerk token. Here's how to get it:
+
+#### How to get your initial token:
+
+1. **Open your app in the browser** and log in
+2. **Open Developer Tools** (F12)
+3. **Go to Network tab**
+4. **Make any request** (like viewing your profile)
+5. **Find the request** and copy the `Authorization: Bearer <token>` header
+6. **Use that token** in your reqs
+
+### Using the Token for API Requests
+
+Once you have your token, you can use it for authenticated API requests. Here are some common examples:
+
+#### Update User Role
+
+```bash
+curl -X PUT http://localhost:5001/api/users/USER_ID/role \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_CLERK_TOKEN" \
+  -d '{
+    "role": "ADMIN",
+    "updatedBy": "your_user_id"
+  }'
+```
+
+**Valid roles:** `ADMIN`, `MODERATOR`, `FIGHTER`, `USER`, `PREMIUM_USER`
+
+#### Create a Thread
+
+```bash
+curl -X POST http://localhost:5001/api/threads \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_CLERK_TOKEN" \
+  -d '{
+    "title": "Your thread title",
+    "content": "Your thread content",
+    "categoryId": "ufc",
+    "userId": "your_clerk_user_id"
+  }'
+```
+
+#### Get User Information
+
+```bash
+curl -X GET http://localhost:5001/api/users/USER_ID \
+  -H "Authorization: Bearer YOUR_CLERK_TOKEN"
+```
+
+#### Get Notifications
+
+```bash
+curl -X GET http://localhost:5001/api/notifications \
+  -H "Authorization: Bearer YOUR_CLERK_TOKEN"
+```
+
+### Important Notes
+
+- **Token Security**: Keep your token secure and don't share it publicly
+- **Token Expiration**: Tokens expire based on your Clerk session settings
+- **Authentication Required**: Most API endpoints require authentication
+- **Role-based Access**: Some endpoints require specific user roles (e.g., only admins can update user roles)
+
 ## Development
 
 This is a full-stack application with:

@@ -39,7 +39,7 @@ export const users = pgTable("users", {
   bio: text("bio"),
   profileImageUrl: text("profile_image_url"),
   updatedAt: timestamp("updated_at").defaultNow(),
-  role: text("role").notNull().default("USER"), // USER, MODERATOR, ADMIN, PRO, PREMIUM_USER
+  role: text("role").notNull().default("USER"), // USER, MODERATOR, ADMIN, FIGHTER, PREMIUM_USER
   status: text("status").notNull().default("AMATEUR"), // AMATEUR, REGIONAL_POSTER, COMPETITOR, RANKED_POSTER, CONTENDER, CHAMPION, HALL_OF_FAMER
   createdAt: timestamp("created_at").notNull().defaultNow(),
   isOnline: boolean("is_online").notNull().default(false),
@@ -49,6 +49,7 @@ export const users = pgTable("users", {
   postsCount: integer("posts_count").notNull().default(0),
   likesCount: integer("likes_count").notNull().default(0),
   pinnedByUserCount: integer("pinned_by_user_count").notNull().default(0),
+  pinnedCount: integer("pinned_count").notNull().default(0),
   followersCount: integer("followers_count").notNull().default(0),
   followingCount: integer("following_count").notNull().default(0),
   socialLinks: json("social_links").$type<Record<string, string>>(),
@@ -82,7 +83,6 @@ export const threads = pgTable("threads", {
   likesCount: integer("likes_count").notNull().default(0),
   dislikesCount: integer("dislikes_count").notNull().default(0),
   repliesCount: integer("replies_count").notNull().default(0),
-  isPinnedByUser: boolean("is_pinned_by_user").notNull().default(false),
   potdCount: integer("potd_count").notNull().default(0),
 });
 
@@ -282,6 +282,7 @@ export const insertUserSchema = createInsertSchema(users, {
   postsCount: z.number().optional(),
   likesCount: z.number().optional(),
   pinnedByUserCount: z.number().optional(),
+  pinnedCount: z.number().optional(),
   followersCount: z.number().optional(),
   followingCount: z.number().optional(),
   socialLinks: z.record(z.string()).optional(),
@@ -304,7 +305,6 @@ export const insertThreadSchema = createInsertSchema(threads, {
   likesCount: true,
   dislikesCount: true,
   repliesCount: true,
-  isPinnedByUser: true,
   potdCount: true,
 });
 

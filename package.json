@@ -12,6 +12,7 @@
     "db:generate": "drizzle-kit generate",
     "db:reset": "drizzle-kit drop && drizzle-kit push",
     "migrate": "tsx server/migrate.ts",
+    "migrate:run": "tsx server/run-migration.ts",
     "migrate:potd": "tsx server/migrate_potd.ts",
     "migrate:rename": "tsx server/run_rename_migration.ts",
     "check-db": "tsx server/check_db_structure.ts"

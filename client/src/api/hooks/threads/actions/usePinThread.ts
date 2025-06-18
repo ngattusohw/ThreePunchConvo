@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { toggleThreadPinByUser } from "../../../queries/thread";
+import { toggleThreadPin } from "../../../queries/thread";
 import { ForumThread } from "@/lib/types";
 
 interface UsePinThread {
@@ -15,7 +15,7 @@ export function usePinThread({ threadId, userId }: UsePinThread) {
   return useMutation({
     mutationFn: () => {
       if (!userId) throw new Error("You must be logged in to pin posts");
-      return toggleThreadPinByUser(threadId, userId);
+      return toggleThreadPin(threadId, userId);
     },
     onMutate: async () => {
       // Cancel any outgoing refetches
@@ -26,11 +26,11 @@ export function usePinThread({ threadId, userId }: UsePinThread) {
       
       // Optimistically update the UI
       if (previousThread) {
-        const isPinnedByUser = !previousThread.isPinnedByUser;
+        const isPinned = !previousThread.isPinned;
         
         queryClient.setQueryData([`/api/threads/id/${threadId}`, userId], {
           ...previousThread,
-          isPinnedByUser,
+          isPinned,
         });
         
         // Update thread in any list views by finding all thread list queries
@@ -57,12 +57,12 @@ export function usePinThread({ threadId, userId }: UsePinThread) {
                 ...oldData,
                 regularThreads: oldData.regularThreads.map((thread: ForumThread) => 
                   thread.id === threadId 
-                    ? { ...thread, isPinnedByUser } 
+                    ? { ...thread, isPinned } 
                     : thread
                 ),
                 pinnedThreads: oldData.pinnedThreads?.map((thread: ForumThread) => 
                   thread.id === threadId 
-                    ? { ...thread, isPinnedByUser } 
+                    ? { ...thread, isPinned } 
                     : thread
                 ) || [],
               };
@@ -72,7 +72,7 @@ export function usePinThread({ threadId, userId }: UsePinThread) {
             if (Array.isArray(oldData)) {
               return oldData.map((thread: ForumThread) => 
                 thread.id === threadId 
-                  ? { ...thread, isPinnedByUser } 
+                  ? { ...thread, isPinned } 
                   : thread
               );
             }

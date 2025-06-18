@@ -232,6 +232,17 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
           </p>
         )}
 
+        {notification.type === "THREAD_PINNED" && notification.threadTitle && (
+          <p className="text-gray-300">
+            <span className="font-medium text-white">System</span>{" "}
+            Your post{" "}
+            <span className="text-ufc-blue">
+              "{notification.threadTitle}"
+            </span>{" "}
+            has been pinned by a moderator
+          </p>
+        )}
+
         {notification.replyPreview && !notification.replyId && (
             <p className="mt-1 text-sm text-gray-400">
             {notification.replyPreview}

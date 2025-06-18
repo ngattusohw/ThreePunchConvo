@@ -12,9 +12,9 @@ export function useDeleteThread({ threadId, userId }: UseDeleteThreadOptions) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (role?: string) => {
+    mutationFn: () => {
       if (!userId) throw new Error("You must be logged in to delete this thread");
-      return deleteThread(threadId, userId, role);
+      return deleteThread(threadId, userId);
     },
     onSuccess: () => {
       toast({

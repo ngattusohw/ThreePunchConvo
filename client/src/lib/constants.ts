@@ -41,7 +41,7 @@ export const USER_STATUSES = {
 export const USER_ROLES = {
   ADMIN: "ADMIN",
   MODERATOR: "MODERATOR",
-  PRO: "PRO", // Verified pro fighter
+  FIGHTER: "FIGHTER", // Verified pro fighter
   USER: "USER", // Regular user
 };
 

@@ -275,6 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               postsCount: user.postsCount || 0,
               likesCount: user.likesCount || 0,
               pinnedByUserCount: user.pinnedByUserCount || 0,
+              pinnedCount: user.pinnedCount || 0,
               status: user.status || 'AMATEUR'
             }
           };
@@ -501,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sort = (req.query.sort as string) || "recent";
       const limit = parseInt(req.query.limit as string) || 10;
       const offset = parseInt(req.query.offset as string) || 0;
-      const pinnedByUserFilter = req.query.pinnedByUserFilter as string || 'include'; // 'only', 'exclude', or 'include'
+      const pinned = req.query.pinned === 'true';
       const clerkUserId = req.query.userId as string | undefined;
       
       // Set cache control headers
@@ -526,23 +527,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Get threads with more buffer if we need to filter
-      const fetchLimit = pinnedByUserFilter !== 'include' ? limit + 20 : limit;
-      const threads = await storage.getThreadsByCategory(categoryId, sort, fetchLimit, offset);
+      // Get threads - if pinned is true, only get pinned threads
+      const threads = await storage.getThreadsByCategory(categoryId, sort, limit, offset);
       
-      // Filter threads based on PINNED_BY_USER status
+      // Filter threads based on pinned status
       let filteredThreads: Thread[];
-      if (pinnedByUserFilter === 'only') {
-        filteredThreads = threads.filter(thread => thread.isPinnedByUser);
-      } else if (pinnedByUserFilter === 'exclude') {
-        filteredThreads = threads.filter(thread => !thread.isPinnedByUser);
+      if (pinned) {
+        filteredThreads = threads.filter(thread => thread.isPinned);
       } else {
         filteredThreads = threads;
-      }
-
-      // Apply limit if we've filtered
-      if (pinnedByUserFilter !== 'include' && filteredThreads.length > limit) {
-        filteredThreads = filteredThreads.slice(0, limit);
       }
 
       // Fetch full thread data with user details for each thread
@@ -611,7 +604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res: Response) => {
       try {
         const threadId = req.params.id;
-        const { userId: clerkUserId, role } = req.body;
+        const { userId: clerkUserId } = req.body;
 
         if (!clerkUserId) {
           return res.status(400).json({ message: "User ID is required" });
@@ -645,8 +638,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Only thread author, moderators, and admins can delete threads
         if (
           thread.userId !== localUser.id &&
-          role !== "MODERATOR" &&
-          role !== "ADMIN"
+          localUser.role !== "MODERATOR" &&
+          localUser.role !== "ADMIN"
         ) {
           return res
             .status(403)
@@ -667,7 +660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  app.post('/api/threads/:id/pinned-by-user', requireAuth(), async (req: any, res: Response) => {
+  app.post('/api/threads/:id/pin', requireAuth(), async (req: any, res: Response) => {
     try {
       const threadId = req.params.id;
       
@@ -687,22 +680,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'User not found in database' });
       }
       
-      console.log(`Pinned by user thread: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
+      console.log(`Pin thread: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
+      
+      // Check if user is admin or moderator
+      if (localUser.role !== 'ADMIN' && localUser.role !== 'MODERATOR') {
+        return res.status(403).json({ message: 'Only administrators and moderators can pin threads' });
+      }
       
       if (!threadId) {
         return res.status(400).json({ message: 'Thread ID is required' });
       }
       
-      const success = await storage.pinnedByUserThread(threadId, localUser.id);
-      
-      if (!success) {
-        return res.status(400).json({ message: 'Failed to set thread as pinned by user' });
+      // Get current thread to check pin status and get thread owner
+      const currentThread = await storage.getThread(threadId);
+      if (!currentThread) {
+        return res.status(404).json({ message: 'Thread not found' });
       }
       
-      res.json({ message: 'Thread set as pinned by user successfully' });
+      // Toggle the pin status
+      const newPinStatus = !currentThread.isPinned;
+      
+      // Update thread pin status and increment/decrement pinnedCount for thread owner
+      const success = await storage.updateThreadPinStatus(threadId, newPinStatus, currentThread.userId, localUser.id);
+      
+      if (!success) {
+        return res.status(400).json({ message: 'Failed to update thread pin status' });
+      }
+      
+      res.json({ 
+        message: `Thread ${newPinStatus ? 'pinned' : 'unpinned'} successfully`,
+        isPinned: newPinStatus
+      });
     } catch (error) {
-      console.error("Error in thread pinned by user:", error);
-      res.status(500).json({ message: 'Failed to set thread as pinned by user' });
+      console.error("Error in thread pin:", error);
+      res.status(500).json({ message: 'Failed to update thread pin status' });
     }
   });
 
@@ -1411,11 +1422,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requireAuth(),
     async (req: Request, res: Response) => {
       try {
+
         const userId = req.params.id;
         const { role, updatedBy } = req.body;
 
         // Validate input
         if (!userId || !role) {
+          console.log("Validation failed: missing userId or role");
           return res
             .status(400)
             .json({ message: "User ID and role are required" });
@@ -1425,12 +1438,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const validRoles = [
           "ADMIN",
           "MODERATOR",
-          "PRO",
+          "FIGHTER",
           "USER",
           "PREMIUM_USER",
         ];
 
         if (!validRoles.includes(role)) {
+          console.log("Validation failed: invalid role", role);
           return res.status(400).json({
             message: "Invalid role value",
             validRoles,
@@ -1470,11 +1484,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .status(500)
             .json({ message: "Failed to update user role" });
         }
-
-        // Log the role change for audit purposes
-        console.log(
-          `User role updated: ${userToUpdate.username} (${userId}) from ${userToUpdate.role} to ${role} by admin ${admin.username} (${updatedBy})`,
-        );
 
         // Don't return password in response
         const { password, ...userWithoutPassword } = updatedUser;

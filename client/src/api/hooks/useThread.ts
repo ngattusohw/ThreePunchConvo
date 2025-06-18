@@ -7,7 +7,7 @@ import {
   fetchThreadReplies,
   likeThread,
   dislikeThread,
-  toggleThreadPinByUser,
+  toggleThreadPin,
   submitThreadReply,
   likeReply,
   dislikeReply,
@@ -172,7 +172,7 @@ export function useThread({ threadId, userId }: UseThreadOptions) {
   const pinnedByUserThreadMutation = useMutation({
     mutationFn: () => {
       if (!userId) throw new Error("You must be logged in to pin posts");
-      return toggleThreadPinByUser(threadId, userId);
+      return toggleThreadPin(threadId, userId);
     },
     onSuccess: () => {
       // Invalidate queries to refetch thread and related data
@@ -281,9 +281,9 @@ export function useThread({ threadId, userId }: UseThreadOptions) {
 
   // Add delete thread mutation
   const deleteThreadMutation = useMutation({
-    mutationFn: (role?: string) => {
+    mutationFn: () => {
       if (!userId) throw new Error("You must be logged in to delete this thread");
-      return deleteThread(threadId, userId, role);
+      return deleteThread(threadId, userId);
     },
     onSuccess: () => {
       toast({

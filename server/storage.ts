@@ -31,7 +31,7 @@ import {
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool, db } from "./db";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 export interface IStorage {
@@ -132,6 +132,13 @@ export interface IStorage {
     failed: number;
     unchanged: number;
   }>;
+
+  updateThreadPinStatus(
+    threadId: string,
+    isPinned: boolean,
+    threadOwnerId: string,
+    moderatorId: string,
+  ): Promise<boolean>;
 }
 
 // Extended Thread type that includes associated data
@@ -196,6 +203,7 @@ export class DatabaseStorage implements IStorage {
           postsCount: users.postsCount,
           likesCount: users.likesCount,
           pinnedByUserCount: users.pinnedByUserCount,
+          pinnedCount: users.pinnedCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
@@ -238,6 +246,7 @@ export class DatabaseStorage implements IStorage {
           postsCount: users.postsCount,
           likesCount: users.likesCount,
           pinnedByUserCount: users.pinnedByUserCount,
+          pinnedCount: users.pinnedCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
@@ -280,6 +289,7 @@ export class DatabaseStorage implements IStorage {
           postsCount: users.postsCount,
           likesCount: users.likesCount,
           pinnedByUserCount: users.pinnedByUserCount,
+          pinnedCount: users.pinnedCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
@@ -322,6 +332,7 @@ export class DatabaseStorage implements IStorage {
           postsCount: users.postsCount,
           likesCount: users.likesCount,
           pinnedByUserCount: users.pinnedByUserCount,
+          pinnedCount: users.pinnedCount,
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
@@ -366,6 +377,7 @@ export class DatabaseStorage implements IStorage {
         postsCount: userData.postsCount || 0,
         likesCount: userData.likesCount || 0,
         pinnedByUserCount: userData.pinnedByUserCount || 0,
+        pinnedCount: userData.pinnedCount || 0,
         followersCount: userData.followersCount || 0,
         followingCount: userData.followingCount || 0,
         socialLinks: userData.socialLinks || {},
@@ -581,7 +593,6 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPinnedByUser: threads.isPinnedByUser,
           potdCount: threads.potdCount
         })
         .from(threads)
@@ -662,6 +673,7 @@ export class DatabaseStorage implements IStorage {
           postsCount: user.postsCount,
           likesCount: user.likesCount,
           pinnedByUserCount: user.pinnedByUserCount,
+          pinnedCount: user.pinnedCount,
           followersCount: user.followersCount,
           followingCount: user.followingCount,
           socialLinks: user.socialLinks,
@@ -701,27 +713,26 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPinnedByUser: threads.isPinnedByUser,
           potdCount: threads.potdCount
         })
         .from(threads)
         .where(eq(threads.categoryId, categoryId));
 
-      // Add sorting based on the sort parameter
+      // Add sorting based on the sort parameter, but always prioritize pinned threads
       const sortedQuery = (() => {
         switch (sort) {
           case "recent":
-            return baseQuery.orderBy(desc(threads.lastActivityAt));
+            return baseQuery.orderBy(desc(threads.isPinned), desc(threads.lastActivityAt));
           case "popular":
-            return baseQuery.orderBy(desc(threads.viewCount));
+            return baseQuery.orderBy(desc(threads.isPinned), desc(threads.viewCount));
           case "new":
-            return baseQuery.orderBy(desc(threads.createdAt));
+            return baseQuery.orderBy(desc(threads.isPinned), desc(threads.createdAt));
           case "likes":
-            return baseQuery.orderBy(desc(threads.likesCount));
+            return baseQuery.orderBy(desc(threads.isPinned), desc(threads.likesCount));
           case "replies":
-            return baseQuery.orderBy(desc(threads.repliesCount));
+            return baseQuery.orderBy(desc(threads.isPinned), desc(threads.repliesCount));
           default:
-            return baseQuery.orderBy(desc(threads.lastActivityAt));
+            return baseQuery.orderBy(desc(threads.isPinned), desc(threads.lastActivityAt));
         }
       })();
 
@@ -760,7 +771,6 @@ export class DatabaseStorage implements IStorage {
           likesCount: threads.likesCount,
           dislikesCount: threads.dislikesCount,
           repliesCount: threads.repliesCount,
-          isPinnedByUser: threads.isPinnedByUser,
           potdCount: threads.potdCount
         })
         .from(threads)
@@ -791,7 +801,6 @@ export class DatabaseStorage implements IStorage {
         likesCount: 0,
         dislikesCount: 0,
         repliesCount: 0,
-        isPinnedByUser: false,
         potdCount: 0
       };
 
@@ -822,7 +831,65 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // TODO test
+  async updateThreadPinStatus(
+    threadId: string,
+    isPinned: boolean,
+    threadOwnerId: string,
+    moderatorId: string,
+  ): Promise<boolean> {
+    try {
+      // Start a transaction to update thread and user pinnedCount
+      await db.transaction(async (tx) => {
+        // Update the thread's pin status
+        await tx
+          .update(threads)
+          .set({ isPinned })
+          .where(eq(threads.id, threadId));
+
+        // Update the thread owner's pinnedCount
+        if (isPinned) {
+          // Increment pinnedCount when pinning
+          await tx
+            .update(users)
+            .set({
+              pinnedCount: sql`${users.pinnedCount} + 1`
+            })
+            .where(eq(users.id, threadOwnerId));
+        } else {
+          // Decrement pinnedCount when unpinning (but don't go below 0)
+          await tx
+            .update(users)
+            .set({
+              pinnedCount: sql`GREATEST(${users.pinnedCount} - 1, 0)`
+            })
+            .where(eq(users.id, threadOwnerId));
+        }
+      });
+
+      // Create notification for the thread owner
+      try {
+        const thread = await this.getThread(threadId);
+        if (thread) {
+          await this.createNotification({
+            userId: threadOwnerId,
+            type: 'THREAD_PINNED',
+            threadId: threadId,
+            relatedUserId: moderatorId,
+            message: 'Your thread has been pinned by a moderator',
+          });
+        }
+      } catch (notificationError) {
+        console.error("Error creating pin notification:", notificationError);
+        // Don't fail the entire operation if notification creation fails
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error updating thread pin status:", error);
+      return false;
+    }
+  }
+
   async updateThread(
     id: string,
     threadData: Partial<Thread>,
@@ -944,8 +1011,25 @@ export class DatabaseStorage implements IStorage {
         // Delete all thread media
         await tx.delete(threadMedia).where(eq(threadMedia.threadId, id));
 
+        // Find all reply IDs for this thread
+        const threadReplyIds = await tx
+          .select({ id: replies.id })
+          .from(replies)
+          .where(eq(replies.threadId, id));
+        const replyIds = threadReplyIds.map(r => r.id);
+
+        if (replyIds.length > 0) {
+          // Delete all notifications that reference these replies
+          await tx.delete(notifications).where(
+            inArray(notifications.replyId, replyIds)
+          );
+        }
+
         // Delete all thread replies
         await tx.delete(replies).where(eq(replies.threadId, id));
+
+        // Delete all notifications that reference this thread
+        await tx.delete(notifications).where(eq(notifications.threadId, id));
 
         // Finally, delete the thread itself
         await tx.delete(threads).where(eq(threads.id, id));
@@ -1985,9 +2069,6 @@ export class DatabaseStorage implements IStorage {
         .where(eq(notifications.userId, userId))
         .orderBy(desc(notifications.createdAt));
 
-      console.log("Found notifications:", userNotifications.length);
-      console.log("Notifications:", userNotifications);
-
       return userNotifications;
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -2139,7 +2220,7 @@ export class DatabaseStorage implements IStorage {
         if (
           user.points >= threshold.points && 
           user.postsCount >= threshold.posts && 
-          user.pinnedByUserCount >= threshold.pinned
+          user.pinnedCount >= threshold.pinned
         ) {
           newStatus = threshold.status;
           break;
@@ -2204,7 +2285,7 @@ export class DatabaseStorage implements IStorage {
               if (
                 user.points >= threshold.points && 
                 user.postsCount >= threshold.posts && 
-                user.pinnedByUserCount >= threshold.pinned
+                user.pinnedCount >= threshold.pinned
               ) {
                 newStatus = threshold.status;
                 break;

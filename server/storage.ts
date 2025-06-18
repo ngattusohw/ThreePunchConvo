@@ -137,6 +137,7 @@ export interface IStorage {
     threadId: string,
     isPinned: boolean,
     threadOwnerId: string,
+    moderatorId: string,
   ): Promise<boolean>;
 }
 
@@ -834,6 +835,7 @@ export class DatabaseStorage implements IStorage {
     threadId: string,
     isPinned: boolean,
     threadOwnerId: string,
+    moderatorId: string,
   ): Promise<boolean> {
     try {
       // Start a transaction to update thread and user pinnedCount
@@ -863,6 +865,23 @@ export class DatabaseStorage implements IStorage {
             .where(eq(users.id, threadOwnerId));
         }
       });
+
+      // Create notification for the thread owner
+      try {
+        const thread = await this.getThread(threadId);
+        if (thread) {
+          await this.createNotification({
+            userId: threadOwnerId,
+            type: 'THREAD_PINNED',
+            threadId: threadId,
+            relatedUserId: moderatorId,
+            message: 'Your thread has been pinned by a moderator',
+          });
+        }
+      } catch (notificationError) {
+        console.error("Error creating pin notification:", notificationError);
+        // Don't fail the entire operation if notification creation fails
+      }
 
       return true;
     } catch (error) {

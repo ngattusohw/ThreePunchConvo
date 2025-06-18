@@ -701,7 +701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newPinStatus = !currentThread.isPinned;
       
       // Update thread pin status and increment/decrement pinnedCount for thread owner
-      const success = await storage.updateThreadPinStatus(threadId, newPinStatus, currentThread.userId);
+      const success = await storage.updateThreadPinStatus(threadId, newPinStatus, currentThread.userId, localUser.id);
       
       if (!success) {
         return res.status(400).json({ message: 'Failed to update thread pin status' });

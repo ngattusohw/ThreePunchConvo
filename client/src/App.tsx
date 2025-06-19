@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { loadStripe } from "@stripe/stripe-js";
 import { CheckoutProvider } from "@stripe/react-stripe-js";
 import { Toaster } from "@/components/ui/toaster";
@@ -24,6 +24,7 @@ import { useAuth } from '@clerk/clerk-react';
 
 function App() {  
   const { getToken } = useAuth();
+  const [location] = useLocation();
 
   const { user, isSignedIn, isLoaded: isUserLoaded, userId } = useMemoizedUser();
   const [localUserChecked, setLocalUserChecked] = useState(false);
@@ -339,7 +340,7 @@ function App() {
   return (
     <div>
       <div className="bg-ufc-black text-light-gray flex min-h-screen flex-col">
-        <Header />
+        {location !== "/auth" && location !== "/login" && location !== "/register" && <Header />}
         <main className="flex-grow">
           <ErrorBoundary
             fallback={
@@ -439,7 +440,7 @@ function App() {
             )}
           </ErrorBoundary>
         </main>
-        <Footer />
+        {location !== "/auth" && location !== "/login" && location !== "/register" && <Footer />}
       </div>
       <Toaster />
     </div>

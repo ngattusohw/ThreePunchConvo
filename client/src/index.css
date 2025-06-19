@@ -11,3 +11,12 @@
     @apply bg-background font-sans text-foreground antialiased;
   }
 }
+
+/* Make Clerk Google social button logo larger */
+.cl-socialButtonsProviderIcon__google {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  min-width: 1.25rem !important;
+  min-height: 1.25rem !important;
+  margin-right: 0.5rem !important;
+}

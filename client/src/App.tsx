@@ -19,8 +19,7 @@ import CheckoutForm from "./components/payment/CheckoutForm";
 import { Return } from "./components/payment/Return";
 import { ForumSkeleton } from "./components/skeletons/ForumSkeleton";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
-import { useAuth, UserProfile as ClerkUserProfile } from '@clerk/clerk-react';
-import { dark } from "@clerk/themes";
+import { useAuth } from '@clerk/clerk-react';
 
 function App() {  
   const { getToken } = useAuth();
@@ -442,11 +441,6 @@ function App() {
         </main>
         {location !== "/auth" && location !== "/login" && location !== "/register" && <Footer />}
       </div>
-      <ClerkUserProfile
-        appearance={{
-          baseTheme: dark,
-        }}
-      />
       <Toaster />
     </div>
   );

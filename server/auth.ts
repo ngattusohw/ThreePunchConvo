@@ -198,7 +198,6 @@ export const registerAuthEndpoints = (app: Express) => {
                 );
               }
             }
-            
           } catch (updateError) {
             console.error("Error updating user profile:", updateError);
             // Continue with existing user data even if update fails

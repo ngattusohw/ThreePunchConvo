@@ -10,12 +10,14 @@ interface ThreadActionsProps {
   thread: ForumThread;
   size?: "sm" | "md" | "lg";
   className?: string;
+  onClickEdit?: () => void;
 }
 
 export default function ThreadActions({
   thread,
   size = "md",
   className = "",
+  onClickEdit,
 }: ThreadActionsProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isShareSubmenuOpen, setIsShareSubmenuOpen] = useState(false);
@@ -207,9 +209,10 @@ export default function ThreadActions({
           isOpen={isMenuOpen}
           onCopyLink={handleCopyLink}
           onShareOnX={handleShareOnX}
-          onEdit={() => {/* Add your edit functionality here */ setIsMenuOpen(false); }}
+          onEdit={onClickEdit}
           canEditThread={canEditThread}
           onClose={() => setIsMenuOpen(false)}
+          createdAt={thread.createdAt}
         />
       </div>
     </div>

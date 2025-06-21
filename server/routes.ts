@@ -660,6 +660,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  app.put('/api/threads/:id', requireAuth(), async (req: any, res: Response) => {
+    try {
+      const threadId = req.params.id;
+      const { userId, title, content } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is required" });
+      }
+
+      if (!title || !content) {
+        return res.status(400).json({ message: "Title and content are required" });
+      }
+
+      const thread = await storage.getThread(threadId);
+      if (!thread) {
+        return res.status(404).json({ message: "Thread not found" });
+      }
+
+      // Verify user is the thread author
+      const user = await storage.getUserByExternalId(userId);
+      if (thread.userId !== user?.id) {
+        return res.status(403).json({ message: "Not authorized to edit this thread" });
+      }
+
+      // Verify thread is less than 1 hour old
+      if (thread.createdAt < new Date(Date.now() - 1000 * 60 * 60)) {
+        return res.status(403).json({ message: "Not authorized to edit this thread" });
+      }
+
+      const success = await storage.updateThread(threadId, { title, content, edited: true, editedAt: new Date() });
+
+      if (!success) {
+        return res.status(400).json({ message: "Failed to edit thread" });
+      }
+
+      res.json({ message: "Thread edited successfully" });
+    } catch (error) {
+      console.error("Error in thread edit:", error);
+    }
+  });
+
   app.post('/api/threads/:id/pin', requireAuth(), async (req: any, res: Response) => {
     try {
       const threadId = req.params.id;
@@ -1764,6 +1805,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Mark user as deactivated in database
         await storage.updateUser(localUser.id, { disabled: true, disabledAt: new Date(), planType: "FREE" });
+
+        // Delete all user's posts, comments, and rankings
+        await storage.deleteUserPosts(localUser.id);
 
         res.status(200).json({ message: "User account deleted successfully" });
       } catch (error) {

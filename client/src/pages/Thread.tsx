@@ -11,6 +11,31 @@ import ThreadActions from "@/components/thread/ThreadActions";
 import MediaPreview from "../components/ui/media-preview";
 import ReplyForm from "@/components/thread/ReplyForm";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
+import { ThreadReply } from "@/lib/types";
+import { useThreadActions } from "@/api/hooks/threads/actions";
+import { Loader2 } from "lucide-react";
+
+// Helper function to format edited date
+const formatEditedDate = (editedAt: Date) => {
+  const now = new Date();
+  const editedDate = new Date(editedAt);
+  const diffInMs = now.getTime() - editedDate.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInMinutes < 1) {
+    return "just now";
+  } else if (diffInMinutes < 60) {
+    return `${diffInMinutes}m ago`;
+  } else if (diffInHours < 24) {
+    return `${diffInHours}h ago`;
+  } else if (diffInDays < 7) {
+    return `${diffInDays}d ago`;
+  } else {
+    return editedDate.toLocaleDateString();
+  }
+};
 
 // Separate component for metadata
 function ThreadMetadata({ thread }: { thread: any }) {
@@ -57,6 +82,12 @@ export default function Thread() {
   const [location, setLocation] = useLocation();
   const hasScrolledToReply = useRef(false);
 
+  // Edit state management
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [loading, setLoading] = useState(false);
+
   // Extract replyId from URL query params once
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
@@ -72,6 +103,22 @@ export default function Thread() {
   } = useThreadData({ 
     threadId: threadId || '',
     userId: currentUser?.id 
+  });
+
+  // Initialize edit form when thread data is available
+  useEffect(() => {
+    if (thread) {
+      setEditTitle(thread.title);
+      setEditContent(thread.content);
+    }
+  }, [thread]);
+
+  // Thread actions hook for editing
+  const { editThreadMutation } = useThreadActions({ 
+    threadId: threadId || '', 
+    userId: currentUser?.id, 
+    title: editTitle, 
+    content: editContent 
   });
   
   const {
@@ -91,6 +138,31 @@ export default function Thread() {
     threadId: threadId || '',
     userId: currentUser?.id
   });
+
+  // Edit handlers
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      await editThreadMutation.mutateAsync();
+      window.location.reload();
+    } catch (error) {
+      console.error("Error in thread edit:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (thread) {
+      setEditTitle(thread.title);
+      setEditContent(thread.content);
+    }
+    setIsEditing(false);
+  };
 
   const isLoading = isThreadLoading || isRepliesLoading;
   
@@ -253,16 +325,77 @@ export default function Thread() {
                     />
                   </div>
 
-                  <h1 className="mb-4 text-2xl font-bold text-white">
-                    {displayThread.title}
-                  </h1>
+                  {loading ? (
+                    <div className="flex justify-center items-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : isEditing ? (
+                    // Edit Mode
+                    <div className="space-y-4">
+                      <div>
+                        <label htmlFor="edit-title" className="block text-sm font-medium text-gray-300 mb-1">
+                          Title
+                        </label>
+                        <input
+                          id="edit-title"
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-ufc-blue focus:border-transparent"
+                          placeholder="Enter thread title..."
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="edit-content" className="block text-sm font-medium text-gray-300 mb-1">
+                          Content
+                        </label>
+                        <textarea
+                          id="edit-content"
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          rows={8}
+                          className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-ufc-blue focus:border-transparent resize-vertical"
+                          placeholder="Enter thread content..."
+                        />
+                      </div>
 
-                  <div className="mb-6 whitespace-pre-line text-gray-300">
-                    {displayThread.content}
-                  </div>
+                      {/* Edit Actions */}
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={handleSave}
+                          className="px-4 py-2 bg-ufc-blue text-white rounded-md hover:bg-blue-600 transition-colors"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleCancel}
+                          className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    // View Mode
+                    <>
+                      <h1 className="mb-4 text-2xl font-bold text-white">
+                        {displayThread.title}
+                        {displayThread.edited && displayThread.editedAt && (
+                          <span className="ml-2 text-sm font-normal text-gray-400">
+                            (edited {formatEditedDate(displayThread.editedAt)})
+                          </span>
+                        )}
+                      </h1>
 
-                  {/* Thread Media */}
-                  {displayThread.media && displayThread.media.length > 0 && (
+                      <div className="mb-6 whitespace-pre-line text-gray-300">
+                        {displayThread.content}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Thread Media - only show in view mode */}
+                  {!isEditing && displayThread.media && displayThread.media.length > 0 && (
                     <div className="mb-6">
                       <MediaPreview
                         media={displayThread.media[0]}
@@ -271,8 +404,8 @@ export default function Thread() {
                     </div>
                   )}
 
-                  {/* Thread Poll */}
-                  {displayThread?.poll && (
+                  {/* Thread Poll - only show in view mode */}
+                  {!isEditing && displayThread?.poll && (
                     <ThreadPoll 
                       key={`poll-${threadId}`}
                       threadId={threadId} 
@@ -280,12 +413,15 @@ export default function Thread() {
                     />
                   )}
 
-                  {/* Thread Actions */}
-                  <div className="mb-6">
-                    <ThreadActions 
-                      thread={displayThread}
-                    />
-                  </div>
+                  {/* Thread Actions - only show in view mode */}
+                  {!isEditing && (
+                    <div className="mb-6">
+                      <ThreadActions 
+                        thread={displayThread}
+                        onClickEdit={handleEdit}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -401,6 +537,15 @@ export default function Thread() {
               </p>
             </div>
 
+            {displayThread.edited && displayThread.editedAt && (
+              <div className="mb-4">
+                <p className="mb-1 text-sm text-gray-400">Last edited</p>
+                <p className="text-white">
+                  {formatDate(displayThread.editedAt)}
+                </p>
+              </div>
+            )}
+
             <div className="mb-4">
               <p className="mb-1 text-sm text-gray-400">Stats</p>
               <div className="grid grid-cols-2 gap-2">
@@ -429,8 +574,8 @@ export default function Thread() {
               </div>
             )}
 
-            {(currentUser?.originalUser?.publicMetadata?.role as string === "ADMIN" ||
-              currentUser?.originalUser?.publicMetadata?.role as string === "MODERATOR") && (
+            {(currentUser?.publicMetadata?.role as string === "ADMIN" ||
+              currentUser?.publicMetadata?.role as string === "MODERATOR") && (
               <div className="mt-4 border-t border-gray-800 pt-4">
                 <h3 className="mb-2 text-lg font-bold text-white">
                   Moderation

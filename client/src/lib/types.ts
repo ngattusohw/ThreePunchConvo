@@ -50,6 +50,8 @@ export interface ForumThread {
   categoryId: string;
   isPinned: boolean;
   isLocked: boolean;
+  edited: boolean;
+  editedAt: Date;
   createdAt: Date;
   updatedAt: Date;
   lastActivityAt: Date;

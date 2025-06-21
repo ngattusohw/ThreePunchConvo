@@ -99,7 +99,7 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
             
             <div className="rounded-lg border border-red-800 bg-red-900/20 p-4 mb-4">
               <p className="text-sm text-red-300">
-                This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                This action cannot be undone. This will permanently disable your account and remove all your content from the platform.
               </p>
             </div>
             

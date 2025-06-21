@@ -78,7 +78,10 @@ export const threads = pgTable("threads", {
     .notNull()
     .references(() => categories.id),
   isPinned: boolean("is_pinned").notNull().default(false),
+  isPinnedByUser: boolean("is_pinned_by_user").notNull().default(false),
   isLocked: boolean("is_locked").notNull().default(false),
+  edited: boolean("edited").notNull().default(false),
+  editedAt: timestamp("edited_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   lastActivityAt: timestamp("last_activity_at").notNull().defaultNow(),

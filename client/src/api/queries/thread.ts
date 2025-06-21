@@ -175,6 +175,21 @@ export const dislikeThread = async (threadId: string, userId: string) => {
   return response.json();
 };
 
+export const editThread = async (threadId: string, userId: string, title: string, content: string) => {
+  const response = await apiRequest(
+    "PUT",
+    `/api/threads/${threadId}`,
+    { userId, title, content }
+  );
+
+  if (!response.ok) { 
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "Failed to edit thread");
+  }
+
+  return response.json();
+};
+
 // Toggle pin status for a thread (admin only)
 export const toggleThreadPin = async (threadId: string, userId: string) => {
   const response = await apiRequest(

@@ -1,0 +1,99 @@
+name: Sync Main to Development
+
+on:
+    push:
+        branches:
+            - main
+
+permissions:
+    contents: write
+    pull-requests: write
+
+jobs:
+    sync-branches:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Configure Git
+              run: |
+                  git config user.name "GitHub Actions"
+                  git config user.email "actions@github.com"
+
+            - name: Try to sync main to development
+              id: sync
+              run: |
+                  # Fetch all branches
+                  git fetch origin development
+                  git fetch origin main
+
+                  # Create a new sync branch from development
+                  sync_branch="sync-main-to-dev-$(date +%s)"
+                  git checkout -b $sync_branch origin/development
+
+                  # Try to merge main into the sync branch
+                  if git merge origin/main --no-ff; then
+                    # If merge successful, push the sync branch
+                    git push origin $sync_branch
+                    echo "status=success" >> $GITHUB_OUTPUT
+                    echo "branch=$sync_branch" >> $GITHUB_OUTPUT
+                  else
+                    # If merge conflicts occur
+                    # Push the branch in its conflicted state
+                    git merge origin/main || true
+                    git push origin $sync_branch
+                    
+                    echo "status=conflicts" >> $GITHUB_OUTPUT
+                    echo "branch=$sync_branch" >> $GITHUB_OUTPUT
+                    
+                    # Clean up local state
+                    git merge --abort
+                  fi
+
+            - name: Create Pull Request
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const status = process.env.STATUS;
+                      const branch = process.env.BRANCH;
+
+                      const title = status === 'conflicts' 
+                        ? '🔄 Sync main to development (conflicts need resolution)'
+                        : '🔄 Sync main to development';
+
+                      const body = status === 'conflicts'
+                        ? 'This PR was automatically created because there were conflicts while syncing main to development.\n\nPlease resolve the conflicts and merge this PR.'
+                        : 'This PR was automatically created to sync changes from main to development.\n\nThis PR can be merged automatically as there are no conflicts.';
+
+                      const pr = await github.rest.pulls.create({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        title: title,
+                        body: body,
+                        head: branch,
+                        base: 'development'
+                      });
+
+                      if (status !== 'conflicts') {
+                        // If no conflicts, enable auto-merge
+                        try {
+                          await github.rest.pulls.enableAutoMerge({
+                            owner: context.repo.owner,
+                            repo: context.repo.repo,
+                            pull_number: pr.data.number,
+                            merge_method: 'merge'
+                          });
+                        } catch (e) {
+                          console.log('Note: Could not enable auto-merge. This is optional and the PR can still be merged manually.');
+                        }
+                      }
+
+                      console.log(`PR created: ${pr.data.html_url}`);
+                      console.log(`::set-output name=pr_url::${pr.data.html_url}`);
+                      console.log(`::set-output name=pr_number::${pr.data.number}`);
+              env:
+                  STATUS: ${{ steps.sync.outputs.status }}
+                  BRANCH: ${{ steps.sync.outputs.branch }}

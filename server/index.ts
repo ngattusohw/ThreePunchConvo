@@ -43,13 +43,41 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
+      // Color codes for different status codes
+      const getStatusColor = (status: number) => {
+        if (status >= 500) return '\x1b[31m'; // Red for server errors
+        if (status >= 400) return '\x1b[33m'; // Yellow for client errors
+        if (status >= 300) return '\x1b[36m'; // Cyan for redirects
+        if (status >= 200) return '\x1b[32m'; // Green for success
+        return '\x1b[37m'; // White for other
+      };
+      
+      const getMethodColor = (method: string) => {
+        switch (method) {
+          case 'GET': return '\x1b[36m'; // Cyan
+          case 'POST': return '\x1b[32m'; // Green
+          case 'PUT': return '\x1b[33m'; // Yellow
+          case 'DELETE': return '\x1b[31m'; // Red
+          case 'PATCH': return '\x1b[35m'; // Magenta
+          default: return '\x1b[37m'; // White
+        }
+      };
 
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
+      const resetColor = '\x1b[0m';
+      const methodColor = getMethodColor(req.method);
+      const statusColor = getStatusColor(res.statusCode);
+      
+      // Format the main log line
+      let logLine = `${methodColor}${req.method.padEnd(6)}${resetColor} ${path} ${statusColor}${res.statusCode}${resetColor} ${duration}ms`;
+      
+      // Add response data if available
+      if (capturedJsonResponse) {
+        const responseStr = JSON.stringify(capturedJsonResponse);
+        // Truncate very long responses for readability
+        const truncatedResponse = responseStr.length > 300 
+          ? responseStr.substring(0, 300) + '...' 
+          : responseStr;
+        logLine += `\n  ${'\x1b[90m'}Response:${resetColor} ${truncatedResponse}`;
       }
 
       log(logLine);
@@ -61,48 +89,48 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-    console.log("🚀 Starting server...");
-    console.log(`Environment: ${process.env.NODE_ENV}`);
-    console.log(`Port: ${process.env.PORT || 5000}`);
+    console.log("\x1b[36m🚀 Starting server...\x1b[0m");
+    console.log(`\x1b[90mEnvironment:\x1b[0m ${process.env.NODE_ENV}`);
+    console.log(`\x1b[90mPort:\x1b[0m ${process.env.PORT || 5000}`);
 
     // Ensure database connection and session table are ready
-    console.log("📊 Connecting to database...");
+    console.log("\x1b[33m📊 Connecting to database...\x1b[0m");
     const isConnected = await ensureConnection();
     if (!isConnected) {
       throw new Error("Failed to establish database connection");
     }
-    console.log("✅ Database connected");
+    console.log("\x1b[32m✅ Database connected\x1b[0m");
 
     const server = await registerRoutes(app);
-    console.log("🛠️ Routes registered");
+    console.log("\x1b[32m🛠️ Routes registered\x1b[0m");
 
     // Initialize cron jobs after database connection is established
     setupCronJobs();
-    log("Cron jobs initialized for user status and ranking updates");
+    log("\x1b[35m⏰ Cron jobs initialized for user status and ranking updates\x1b[0m");
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      console.error("Global error handler:", err);
+      console.error("\x1b[31m❌ Global error handler:\x1b[0m", err);
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
       res.status(status).json({ message });
     });
 
     if (process.env.NODE_ENV === "development") {
-      console.log("starting development server");
+      console.log("\x1b[36m🔧 Starting development server\x1b[0m");
       await setupVite(app, server);
     } else {
-      console.log("🔧 Setting up static file serving...");
+      console.log("\x1b[33m🔧 Setting up static file serving...\x1b[0m");
       app.use(express.static(path.resolve(__dirname, "..", "dist", "public")));
       app.get("*", (_req, res) => {
         res.sendFile(
           path.resolve(__dirname, "..", "dist", "public", "index.html"),
         );
       });
-      console.log("📁 Static files configured");
+      console.log("\x1b[32m📁 Static files configured\x1b[0m");
     }
 
     const port = process.env.PORT || 5001;
-    console.log(`🌐 Starting server on port ${port}...`);
+    console.log(`\x1b[36m🌐 Starting server on port ${port}...\x1b[0m`);
     const httpServer = server.listen(
       {
         port,
@@ -110,12 +138,11 @@ app.use((req, res, next) => {
         reusePort: true,
       },
       () => {
-        log(`serving on port ${port}`);
-        console.log("🎉 Server started successfully!");
+        log(`\x1b[32m🎉 Server started successfully on port ${port}!\x1b[0m`);
       },
     );
   } catch (error) {
-    console.error("Failed to start server:", error);
+    console.error("\x1b[31m💥 Failed to start server:\x1b[0m", error);
     process.exit(1);
   }
 })();

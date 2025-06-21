@@ -18,9 +18,9 @@ import {
   PollOption,
   Thread,
 } from "@shared/schema";
-import { requireAuth } from "@clerk/express";
+import { requireAuth, clerkClient } from "@clerk/express";
 import { ensureLocalUser, requirePaidPlan } from "./auth";
-import { log } from "console";
+import { handleUserDeleted } from "./stripe";
 
 // Extend Express Request type to include Clerk auth property
 declare global {
@@ -1725,6 +1725,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res
           .status(500)
           .json({ message: "Failed to start status recalculation process" });
+      }
+    },
+  );
+
+  // User account deletion endpoint
+  app.delete(
+    "/api/users/account",
+    requireAuth(),
+    async (req: any, res: Response) => {
+      try {
+        const { userId: userId } = req.body;
+
+        if (!userId) {
+          return res.status(400).json({ message: "User ID is required" });
+        }
+
+        console.log("Deleting user account for user ID:", userId);
+
+        // Get the local user from the Clerk external ID
+        const localUser = await storage.getUserByExternalId(userId);
+
+        if (!localUser) {
+          return res
+            .status(400)
+            .json({ message: "User not found in database" });
+        }
+
+        console.log(
+          `Delete account: Using local user ID ${localUser.id} for user ${userId}`,
+        );
+
+        // Disable the clerk account
+        await clerkClient.users.deleteUser(userId);
+
+        // Disable stripe subscription
+        await handleUserDeleted(localUser.stripeId);
+
+        // Mark user as deactivated in database
+        await storage.updateUser(localUser.id, { disabled: true, disabledAt: new Date(), planType: "FREE" });
+
+        // Delete all user's posts, comments, and rankings
+        await storage.deleteUserPosts(localUser.id);
+
+        res.status(200).json({ message: "User account deleted successfully" });
+      } catch (error) {
+        console.error("Error in user account deletion:", error);
+        res.status(500).json({ message: "Failed to delete user account" });
       }
     },
   );

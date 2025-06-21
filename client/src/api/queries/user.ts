@@ -81,4 +81,28 @@ export const fetchUserFightCred = async (userId: string): Promise<number> => {
     console.error("Error fetching user Fight Cred:", error);
     throw error;
   }
+};
+
+/**
+ * Delete user account from the database
+ * 
+ * @param userId - The Clerk user ID to delete
+ * @returns Promise that resolves when the account is deleted
+ */
+export const deleteAccount = async (userId: string): Promise<void> => {
+  if (!userId) throw new Error("User ID is required");
+  
+  try {
+    const response = await apiRequest("DELETE", "/api/users/account", {
+      userId,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to delete account");
+    }
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    throw error;
+  }
 }; 

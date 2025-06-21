@@ -31,7 +31,7 @@ import {
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool, db } from "./db";
-import { eq, and, sql, desc, inArray } from "drizzle-orm";
+import { eq, and, sql, desc, inArray, not } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 export interface IStorage {
@@ -43,6 +43,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByExternalId(externalId: string): Promise<User | undefined>;
   getUserByStripeId(stripeId: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   upsertUser(userData: UpsertUser): Promise<User>;
   updateUser(id: string, userData: Partial<User>): Promise<User | undefined>;
@@ -207,6 +208,9 @@ export class DatabaseStorage implements IStorage {
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
+          disabled: users.disabled,
+          disabledAt: users.disabledAt,
+          metadata: users.metadata,
         })
         .from(users)
         .where(sql`${users.id} = ${id}`);
@@ -222,37 +226,10 @@ export class DatabaseStorage implements IStorage {
     try {
       // Use explicit column selection to match schema
       const [user] = await db
-        .select({
-          id: users.id,
-          username: users.username,
-          email: users.email,
-          password: users.password,
-          externalId: users.externalId,
-          stripeId: users.stripeId,
-          planType: users.planType,
-          avatar: users.avatar,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          bio: users.bio,
-          profileImageUrl: users.profileImageUrl,
-          role: users.role,
-          status: users.status,
-          isOnline: users.isOnline,
-          lastActive: users.lastActive,
-          points: users.points,
-          rank: users.rank,
-          createdAt: users.createdAt,
-          updatedAt: users.updatedAt,
-          postsCount: users.postsCount,
-          likesCount: users.likesCount,
-          pinnedByUserCount: users.pinnedByUserCount,
-          pinnedCount: users.pinnedCount,
-          followersCount: users.followersCount,
-          followingCount: users.followingCount,
-          socialLinks: users.socialLinks,
-        })
+        .select()
         .from(users)
-        .where(eq(users.username, username));
+        .where(and(eq(users.username, username), not(eq(users.disabled, true))))
+        .orderBy(desc(users.createdAt));
 
       return user;
     } catch (error) {
@@ -293,6 +270,9 @@ export class DatabaseStorage implements IStorage {
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
+          disabled: users.disabled,
+          disabledAt: users.disabledAt,
+          metadata: users.metadata,
         })
         .from(users)
         .where(eq(users.externalId, externalId));
@@ -336,6 +316,9 @@ export class DatabaseStorage implements IStorage {
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
+          disabled: users.disabled,
+          disabledAt: users.disabledAt,
+          metadata: users.metadata,
         })
         .from(users)
         .where(eq(users.stripeId, stripeId));
@@ -343,6 +326,16 @@ export class DatabaseStorage implements IStorage {
       return user;
     } catch (error) {
       console.error("Error getting user by Stripe ID:", error);
+      return undefined;
+    }
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.email, email));
+      return user;
+    } catch (error) {
+      console.error("Error getting user by email:", error);
       return undefined;
     }
   }
@@ -368,6 +361,7 @@ export class DatabaseStorage implements IStorage {
         firstName: userData.firstName || null,
         lastName: userData.lastName || null,
         bio: userData.bio || null,
+        planType: userData.planType || "FREE",
         profileImageUrl: userData.profileImageUrl || null,
         role: userData.role || "USER",
         status: userData.status || "AMATEUR",
@@ -384,12 +378,10 @@ export class DatabaseStorage implements IStorage {
         rank: userData.rank || 0,
         createdAt: new Date(),
         updatedAt: new Date(),
+        disabled: userData.disabled || false,
+        disabledAt: userData.disabledAt || null,
+        metadata: userData.metadata || {},
       };
-
-      console.log("Creating user with values:", {
-        ...userValues,
-        password: "[REDACTED]", // Don't log the password
-      });
 
       const [user] = await db.insert(users).values(userValues).returning();
 
@@ -484,6 +476,9 @@ export class DatabaseStorage implements IStorage {
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
+          disabled: users.disabled,
+          disabledAt: users.disabledAt,
+          metadata: users.metadata,
         })
         .from(users)
         .orderBy(desc(users.points))
@@ -560,6 +555,9 @@ export class DatabaseStorage implements IStorage {
           followersCount: users.followersCount,
           followingCount: users.followingCount,
           socialLinks: users.socialLinks,
+          disabled: users.disabled,
+          disabledAt: users.disabledAt,
+          metadata: users.metadata,
         })
         .from(users);
     } catch (error) {
@@ -677,6 +675,9 @@ export class DatabaseStorage implements IStorage {
           followersCount: user.followersCount,
           followingCount: user.followingCount,
           socialLinks: user.socialLinks,
+          disabled: user.disabled,
+          disabledAt: user.disabledAt,
+          metadata: user.metadata,
         },
         media: media || [],
         poll: pollWithOptions,
@@ -793,6 +794,7 @@ export class DatabaseStorage implements IStorage {
         userId: thread.userId,
         categoryId: thread.categoryId,
         isPinned: false,
+        isPinnedByUser: false,
         isLocked: false,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -2348,7 +2350,21 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
+
+  async deleteUserPosts(userId: string): Promise<boolean> {
+    try {
+      await db.delete(threads).where(eq(threads.userId, userId));
+      await db.delete(threadReactions).where(eq(threadReactions.userId, userId));
+      await db.delete(replies).where(eq(replies.userId, userId));
+      return true;
+    } catch (error) {
+      console.error("Error deleting user posts:", error);
+      return false;
+    }
+  }
 }
+
+
 
 // Use database storage implementation
 export const storage = new DatabaseStorage();

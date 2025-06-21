@@ -53,6 +53,9 @@ export const users = pgTable("users", {
   followersCount: integer("followers_count").notNull().default(0),
   followingCount: integer("following_count").notNull().default(0),
   socialLinks: json("social_links").$type<Record<string, string>>(),
+  disabled: boolean("disabled").notNull().default(false),
+  disabledAt: timestamp("disabled_at"),
+  metadata: jsonb("metadata").$type<Record<string, string>>(),
 });
 
 // Forum Categories
@@ -75,6 +78,7 @@ export const threads = pgTable("threads", {
     .notNull()
     .references(() => categories.id),
   isPinned: boolean("is_pinned").notNull().default(false),
+  isPinnedByUser: boolean("is_pinned_by_user").notNull().default(false),
   isLocked: boolean("is_locked").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

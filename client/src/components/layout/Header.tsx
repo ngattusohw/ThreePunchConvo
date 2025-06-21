@@ -1,17 +1,43 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { dark } from "@clerk/themes";
-import NotificationBell from "@/components/ui/notification-bell";
 import MobileNavigation from "@/components/layout/MobileNavigation";
-import { formatUsername } from "@/lib/utils";
 import logoImage from "@/assets/3PC-Logo-FullColor-RGB.png";
-import { SignInButton, UserButton } from "@clerk/clerk-react";
+import { SignInButton, useClerk } from "@clerk/clerk-react";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
+import { UserMenu } from "@/components/ui/user-menu";
+import { toast } from "@/hooks/use-toast";
+import { deleteAccount } from "@/api/queries/user";
+import NotificationBell from "../ui/notification-bell";
+import { formatUsername } from "@/lib/utils";
 
 export default function Header() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { user, isSignedIn, isLoaded } = useMemoizedUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    try {
+
+      await deleteAccount(user?.id);
+
+      toast({
+        title: "Account deleted",
+        description: "Your account has been deleted",
+      });
+
+      setTimeout(() => {
+        setLocation("/");
+      }, 3000);
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      toast({
+        title: "Error deleting account",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (!isLoaded) {
     return null; // Or a loading spinner
@@ -71,21 +97,21 @@ export default function Header() {
 
           <div className="flex items-center space-x-4">
             {isSignedIn && user ? (
-              <>
-                <div className="relative flex items-center space-x-2">
-                  {user.username && (
-                    <Link
-                      href={`/user/${user.username}`}
-                      className="hidden font-medium text-white md:block"
-                    >
-                      {formatUsername(user.username)}
-                    </Link>
-                  )}
-                  <NotificationBell />
+               <>
+               <div className="relative flex items-center space-x-2">
+                 {user.username && (
+                   <Link
+                     href={`/user/${user.username}`}
+                     className="hidden font-medium text-white md:block"
+                   >
+                     {formatUsername(user.username)}
+                   </Link>
+                 )}
+                 <NotificationBell />
 
-                  <UserButton afterSignOutUrl="/" />
-                </div>
-              </>
+                 <UserMenu handleDeleteAccount={handleDeleteAccount} />
+                 </div>
+             </>
             ) : (
               <SignInButton
                 appearance={{

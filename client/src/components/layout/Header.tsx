@@ -3,17 +3,38 @@ import { Link, useLocation } from "wouter";
 import { dark } from "@clerk/themes";
 import MobileNavigation from "@/components/layout/MobileNavigation";
 import logoImage from "@/assets/3PC-Logo-FullColor-RGB.png";
-import { SignInButton } from "@clerk/clerk-react";
+import { SignInButton, useClerk } from "@clerk/clerk-react";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { UserMenu } from "@/components/ui/user-menu";
+import { toast } from "@/hooks/use-toast";
+import { deleteAccount } from "@/api/queries/user";
 
 export default function Header() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { user, isSignedIn, isLoaded } = useMemoizedUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleDeleteAccount = () => {
-    console.log("Delete account clicked");
+  const handleDeleteAccount = async () => {
+    try {
+
+      await deleteAccount(user?.id);
+
+      toast({
+        title: "Account deleted",
+        description: "Your account has been deleted",
+      });
+
+      setTimeout(() => {
+        setLocation("/");
+      }, 3000);
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      toast({
+        title: "Error deleting account",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!isLoaded) {

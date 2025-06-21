@@ -125,6 +125,10 @@ export const registerAuthEndpoints = (app: Express) => {
       let user = await storage.getUserByExternalId(clerkId);
       let userCreated = false;
 
+      if (user?.metadata?.bannedByAdmin) {
+        return res.status(403).json({ message: "User is banned" });
+      }
+
       // If user doesn't exist, create a new one
       if (!user) {
         console.log(
@@ -177,7 +181,7 @@ export const registerAuthEndpoints = (app: Express) => {
         // User exists, update their profile data if provided
         if (firstName || lastName || email || profileImageUrl || username) {
           try {
-            const updates: Record<string, string | null> = {};
+            const updates: Record<string, any | null> = {};
             if (firstName) updates["firstName"] = firstName;
             if (lastName) updates["lastName"] = lastName;
             if (email) updates["email"] = email;
@@ -194,6 +198,7 @@ export const registerAuthEndpoints = (app: Express) => {
                 );
               }
             }
+            
           } catch (updateError) {
             console.error("Error updating user profile:", updateError);
             // Continue with existing user data even if update fails

@@ -18,9 +18,9 @@ import {
   PollOption,
   Thread,
 } from "@shared/schema";
-import { requireAuth } from "@clerk/express";
+import { requireAuth, clerkClient } from "@clerk/express";
 import { ensureLocalUser, requirePaidPlan } from "./auth";
-import { log } from "console";
+import { handleUserDeleted } from "./stripe";
 
 // Extend Express Request type to include Clerk auth property
 declare global {
@@ -1735,16 +1735,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requireAuth(),
     async (req: any, res: Response) => {
       try {
-        const { userId: clerkUserId } = req.body;
+        const { userId: userId } = req.body;
 
-        if (!clerkUserId) {
+        if (!userId) {
           return res.status(400).json({ message: "User ID is required" });
         }
 
-        console.log("Using Clerk user ID from request body:", clerkUserId);
+        console.log("Deleting user account for user ID:", userId);
 
         // Get the local user from the Clerk external ID
-        const localUser = await storage.getUserByExternalId(clerkUserId);
+        const localUser = await storage.getUserByExternalId(userId);
 
         if (!localUser) {
           return res
@@ -1753,17 +1753,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         console.log(
-          `Delete account: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`,
+          `Delete account: Using local user ID ${localUser.id} for user ${userId}`,
         );
 
-        // Delete the user from our database
-        // const success = await storage.deleteUser(localUser.id);
+        // Disable the clerk account
+        await clerkClient.users.deleteUser(userId);
 
-        if (true) {
-          return res.status(500).json({ message: "Failed to delete user account" });
-        }
+        // Disable stripe subscription
+        await handleUserDeleted(localUser.stripeId);
 
-        res.json({ message: "User account deleted successfully" });
+        // Mark user as deactivated in database
+        await storage.updateUser(localUser.id, { disabled: true, disabledAt: new Date(), planType: "FREE" });
+
+        res.status(200).json({ message: "User account deleted successfully" });
       } catch (error) {
         console.error("Error in user account deletion:", error);
         res.status(500).json({ message: "Failed to delete user account" });

@@ -112,8 +112,7 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
                 Before you delete your account, please consider:
               </p>
               <ul className="list-disc space-y-2 pl-5 text-sm text-gray-400">
-                <li>All your posts and comments will be permanently removed</li>
-                <li>Your profile and personal information will be deleted</li>
+                <li>All your posts, comments, & rankings will be permanently removed</li>
                 <li>You will lose access to any premium features</li>
                 <li>This action cannot be reversed</li>
               </ul>

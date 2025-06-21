@@ -181,7 +181,7 @@ export const registerAuthEndpoints = (app: Express) => {
         // User exists, update their profile data if provided
         if (firstName || lastName || email || profileImageUrl || username) {
           try {
-            const updates: Record<string, any | null> = {};
+            const updates: Record<string, string | null> = {};
             if (firstName) updates["firstName"] = firstName;
             if (lastName) updates["lastName"] = lastName;
             if (email) updates["email"] = email;

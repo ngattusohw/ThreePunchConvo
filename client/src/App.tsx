@@ -4,7 +4,6 @@ import { loadStripe } from "@stripe/stripe-js";
 import { CheckoutProvider } from "@stripe/react-stripe-js";
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
-import Home from "@/pages/Home";
 import Forum from "@/pages/Forum";
 import Rankings from "@/pages/Rankings";
 import UserProfile from "@/pages/UserProfile";

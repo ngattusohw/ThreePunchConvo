@@ -53,6 +53,9 @@ export const users = pgTable("users", {
   followersCount: integer("followers_count").notNull().default(0),
   followingCount: integer("following_count").notNull().default(0),
   socialLinks: json("social_links").$type<Record<string, string>>(),
+  disabled: boolean("disabled").notNull().default(false),
+  disabledAt: timestamp("disabled_at"),
+  metadata: jsonb("metadata").$type<Record<string, string>>(),
 });
 
 // Forum Categories

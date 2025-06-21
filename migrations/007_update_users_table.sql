@@ -1,0 +1,4 @@
+ALTER TABLE users
+ADD COLUMN disabled BOOLEAN DEFAULT false,
+ADD COLUMN disabled_at TIMESTAMP,
+ADD COLUMN metadata JSONB DEFAULT '{}'::jsonb;

@@ -1765,6 +1765,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Mark user as deactivated in database
         await storage.updateUser(localUser.id, { disabled: true, disabledAt: new Date(), planType: "FREE" });
 
+        // Delete all user's posts, comments, and rankings
+        await storage.deleteUserPosts(localUser.id);
+
         res.status(200).json({ message: "User account deleted successfully" });
       } catch (error) {
         console.error("Error in user account deletion:", error);

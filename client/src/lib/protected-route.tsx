@@ -34,7 +34,8 @@ export function ProtectedRoute({
         }
 
         // If not authenticated, redirect to login
-        setLocation("/auth");
+        window.scrollTo(0, 0);
+        setLocation("/auth", { replace: true });
         return null;
       }}
     />

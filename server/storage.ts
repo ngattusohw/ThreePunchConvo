@@ -31,7 +31,7 @@ import {
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool, db } from "./db";
-import { eq, and, sql, desc, inArray } from "drizzle-orm";
+import { eq, and, sql, desc, inArray, not } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 export interface IStorage {
@@ -226,40 +226,10 @@ export class DatabaseStorage implements IStorage {
     try {
       // Use explicit column selection to match schema
       const [user] = await db
-        .select({
-          id: users.id,
-          username: users.username,
-          email: users.email,
-          password: users.password,
-          externalId: users.externalId,
-          stripeId: users.stripeId,
-          planType: users.planType,
-          avatar: users.avatar,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          bio: users.bio,
-          profileImageUrl: users.profileImageUrl,
-          role: users.role,
-          status: users.status,
-          isOnline: users.isOnline,
-          lastActive: users.lastActive,
-          points: users.points,
-          rank: users.rank,
-          createdAt: users.createdAt,
-          updatedAt: users.updatedAt,
-          postsCount: users.postsCount,
-          likesCount: users.likesCount,
-          pinnedByUserCount: users.pinnedByUserCount,
-          pinnedCount: users.pinnedCount,
-          followersCount: users.followersCount,
-          followingCount: users.followingCount,
-          socialLinks: users.socialLinks,
-          disabled: users.disabled,
-          disabledAt: users.disabledAt,
-          metadata: users.metadata,
-        })
+        .select()
         .from(users)
-        .where(eq(users.username, username));
+        .where(and(eq(users.username, username), not(eq(users.disabled, true))))
+        .orderBy(desc(users.createdAt));
 
       return user;
     } catch (error) {
@@ -824,6 +794,7 @@ export class DatabaseStorage implements IStorage {
         userId: thread.userId,
         categoryId: thread.categoryId,
         isPinned: false,
+        isPinnedByUser: false,
         isLocked: false,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -2379,7 +2350,21 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
+
+  async deleteUserPosts(userId: string): Promise<boolean> {
+    try {
+      await db.delete(threads).where(eq(threads.userId, userId));
+      await db.delete(threadReactions).where(eq(threadReactions.userId, userId));
+      await db.delete(replies).where(eq(replies.userId, userId));
+      return true;
+    } catch (error) {
+      console.error("Error deleting user posts:", error);
+      return false;
+    }
+  }
 }
+
+
 
 // Use database storage implementation
 export const storage = new DatabaseStorage();

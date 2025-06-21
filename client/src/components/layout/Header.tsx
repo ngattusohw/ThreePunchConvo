@@ -8,6 +8,8 @@ import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { UserMenu } from "@/components/ui/user-menu";
 import { toast } from "@/hooks/use-toast";
 import { deleteAccount } from "@/api/queries/user";
+import NotificationBell from "../ui/notification-bell";
+import { formatUsername } from "@/lib/utils";
 
 export default function Header() {
   const [location, setLocation] = useLocation();
@@ -95,7 +97,21 @@ export default function Header() {
 
           <div className="flex items-center space-x-4">
             {isSignedIn && user ? (
-              <UserMenu handleDeleteAccount={handleDeleteAccount} />
+               <>
+               <div className="relative flex items-center space-x-2">
+                 {user.username && (
+                   <Link
+                     href={`/user/${user.username}`}
+                     className="hidden font-medium text-white md:block"
+                   >
+                     {formatUsername(user.username)}
+                   </Link>
+                 )}
+                 <NotificationBell />
+
+                 <UserMenu handleDeleteAccount={handleDeleteAccount} />
+                 </div>
+             </>
             ) : (
               <SignInButton
                 appearance={{

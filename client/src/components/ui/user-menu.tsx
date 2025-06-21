@@ -46,10 +46,6 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
               {user.username?.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className="hidden md:flex items-center">
-            <span>{formatUsername(user.username)}</span>
-            <ChevronsUpDown className="ml-1 h-4 w-4" />
-          </div>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           className="w-56 bg-ufc-black border-gray-700 text-white"

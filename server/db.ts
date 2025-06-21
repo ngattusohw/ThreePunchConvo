@@ -46,6 +46,8 @@ export const db = drizzle(pool, { schema }); // Different syntax for node-postgr
 
 // Export a function to check and refresh the connection if needed
 export async function ensureConnection() {
+  console.log("Ensuring database connection...", process.env.DATABASE_URL);
+
   try {
     const client = await pool.connect();
     client.release(); // Important: always release connections back to the pool

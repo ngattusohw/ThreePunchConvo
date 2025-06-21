@@ -1729,6 +1729,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // User account deletion endpoint
+  app.delete(
+    "/api/users/account",
+    requireAuth(),
+    async (req: any, res: Response) => {
+      try {
+        const { userId: clerkUserId } = req.body;
+
+        if (!clerkUserId) {
+          return res.status(400).json({ message: "User ID is required" });
+        }
+
+        console.log("Using Clerk user ID from request body:", clerkUserId);
+
+        // Get the local user from the Clerk external ID
+        const localUser = await storage.getUserByExternalId(clerkUserId);
+
+        if (!localUser) {
+          return res
+            .status(400)
+            .json({ message: "User not found in database" });
+        }
+
+        console.log(
+          `Delete account: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`,
+        );
+
+        // Delete the user from our database
+        // const success = await storage.deleteUser(localUser.id);
+
+        if (true) {
+          return res.status(500).json({ message: "Failed to delete user account" });
+        }
+
+        res.json({ message: "User account deleted successfully" });
+      } catch (error) {
+        console.error("Error in user account deletion:", error);
+        res.status(500).json({ message: "Failed to delete user account" });
+      }
+    },
+  );
+
   // MMA Schedule endpoints
   app.get("/api/events", async (req: Request, res: Response) => {
     try {

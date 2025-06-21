@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { dark } from "@clerk/themes";
-import NotificationBell from "@/components/ui/notification-bell";
 import MobileNavigation from "@/components/layout/MobileNavigation";
-import { formatUsername } from "@/lib/utils";
 import logoImage from "@/assets/3PC-Logo-FullColor-RGB.png";
-import { SignInButton, UserButton } from "@clerk/clerk-react";
+import { SignInButton } from "@clerk/clerk-react";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
+import { UserMenu } from "@/components/ui/user-menu";
 
 export default function Header() {
   const [location] = useLocation();
   const { user, isSignedIn, isLoaded } = useMemoizedUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleDeleteAccount = () => {
+    console.log("Delete account clicked");
+  };
 
   if (!isLoaded) {
     return null; // Or a loading spinner
@@ -71,21 +74,7 @@ export default function Header() {
 
           <div className="flex items-center space-x-4">
             {isSignedIn && user ? (
-              <>
-                <div className="relative flex items-center space-x-2">
-                  {user.username && (
-                    <Link
-                      href={`/user/${user.username}`}
-                      className="hidden font-medium text-white md:block"
-                    >
-                      {formatUsername(user.username)}
-                    </Link>
-                  )}
-                  <NotificationBell />
-
-                  <UserButton afterSignOutUrl="/" />
-                </div>
-              </>
+              <UserMenu handleDeleteAccount={handleDeleteAccount} />
             ) : (
               <SignInButton
                 appearance={{

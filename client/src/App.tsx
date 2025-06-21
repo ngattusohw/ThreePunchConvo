@@ -4,7 +4,6 @@ import { loadStripe } from "@stripe/stripe-js";
 import { CheckoutProvider } from "@stripe/react-stripe-js";
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
-import Home from "@/pages/Home";
 import Forum from "@/pages/Forum";
 import Rankings from "@/pages/Rankings";
 import UserProfile from "@/pages/UserProfile";
@@ -20,7 +19,8 @@ import CheckoutForm from "./components/payment/CheckoutForm";
 import { Return } from "./components/payment/Return";
 import { ForumSkeleton } from "./components/skeletons/ForumSkeleton";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth, UserProfile as ClerkUserProfile } from '@clerk/clerk-react';
+import { dark } from "@clerk/themes";
 
 function App() {  
   const { getToken } = useAuth();
@@ -442,6 +442,11 @@ function App() {
         </main>
         {location !== "/auth" && location !== "/login" && location !== "/register" && <Footer />}
       </div>
+      <ClerkUserProfile
+        appearance={{
+          baseTheme: dark,
+        }}
+      />
       <Toaster />
     </div>
   );

@@ -125,6 +125,10 @@ export const registerAuthEndpoints = (app: Express) => {
       let user = await storage.getUserByExternalId(clerkId);
       let userCreated = false;
 
+      if (user?.metadata?.bannedByAdmin) {
+        return res.status(403).json({ message: "User is banned" });
+      }
+
       // If user doesn't exist, create a new one
       if (!user) {
         console.log(

@@ -357,4 +357,35 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
   }
 }
 
+// Function to handle user deleted events
+export async function handleUserDeleted(stripeId: string) {
+  try {
+
+    // Mark user as disabled and remove payment method
+    await stripe.customers.update(stripeId, {
+      invoice_settings: {
+        default_payment_method: null,
+      },
+      metadata: {
+        disabled: "true",
+        disabledAt: new Date().toISOString(),
+      },
+    });
+
+    // Find and cancel all active subscriptions
+    const subscriptions = await stripe.subscriptions.list({
+      customer: stripeId,
+      status: "active",
+    });
+
+    for (const subscription of subscriptions.data) {
+      await stripe.subscriptions.cancel(subscription.id);
+    }
+
+  } catch (error) {   
+    console.error(`Error handling user deleted: ${error}`);
+    throw error;
+  }
+}
+
 // TODO cancel subscription, resume subscription, update subscription, delete subscription

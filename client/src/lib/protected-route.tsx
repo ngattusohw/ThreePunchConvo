@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useEffect } from "react";
+import React, { useMemo } from "react";
 import { Route, useLocation } from "wouter";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 
@@ -14,18 +14,6 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { userId, isLoaded } = useMemoizedUser();
   const [, setLocation] = useLocation();
-
-  // Handle redirect to auth when not authenticated
-  const redirectToAuth = useCallback(() => {
-    window.scrollTo(0, 0);
-    setLocation("/auth", { replace: true });
-  }, [setLocation]);
-
-  useEffect(() => {
-    if (isLoaded && !userId) {
-      redirectToAuth();
-    }
-  }, [isLoaded, userId, redirectToAuth]);
 
   // Memoize the component function to prevent unnecessary remounts
   const ProtectedComponent = useMemo(() => {
@@ -44,14 +32,12 @@ export function ProtectedRoute({
         return <Component {...props} />;
       }
 
-      // If not authenticated, show loading while redirecting
-      return (
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="border-ufc-blue h-12 w-12 animate-spin rounded-full border-b-2 border-t-2"></div>
-        </div>
-      );
+      // If not authenticated, redirect to login
+      window.scrollTo(0, 0);
+      setLocation("/auth", { replace: true });
+      return null;
     };
-  }, [Component, isLoaded, userId]);
+  }, [Component, isLoaded, userId, setLocation]);
 
   return (
     <Route

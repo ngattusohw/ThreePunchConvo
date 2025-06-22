@@ -21,9 +21,6 @@ export function useUserProfile(username: string) {
     queryKey: [`/api/users/username/${username}`],
     queryFn: () => fetchUserByUsername(username),
     enabled: !!username,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch user's posts
@@ -35,9 +32,6 @@ export function useUserProfile(username: string) {
     queryKey: [`/api/users/${user?.id}/posts`],
     queryFn: () => fetchUserPosts(user?.id || ''),
     enabled: !!user?.id,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch user's plan status
@@ -49,9 +43,6 @@ export function useUserProfile(username: string) {
     queryKey: [`/api/users/${user?.id}/plan`],
     queryFn: () => fetchUserPlan(user?.id || ''),
     enabled: !!user?.id,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 10 * 60 * 1000, // 10 minutes - plan doesn't change often
   });
 
   return {

@@ -10,10 +10,9 @@ export function useTopUsers() {
   } = useQuery<RankedUser[]>({
     queryKey: ['/api/users/top'],
     queryFn: fetchTopUsers,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-    staleTime: 10 * 60 * 1000, // 10 minutes - top users don't change frequently
   });
 
   return {

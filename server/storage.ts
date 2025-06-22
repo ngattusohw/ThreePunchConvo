@@ -576,23 +576,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Build query with explicit column selection
       const [thread] = await db
-        .select({
-          id: threads.id,
-          title: threads.title,
-          content: threads.content,
-          userId: threads.userId,
-          categoryId: threads.categoryId,
-          isPinned: threads.isPinned,
-          isLocked: threads.isLocked,
-          createdAt: threads.createdAt,
-          updatedAt: threads.updatedAt,
-          lastActivityAt: threads.lastActivityAt,
-          viewCount: threads.viewCount,
-          likesCount: threads.likesCount,
-          dislikesCount: threads.dislikesCount,
-          repliesCount: threads.repliesCount,
-          potdCount: threads.potdCount
-        })
+        .select()
         .from(threads)
         .where(eq(threads.id, id));
 
@@ -699,23 +683,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Build the base query with explicit column selection
       let baseQuery = db
-        .select({
-          id: threads.id,
-          title: threads.title,
-          content: threads.content,
-          userId: threads.userId,
-          categoryId: threads.categoryId,
-          isPinned: threads.isPinned,
-          isLocked: threads.isLocked,
-          createdAt: threads.createdAt,
-          updatedAt: threads.updatedAt,
-          lastActivityAt: threads.lastActivityAt,
-          viewCount: threads.viewCount,
-          likesCount: threads.likesCount,
-          dislikesCount: threads.dislikesCount,
-          repliesCount: threads.repliesCount,
-          potdCount: threads.potdCount
-        })
+        .select()
         .from(threads)
         .where(eq(threads.categoryId, categoryId));
 
@@ -757,23 +725,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Build query with explicit column selection
       const userThreads = await db
-        .select({
-          id: threads.id,
-          title: threads.title,
-          content: threads.content,
-          userId: threads.userId,
-          categoryId: threads.categoryId,
-          isPinned: threads.isPinned,
-          isLocked: threads.isLocked,
-          createdAt: threads.createdAt,
-          updatedAt: threads.updatedAt,
-          lastActivityAt: threads.lastActivityAt,
-          viewCount: threads.viewCount,
-          likesCount: threads.likesCount,
-          dislikesCount: threads.dislikesCount,
-          repliesCount: threads.repliesCount,
-          potdCount: threads.potdCount
-        })
+        .select()
         .from(threads)
         .where(eq(threads.userId, userId))
         .orderBy(desc(threads.createdAt));
@@ -799,6 +751,8 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date(),
         updatedAt: new Date(),
         lastActivityAt: new Date(),
+        edited: false,
+        editedAt: null,
         viewCount: 0,
         likesCount: 0,
         dislikesCount: 0,

@@ -360,13 +360,13 @@ function App() {
             ) : (
               <Switch>
                 {/* Public Routes - Always accessible */}
-                <Route path="/" component={Forum} />
-                <Route path="/forum" component={Forum} />
+                <ProtectedRoute path="/" component={Forum} />
+                <ProtectedRoute path="/forum" component={Forum} />
                 <Route path="/auth" component={AuthPage} />
                 <Route path="/login" component={AuthPage} />
                 <Route path="/register" component={AuthPage} />
                 {/* <Route path="/schedule" component={Schedule} /> */}
-                <Route path="/rankings" component={Rankings} />
+                <ProtectedRoute path="/rankings" component={Rankings} />
 
                 {/* Protected Routes - Need auth but not checkout */}
                 <ProtectedRoute path="/forum/:categoryId" component={Forum} />
@@ -375,6 +375,7 @@ function App() {
                   path="/user/:username"
                   component={UserProfile}
                 />
+
 
                 {/* Checkout Routes - Need auth AND checkout provider */}
                 {isSignedIn && clientSecret ? (
@@ -424,7 +425,7 @@ function App() {
                 ) : null}
 
                 {/* 404 Route */}
-                <Route component={NotFound} />
+                <ProtectedRoute path="*" component={NotFound} />
               </Switch>
             )}
             {!isLoadingApp && debugInfo.error && !isSignedIn && (

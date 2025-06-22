@@ -5,24 +5,39 @@ import { useUserProfile } from "@/api/hooks/useUserProfile";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import PopupMenu from './PopupMenu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ThreadActionsProps {
   thread: ForumThread;
   size?: "sm" | "md" | "lg";
   className?: string;
+  onClickEdit?: () => void;
+  onClickDelete?: () => void;
 }
 
 export default function ThreadActions({
   thread,
   size = "md",
   className = "",
+  onClickEdit,
+  onClickDelete,
 }: ThreadActionsProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isShareSubmenuOpen, setIsShareSubmenuOpen] = useState(false);
   const { toast } = useToast();
   const { user: clerkUser } = useMemoizedUser();
   const { user: currentUser } = useUserProfile(clerkUser?.username || '');
-  
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const {
     likeThreadMutation,
     potdThreadMutation,
@@ -157,30 +172,6 @@ export default function ThreadActions({
         </button>
       )}
 
-      {/* Add delete button if user is author or has permission */}
-      {canDeleteThread && (
-        <button
-          onClick={()=>deleteThreadMutation.mutate()}
-          disabled={!currentUser}
-          className="ml-auto flex items-center text-gray-400 transition hover:text-red-500"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={`mr-1 ${iconSize}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-            />
-          </svg>
-        </button>
-      )}
-
       {/* Menu button */}
       <div className="menu-container relative">
         <button
@@ -207,10 +198,41 @@ export default function ThreadActions({
           isOpen={isMenuOpen}
           onCopyLink={handleCopyLink}
           onShareOnX={handleShareOnX}
-          onEdit={() => {/* Add your edit functionality here */ setIsMenuOpen(false); }}
+          onEdit={onClickEdit}
           canEditThread={canEditThread}
+          canDeleteThread={canDeleteThread}
+          onClickDelete={() => setShowDeleteConfirm(true)}
           onClose={() => setIsMenuOpen(false)}
+          createdAt={thread.createdAt}
+          handleDeleteMutation={deleteThreadMutation.mutate}
         />
+
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Thread</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this thread? This action cannot be undone and will permanently remove the thread and all its content.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setShowDeleteConfirm(false)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    if (onClickDelete) {
+                      onClickDelete();
+                    } else {
+                      deleteThreadMutation.mutate();
+                    }
+                    setShowDeleteConfirm(false);
+                  }}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
       </div>
     </div>
   );

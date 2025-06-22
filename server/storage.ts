@@ -72,7 +72,7 @@ export interface IStorage {
   incrementThreadView(id: string): Promise<boolean>;
 
   // Reply management
-  getReply(id: string): Promise<Reply | undefined>;
+  getReply(id: string, currentUserId: string): Promise<Reply | undefined>;
   getRepliesByThread(threadId: string): Promise<Reply[]>;
   createReply(reply: InsertReply): Promise<Reply>;
   updateReply(
@@ -998,8 +998,21 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getReply(id: string): Promise<Reply | undefined> {
+  async getReply(id: string, currentUserId: string): Promise<Reply | undefined> {
     try {
+      console.log("Getting reply:", id);
+      // Check if the current user has liked this thread
+      let hasLiked = false;
+      if (currentUserId) {
+        const existingLikeReaction = await db.query.replyReactions.findFirst({
+          where: and(
+            eq(replyReactions.replyId, id),
+            eq(replyReactions.userId, currentUserId),
+            eq(replyReactions.type, "LIKE"),
+          ),
+        });
+        hasLiked = !!existingLikeReaction;
+      }
       // Get reply with explicit column selection
       const [reply] = await db
         .select({
@@ -1012,6 +1025,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: replies.updatedAt,
           likesCount: replies.likesCount,
           dislikesCount: replies.dislikesCount,
+          hasLiked: hasLiked,
         })
         .from(replies)
         .where(eq(replies.id, id));
@@ -1029,6 +1043,7 @@ export class DatabaseStorage implements IStorage {
 
   async getRepliesByThread(threadId: string): Promise<Reply[]> {
     try {
+      console.log("Getting replies for thread:", threadId);
       // Build query with explicit column selection
       const threadReplies = await db
         .select({

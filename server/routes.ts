@@ -211,7 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Get reply preview if applicable
             let replyPreview;
             if (notification.replyId) {
-              const reply = await storage.getReply(notification.replyId);
+              const reply = await storage.getReply(notification.replyId, userId);
               if (reply) {
                 replyPreview =
                   reply.content.length > 100
@@ -1202,7 +1202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Reply ID is required" });
         }
 
-        const reply = await storage.getReply(replyId);
+        const reply = await storage.getReply(replyId, localUser.id);
 
         if (!reply) {
           return res.status(404).json({ message: "Reply not found" });

@@ -8,8 +8,8 @@ import Forum from "@/pages/Forum";
 import Rankings from "@/pages/Rankings";
 import UserProfile from "@/pages/UserProfile";
 import Thread from "@/pages/Thread";
-import AuthPage from "@/pages/auth-page";
-import NotFound from "@/pages/not-found";
+import AuthPage from "@/pages/AuthPage";
+import NotFound from "@/pages/NotFound";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -19,13 +19,20 @@ import CheckoutForm from "./components/payment/CheckoutForm";
 import { Return } from "./components/payment/Return";
 import { ForumSkeleton } from "./components/skeletons/ForumSkeleton";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from "@clerk/clerk-react";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
-function App() {  
+function App() {
   const { getToken } = useAuth();
   const [location] = useLocation();
 
-  const { user, isSignedIn, isLoaded: isUserLoaded, userId } = useMemoizedUser();
+  const {
+    user,
+    isSignedIn,
+    isLoaded: isUserLoaded,
+    userId,
+  } = useMemoizedUser();
   const [localUserChecked, setLocalUserChecked] = useState(false);
   const [isLoadingClientSecret, setIsLoadingClientSecret] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -42,7 +49,7 @@ function App() {
   });
   // Add an initialLoadComplete state to track when the app is ready to render
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  
+
   // Add refs to track if operations have been performed
   const userCheckPerformed = useRef(false);
   const subscriptionCheckPerformed = useRef(false);
@@ -56,8 +63,8 @@ function App() {
   );
 
   useEffect(() => {
-    getToken().then(token => {
-      console.log('Your token:', token);
+    getToken().then((token) => {
+      console.log("Your token:", token);
     });
   }, []);
 
@@ -125,14 +132,28 @@ function App() {
     };
 
     checkOrCreateUser();
-  }, [isUserLoaded, isSignedIn, user?.id, user?.firstName, user?.lastName, user?.emailAddress, user?.imageUrl, user?.username]);
+  }, [
+    isUserLoaded,
+    isSignedIn,
+    user?.id,
+    user?.firstName,
+    user?.lastName,
+    user?.emailAddress,
+    user?.imageUrl,
+    user?.username,
+  ]);
 
   // Check for user subscriptions
   useEffect(() => {
     const checkUserSubscriptions = async () => {
       // Skip if already performed or conditions aren't met
-      if (subscriptionCheckPerformed.current || !localUser?.stripeId || !localUserChecked) {
-        if (localUserChecked && !localUser && isUserLoaded) setInitialLoadComplete(true);
+      if (
+        subscriptionCheckPerformed.current ||
+        !localUser?.stripeId ||
+        !localUserChecked
+      ) {
+        if (localUserChecked && !localUser && isUserLoaded)
+          setInitialLoadComplete(true);
         return;
       }
 
@@ -178,7 +199,7 @@ function App() {
             await updateUserPlanType(user.id, "FREE");
           }
         }
-        
+
         subscriptionCheckPerformed.current = true;
       } catch (error) {
         console.error("Error checking subscriptions:", error);
@@ -247,9 +268,9 @@ function App() {
       // Skip if already performed or conditions aren't met
       if (
         clientSecretFetched.current ||
-        !isUserLoaded || 
-        !isSignedIn || 
-        !user?.id || 
+        !isUserLoaded ||
+        !isSignedIn ||
+        !user?.id ||
         !user?.emailAddress
       ) {
         if (isUserLoaded && !isSignedIn) {
@@ -264,14 +285,10 @@ function App() {
       console.log("Fetching client secret");
 
       try {
-        const response = await apiRequest(
-          "POST",
-          "/create-checkout-session",
-          {
-            email: user.emailAddress,
-            clerkUserId: user.id,
-          },
-        );
+        const response = await apiRequest("POST", "/create-checkout-session", {
+          email: user.emailAddress,
+          clerkUserId: user.id,
+        });
 
         if (!response.ok) {
           throw new Error(`HTTP error ${response.status}`);
@@ -339,7 +356,9 @@ function App() {
   return (
     <div>
       <div className="bg-ufc-black text-light-gray flex min-h-screen flex-col">
-        {location !== "/auth" && location !== "/login" && location !== "/register" && <Header />}
+        {location !== "/auth" &&
+          location !== "/login" &&
+          location !== "/register" && <Header />}
         <main className="flex-grow">
           <ErrorBoundary
             fallback={
@@ -365,6 +384,8 @@ function App() {
                 <Route path="/auth" component={AuthPage} />
                 <Route path="/login" component={AuthPage} />
                 <Route path="/register" component={AuthPage} />
+                <Route path="/privacy" component={PrivacyPolicy} />
+                <Route path="/terms" component={TermsOfService} />
                 {/* <Route path="/schedule" component={Schedule} /> */}
                 <ProtectedRoute path="/rankings" component={Rankings} />
 
@@ -375,7 +396,6 @@ function App() {
                   path="/user/:username"
                   component={UserProfile}
                 />
-
 
                 {/* Checkout Routes - Need auth AND checkout provider */}
                 {isSignedIn && clientSecret ? (
@@ -440,7 +460,9 @@ function App() {
             )}
           </ErrorBoundary>
         </main>
-        {location !== "/auth" && location !== "/login" && location !== "/register" && <Footer />}
+        {location !== "/auth" &&
+          location !== "/login" &&
+          location !== "/register" && <Footer />}
       </div>
       <Toaster />
     </div>

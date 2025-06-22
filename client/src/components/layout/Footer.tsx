@@ -105,13 +105,13 @@ export default function Footer() {
                 Privacy
               </Link>
               <Link
-                href="/guidelines"
+                href="/terms"
                 className="text-sm text-gray-400 transition hover:text-white"
               >
                 Guidelines
               </Link>
               <Link
-                href="/help"
+                href="/terms#contact-us"
                 className="text-sm text-gray-400 transition hover:text-white"
               >
                 Help

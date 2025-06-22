@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 
 async function runMigration() {
   const migrationName = process.argv[2];
-  
+
   if (!migrationName) {
     console.error("Usage: npm run migrate:run <migration-name>");
     console.error("Example: npm run migrate:run 0012_add_pinned_count");
@@ -17,8 +17,12 @@ async function runMigration() {
   const __dirname = path.dirname(__filename);
 
   // Construct the migration file path
-  const migrationPath = path.join(__dirname, "migrations", `${migrationName}.ts`);
-  
+  const migrationPath = path.join(
+    __dirname,
+    "migrations",
+    `${migrationName}.ts`,
+  );
+
   // Check if the migration file exists
   if (!fs.existsSync(migrationPath)) {
     console.error(`Migration file not found: ${migrationPath}`);
@@ -27,13 +31,13 @@ async function runMigration() {
 
   try {
     console.log(`Running migration: ${migrationName}`);
-    
+
     // Dynamically import the migration
     const migration = await import(`./migrations/${migrationName}.ts`);
-    
+
     // Run the migration
     await migration.up(db);
-    
+
     console.log(`Migration ${migrationName} completed successfully!`);
     process.exit(0);
   } catch (error) {
@@ -42,4 +46,4 @@ async function runMigration() {
   }
 }
 
-runMigration(); 
+runMigration();

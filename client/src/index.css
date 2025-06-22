@@ -8,7 +8,7 @@
   }
 
   body {
-    @apply bg-background font-sans text-foreground antialiased;
+    @apply bg-gray-900 font-sans text-foreground antialiased;
   }
 }
 
@@ -24,3 +24,4 @@
 .cl-profileSection.cl-profileSection__danger {
   display: none !important;
 }
+

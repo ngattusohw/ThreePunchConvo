@@ -67,7 +67,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gray-900 text-white overflow-x-hidden">
       {/* Header */}
       <header className="border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -87,31 +87,31 @@ export default function AuthPage() {
               <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 mb-4">
                 Now Open for Registration
               </Badge>
-              <h2 className="text-5xl font-bold mb-6 leading-tight">
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
                 The Fight Game Has a
                 <span className="text-cyan-400"> New Home</span>
               </h2>
-              <p className="text-xl text-gray-300 mb-8 leading-relaxed">
+              <p className="text-lg md:text-xl text-gray-300 mb-8 leading-relaxed">
                 Interact with fans, fighters and industry experts. It's like your MMA group chat - but with your favorite fighters IN the convo. The best fight forums online, period.
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 <div className="flex items-center space-x-3 bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-                  <Users className="w-5 h-5 text-cyan-400" />
+                  <Users className="w-5 h-5 text-cyan-400 flex-shrink-0" />
                   <div>
                     <p className="font-semibold">Mobile Friendly</p>
                     <p className="text-sm text-gray-400">No App Download Required</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3 bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-                  <MessageSquare className="w-5 h-5 text-cyan-400" />
+                  <MessageSquare className="w-5 h-5 text-cyan-400 flex-shrink-0" />
                   <div>
                     <p className="font-semibold">Actively Moderated</p>
                     <p className="text-sm text-gray-400">Trolls Get Banned</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3 bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-                  <Trophy className="w-5 h-5 text-cyan-400" />
+                  <Trophy className="w-5 h-5 text-cyan-400 flex-shrink-0" />
                   <div>
                     <p className="font-semibold">Expert Analysis</p>
                     <p className="text-sm text-gray-400">Pro Fighter Insights</p>
@@ -129,8 +129,8 @@ export default function AuthPage() {
                     baseTheme: dark,
                     elements: {
                       rootBox: "w-full",
-                      card: "bg-gray-800 border border-gray-700 shadow-xl p-6",
-                      headerTitle: "text-2xl font-bold text-white mb-1 mt-2",
+                      card: "bg-gray-800 border border-gray-700 shadow-xl p-4 md:p-6",
+                      headerTitle: "text-xl md:text-2xl font-bold text-white mb-1 mt-2",
                       headerSubtitle: "text-gray-400",
                       formButtonPrimary: "bg-cyan-500 hover:bg-cyan-600 text-black font-semibold py-2 px-6 rounded-lg transition-colors",
                       formButtonSecondary: "bg-gray-700 hover:bg-gray-600 text-white font-semibold py-4 px-6 rounded-lg transition-colors",
@@ -147,7 +147,7 @@ export default function AuthPage() {
                       formFieldAction: "text-cyan-400 hover:text-cyan-300",
                       alert: "bg-red-900/50 border-red-700 text-red-200",
                       alertText: "text-red-200",
-                      formHeaderTitle: "text-2xl font-bold text-white",
+                      formHeaderTitle: "text-xl md:text-2xl font-bold text-white",
                       formHeaderSubtitle: "text-gray-400",
                       identityPreviewText: "text-gray-300",
                       identityPreviewEditButton: "text-cyan-400 hover:text-cyan-300",
@@ -157,10 +157,10 @@ export default function AuthPage() {
                       footer: "text-center",
                       header: "text-center",
                       main: "space-y-6",
-                      pageScrollBox: "p-6",
-                      cardContent: "p-6",
-                      cardHeader: "p-6 pb-0",
-                      cardFooter: "p-6 pt-0",
+                      pageScrollBox: "p-4 md:p-6",
+                      cardContent: "p-4 md:p-6",
+                      cardHeader: "p-4 md:p-6 pb-0",
+                      cardFooter: "p-4 md:p-6 pt-0",
                       logoImage: "hidden",
                       logoBox: "hidden",
                       footerAction: "my-4 text-center",
@@ -198,8 +198,8 @@ export default function AuthPage() {
       <section className="py-20 px-4 bg-gray-800/50">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
-            <h3 className="text-3xl font-bold mb-4">Why Join 3Punch?</h3>
-            <p className="text-gray-400 text-lg">Participate in the most engaging MMA community online - while supporting your favorite fighters!</p>
+            <h3 className="text-2xl md:text-3xl font-bold mb-4">Why Join 3Punch?</h3>
+            <p className="text-gray-400 text-base md:text-lg">Participate in the most engaging MMA community online - while supporting your favorite fighters!</p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
@@ -240,46 +240,46 @@ export default function AuthPage() {
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
-            <h3 className="text-3xl font-bold mb-4">Why Go Premium?</h3>
-            <p className="text-gray-400 text-lg">Unlock exclusive features and support the MMA community</p>
+            <h3 className="text-2xl md:text-3xl font-bold mb-4">Why Go Premium?</h3>
+            <p className="text-gray-400 text-base md:text-lg">Unlock exclusive features and support the MMA community</p>
           </div>
           
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {/* Basic Membership */}
             <Card className="bg-gray-800 border-gray-700 relative">
               <CardHeader className="text-center">
-                <CardTitle className="text-2xl text-white">Basic</CardTitle>
+                <CardTitle className="text-xl md:text-2xl text-white">Basic</CardTitle>
                 <CardDescription className="text-gray-400">Free Forever</CardDescription>
-                <div className="text-4xl font-bold text-cyan-400 mt-4">$0</div>
+                <div className="text-3xl md:text-4xl font-bold text-cyan-400 mt-4">$0</div>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-4">
                   <li className="flex items-center space-x-3">
-                    <Check className="w-5 h-5 text-green-400" />
+                    <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
                     <span className="text-gray-300">Access to general forums</span>
                   </li>
                   <li className="flex items-center space-x-3">
-                    <Check className="w-5 h-5 text-green-400" />
+                    <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
                     <span className="text-gray-300">Post and reply to other members</span>
                   </li>
                   <li className="flex items-center space-x-3">
-                    <Check className="w-5 h-5 text-green-400" />
+                    <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
                     <span className="text-gray-300">Community discussion access</span>
                   </li>
                   <li className="flex items-center space-x-3">
-                    <X className="w-5 h-5 text-red-400" />
+                    <X className="w-5 h-5 text-red-400 flex-shrink-0" />
                     <span className="text-gray-500">Accumulate fight cred</span>
                   </li>
                   <li className="flex items-center space-x-3">
-                    <X className="w-5 h-5 text-red-400" />
+                    <X className="w-5 h-5 text-red-400 flex-shrink-0" />
                     <span className="text-gray-500">See pro fighter posts</span>
                   </li>
                   <li className="flex items-center space-x-3">
-                    <X className="w-5 h-5 text-red-400" />
-                    <span className="text-gray-500">Reply to Pro Fighter posts</span>
+                    <X className="w-5 h-5 text-red-400 flex-shrink-0" />
+                    <span className="text-gray-300">Reply to Pro Fighter posts</span>
                   </li>
                   <li className="flex items-center space-x-3">
-                    <X className="w-5 h-5 text-red-400" />
+                    <X className="w-5 h-5 text-red-400 flex-shrink-0" />
                     <span className="text-gray-500">Vote in robbery insurance polls</span>
                   </li>
                 </ul>
@@ -292,39 +292,39 @@ export default function AuthPage() {
                 <Badge className="bg-cyan-500 text-gray-900 font-semibold px-4 py-1">Most Popular</Badge>
               </div>
               <CardHeader className="text-center">
-                <CardTitle className="text-2xl text-white">Premium</CardTitle>
+                <CardTitle className="text-xl md:text-2xl text-white">Premium</CardTitle>
                 <CardDescription className="text-gray-400">Unlock everything</CardDescription>
-                <div className="text-4xl font-bold text-cyan-400 mt-4">$4.99</div>
+                <div className="text-3xl md:text-4xl font-bold text-cyan-400 mt-4">$4.99</div>
                 <p className="text-sm text-gray-400">per month</p>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-4">
                   <li className="flex items-center space-x-3">
-                    <Check className="w-5 h-5 text-green-400" />
+                    <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
                     <span className="text-gray-300">Everything in Basic</span>
                   </li>
                   <li className="flex items-center space-x-3">
-                    <Check className="w-5 h-5 text-green-400" />
+                    <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
                     <span className="text-gray-300">See pro fighter posts</span>
                   </li>
                   <li className="flex items-center space-x-3">
-                    <Check className="w-5 h-5 text-green-400" />
+                    <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
                     <span className="text-gray-300">Reply to Pro Fighter posts</span>
                   </li>
                   <li className="flex items-center space-x-3">
-                    <Check className="w-5 h-5 text-green-400" />
+                    <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
                     <span className="text-gray-300">Accumulate fight cred</span>
                   </li>
                   <li className="flex items-center space-x-3">
-                    <Check className="w-5 h-5 text-green-400" />
+                    <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
                     <span className="text-gray-300">Early access to new features</span>
                   </li>
                   <li className="flex items-center space-x-3">
-                    <Check className="w-5 h-5 text-green-400" />
+                    <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
                     <span className="text-gray-300">Vote in robbery insurance polls</span>
                   </li>
                   <li className="flex items-center space-x-3">
-                    <Check className="w-5 h-5 text-green-400" />
+                    <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
                     <span className="text-gray-300">Support active fighters</span>
                   </li>
                 </ul>
@@ -338,17 +338,17 @@ export default function AuthPage() {
       <section className="py-20 px-4 bg-gray-800/50">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
-            <h3 className="text-3xl font-bold mb-4">The MMA Industry is Active on 3PunchConvo</h3>
-            <p className="text-gray-400 text-lg">Hear from professional fighters, coaches, and journalists</p>
+            <h3 className="text-2xl md:text-3xl font-bold mb-4">The MMA Industry is Active on 3PunchConvo</h3>
+            <p className="text-gray-400 text-base md:text-lg">Hear from professional fighters, coaches, and journalists</p>
           </div>
           
           <Carousel className="max-w-6xl mx-auto">
             <CarouselContent>
               {industryQuotes.map((testimonial, index) => (
                 <CarouselItem key={index} className="md:basis-1/3">
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center h-full">
+                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 md:p-6 text-center h-full">
                     <Quote className="w-8 h-8 text-cyan-400 mx-auto mb-4" />
-                    <blockquote className="text-lg text-gray-300 mb-6 leading-relaxed italic">
+                    <blockquote className="text-base md:text-lg text-gray-300 mb-6 leading-relaxed italic">
                       "{testimonial.quote}"
                     </blockquote>
                     <div className="border-t border-gray-700 pt-6">

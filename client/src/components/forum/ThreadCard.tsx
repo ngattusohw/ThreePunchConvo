@@ -11,6 +11,7 @@ import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 
 interface ThreadCardProps {
   thread: ForumThread;
+  onDelete?: () => void;
 }
 
 // Helper function to format edited date
@@ -35,7 +36,7 @@ const formatEditedDate = (editedAt: Date) => {
   }
 };
 
-export default function ThreadCard({ thread }: ThreadCardProps) {
+export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(thread.title);
   const [title, setTitle] = useState(thread.title);
@@ -44,9 +45,10 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
   const [loading, setLoading] = useState(false);
   const [isEdited, setIsEdited] = useState(thread.edited);
   const [editedAt, setEditedAt] = useState(thread.editedAt);
+  const [isDeleted, setIsDeleted] = useState(false);
   const { user: currentUser } = useMemoizedUser();
 
-  const { editThreadMutation } = useThreadActions({ 
+  const { editThreadMutation, deleteThreadMutation } = useThreadActions({ 
     threadId: thread.id, 
     userId: currentUser?.id, 
     title: editTitle, 
@@ -81,6 +83,26 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
     setEditTitle(thread.title);
     setEditContent(thread.content);
     setIsEditing(false);
+  }
+
+  const handleDelete = async () => {
+    try {
+      setLoading(true);
+      await deleteThreadMutation.mutateAsync();
+      setIsDeleted(true);
+      if (onDelete) {
+        onDelete();
+      }
+    } catch (error) {
+      console.error("Error in thread deletion:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Don't render if deleted
+  if (isDeleted) {
+    return null;
   }
 
   return (
@@ -271,6 +293,7 @@ export default function ThreadCard({ thread }: ThreadCardProps) {
                 <ThreadActions 
                   thread={thread}
                   onClickEdit={handleEdit}
+                  onClickDelete={handleDelete}
                   size="sm"
                   className="ml-2"
                 />

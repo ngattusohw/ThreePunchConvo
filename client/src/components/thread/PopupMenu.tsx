@@ -1,10 +1,20 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface PopupMenuProps {
   isOpen: boolean;
@@ -12,8 +22,11 @@ interface PopupMenuProps {
   onShareOnX: () => void;
   onEdit?: () => void;
   canEditThread?: boolean;
+  canDeleteThread?: boolean;
+  onClickDelete?: () => void;
   onClose: () => void;
   createdAt: Date | string | number;
+  handleDeleteMutation: () => void;
 }
 
 const PopupMenu: React.FC<PopupMenuProps> = ({
@@ -22,8 +35,11 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
   onShareOnX,
   onEdit,
   canEditThread,
+  canDeleteThread,
+  onClickDelete,
   onClose,
   createdAt,
+  handleDeleteMutation,
 }) => {
   if (!isOpen) return null;
 
@@ -125,6 +141,30 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
                 </TooltipContent>
               )}
             </Tooltip>
+          )}
+          {/* Add delete button if user is author or has permission */}
+          {canDeleteThread && (
+            <button
+              onClick={onClickDelete}
+              disabled={!canDeleteThread}
+              className="flex w-full items-center px-4 py-2 text-sm text-red-500 transition-colors hover:bg-gray-700 hover:text-red-500"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="mr-2 h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+              Delete
+            </button>
           )}
         </div>
       </div>

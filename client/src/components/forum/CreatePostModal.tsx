@@ -278,14 +278,6 @@ export default function CreatePostModal({
   // Handle modal backdrop click to prevent accidental closure
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     console.log('Backdrop clicked');
-    // Only close if clicking on the backdrop itself, not on child elements
-    if (e.target === e.currentTarget) {
-      console.log('Closing modal via backdrop click');
-      // Mark as intentional close and clear persistent data
-      intentionalCloseRef.current = true;
-      clearFormData();
-      onClose();
-    }
   };
 
   return (

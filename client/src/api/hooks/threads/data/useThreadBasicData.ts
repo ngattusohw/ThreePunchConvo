@@ -20,6 +20,9 @@ export function useThreadBasicData({ threadId, userId }: UseThreadBasicDataOptio
       return data;
     }),
     enabled: !!threadId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 2 * 60 * 1000, // 2 minutes - threads can change frequently
   });
 
   return {

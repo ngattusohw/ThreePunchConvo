@@ -32,10 +32,10 @@ export function useRegularThreads({
   } = useQuery<ForumThread[]>({
     queryKey: [`/api/threads/${category}`, filterOption, timeRange, page, userId],
     queryFn: () => fetchRegularThreads(category, filterOption, timeRange, page, limit, userId),
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
-    staleTime: 0, // Consider data always stale to force refetch
+    staleTime: 2 * 60 * 1000, // 2 minutes - threads can change frequently
   });
 
   // Reset page when filter, time range, or user changes

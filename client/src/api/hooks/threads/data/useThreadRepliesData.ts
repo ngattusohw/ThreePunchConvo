@@ -19,6 +19,9 @@ export function useThreadRepliesData({ threadId }: UseThreadRepliesDataOptions) 
     queryKey: [`/api/threads/${threadId}/replies`],
     queryFn: () => fetchThreadReplies(threadId),
     enabled: !!threadId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 2 * 60 * 1000, // 2 minutes - replies can change frequently
   });
 
   // Process replies to create a proper threaded structure

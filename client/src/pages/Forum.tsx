@@ -1,5 +1,5 @@
 import { useParams } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import ForumCategories from "@/components/forum/ForumCategories";
 import ForumContent from "@/components/forum/ForumContent";
 import TopUsersSidebar from "@/components/sidebar/TopUsersSidebar";
@@ -19,8 +19,10 @@ export default function Forum() {
   const categoryId = params.categoryId || "general";
 
   // Validate the category exists, default to general if not found
-  const isValidCategory = FORUM_CATEGORIES.some((cat) => cat.id === categoryId);
-  const validCategoryId = isValidCategory ? categoryId : "general";
+  const validCategoryId = useMemo(() => {
+    const isValidCategory = FORUM_CATEGORIES.some((cat) => cat.id === categoryId);
+    return isValidCategory ? categoryId : "general";
+  }, [categoryId]);
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -57,31 +59,17 @@ export default function Forum() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
-  const openModal = () => {
-    console.log('Opening modal from Forum page');
+  const openModal = useCallback(() => {
     if (!hasPaidPlan) {
-      console.log('Showing upgrade modal from Forum page');
       setShowUpgradeModal(true);
     } else {
       setCreatePostModalOpen(true);
     }
-  };
+  }, [hasPaidPlan]);
 
-  const closeModal = () => {
-    console.log('Closing modal from Forum page');
+  const closeModal = useCallback(() => {
     setCreatePostModalOpen(false);
-  };
-
-  console.log('Forum page rendered, category:', validCategoryId, 'modal open:', createPostModalOpen);
-
-  // Debug: Track what's causing Forum re-renders
-  useEffect(() => {
-    console.log('Forum component mounted or categoryId changed:', categoryId);
-  }, [categoryId]);
-
-  useEffect(() => {
-    console.log('Forum params changed:', params);
-  }, [params]);
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-6">

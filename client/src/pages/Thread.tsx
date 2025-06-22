@@ -1,4 +1,4 @@
-import react, { useEffect, useRef, useState } from "react";
+import react, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet";
 import { formatDate } from "@/lib/utils";
@@ -95,10 +95,12 @@ export default function Thread() {
   const [editedAt, setEditedAt] = useState<Date | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  // Extract replyId from URL query params once
-  const queryString = window.location.search;
-  const urlParams = new URLSearchParams(queryString);
-  const replyId = urlParams.get("replyId");
+  // Extract replyId from URL query params once - memoize to prevent recalculation
+  const replyId = useMemo(() => {
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    return urlParams.get("replyId");
+  }, []);
 
   const {
     thread,
@@ -148,12 +150,12 @@ export default function Thread() {
     userId: currentUser?.id
   });
 
-  // Edit handlers
-  const handleEdit = () => {
+  // Edit handlers - memoize to prevent recreation
+  const handleEdit = useCallback(() => {
     setIsEditing(true);
-  };
+  }, []);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     try {
       setLoading(true);
       await editThreadMutation.mutateAsync();
@@ -163,9 +165,9 @@ export default function Thread() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [editThreadMutation]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     if (thread) {
       setContent(thread.content);
       setTitle(thread.title);
@@ -173,14 +175,12 @@ export default function Thread() {
       setEditContent(thread.content);
     }
     setIsEditing(false);
-  };
+  }, [thread]);
 
   const isLoading = isThreadLoading || isRepliesLoading;
 
   // Scroll to specific reply if replyId is provided in URL query params (only on first load)
   useEffect(() => {
-    console.log("Effect triggered - replyId:", replyId, "location:", location);
-        
     if (replyId && displayReplies.length > 0 && !isRepliesLoading && !hasScrolledToReply.current) {
       // Function to attempt scrolling to the reply
       const attemptScrollToReply = () => {
@@ -234,16 +234,15 @@ export default function Thread() {
   // Reset the scroll flag when the threadId changes
   useEffect(() => {
     hasScrolledToReply.current = false;
-    console.log("Reset scroll flag - threadId:", threadId);
   }, [threadId]);
 
   // Function to close modal and navigate to upgrade page
-  const handleUpgrade = () => {
+  const handleUpgrade = useCallback(() => {
     setRepliesShowUpgradeModal(false);
     setLocation("/checkout");
-  };
+  }, [setRepliesShowUpgradeModal, setLocation]);
 
-  const handleThreadDelete = () => {
+  const handleThreadDelete = useCallback(() => {
     toast({
       title: "Thread deleted",
       description: "The thread has been deleted successfully",
@@ -251,7 +250,7 @@ export default function Thread() {
     });
     // Redirect to forum
     window.location.href = "/forum";
-  };
+  }, [toast]);
 
   // Loading state
   if (isThreadLoading) {

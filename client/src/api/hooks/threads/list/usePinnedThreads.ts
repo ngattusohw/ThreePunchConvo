@@ -16,9 +16,10 @@ export function usePinnedThreads({ category, userId }: UsePinnedThreadsOptions) 
   } = useQuery<ForumThread[]>({
     queryKey: [`/api/threads/${category}`, 'pinned', userId],
     queryFn: () => fetchPinnedThreads(category, userId),
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
+    staleTime: 5 * 60 * 1000, // 5 minutes - pinned threads don't change often
   });
 
   return {

@@ -28,27 +28,29 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
   if (!isOpen) return null;
 
   // Convert createdAt to a Date object if it's not already
-  const createdAtDate = createdAt instanceof Date ? createdAt : new Date(createdAt);
-  
+  const createdAtDate =
+    createdAt instanceof Date ? createdAt : new Date(createdAt);
+
   // Check if more than an hour has passed since creation
   const oneHourInMs = 60 * 60 * 1000;
-  const isMoreThanOneHourOld = Date.now() - createdAtDate.getTime() > oneHourInMs;
+  const isMoreThanOneHourOld =
+    Date.now() - createdAtDate.getTime() > oneHourInMs;
   const canEdit = canEditThread && !isMoreThanOneHourOld;
 
   return (
     <TooltipProvider>
-      <div className="absolute bottom-full right-0 mb-2 w-40 rounded-md shadow-lg bg-gray-800 ring-1 ring-gray-700 ring-opacity-5 z-[100]">
+      <div className="absolute bottom-full right-0 z-[100] mb-2 w-40 rounded-md bg-gray-800 shadow-lg ring-1 ring-gray-700 ring-opacity-5">
         <div className="py-1" role="menu" aria-orientation="vertical">
           <button
             onClick={() => {
               onCopyLink();
               onClose();
             }}
-            className="flex items-center w-full px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 transition-colors"
+            className="flex w-full items-center px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 mr-2"
+              className="mr-2 h-4 w-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -67,15 +69,15 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
               onShareOnX();
               onClose();
             }}
-            className="flex items-center w-full px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 transition-colors"
+            className="flex w-full items-center px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 mr-2"
+              className="mr-2 h-4 w-4"
               fill="currentColor"
               viewBox="0 0 24 24"
             >
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
             Share on X
           </button>
@@ -90,16 +92,16 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
                     }
                   }}
                   disabled={!canEdit}
-                  className={`flex items-center w-full px-4 py-2 text-sm transition-colors ${
-                    canEdit 
-                      ? "text-gray-200 hover:bg-gray-700" 
-                      : "text-gray-500 cursor-not-allowed"
+                  className={`flex w-full items-center px-4 py-2 text-sm transition-colors ${
+                    canEdit
+                      ? "text-gray-200 hover:bg-gray-700"
+                      : "cursor-not-allowed text-gray-500"
                   }`}
                   role="menuitem"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-2"
+                    className="mr-2 h-4 w-4"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -116,7 +118,10 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
               </TooltipTrigger>
               {!canEdit && (
                 <TooltipContent>
-                  <p>You cannot edit a post after an hour</p>
+                  <p>
+                    Posts can only be edited within the first 1 hour after
+                    they're published
+                  </p>
                 </TooltipContent>
               )}
             </Tooltip>
@@ -127,4 +132,4 @@ const PopupMenu: React.FC<PopupMenuProps> = ({
   );
 };
 
-export default PopupMenu; 
+export default PopupMenu;

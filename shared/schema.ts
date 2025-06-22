@@ -9,6 +9,8 @@ import {
   varchar,
   jsonb,
   index,
+  date,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -171,8 +173,12 @@ export const replyMedia = pgTable("reply_media", {
 // Thread reactions (likes, dislikes, PINNED_BY_USER)
 export const threadReactions = pgTable("thread_reactions", {
   id: text("id").primaryKey(),
-  threadId: text("thread_id").notNull().references(() => threads.id),
-  userId: text("user_id").notNull().references(() => users.id),
+  threadId: text("thread_id")
+    .notNull()
+    .references(() => threads.id),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
   type: text("type").notNull(), // LIKE, DISLIKE, PINNED_BY_USER
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -216,6 +222,28 @@ export const notifications = pgTable("notifications", {
   isRead: boolean("is_read").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+// Daily Fighter Cred
+export const dailyFighterCred = pgTable(
+  "daily_fighter_cred",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    interactionDay: date("interaction_day").notNull(),
+    likeCount: integer("like_count").notNull().default(0),
+    potdCount: integer("potd_count").notNull().default(0),
+    replyCount: integer("reply_count").notNull().default(0),
+    likeScore: integer("like_score").notNull().default(0),
+    potdScore: integer("potd_score").notNull().default(0),
+    replyScore: integer("reply_score").notNull().default(0),
+    dailyFighterCred: integer("daily_fighter_cred").notNull().default(0),
+    totalFighterCred: integer("total_fighter_cred").notNull().default(0),
+  },
+  (table) => ({
+    pk: primaryKey(table.userId, table.interactionDay),
+  }),
+);
 
 // MMA Events
 export const mmaEvents = pgTable("mma_events", {
@@ -366,6 +394,9 @@ export type InsertMedia = z.infer<typeof insertMediaSchema>;
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+export type DailyFighterCred = typeof dailyFighterCred.$inferSelect;
+export type InsertDailyFighterCred = typeof dailyFighterCred.$inferInsert;
 
 export type MMAEvent = typeof mmaEvents.$inferSelect;
 export type Fighter = typeof fighters.$inferSelect;

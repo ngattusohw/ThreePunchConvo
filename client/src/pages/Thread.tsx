@@ -14,6 +14,7 @@ import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { ThreadReply } from "@/lib/types";
 import { useThreadActions } from "@/api/hooks/threads/actions";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 // Helper function to format edited date
 const formatEditedDate = (editedAt: Date) => {
@@ -79,6 +80,7 @@ function ThreadMetadata({ thread }: { thread: any }) {
 export default function Thread() {
   const { threadId } = useParams<{ threadId: string }>();
   const { user: currentUser } = useMemoizedUser();
+  const { toast } = useToast();
   const [location, setLocation] = useLocation();
   const hasScrolledToReply = useRef(false);
 
@@ -87,6 +89,11 @@ export default function Thread() {
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [loading, setLoading] = useState(false);
+  const [content, setContent] = useState("");
+  const [title, setTitle] = useState("");
+  const [isEdited, setIsEdited] = useState(false);
+  const [editedAt, setEditedAt] = useState<Date | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Extract replyId from URL query params once
   const queryString = window.location.search;
@@ -108,6 +115,8 @@ export default function Thread() {
   // Initialize edit form when thread data is available
   useEffect(() => {
     if (thread) {
+      setContent(thread.content);
+      setTitle(thread.title);
       setEditTitle(thread.title);
       setEditContent(thread.content);
     }
@@ -123,8 +132,8 @@ export default function Thread() {
   
   const {
     replyingTo,
-    showUpgradeModal,
-    setShowUpgradeModal,
+    showUpgradeModal: repliesShowUpgradeModal,
+    setShowUpgradeModal: setRepliesShowUpgradeModal,
     likeReplyMutation,
     dislikeReplyMutation,
     deleteReplyMutation,
@@ -148,7 +157,7 @@ export default function Thread() {
     try {
       setLoading(true);
       await editThreadMutation.mutateAsync();
-      window.location.reload();
+      setIsEditing(false);
     } catch (error) {
       console.error("Error in thread edit:", error);
     } finally {
@@ -158,6 +167,8 @@ export default function Thread() {
 
   const handleCancel = () => {
     if (thread) {
+      setContent(thread.content);
+      setTitle(thread.title);
       setEditTitle(thread.title);
       setEditContent(thread.content);
     }
@@ -165,9 +176,6 @@ export default function Thread() {
   };
 
   const isLoading = isThreadLoading || isRepliesLoading;
-  
-  // Use the actual data from the API
-  const displayThread = thread;
 
   // Scroll to specific reply if replyId is provided in URL query params (only on first load)
   useEffect(() => {
@@ -229,14 +237,20 @@ export default function Thread() {
     console.log("Reset scroll flag - threadId:", threadId);
   }, [threadId]);
 
-  // Debug - log thread data
-  console.log("Thread data received:", displayThread);
-  console.log("Thread object in render:", thread);
-
   // Function to close modal and navigate to upgrade page
   const handleUpgrade = () => {
-    setShowUpgradeModal(false);
+    setRepliesShowUpgradeModal(false);
     setLocation("/checkout");
+  };
+
+  const handleThreadDelete = () => {
+    toast({
+      title: "Thread deleted",
+      description: "The thread has been deleted successfully",
+      variant: "success",
+    });
+    // Redirect to forum
+    window.location.href = "/forum";
   };
 
   // Loading state
@@ -297,30 +311,30 @@ export default function Thread() {
             </Link>
             <span className="mx-2 text-gray-600">/</span>
             <Link
-              href={`/forum/${displayThread.categoryId}`}
+              href={`/forum/${thread.categoryId}`}
               className="text-gray-400 transition hover:text-white"
             >
-              {getCategoryName(displayThread.categoryId)}
+              {getCategoryName(thread.categoryId)}
             </Link>
             <span className="mx-2 text-gray-600">/</span>
             <span className="truncate text-white">
-              {displayThread.title.length > 30
-                ? displayThread.title.substring(0, 30) + "..."
-                : displayThread.title}
+              {title.length > 30
+                ? title.substring(0, 30) + "..."
+                : title}
             </span>
           </div>
 
           {/* Thread Card */}
-          <div className={`bg-dark-gray ${displayThread.isPinned ? 'border-l-4 border-ufc-blue' : ''} rounded-lg overflow-hidden shadow-lg mb-6`}>
+          <div className={`bg-dark-gray ${thread.isPinned ? 'border-l-4 border-ufc-blue' : ''} rounded-lg overflow-hidden shadow-lg mb-6`}>
             <div className="p-5">
               {/* Thread Header */}
               <div className="flex items-start">
                 <div className="flex-grow">
                   <div className="mb-2">
                     <UserThreadHeader 
-                      user={displayThread.user}
-                      createdAt={displayThread.createdAt}
-                      isPinned={displayThread.isPinned}
+                      user={thread.user}
+                      createdAt={thread.createdAt}
+                      isPinned={thread.isPinned}
                       pinnedPosition="right"
                     />
                   </div>
@@ -380,36 +394,36 @@ export default function Thread() {
                     // View Mode
                     <>
                       <h1 className="mb-4 text-2xl font-bold text-white">
-                        {displayThread.title}
-                        {displayThread.edited && displayThread.editedAt && (
+                        {title}
+                        {thread.edited && thread.editedAt && (
                           <span className="ml-2 text-sm font-normal text-gray-400">
-                            (edited {formatEditedDate(displayThread.editedAt)})
+                            (edited {formatEditedDate(thread.editedAt)})
                           </span>
                         )}
                       </h1>
 
                       <div className="mb-6 whitespace-pre-line text-gray-300">
-                        {displayThread.content}
+                        {content}
                       </div>
                     </>
                   )}
 
                   {/* Thread Media - only show in view mode */}
-                  {!isEditing && displayThread.media && displayThread.media.length > 0 && (
+                  {!isEditing && thread.media && thread.media.length > 0 && (
                     <div className="mb-6">
                       <MediaPreview
-                        media={displayThread.media[0]}
-                        threadTitle={displayThread.title}
+                        media={thread.media[0]}
+                        threadTitle={thread.title}
                       />
                     </div>
                   )}
 
                   {/* Thread Poll - only show in view mode */}
-                  {!isEditing && displayThread?.poll && (
+                  {!isEditing && thread?.poll && (
                     <ThreadPoll 
                       key={`poll-${threadId}`}
                       threadId={threadId} 
-                      poll={displayThread.poll} 
+                      poll={thread.poll} 
                     />
                   )}
 
@@ -417,8 +431,9 @@ export default function Thread() {
                   {!isEditing && (
                     <div className="mb-6">
                       <ThreadActions 
-                        thread={displayThread}
+                        thread={thread}
                         onClickEdit={handleEdit}
+                        onClickDelete={handleThreadDelete}
                       />
                     </div>
                   )}
@@ -507,15 +522,15 @@ export default function Thread() {
               <p className="mb-1 text-sm text-gray-400">Posted by</p>
               <div className="flex items-center">
                 <UserAvatar
-                  user={displayThread.user}
+                  user={thread.user}
                   size="sm"
                   className="mr-2"
                 />
                 <Link
-                  href={`/user/${displayThread.user.username}`}
+                  href={`/user/${thread.user.username}`}
                   className="hover:text-ufc-blue text-white transition"
                 >
-                  {displayThread.user.username}
+                  {thread.user.username}
                 </Link>
               </div>
             </div>
@@ -523,25 +538,25 @@ export default function Thread() {
             <div className="mb-4">
               <p className="mb-1 text-sm text-gray-400">Category</p>
               <Link
-                href={`/forum/${displayThread.categoryId}`}
+                href={`/forum/${thread.categoryId}`}
                 className="text-ufc-blue hover:underline"
               >
-                {getCategoryName(displayThread.categoryId)}
+                {getCategoryName(thread.categoryId)}
               </Link>
             </div>
 
             <div className="mb-4">
               <p className="mb-1 text-sm text-gray-400">Created</p>
               <p className="text-white">
-                {formatDate(displayThread.createdAt)}
+                {formatDate(thread.createdAt)}
               </p>
             </div>
 
-            {displayThread.edited && displayThread.editedAt && (
+            {thread.edited && thread.editedAt && (
               <div className="mb-4">
                 <p className="mb-1 text-sm text-gray-400">Last edited</p>
                 <p className="text-white">
-                  {formatDate(displayThread.editedAt)}
+                  {formatDate(thread.editedAt)}
                 </p>
               </div>
             )}
@@ -550,19 +565,19 @@ export default function Thread() {
               <p className="mb-1 text-sm text-gray-400">Stats</p>
               <div className="grid grid-cols-2 gap-2">
                 {/* <div className="bg-gray-800 p-2 rounded-lg text-center">
-                  <span className="block text-ufc-blue font-bold">{displayThread.viewCount}</span>
+                  <span className="block text-ufc-blue font-bold">{thread.viewCount}</span>
                   <span className="text-gray-400 text-xs">Views</span>
                 </div> */}
                 <div className="rounded-lg bg-gray-800 p-2 text-center">
                   <span className="text-ufc-blue block font-bold">
-                    {displayThread.repliesCount}
+                    {thread.repliesCount}
                   </span>
                   <span className="text-xs text-gray-400">Replies</span>
                 </div>
               </div>
             </div>
 
-            {displayThread.isPinned && (
+            {thread.isPinned && (
               <div className="bg-gray-800 p-3 rounded-lg mb-4">
                 <div className="flex items-center text-ufc-blue mb-1">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
@@ -594,7 +609,7 @@ export default function Thread() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    {displayThread.isLocked ? "Unlock Thread" : "Lock Thread"}
+                    {thread.isLocked ? "Unlock Thread" : "Lock Thread"}
                   </button>
                   <button className="flex w-full items-center justify-center rounded-lg bg-gray-800 px-3 py-2 text-sm text-white transition hover:bg-gray-700">
                     <svg
@@ -609,7 +624,7 @@ export default function Thread() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    {displayThread.isPinned ? "Unpin Thread" : "Pin Thread"}
+                    {thread.isPinned ? "Unpin Thread" : "Pin Thread"}
                   </button>
                   <button className="bg-ufc-blue hover:bg-ufc-blue-dark flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm text-black transition">
                     <svg
@@ -634,47 +649,27 @@ export default function Thread() {
       </div>
 
       {/* Upgrade Plan Modal */}
-      {showUpgradeModal && (
+      {repliesShowUpgradeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
           <div className="bg-dark-gray mx-4 w-full max-w-md rounded-lg p-6">
-            <div className="mb-6 text-center">
-              <div className="bg-ufc-blue mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-8 w-8 text-black"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-              </div>
-              <h3 className="mb-2 text-xl font-bold text-white">
-                Upgrade Required
-              </h3>
-              <p className="text-gray-300">
-                Posting replies is only available for paid members. Upgrade your
-                plan to join the conversation!
-              </p>
-            </div>
-
-            <div className="flex flex-col space-y-3">
+            <h2 className="mb-4 text-xl font-bold text-white">
+              Upgrade Required
+            </h2>
+            <p className="mb-6 text-gray-300">
+              You need to upgrade your plan to access this feature.
+            </p>
+            <div className="space-y-3">
               <button
                 onClick={handleUpgrade}
-                className="bg-ufc-blue hover:bg-ufc-blue-dark w-full rounded-lg py-2 font-medium text-black transition"
+                className="w-full rounded-lg bg-ufc-blue py-2 font-medium text-black transition hover:bg-ufc-blue-dark"
               >
                 Upgrade Now
               </button>
               <button
-                onClick={() => setShowUpgradeModal(false)}
+                onClick={() => setRepliesShowUpgradeModal(false)}
                 className="w-full rounded-lg border border-gray-600 bg-transparent py-2 font-medium text-white transition hover:bg-gray-800"
               >
-                Maybe Later
+                Cancel
               </button>
             </div>
           </div>

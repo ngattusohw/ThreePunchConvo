@@ -18,6 +18,9 @@ export default function ForumContent({
   modalOpen = false,
 }: ForumContentProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterOption, setFilterOption] = useState<"recent" | "popular" | "new">("recent");
+  const [timeRange, setTimeRange] = useState<"all" | "week" | "month" | "year">("all");
+  const [deletedThreadIds, setDeletedThreadIds] = useState<Set<string>>(new Set());
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef(0);
   const shouldRestoreScrollRef = useRef(false);
@@ -35,8 +38,6 @@ export default function ForumContent({
     hasMore,
     page,
     loadMore,
-    filterOption,
-    timeRange,
     handleFilterChange,
     handleTimeRangeChange
   } = useThreadsList({
@@ -46,8 +47,10 @@ export default function ForumContent({
     userId: currentUser?.id
   });
 
-  // Filter out pinned threads from regular threads to prevent duplicate keys
+  // Filter out deleted threads
+  const filteredPinnedThreads = pinnedThreads.filter(thread => !deletedThreadIds.has(thread.id));
   const filteredRegularThreads = allRegularThreads.filter(thread => 
+    !deletedThreadIds.has(thread.id) && 
     !pinnedThreads.some(pinnedThread => pinnedThread.id === thread.id)
   );
 
@@ -78,6 +81,10 @@ export default function ForumContent({
     } else {
       console.warn('No onOpenModal handler provided to ForumContent');
     }
+  };
+
+  const handleThreadDelete = (threadId: string) => {
+    setDeletedThreadIds(prev => new Set([...prev, threadId]));
   };
 
   return (
@@ -244,14 +251,18 @@ export default function ForumContent({
       {/* Forum Thread List */}
       {(!isLoading || page > 0 || allRegularThreads.length > 0) && !error && (
         <div className="space-y-4">
-          {(pinnedThreads.length > 0 || filteredRegularThreads.length > 0) ? (
+          {(filteredPinnedThreads.length > 0 || filteredRegularThreads.length > 0) ? (
             <div>
               {/* Pinned Section - only shown once at the top */}
-              {pinnedThreads.length > 0 && (
+              {filteredPinnedThreads.length > 0 && (
                 <div className="mb-6">
                   <div className="space-y-4">
-                    {pinnedThreads.map(thread => (
-                      <ThreadCard key={thread.id} thread={thread} />
+                    {filteredPinnedThreads.map(thread => (
+                      <ThreadCard 
+                        key={thread.id} 
+                        thread={thread} 
+                        onDelete={() => handleThreadDelete(thread.id)}
+                      />
                     ))}
                   </div>
                 </div>
@@ -261,7 +272,11 @@ export default function ForumContent({
               {filteredRegularThreads.length > 0 ? (
                 <div className="space-y-4">
                   {filteredRegularThreads.map((thread) => (
-                    <ThreadCard key={thread.id} thread={thread} />
+                    <ThreadCard 
+                      key={thread.id} 
+                      thread={thread} 
+                      onDelete={() => handleThreadDelete(thread.id)}
+                    />
                   ))}
                 </div>
               ) : (

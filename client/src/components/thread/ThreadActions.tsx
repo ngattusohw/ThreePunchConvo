@@ -11,6 +11,7 @@ interface ThreadActionsProps {
   size?: "sm" | "md" | "lg";
   className?: string;
   onClickEdit?: () => void;
+  onClickDelete?: () => void;
 }
 
 export default function ThreadActions({
@@ -18,6 +19,7 @@ export default function ThreadActions({
   size = "md",
   className = "",
   onClickEdit,
+  onClickDelete,
 }: ThreadActionsProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isShareSubmenuOpen, setIsShareSubmenuOpen] = useState(false);
@@ -162,7 +164,13 @@ export default function ThreadActions({
       {/* Add delete button if user is author or has permission */}
       {canDeleteThread && (
         <button
-          onClick={()=>deleteThreadMutation.mutate()}
+          onClick={() => {
+            if (onClickDelete) {
+              onClickDelete();
+            } else {
+              deleteThreadMutation.mutate();
+            }
+          }}
           disabled={!currentUser}
           className="ml-auto flex items-center text-gray-400 transition hover:text-red-500"
         >

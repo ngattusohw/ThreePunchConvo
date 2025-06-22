@@ -231,6 +231,64 @@ export const registerStripeEndpoints = (app: Express) => {
     }
   });
 
+  // Get available subscription plans/products from Stripe
+  app.get("/get-plans", async (req: Request, res: Response) => {
+    try {
+      // Fetch all products
+      const products = await stripe.products.list({
+        active: true,
+        expand: ["data.default_price"],
+      });
+
+      // Map products to plans with their prices
+      const plans = products.data.map((product) => {
+        const defaultPrice = product.default_price as Stripe.Price | null;
+
+        return {
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          planType: product.metadata?.planType,
+          features: product.metadata?.features
+            ? JSON.parse(product.metadata.features)
+            : [],
+          price: defaultPrice?.unit_amount,
+        };
+      });
+
+      res.json({ plans });
+    } catch (error: any) {
+      console.error("Error fetching plans:", error);
+      res.status(500).send({ error: { message: error.message } });
+    }
+  });
+
+  // Create customer portal session for billing management
+  app.post("/create-portal-session", async (req: Request, res: Response) => {
+    try {
+      const { customerId } = req.body;
+
+      if (!customerId) {
+        return res.status(400).send({
+          error: { message: "Missing required parameter: customerId" },
+        });
+      }
+
+      // Create a customer portal session
+      const session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: process.env.RAILWAY_PUBLIC_DOMAIN
+          ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/forum`
+          : "https://threepunchconvo-production.up.railway.app/forum",
+      });
+
+      res.send({ url: session.url });
+    } catch (error: any) {
+      console.error("Error creating portal session:", error);
+      res.status(400).send({ error: { message: error.message } });
+    }
+  });
+
   // Stripe webhook endpoint to handle events
   app.post(
     "/webhook",
@@ -360,7 +418,6 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
 // Function to handle user deleted events
 export async function handleUserDeleted(stripeId: string) {
   try {
-
     // Mark user as disabled and remove payment method
     await stripe.customers.update(stripeId, {
       invoice_settings: {
@@ -381,8 +438,7 @@ export async function handleUserDeleted(stripeId: string) {
     for (const subscription of subscriptions.data) {
       await stripe.subscriptions.cancel(subscription.id);
     }
-
-  } catch (error) {   
+  } catch (error) {
     console.error(`Error handling user deleted: ${error}`);
     throw error;
   }

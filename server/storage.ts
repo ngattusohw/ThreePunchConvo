@@ -450,37 +450,9 @@ export class DatabaseStorage implements IStorage {
     try {
       // Query database for top users ordered by points
       const userResults = await db
-        .select({
-          id: users.id,
-          username: users.username,
-          email: users.email,
-          password: users.password,
-          externalId: users.externalId,
-          stripeId: users.stripeId,
-          avatar: users.avatar,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          bio: users.bio,
-          profileImageUrl: users.profileImageUrl,
-          role: users.role,
-          status: users.status,
-          isOnline: users.isOnline,
-          lastActive: users.lastActive,
-          points: users.points,
-          rank: users.rank,
-          createdAt: users.createdAt,
-          updatedAt: users.updatedAt,
-          postsCount: users.postsCount,
-          likesCount: users.likesCount,
-          pinnedByUserCount: users.pinnedByUserCount,
-          followersCount: users.followersCount,
-          followingCount: users.followingCount,
-          socialLinks: users.socialLinks,
-          disabled: users.disabled,
-          disabledAt: users.disabledAt,
-          metadata: users.metadata,
-        })
+        .select()
         .from(users)
+        .where(eq(users.disabled, false))
         .orderBy(desc(users.points))
         .limit(limit);
 

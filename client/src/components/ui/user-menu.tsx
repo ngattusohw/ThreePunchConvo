@@ -33,7 +33,7 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
   const deleteAccount = async () => {
     await handleDeleteAccount();
     setShowDeleteModal(false);
-    window.location.reload();
+    await signOut();
   };
 
 

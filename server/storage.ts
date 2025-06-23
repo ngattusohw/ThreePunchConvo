@@ -2339,7 +2339,8 @@ export class DatabaseStorage implements IStorage {
             t.user_id,
             tr.user_id AS actor_id,
             tr.type AS interaction_type,
-            DATE_TRUNC('day', tr.created_at) AS interaction_day
+            DATE_TRUNC('day', tr.created_at) AS interaction_day,
+            tr.created_at AS interaction_timestamp
           FROM threads t
           JOIN thread_reactions tr ON tr.thread_id = t.id
           WHERE tr.user_id IS DISTINCT FROM t.user_id
@@ -2351,7 +2352,8 @@ export class DatabaseStorage implements IStorage {
             t.user_id,
             r.user_id AS actor_id,
             'REPLY' AS interaction_type,
-            DATE_TRUNC('day', r.created_at) AS interaction_day
+            DATE_TRUNC('day', r.created_at) AS interaction_day,
+            r.created_at AS interaction_timestamp
           FROM threads t
           JOIN replies r ON r.thread_id = t.id 
           WHERE r.user_id IS DISTINCT FROM t.user_id
@@ -2363,7 +2365,8 @@ export class DatabaseStorage implements IStorage {
             t.user_id,
             rr.user_id AS actor_id,
             rr.type AS interaction_type,
-            DATE_TRUNC('day', rr.created_at) AS interaction_day
+            DATE_TRUNC('day', rr.created_at) AS interaction_day,
+            rr.created_at AS interaction_timestamp
           FROM reply_reactions rr
           JOIN replies r ON rr.reply_id = r.id
           JOIN threads t ON r.thread_id = t.id
@@ -2383,7 +2386,7 @@ export class DatabaseStorage implements IStorage {
                AND w.user_status = u.status
                AND w.role = u.role
           WHERE u.disabled IS DISTINCT FROM TRUE
-            AND ai.interaction_day = CURRENT_DATE
+            AND ai.interaction_timestamp >= NOW() - INTERVAL '24 hours'
         ),
 
         aggregated_scores AS (

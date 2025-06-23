@@ -1000,7 +1000,6 @@ export class DatabaseStorage implements IStorage {
 
   async getReply(id: string, currentUserId: string): Promise<Reply | undefined> {
     try {
-      console.log("Getting reply:", id);
       // Check if the current user has liked this thread
       let hasLiked = false;
       if (currentUserId) {
@@ -1012,7 +1011,6 @@ export class DatabaseStorage implements IStorage {
           ),
         });
         hasLiked = !!existingLikeReaction;
-        console.log("HAS LIKED", hasLiked)
 
       }
       // Get reply with explicit column selection
@@ -1045,7 +1043,6 @@ export class DatabaseStorage implements IStorage {
 
   async getRepliesByThread(threadId: string, currentUserId?: string): Promise<Reply[]> {
     try {
-      console.log("Getting replies for thread:", threadId, "currentUserId:", currentUserId);
       // Build query with explicit column selection
       const threadReplies = await db
         .select({
@@ -1075,9 +1072,7 @@ export class DatabaseStorage implements IStorage {
               ),
             });
             
-            const hasLiked = !!existingLikeReaction;
-            console.log(`Reply ${reply.id}: hasLiked = ${hasLiked}, existingReaction =`, existingLikeReaction);
-            
+            const hasLiked = !!existingLikeReaction;            
             return {
               ...reply,
               hasLiked,

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { likeReply } from "../../../queries/thread";
 import { Reply } from "@shared/schema";
+import { useState } from "react";
 
 interface UseLikeReplyOptions {
   threadId: string;
@@ -11,13 +12,17 @@ interface UseLikeReplyOptions {
 export function useLikeReply({ threadId, userId }: UseLikeReplyOptions) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [pendingReplyId, setPendingReplyId] = useState<string | null>(null);
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (replyId: string) => {
       if (!userId) throw new Error("You must be logged in to like replies");
+      setPendingReplyId(replyId); // Set the pending reply ID
       return likeReply(replyId, userId);
     },
     onSuccess: (data, replyId) => {
+      setPendingReplyId(null); // Clear pending state
+      
       // Get the current like state from reply lists
       let currentHasLiked = false;
       let currentLikesCount = 0;
@@ -42,7 +47,7 @@ export function useLikeReply({ threadId, userId }: UseLikeReplyOptions) {
         ? currentLikesCount + 1
         : Math.max(0, currentLikesCount - 1);
 
-        console.log("USERHAS LIKED", hasLiked)
+      
       // Update all reply list queries that contain the reply
       const replyQueryKeysToUpdate = queryClient.getQueryCache().findAll({
         predicate: (query) => {
@@ -70,6 +75,8 @@ export function useLikeReply({ threadId, userId }: UseLikeReplyOptions) {
       });
     },
     onError: (error: Error) => {
+      setPendingReplyId(null); // Clear pending state on error
+      
       // Don't apply any optimistic updates on error
       // The UI will remain in its current state
       
@@ -80,4 +87,15 @@ export function useLikeReply({ threadId, userId }: UseLikeReplyOptions) {
       });
     },
   });
+
+  // Return the mutation with a custom isPending function
+  return {
+    ...mutation,
+    isPending: (replyId?: string) => {
+      if (replyId) {
+        return pendingReplyId === replyId;
+      }
+      return mutation.isPending;
+    }
+  };
 } 

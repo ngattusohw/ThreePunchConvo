@@ -782,8 +782,8 @@ function ReplyCard({
             <div className="flex flex-wrap items-center gap-4">
               <button
                 onClick={() => likeReplyMutation.mutate(reply.id.toString())}
-                disabled={!currentUser || likeReplyMutation.isPending}
-                className={`flex items-center ${reply.hasLiked ? 'text-green-500' : 'text-gray-400'} transition ${currentUser && !likeReplyMutation.isPending ? 'hover:text-green-500' : ''} ${likeReplyMutation.isPending ? 'text-green-500 opacity-50' : ''}`}
+                disabled={!currentUser || likeReplyMutation.isPending(reply.id)}
+                className={`flex items-center ${reply.hasLiked ? 'text-green-500' : 'text-gray-400'} transition ${currentUser && !likeReplyMutation.isPending(reply.id) ? 'hover:text-green-500' : ''} ${likeReplyMutation.isPending(reply.id) ? 'text-green-500 opacity-50' : ''}`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

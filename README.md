@@ -246,7 +246,7 @@ curl -X PUT http://localhost:5001/api/users/USER_ID/role \
   }'
 ```
 
-**Valid roles:** `ADMIN`, `MODERATOR`, `FIGHTER`, `USER`, `PREMIUM_USER`
+**Valid roles:** `ADMIN`, `MODERATOR`, `FIGHTER`, `USER`, `PREMIUM_USER`, `INDUSTRY_PROFESSIONAL`
 
 #### Create a Thread
 

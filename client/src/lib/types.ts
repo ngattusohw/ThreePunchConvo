@@ -1,10 +1,6 @@
 // User related types
-export type UserRole =
-  | "ADMIN"
-  | "MODERATOR"
-  | "USER"
-  | "PREMIUM_USER"
-  | "FIGHTER";
+export type UserRole = "ADMIN" | "MODERATOR" | "USER" | "PREMIUM_USER" | "FIGHTER" | "INDUSTRY_PROFESSIONAL";
+
 export type UserStatus =
   | "HALL OF FAMER"
   | "CHAMPION"
@@ -18,6 +14,8 @@ export interface AuthUser {
   id: string;
   username: string;
   avatar?: string;
+  firstName?: string | null;
+  lastName?: string | null;
   status: UserStatus;
   isOnline: boolean;
   postsCount: number;

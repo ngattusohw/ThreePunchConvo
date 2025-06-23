@@ -97,6 +97,7 @@ app.use((req, res, next) => {
 // Graceful shutdown handling
 let httpServer: any = null;
 let isShuttingDown = false;
+
 let serverInitialized = false;
 
 const gracefulShutdown = (signal: string) => {
@@ -109,6 +110,7 @@ const gracefulShutdown = (signal: string) => {
   console.log(
     `\x1b[33m🛑 Received ${signal}, starting graceful shutdown...\x1b[0m`,
   );
+
 
   if (httpServer && serverInitialized) {
     httpServer.close((err: any) => {

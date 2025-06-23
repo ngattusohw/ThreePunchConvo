@@ -43,6 +43,7 @@ export const USER_ROLES = {
   MODERATOR: "MODERATOR",
   FIGHTER: "FIGHTER", // Verified pro fighter
   USER: "USER", // Regular user
+  INDUSTRY_PROFESSIONAL: "INDUSTRY_PROFESSIONAL", // Industry professional
 };
 
 // Forum Categories

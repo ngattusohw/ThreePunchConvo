@@ -34,7 +34,7 @@ import {
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool, db } from "./db";
-import { eq, and, sql, desc, inArray, not } from "drizzle-orm";
+import { eq, and, sql, desc, inArray, not, notInArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 export interface IStorage {
@@ -462,11 +462,16 @@ export class DatabaseStorage implements IStorage {
 
   async getTopUsers(limit: number): Promise<User[]> {
     try {
-      // Query database for top users ordered by points
+      // Query database for top users ordered by points, excluding certain roles
       const userResults = await db
         .select()
         .from(users)
-        .where(eq(users.disabled, false))
+        .where(
+          and(
+            eq(users.disabled, false),
+            notInArray(users.role, ["ADMIN", "MODERATOR", "FIGHTER", "INDUSTRY_PROFESSIONAL"])
+          )
+        )
         .orderBy(desc(users.points))
         .limit(limit);
 

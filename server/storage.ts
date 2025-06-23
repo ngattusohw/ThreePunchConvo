@@ -73,7 +73,7 @@ export interface IStorage {
 
   // Reply management
   getReply(id: string, currentUserId: string): Promise<Reply | undefined>;
-  getRepliesByThread(threadId: string): Promise<Reply[]>;
+  getRepliesByThread(threadId: string, currentUserId?: string): Promise<Reply[]>;
   createReply(reply: InsertReply): Promise<Reply>;
   updateReply(
     id: string,
@@ -1012,6 +1012,8 @@ export class DatabaseStorage implements IStorage {
           ),
         });
         hasLiked = !!existingLikeReaction;
+        console.log("HAS LIKED", hasLiked)
+
       }
       // Get reply with explicit column selection
       const [reply] = await db
@@ -1041,7 +1043,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getRepliesByThread(threadId: string): Promise<Reply[]> {
+  async getRepliesByThread(threadId: string, currentUserId?: string): Promise<Reply[]> {
     try {
       console.log("Getting replies for thread:", threadId);
       // Build query with explicit column selection
@@ -1061,7 +1063,33 @@ export class DatabaseStorage implements IStorage {
         .where(eq(replies.threadId, threadId))
         .orderBy(replies.createdAt);
 
-      return threadReplies;
+      // If we have a current user, check which replies they've liked
+      if (currentUserId) {
+        const repliesWithLikeStatus = await Promise.all(
+          threadReplies.map(async (reply) => {
+            const existingLikeReaction = await db.query.replyReactions.findFirst({
+              where: and(
+                eq(replyReactions.replyId, reply.id),
+                eq(replyReactions.userId, currentUserId),
+                eq(replyReactions.type, "LIKE"),
+              ),
+            });
+            
+            return {
+              ...reply,
+              hasLiked: !!existingLikeReaction,
+            };
+          })
+        );
+        
+        return repliesWithLikeStatus;
+      }
+
+      // If no current user, return replies without like status
+      return threadReplies.map(reply => ({
+        ...reply,
+        hasLiked: false,
+      }));
     } catch (error) {
       // Log the specific error for debugging
       console.error("Error fetching replies for thread:", {
@@ -1091,7 +1119,33 @@ export class DatabaseStorage implements IStorage {
             .where(eq(replies.threadId, threadId))
             .orderBy(replies.createdAt);
 
-          return threadReplies;
+          // If we have a current user, check which replies they've liked
+          if (currentUserId) {
+            const repliesWithLikeStatus = await Promise.all(
+              threadReplies.map(async (reply) => {
+                const existingLikeReaction = await db.query.replyReactions.findFirst({
+                  where: and(
+                    eq(replyReactions.replyId, reply.id),
+                    eq(replyReactions.userId, currentUserId),
+                    eq(replyReactions.type, "LIKE"),
+                  ),
+                });
+                
+                return {
+                  ...reply,
+                  hasLiked: !!existingLikeReaction,
+                };
+              })
+            );
+            
+            return repliesWithLikeStatus;
+          }
+
+          // If no current user, return replies without like status
+          return threadReplies.map(reply => ({
+            ...reply,
+            hasLiked: false,
+          }));
         } catch (retryError) {
           console.error("Failed to retry query:", retryError);
           return [];

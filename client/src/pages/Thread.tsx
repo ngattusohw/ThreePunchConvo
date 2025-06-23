@@ -472,7 +472,7 @@ export default function Thread() {
                     key={reply.id}
                     reply={reply}
                     onQuote={handleQuoteReply}
-                    likeReplyMutation ={likeReplyMutation}
+                    likeReplyMutation={likeReplyMutation}
                     onDislike={() => dislikeReplyMutation.mutate(reply.id.toString())}
                     onDelete={() => deleteReplyMutation.mutate(reply.id.toString())}
                   />
@@ -692,7 +692,7 @@ interface ReplyCardProps {
     parentUsername?: string;
   };
   onQuote: (reply: ThreadReply) => void;
-  likeReplyMutation: () => void;
+  likeReplyMutation: any; // Use any for now to avoid complex typing
   onDislike: () => void;
   onDelete: () => void;
 }
@@ -782,8 +782,8 @@ function ReplyCard({
             <div className="flex flex-wrap items-center gap-4">
               <button
                 onClick={() => likeReplyMutation.mutate(reply.id.toString())}
-                disabled={!currentUser || likeReplyMutation.isPending || likeReplyMutation.hasLiked}
-                className={`flex items-center ${likeReplyMutation.hasLiked ? 'text-green-500' : 'text-gray-400'} transition ${currentUser && !likeReplyMutation.isPending ? 'hover:text-green-500' : ''} ${likeReplyMutation.isPending ? 'text-green-500 opacity-50' : ''}`}
+                disabled={!currentUser || likeReplyMutation.isPending}
+                className={`flex items-center ${reply.hasLiked ? 'text-green-500' : 'text-gray-400'} transition ${currentUser && !likeReplyMutation.isPending ? 'hover:text-green-500' : ''} ${likeReplyMutation.isPending ? 'text-green-500 opacity-50' : ''}`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

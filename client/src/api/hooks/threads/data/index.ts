@@ -17,7 +17,7 @@ export function useThreadData({ threadId, userId }: UseThreadDataOptions) {
     displayReplies,
     isLoading: isRepliesLoading,
     error: repliesError,
-  } = useThreadRepliesData({ threadId });
+  } = useThreadRepliesData({ threadId, userId });
 
   return {
     thread,

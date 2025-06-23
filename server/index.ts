@@ -45,39 +45,46 @@ app.use((req, res, next) => {
     if (path.startsWith("/api")) {
       // Color codes for different status codes
       const getStatusColor = (status: number) => {
-        if (status >= 500) return '\x1b[31m'; // Red for server errors
-        if (status >= 400) return '\x1b[33m'; // Yellow for client errors
-        if (status >= 300) return '\x1b[36m'; // Cyan for redirects
-        if (status >= 200) return '\x1b[32m'; // Green for success
-        return '\x1b[37m'; // White for other
+        if (status >= 500) return "\x1b[31m"; // Red for server errors
+        if (status >= 400) return "\x1b[33m"; // Yellow for client errors
+        if (status >= 300) return "\x1b[36m"; // Cyan for redirects
+        if (status >= 200) return "\x1b[32m"; // Green for success
+        return "\x1b[37m"; // White for other
       };
-      
+
       const getMethodColor = (method: string) => {
         switch (method) {
-          case 'GET': return '\x1b[36m'; // Cyan
-          case 'POST': return '\x1b[32m'; // Green
-          case 'PUT': return '\x1b[33m'; // Yellow
-          case 'DELETE': return '\x1b[31m'; // Red
-          case 'PATCH': return '\x1b[35m'; // Magenta
-          default: return '\x1b[37m'; // White
+          case "GET":
+            return "\x1b[36m"; // Cyan
+          case "POST":
+            return "\x1b[32m"; // Green
+          case "PUT":
+            return "\x1b[33m"; // Yellow
+          case "DELETE":
+            return "\x1b[31m"; // Red
+          case "PATCH":
+            return "\x1b[35m"; // Magenta
+          default:
+            return "\x1b[37m"; // White
         }
       };
 
-      const resetColor = '\x1b[0m';
+      const resetColor = "\x1b[0m";
       const methodColor = getMethodColor(req.method);
       const statusColor = getStatusColor(res.statusCode);
-      
+
       // Format the main log line
       let logLine = `${methodColor}${req.method.padEnd(6)}${resetColor} ${path} ${statusColor}${res.statusCode}${resetColor} ${duration}ms`;
-      
+
       // Add response data if available
       if (capturedJsonResponse) {
         const responseStr = JSON.stringify(capturedJsonResponse);
         // Truncate very long responses for readability
-        const truncatedResponse = responseStr.length > 300 
-          ? responseStr.substring(0, 300) + '...' 
-          : responseStr;
-        logLine += `\n  ${'\x1b[90m'}Response:${resetColor} ${truncatedResponse}`;
+        const truncatedResponse =
+          responseStr.length > 300
+            ? responseStr.substring(0, 300) + "..."
+            : responseStr;
+        logLine += `\n  ${"\x1b[90m"}Response:${resetColor} ${truncatedResponse}`;
       }
 
       log(logLine);
@@ -85,6 +92,66 @@ app.use((req, res, next) => {
   });
 
   next();
+});
+
+// Graceful shutdown handling
+let httpServer: any = null;
+let isShuttingDown = false;
+
+const gracefulShutdown = (signal: string) => {
+  if (isShuttingDown) {
+    console.log(`\x1b[33m⚠️  Already shutting down, ignoring ${signal}\x1b[0m`);
+    return;
+  }
+
+  isShuttingDown = true;
+  console.log(
+    `\x1b[33m🛑 Received ${signal}, starting graceful shutdown...\x1b[0m`,
+  );
+
+  if (httpServer) {
+    httpServer.close((err: any) => {
+      if (err) {
+        console.error("\x1b[31m❌ Error during server shutdown:\x1b[0m", err);
+        process.exit(1);
+      }
+
+      console.log("\x1b[32m✅ Server closed successfully\x1b[0m");
+      process.exit(0);
+    });
+
+    // Force shutdown after 30 seconds if graceful shutdown fails
+    setTimeout(() => {
+      console.error("\x1b[31m❌ Forced shutdown after timeout\x1b[0m");
+      process.exit(1);
+    }, 30000);
+  } else {
+    console.log("\x1b[32m✅ No server to close, exiting\x1b[0m");
+    process.exit(0);
+  }
+};
+
+// Handle SIGTERM (sent by Docker/Kubernetes during deployments)
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+
+// Handle SIGINT (Ctrl+C)
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
+// Handle uncaught exceptions
+process.on("uncaughtException", (err) => {
+  console.error("\x1b[31m💥 Uncaught Exception:\x1b[0m", err);
+  gracefulShutdown("uncaughtException");
+});
+
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (reason, promise) => {
+  console.error(
+    "\x1b[31m💥 Unhandled Rejection at:\x1b[0m",
+    promise,
+    "\x1b[31mreason:\x1b[0m",
+    reason,
+  );
+  gracefulShutdown("unhandledRejection");
 });
 
 (async () => {
@@ -106,7 +173,9 @@ app.use((req, res, next) => {
 
     // Initialize cron jobs after database connection is established
     setupCronJobs();
-    log("\x1b[35m⏰ Cron jobs initialized for user status and ranking updates\x1b[0m");
+    log(
+      "\x1b[35m⏰ Cron jobs initialized for user status and ranking updates\x1b[0m",
+    );
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       console.error("\x1b[31m❌ Global error handler:\x1b[0m", err);
@@ -131,7 +200,7 @@ app.use((req, res, next) => {
 
     const port = process.env.PORT || 5001;
     console.log(`\x1b[36m🌐 Starting server on port ${port}...\x1b[0m`);
-    const httpServer = server.listen(
+    httpServer = server.listen(
       {
         port,
         host: "0.0.0.0",

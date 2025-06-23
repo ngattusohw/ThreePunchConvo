@@ -1906,7 +1906,7 @@ export class DatabaseStorage implements IStorage {
 
         if (existingReaction) {
          // User has already liked this reply
-         return false;// Successfully unliked
+         return false;
         }
 
         // Create new like reaction

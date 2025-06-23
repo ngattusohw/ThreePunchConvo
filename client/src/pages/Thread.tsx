@@ -326,7 +326,7 @@ export default function Thread() {
           </div>
 
           {/* Thread Card */}
-          <div className={`bg-dark-gray ${thread.isPinned ? 'border-l-4 border-ufc-blue' : ''} rounded-lg overflow-hidden shadow-lg mb-6`}>
+          <div className={`bg-dark-gray ${thread.isPinned ? 'border-l-4 border-ufc-blue' : ''} rounded-lg shadow-lg mb-6`}>
             <div className="p-5">
               {/* Thread Header */}
               <div className="flex items-start">

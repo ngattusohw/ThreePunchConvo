@@ -92,30 +92,30 @@ export default function Footer() {
         <div className="mt-6 border-t border-gray-800 pt-6">
           <div className="flex flex-col items-center justify-between md:flex-row">
             <div className="mb-4 flex space-x-4 md:mb-0">
-              <Link
+              <a
                 href="/terms"
                 className="text-sm text-gray-400 transition hover:text-white"
               >
                 Terms
-              </Link>
-              <Link
+              </a>
+              <a
                 href="/privacy"
                 className="text-sm text-gray-400 transition hover:text-white"
               >
                 Privacy
-              </Link>
-              <Link
+              </a>
+              <a
                 href="/terms"
                 className="text-sm text-gray-400 transition hover:text-white"
               >
                 Guidelines
-              </Link>
-              <Link
+              </a>
+              <a
                 href="/terms#contact-us"
                 className="text-sm text-gray-400 transition hover:text-white"
               >
                 Help
-              </Link>
+              </a>
             </div>
 
             <p className="text-sm text-gray-500">

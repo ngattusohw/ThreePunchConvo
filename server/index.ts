@@ -98,6 +98,8 @@ app.use((req, res, next) => {
 let httpServer: any = null;
 let isShuttingDown = false;
 
+let serverInitialized = false;
+
 const gracefulShutdown = (signal: string) => {
   if (isShuttingDown) {
     console.log(`\x1b[33m⚠️  Already shutting down, ignoring ${signal}\x1b[0m`);
@@ -109,7 +111,8 @@ const gracefulShutdown = (signal: string) => {
     `\x1b[33m🛑 Received ${signal}, starting graceful shutdown...\x1b[0m`,
   );
 
-  if (httpServer) {
+
+  if (httpServer && serverInitialized) {
     httpServer.close((err: any) => {
       if (err) {
         console.error("\x1b[31m❌ Error during server shutdown:\x1b[0m", err);
@@ -126,8 +129,9 @@ const gracefulShutdown = (signal: string) => {
       process.exit(1);
     }, 30000);
   } else {
-    console.log("\x1b[32m✅ No server to close, exiting\x1b[0m");
-    process.exit(0);
+    console.log("\x1b[32m✅ No server to close, exiting immediately\x1b[0m");
+    // Small delay to ensure any pending operations complete
+    setTimeout(() => process.exit(0), 100);
   }
 };
 
@@ -208,6 +212,7 @@ process.on("unhandledRejection", (reason, promise) => {
       },
       () => {
         log(`\x1b[32m🎉 Server started successfully on port ${port}!\x1b[0m`);
+        serverInitialized = true;
       },
     );
   } catch (error) {

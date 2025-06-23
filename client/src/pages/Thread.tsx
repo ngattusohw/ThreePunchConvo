@@ -15,6 +15,7 @@ import { ThreadReply } from "@/lib/types";
 import { useThreadActions } from "@/api/hooks/threads/actions";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocalUser } from "@/api/hooks/useLocalUser";
 
 // Helper function to format edited date
 const formatEditedDate = (editedAt: Date) => {
@@ -325,7 +326,7 @@ export default function Thread() {
           </div>
 
           {/* Thread Card */}
-          <div className={`bg-dark-gray ${thread.isPinned ? 'border-l-4 border-ufc-blue' : ''} rounded-lg overflow-hidden shadow-lg mb-6`}>
+          <div className={`bg-dark-gray ${thread.isPinned ? 'border-l-4 border-ufc-blue' : ''} rounded-lg shadow-lg mb-6`}>
             <div className="p-5">
               {/* Thread Header */}
               <div className="flex items-start">
@@ -472,7 +473,7 @@ export default function Thread() {
                     key={reply.id}
                     reply={reply}
                     onQuote={handleQuoteReply}
-                    onLike={() => likeReplyMutation.mutate(reply.id.toString())}
+                    likeReplyMutation={likeReplyMutation}
                     onDislike={() => dislikeReplyMutation.mutate(reply.id.toString())}
                     onDelete={() => deleteReplyMutation.mutate(reply.id.toString())}
                   />
@@ -692,7 +693,7 @@ interface ReplyCardProps {
     parentUsername?: string;
   };
   onQuote: (reply: ThreadReply) => void;
-  onLike: () => void;
+  likeReplyMutation: any; // Use any for now to avoid complex typing
   onDislike: () => void;
   onDelete: () => void;
 }
@@ -700,12 +701,12 @@ interface ReplyCardProps {
 function ReplyCard({
   reply,
   onQuote,
-  onLike,
+  likeReplyMutation,
   onDislike,
   onDelete,
 }: ReplyCardProps) {
   const { user: currentUser } = useMemoizedUser();
-
+  const { localUser } = useLocalUser();
   // Calculate indentation based on the reply's level in the thread
   const level = reply.level || 0;
 
@@ -724,6 +725,8 @@ function ReplyCard({
     (currentUser.id === reply.userId ||
       (currentUser.publicMetadata?.role as string) === "ADMIN" ||
       (currentUser.publicMetadata?.role as string) === "MODERATOR");
+
+  const canLikeReply = localUser && localUser?.id !== reply.userId;
 
   return (
     <div
@@ -781,9 +784,9 @@ function ReplyCard({
             {/* Reply Actions */}
             <div className="flex flex-wrap items-center gap-4">
               <button
-                onClick={onLike}
-                disabled={!currentUser}
-                className="flex items-center text-gray-400 transition hover:text-green-500"
+                onClick={() => likeReplyMutation.mutate(reply.id.toString())}
+                disabled={!canLikeReply || likeReplyMutation.isPending(reply.id)}
+                className={`flex items-center ${reply.hasLiked ? 'text-green-500' : 'text-gray-400'} transition ${canLikeReply && !likeReplyMutation.isPending(reply.id) ? 'hover:text-green-500' : ''} ${likeReplyMutation.isPending(reply.id) ? 'text-green-500 opacity-50' : ''}`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

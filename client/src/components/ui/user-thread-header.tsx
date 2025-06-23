@@ -79,7 +79,7 @@ export default function UserThreadHeader({
       
       <div className="flex flex-col space-y-1">
         {/* Top line: Status and FC Badge */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* User badges */}
           {showStatus && (
             <StatusBadge status={user?.status || ""} />

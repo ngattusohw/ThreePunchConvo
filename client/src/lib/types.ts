@@ -110,6 +110,7 @@ export interface ThreadReply {
   media?: ThreadMedia[];
   level?: number;
   parentUsername?: string;
+  hasLiked?: boolean;
 }
 
 // Notification types

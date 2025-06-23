@@ -72,8 +72,8 @@ export interface IStorage {
   incrementThreadView(id: string): Promise<boolean>;
 
   // Reply management
-  getReply(id: string): Promise<Reply | undefined>;
-  getRepliesByThread(threadId: string): Promise<Reply[]>;
+  getReply(id: string, currentUserId: string): Promise<Reply | undefined>;
+  getRepliesByThread(threadId: string, currentUserId?: string): Promise<Reply[]>;
   createReply(reply: InsertReply): Promise<Reply>;
   updateReply(
     id: string,
@@ -873,15 +873,15 @@ export class DatabaseStorage implements IStorage {
           threadData.isPinned !== undefined &&
           threadData.isPinned !== currentThread.isPinned
         ) {
-          // await tx.insert(notifications).values({
-          //   id: uuidv4(),
-          //   userId: currentThread.userId,
-          //   type: threadData.isPinned ? 'THREAD_PINNED' : 'THREAD_UNPINNED',
-          //   threadId: id,
-          //   message: threadData.isPinned ? 'Your thread has been pinned' : 'Your thread has been unpinned',
-          //   isRead: false,
-          //   createdAt: new Date()
-          // });
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: currentThread.userId,
+            type: threadData.isPinned ? 'THREAD_PINNED' : 'THREAD_UNPINNED',
+            threadId: id,
+            message: threadData.isPinned ? 'Your thread has been pinned' : 'Your thread has been unpinned',
+            isRead: false,
+            createdAt: new Date()
+          });
         }
 
         return [thread];
@@ -998,8 +998,21 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getReply(id: string): Promise<Reply | undefined> {
+  async getReply(id: string, currentUserId: string): Promise<Reply | undefined> {
     try {
+      // Check if the current user has liked this thread
+      let hasLiked = false;
+      if (currentUserId) {
+        const existingLikeReaction = await db.query.replyReactions.findFirst({
+          where: and(
+            eq(replyReactions.replyId, id),
+            eq(replyReactions.userId, currentUserId),
+            eq(replyReactions.type, "LIKE"),
+          ),
+        });
+        hasLiked = !!existingLikeReaction;
+
+      }
       // Get reply with explicit column selection
       const [reply] = await db
         .select({
@@ -1012,6 +1025,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: replies.updatedAt,
           likesCount: replies.likesCount,
           dislikesCount: replies.dislikesCount,
+          hasLiked: hasLiked,
         })
         .from(replies)
         .where(eq(replies.id, id));
@@ -1027,7 +1041,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getRepliesByThread(threadId: string): Promise<Reply[]> {
+  async getRepliesByThread(threadId: string, currentUserId?: string): Promise<Reply[]> {
     try {
       // Build query with explicit column selection
       const threadReplies = await db
@@ -1046,7 +1060,34 @@ export class DatabaseStorage implements IStorage {
         .where(eq(replies.threadId, threadId))
         .orderBy(replies.createdAt);
 
-      return threadReplies;
+      // If we have a current user, check which replies they've liked
+      if (currentUserId) {
+        const repliesWithLikeStatus = await Promise.all(
+          threadReplies.map(async (reply) => {
+            const existingLikeReaction = await db.query.replyReactions.findFirst({
+              where: and(
+                eq(replyReactions.replyId, reply.id),
+                eq(replyReactions.userId, currentUserId),
+                eq(replyReactions.type, "LIKE"),
+              ),
+            });
+            
+            const hasLiked = !!existingLikeReaction;            
+            return {
+              ...reply,
+              hasLiked,
+            };
+          })
+        );
+        
+        return repliesWithLikeStatus;
+      }
+
+      // If no current user, return replies without like status
+      return threadReplies.map(reply => ({
+        ...reply,
+        hasLiked: false,
+      }));
     } catch (error) {
       // Log the specific error for debugging
       console.error("Error fetching replies for thread:", {
@@ -1076,7 +1117,33 @@ export class DatabaseStorage implements IStorage {
             .where(eq(replies.threadId, threadId))
             .orderBy(replies.createdAt);
 
-          return threadReplies;
+          // If we have a current user, check which replies they've liked
+          if (currentUserId) {
+            const repliesWithLikeStatus = await Promise.all(
+              threadReplies.map(async (reply) => {
+                const existingLikeReaction = await db.query.replyReactions.findFirst({
+                  where: and(
+                    eq(replyReactions.replyId, reply.id),
+                    eq(replyReactions.userId, currentUserId),
+                    eq(replyReactions.type, "LIKE"),
+                  ),
+                });
+                
+                return {
+                  ...reply,
+                  hasLiked: !!existingLikeReaction,
+                };
+              })
+            );
+            
+            return repliesWithLikeStatus;
+          }
+
+          // If no current user, return replies without like status
+          return threadReplies.map(reply => ({
+            ...reply,
+            hasLiked: false,
+          }));
         } catch (retryError) {
           console.error("Failed to retry query:", retryError);
           return [];
@@ -1838,8 +1905,8 @@ export class DatabaseStorage implements IStorage {
         }
 
         if (existingReaction) {
-          // User has already liked this reply
-          return false;
+         // User has already liked this reply
+         return false;
         }
 
         // Create new like reaction
@@ -1881,7 +1948,7 @@ export class DatabaseStorage implements IStorage {
           });
         }
 
-        return true;
+        return true; // Successfully liked
       });
     } catch (error) {
       console.error("Error liking reply:", error);

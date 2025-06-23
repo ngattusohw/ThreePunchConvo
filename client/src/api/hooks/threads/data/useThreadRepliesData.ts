@@ -5,9 +5,10 @@ import { fetchThreadReplies } from "../../../queries/thread";
 
 interface UseThreadRepliesDataOptions {
   threadId: string;
+  userId?: string;
 }
 
-export function useThreadRepliesData({ threadId }: UseThreadRepliesDataOptions) {
+export function useThreadRepliesData({ threadId, userId }: UseThreadRepliesDataOptions) {
   const [displayReplies, setDisplayReplies] = useState<ThreadReply[]>([]);
 
   // Fetch thread replies
@@ -16,8 +17,8 @@ export function useThreadRepliesData({ threadId }: UseThreadRepliesDataOptions) 
     isLoading,
     error,
   } = useQuery<ThreadReply[]>({
-    queryKey: [`/api/threads/${threadId}/replies`],
-    queryFn: () => fetchThreadReplies(threadId),
+    queryKey: [`/api/threads/${threadId}/replies`, userId],
+    queryFn: () => fetchThreadReplies(threadId, userId),
     enabled: !!threadId,
   });
 

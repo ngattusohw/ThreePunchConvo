@@ -129,8 +129,14 @@ export const fetchThreadById = async (threadId: string, userId?: string) => {
 };
 
 // Fetch thread replies
-export const fetchThreadReplies = async (threadId: string) => {
-  const response = await fetch(`/api/threads/${threadId}/replies`);
+export const fetchThreadReplies = async (threadId: string, userId?: string) => {
+  const params = new URLSearchParams();
+  if (userId) {
+    params.append('userId', userId);
+  }
+  
+  const url = `/api/threads/${threadId}/replies${params.toString() ? `?${params.toString()}` : ''}`;
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch replies: ${response.statusText}`);
   }

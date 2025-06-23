@@ -15,6 +15,7 @@ import { ThreadReply } from "@/lib/types";
 import { useThreadActions } from "@/api/hooks/threads/actions";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocalUser } from "@/api/hooks/useLocalUser";
 
 // Helper function to format edited date
 const formatEditedDate = (editedAt: Date) => {
@@ -705,7 +706,7 @@ function ReplyCard({
   onDelete,
 }: ReplyCardProps) {
   const { user: currentUser } = useMemoizedUser();
-
+  const { localUser } = useLocalUser();
   // Calculate indentation based on the reply's level in the thread
   const level = reply.level || 0;
 
@@ -724,6 +725,8 @@ function ReplyCard({
     (currentUser.id === reply.userId ||
       (currentUser.publicMetadata?.role as string) === "ADMIN" ||
       (currentUser.publicMetadata?.role as string) === "MODERATOR");
+
+  const canLikeReply = localUser && localUser?.id !== reply.userId;
 
   return (
     <div
@@ -782,8 +785,8 @@ function ReplyCard({
             <div className="flex flex-wrap items-center gap-4">
               <button
                 onClick={() => likeReplyMutation.mutate(reply.id.toString())}
-                disabled={!currentUser || likeReplyMutation.isPending(reply.id)}
-                className={`flex items-center ${reply.hasLiked ? 'text-green-500' : 'text-gray-400'} transition ${currentUser && !likeReplyMutation.isPending(reply.id) ? 'hover:text-green-500' : ''} ${likeReplyMutation.isPending(reply.id) ? 'text-green-500 opacity-50' : ''}`}
+                disabled={!canLikeReply || likeReplyMutation.isPending(reply.id)}
+                className={`flex items-center ${reply.hasLiked ? 'text-green-500' : 'text-gray-400'} transition ${canLikeReply && !likeReplyMutation.isPending(reply.id) ? 'hover:text-green-500' : ''} ${likeReplyMutation.isPending(reply.id) ? 'text-green-500 opacity-50' : ''}`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

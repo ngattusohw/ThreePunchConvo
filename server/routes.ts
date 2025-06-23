@@ -1937,5 +1937,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Add this GET endpoint after the existing POST endpoint
+  app.get("/api/users/clerk/:clerkId", async (req: Request, res: Response) => {
+    try {
+      const clerkId = req.params.clerkId;
+
+      if (!clerkId) {
+        return res.status(400).json({ message: "Clerk ID is required" });
+      }
+
+      const user = await storage.getUserByExternalId(clerkId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Don't return password in response
+      const { password, ...userWithoutPassword } = user;
+
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error fetching user by Clerk ID:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
   return httpServer;
 }

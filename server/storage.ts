@@ -873,15 +873,15 @@ export class DatabaseStorage implements IStorage {
           threadData.isPinned !== undefined &&
           threadData.isPinned !== currentThread.isPinned
         ) {
-          // await tx.insert(notifications).values({
-          //   id: uuidv4(),
-          //   userId: currentThread.userId,
-          //   type: threadData.isPinned ? 'THREAD_PINNED' : 'THREAD_UNPINNED',
-          //   threadId: id,
-          //   message: threadData.isPinned ? 'Your thread has been pinned' : 'Your thread has been unpinned',
-          //   isRead: false,
-          //   createdAt: new Date()
-          // });
+          await tx.insert(notifications).values({
+            id: uuidv4(),
+            userId: currentThread.userId,
+            type: threadData.isPinned ? 'THREAD_PINNED' : 'THREAD_UNPINNED',
+            threadId: id,
+            message: threadData.isPinned ? 'Your thread has been pinned' : 'Your thread has been unpinned',
+            isRead: false,
+            createdAt: new Date()
+          });
         }
 
         return [thread];

@@ -6,6 +6,7 @@ import FCBadge from "@/components/ui/fc-badge";
 import ThreadCard from "@/components/forum/ThreadCard";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/api";
+import { USER_ROLES } from "@/lib/constants";
 
 export default function UserProfile() {
   const { username } = useParams<{ username: string }>();
@@ -118,10 +119,12 @@ export default function UserProfile() {
                 {displayUser.username}
               </h1>
 
-              <FCBadge rank={displayUser.rank} size="md" />
+              {displayUser.role !== USER_ROLES.FIGHTER || displayUser.role !== USER_ROLES.INDUSTRY_PROFESSIONAL || displayUser.role !== USER_ROLES.ADMIN  && (
+                <FCBadge rank={displayUser.rank} size="md" />
+              )}
 
-              {displayUser.role === "FIGHTER" && (
-                <span className="flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">
+              {displayUser.role === USER_ROLES.FIGHTER && (
+                <span className="flex items-center rounded-full bg-ufc-gold px-2 py-0.5 text-xs font-bold text-white">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="mr-1 h-3 w-3"
@@ -150,7 +153,10 @@ export default function UserProfile() {
                 </span>
               )}
 
+{displayUser.role !== USER_ROLES.FIGHTER || displayUser.role !== USER_ROLES.INDUSTRY_PROFESSIONAL || displayUser.role !== USER_ROLES.ADMIN && (
+
               <StatusBadge status={displayUser.status} />
+)}
             </div>
 
             <div className="mt-2 flex items-center space-x-4 text-sm text-gray-400">

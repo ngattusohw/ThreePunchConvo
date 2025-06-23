@@ -94,6 +94,7 @@ export function useCreatePost({ onSuccess, onUpgradeRequired, categoryId }: UseC
       }
     },
     onError: (error: any) => {
+      console.log("Error from create post:", error);
       // Direct check for UPGRADE_REQUIRED error object
       if (error && error.error === "UPGRADE_REQUIRED") {
         if (onUpgradeRequired) {

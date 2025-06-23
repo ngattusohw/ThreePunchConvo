@@ -1070,13 +1070,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/threads/:id/replies", async (req: Request, res: Response) => {
     try {
       const threadId = req.params.id;
-      const userId = req.query.userId as string;
-
+      let localUserId: string | undefined = undefined;
+      const clerkUserId = req.query.userId as string | undefined;
       if (!threadId) {
         return res.status(400).json({ message: "Invalid thread ID" });
       }
-
-      const replies = await storage.getRepliesByThread(threadId, userId);
+      if (clerkUserId) {
+        const localUser = await storage.getUserByExternalId(clerkUserId);
+        if (localUser) {
+          localUserId = localUser.id;
+        }
+      }
+      const replies = await storage.getRepliesByThread(threadId, localUserId);
 
       // Fetch user for each reply
       const repliesWithUser = await Promise.all(

@@ -1045,7 +1045,7 @@ export class DatabaseStorage implements IStorage {
 
   async getRepliesByThread(threadId: string, currentUserId?: string): Promise<Reply[]> {
     try {
-      console.log("Getting replies for thread:", threadId);
+      console.log("Getting replies for thread:", threadId, "currentUserId:", currentUserId);
       // Build query with explicit column selection
       const threadReplies = await db
         .select({
@@ -1075,9 +1075,12 @@ export class DatabaseStorage implements IStorage {
               ),
             });
             
+            const hasLiked = !!existingLikeReaction;
+            console.log(`Reply ${reply.id}: hasLiked = ${hasLiked}, existingReaction =`, existingLikeReaction);
+            
             return {
               ...reply,
-              hasLiked: !!existingLikeReaction,
+              hasLiked,
             };
           })
         );
@@ -1907,8 +1910,8 @@ export class DatabaseStorage implements IStorage {
         }
 
         if (existingReaction) {
-          // User has already liked this reply
-          return false;
+         // User has already liked this reply
+         return false;// Successfully unliked
         }
 
         // Create new like reaction
@@ -1950,7 +1953,7 @@ export class DatabaseStorage implements IStorage {
           });
         }
 
-        return true;
+        return true; // Successfully liked
       });
     } catch (error) {
       console.error("Error liking reply:", error);

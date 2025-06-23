@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useSubmitReply } from "@/api/hooks/threads/replies/useSubmitReply";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/api/hooks/useUserProfile";
+import { useLocation } from "wouter";
 
 interface ReplyFormProps {
   threadId: string;
@@ -34,6 +35,7 @@ export default function ReplyForm({
 }: ReplyFormProps) {
   console.log("currentUser: ", currentUser);
   const { hasPaidPlan, isPlanLoading } = useUserProfile(currentUser?.username);
+  const [location, setLocation] = useLocation();
 
   const [replyContent, setReplyContent] = useState("");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -42,9 +44,7 @@ export default function ReplyForm({
   const handleUpgrade = () => {
     // Keep the modal open until we navigate to avoid 404 flash
     // Use setTimeout to let the current event loop complete before navigation
-    setTimeout(() => {
-      window.location.href = "/checkout";
-    }, 100);
+    setLocation("/checkout", { replace: true });
   };
 
   // Use the submit reply hook directly

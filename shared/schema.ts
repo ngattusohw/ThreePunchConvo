@@ -239,11 +239,32 @@ export const dailyFighterCred = pgTable(
     replyScore: integer("reply_score").notNull().default(0),
     dailyFighterCred: integer("daily_fighter_cred").notNull().default(0),
     totalFighterCred: integer("total_fighter_cred").notNull().default(0),
+    currentStatus: text("current_status").notNull().default("AMATEUR"),
   },
   (table) => ({
     pk: primaryKey(table.userId, table.interactionDay),
   }),
 );
+
+// Reaction Weights
+export const reactionWeights = pgTable(
+  "reaction_weights",
+  {
+    reactionType: text("reaction_type").notNull(),
+    userStatus: text("user_status").notNull(),
+    role: text("role").notNull(),
+    weight: integer("weight").notNull(),
+  },
+  (table) => ({
+    pk: primaryKey(table.reactionType, table.userStatus, table.role),
+  }),
+);
+
+// Status Config
+export const statusConfig = pgTable("status_config", {
+  status: text("status").primaryKey().notNull(),
+  percentile: integer("percentile").notNull(),
+});
 
 // MMA Events
 export const mmaEvents = pgTable("mma_events", {
@@ -397,6 +418,9 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 export type DailyFighterCred = typeof dailyFighterCred.$inferSelect;
 export type InsertDailyFighterCred = typeof dailyFighterCred.$inferInsert;
+
+export type ReactionWeight = typeof reactionWeights.$inferSelect;
+export type StatusConfig = typeof statusConfig.$inferSelect;
 
 export type MMAEvent = typeof mmaEvents.$inferSelect;
 export type Fighter = typeof fighters.$inferSelect;

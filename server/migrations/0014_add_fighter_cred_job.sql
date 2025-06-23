@@ -7,12 +7,24 @@ create table reaction_weights (
 );
 
 insert into reaction_weights (reaction_type, user_status, role, weight) values
-('LIKE', 'AMATEUR', 'USER', 1),
-('REPLY', 'AMATEUR', 'USER', 5),
-('POTD', 'AMATEUR', 'USER', 15),
-('LIKE', 'AMATEUR', 'ADMIN', 1),
-('REPLY', 'AMATEUR', 'ADMIN', 5),
-('POTD', 'AMATEUR', 'ADMIN', 15);
+('LIKE', '*', 'USER', 1),
+('REPLY', '*', 'USER', 5),
+('POTD', '*', 'USER', 15),
+('LIKE', '*', 'ADMIN', 1),
+('REPLY', '*', 'ADMIN', 5),
+('POTD', '*', 'ADMIN', 15),
+('LIKE', '*', 'MODERATOR', 1),
+('REPLY', '*', 'MODERATOR', 5),
+('POTD', '*', 'MODERATOR', 15),
+('LIKE', '*', 'PREMIUM_USER', 1),
+('REPLY', '*', 'PREMIUM_USER', 5),
+('POTD', '*', 'PREMIUM_USER', 15),
+('LIKE', '*', 'FIGHTER', 3),
+('REPLY', '*', 'FIGHTER', 15),
+('POTD', '*', 'FIGHTER', 45),
+('LIKE', '*', 'INDUSTRY_PROFESSIONAL', 2),
+('REPLY', '*', 'INDUSTRY_PROFESSIONAL', 10),
+('POTD', '*', 'INDUSTRY_PROFESSIONAL', 30);
 
 
 CREATE TABLE daily_fighter_cred (
@@ -30,5 +42,23 @@ CREATE TABLE daily_fighter_cred (
   daily_fighter_cred INTEGER DEFAULT 0,
   total_fighter_cred INTEGER DEFAULT 0,
 
+  current_status TEXT DEFAULT 'AMATEUR',
+
   PRIMARY KEY (user_id, interaction_day)
 );
+
+CREATE TABLE status_config (
+  status TEXT NOT NULL,
+  percentile INTEGER NOT NULL,
+  PRIMARY KEY (status)
+);
+
+insert into status_config (status, percentile) values
+('AMATEUR', 0),
+('REGIONAL_POSTER', 15),
+('COMPETITOR', 35),
+('RANKED_POSTER', 65),
+('CONTENDER', 80),
+('CHAMPION', 92),
+('HALL_OF_FAMER', 97),
+('P4P', 99);

@@ -22,6 +22,7 @@ export default function UserProfile() {
     isPostsLoading,
     postsError
   } = useUserProfile(username);
+  const isNormalUser = user?.role !== USER_ROLES.FIGHTER && user?.role !== USER_ROLES.INDUSTRY_PROFESSIONAL && user?.role !== USER_ROLES.ADMIN && user?.role !== USER_ROLES.MODERATOR;
 
   // For demo purposes, create mock user if none is returned from the API
   const displayUser = user;
@@ -158,6 +159,14 @@ export default function UserProfile() {
               <StatusBadge status={displayUser.status} />
 )}
             </div>
+
+            {/* Display first and last name for fighters and industry professionals */}
+            {(displayUser.role === USER_ROLES.FIGHTER || displayUser.role === USER_ROLES.INDUSTRY_PROFESSIONAL) && 
+              displayUser.firstName && displayUser.lastName && (
+              <div className="text-gray-300 text-sm md:text-base mb-2">
+                {displayUser.firstName} {displayUser.lastName}
+              </div>
+            )}
 
             <div className="mt-2 flex items-center space-x-4 text-sm text-gray-400">
               <div className="flex items-center">
@@ -323,27 +332,31 @@ export default function UserProfile() {
             </h2>
 
             {/* Rank & Status */}
-            <div className="mb-6">
-              <h3 className="mb-2 font-medium text-gray-400">Rank & Status</h3>
-              <div className="mb-2 flex items-center space-x-4">
-                <div className="rounded-lg bg-gray-800 px-3 py-2">
-                  <span className="block text-xl font-bold text-white">
-                    #{displayUser.rank}
-                  </span>
-                  <span className="text-xs text-gray-400">Community Rank</span>
-                </div>
-                <div className="rounded-lg bg-gray-800 px-3 py-2">
-                  <FCBadge rank={displayUser.rank} size="lg" />
-                  <span className="text-xs text-gray-400 block mt-1">Fighter Cred</span>
-                </div>
-                <div className="rounded-lg bg-gray-800 px-3 py-2">
-                  <div className="mb-1 block">
-                    <StatusBadge status={displayUser.status} />
+            {isNormalUser && (
+              <div className="mb-6">
+                <h3 className="mb-2 font-medium text-gray-400">Rank & Status</h3>
+                <div className="mb-2 flex items-center space-x-4">
+                  <div className="rounded-lg bg-gray-800 px-3 py-2">
+                    <span className="block text-xl font-bold text-white">
+                      #{displayUser.rank}
+                    </span>
+                    <span className="text-xs text-gray-400">Community Rank</span>
+                    <div>
+                      <div className="rounded-lg bg-gray-800 px-3 py-2">
+                        <FCBadge rank={displayUser.rank} size="lg" />
+                        <span className="text-xs text-gray-400 block mt-1">Fighter Cred</span>
+                      </div>
+                      <div className="rounded-lg bg-gray-800 px-3 py-2">
+                        <div className="mb-1 block">
+                          <StatusBadge status={displayUser.status} />
+                        </div>
+                        <span className="text-xs text-gray-400">Current Status</span>
+                      </div>
+                    </div>  
                   </div>
-                  <span className="text-xs text-gray-400">Current Status</span>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Activity Stats */}
             <div className="mb-6">

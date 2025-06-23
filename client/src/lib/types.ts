@@ -13,6 +13,8 @@ export interface AuthUser {
   id: string;
   username: string;
   avatar?: string;
+  firstName?: string | null;
+  lastName?: string | null;
   status: UserStatus;
   isOnline: boolean;
   postsCount: number;

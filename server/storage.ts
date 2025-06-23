@@ -19,6 +19,8 @@ import {
   Fight,
   DailyFighterCred,
   InsertDailyFighterCred,
+  ReactionWeight,
+  StatusConfig,
   users,
   threads,
   replies,
@@ -30,6 +32,8 @@ import {
   pollVotes,
   replyReactions,
   dailyFighterCred,
+  reactionWeights,
+  statusConfig,
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -76,7 +80,10 @@ export interface IStorage {
 
   // Reply management
   getReply(id: string, currentUserId: string): Promise<Reply | undefined>;
-  getRepliesByThread(threadId: string, currentUserId?: string): Promise<Reply[]>;
+  getRepliesByThread(
+    threadId: string,
+    currentUserId?: string,
+  ): Promise<Reply[]>;
   createReply(reply: InsertReply): Promise<Reply>;
   updateReply(
     id: string,
@@ -469,8 +476,13 @@ export class DatabaseStorage implements IStorage {
         .where(
           and(
             eq(users.disabled, false),
-            notInArray(users.role, ["ADMIN", "MODERATOR", "FIGHTER", "INDUSTRY_PROFESSIONAL"])
-          )
+            notInArray(users.role, [
+              "ADMIN",
+              "MODERATOR",
+              "FIGHTER",
+              "INDUSTRY_PROFESSIONAL",
+            ]),
+          ),
         )
         .orderBy(desc(users.points))
         .limit(limit);
@@ -915,11 +927,13 @@ export class DatabaseStorage implements IStorage {
           await tx.insert(notifications).values({
             id: uuidv4(),
             userId: currentThread.userId,
-            type: threadData.isPinned ? 'THREAD_PINNED' : 'THREAD_UNPINNED',
+            type: threadData.isPinned ? "THREAD_PINNED" : "THREAD_UNPINNED",
             threadId: id,
-            message: threadData.isPinned ? 'Your thread has been pinned' : 'Your thread has been unpinned',
+            message: threadData.isPinned
+              ? "Your thread has been pinned"
+              : "Your thread has been unpinned",
             isRead: false,
-            createdAt: new Date()
+            createdAt: new Date(),
           });
         }
 
@@ -1037,7 +1051,10 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getReply(id: string, currentUserId: string): Promise<Reply | undefined> {
+  async getReply(
+    id: string,
+    currentUserId: string,
+  ): Promise<Reply | undefined> {
     try {
       // Check if the current user has liked this thread
       let hasLiked = false;
@@ -1050,7 +1067,6 @@ export class DatabaseStorage implements IStorage {
           ),
         });
         hasLiked = !!existingLikeReaction;
-
       }
       // Get reply with explicit column selection
       const [reply] = await db
@@ -1080,7 +1096,10 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getRepliesByThread(threadId: string, currentUserId?: string): Promise<Reply[]> {
+  async getRepliesByThread(
+    threadId: string,
+    currentUserId?: string,
+  ): Promise<Reply[]> {
     try {
       // Build query with explicit column selection
       const threadReplies = await db
@@ -1103,27 +1122,28 @@ export class DatabaseStorage implements IStorage {
       if (currentUserId) {
         const repliesWithLikeStatus = await Promise.all(
           threadReplies.map(async (reply) => {
-            const existingLikeReaction = await db.query.replyReactions.findFirst({
-              where: and(
-                eq(replyReactions.replyId, reply.id),
-                eq(replyReactions.userId, currentUserId),
-                eq(replyReactions.type, "LIKE"),
-              ),
-            });
-            
-            const hasLiked = !!existingLikeReaction;            
+            const existingLikeReaction =
+              await db.query.replyReactions.findFirst({
+                where: and(
+                  eq(replyReactions.replyId, reply.id),
+                  eq(replyReactions.userId, currentUserId),
+                  eq(replyReactions.type, "LIKE"),
+                ),
+              });
+
+            const hasLiked = !!existingLikeReaction;
             return {
               ...reply,
               hasLiked,
             };
-          })
+          }),
         );
-        
+
         return repliesWithLikeStatus;
       }
 
       // If no current user, return replies without like status
-      return threadReplies.map(reply => ({
+      return threadReplies.map((reply) => ({
         ...reply,
         hasLiked: false,
       }));
@@ -1160,26 +1180,27 @@ export class DatabaseStorage implements IStorage {
           if (currentUserId) {
             const repliesWithLikeStatus = await Promise.all(
               threadReplies.map(async (reply) => {
-                const existingLikeReaction = await db.query.replyReactions.findFirst({
-                  where: and(
-                    eq(replyReactions.replyId, reply.id),
-                    eq(replyReactions.userId, currentUserId),
-                    eq(replyReactions.type, "LIKE"),
-                  ),
-                });
-                
+                const existingLikeReaction =
+                  await db.query.replyReactions.findFirst({
+                    where: and(
+                      eq(replyReactions.replyId, reply.id),
+                      eq(replyReactions.userId, currentUserId),
+                      eq(replyReactions.type, "LIKE"),
+                    ),
+                  });
+
                 return {
                   ...reply,
                   hasLiked: !!existingLikeReaction,
                 };
-              })
+              }),
             );
-            
+
             return repliesWithLikeStatus;
           }
 
           // If no current user, return replies without like status
-          return threadReplies.map(reply => ({
+          return threadReplies.map((reply) => ({
             ...reply,
             hasLiked: false,
           }));
@@ -1944,8 +1965,8 @@ export class DatabaseStorage implements IStorage {
         }
 
         if (existingReaction) {
-         // User has already liked this reply
-         return false;
+          // User has already liked this reply
+          return false;
         }
 
         // Create new like reaction
@@ -2455,7 +2476,6 @@ export class DatabaseStorage implements IStorage {
           LEFT JOIN users u ON ai.actor_id = u.id 
           LEFT JOIN reaction_weights w
             ON w.reaction_type = ai.interaction_type
-               AND w.user_status = u.status
                AND w.role = u.role
           WHERE u.disabled IS DISTINCT FROM TRUE
             AND ai.interaction_timestamp >= NOW() - INTERVAL '24 hours'
@@ -2493,7 +2513,7 @@ export class DatabaseStorage implements IStorage {
         FROM users u
         LEFT JOIN aggregated_scores a ON a.user_id = u.id
         WHERE u.disabled IS DISTINCT FROM TRUE
-        ORDER BY daily_fighter_cred DESC;
+        ORDER BY COALESCE(a.daily_fighter_cred, 0) DESC;
       `;
 
       const queryResult = await db.execute(sql.raw(query));
@@ -2534,26 +2554,50 @@ export class DatabaseStorage implements IStorage {
           previousDayCreds.map((cred) => [cred.userId, cred.totalFighterCred]),
         );
 
-        // Insert new data with proper totalFighterCred calculation
-        const insertData = results.map((row: any) => {
-          const userId = row.user_id;
-          const dailyCred = parseInt(row.daily_fighter_cred) || 0;
-          const previousTotal = previousCredMap.get(userId) || 0;
-          const totalCred = previousTotal + dailyCred;
+        // Create the user data array for status calculation
+        const userDataForStatus = results
+          .map((row: any) => {
+            const userId = row.user_id;
+            const dailyCred = parseInt(row.daily_fighter_cred) || 0;
+            const previousTotal = previousCredMap.get(userId) || 0;
+            const totalCred = previousTotal + dailyCred;
 
-          return {
-            userId,
-            interactionDay: row.interaction_day,
-            likeCount: parseInt(row.like_count) || 0,
-            potdCount: parseInt(row.potd_count) || 0,
-            replyCount: parseInt(row.reply_count) || 0,
-            likeScore: parseInt(row.like_score) || 0,
-            potdScore: parseInt(row.potd_score) || 0,
-            replyScore: parseInt(row.reply_score) || 0,
-            dailyFighterCred: dailyCred,
-            totalFighterCred: totalCred,
-          };
-        });
+            return {
+              userId,
+              totalFighterCred: totalCred,
+            };
+          })
+          .sort((a, b) => b.totalFighterCred - a.totalFighterCred);
+
+        console.log("Number of users:", userDataForStatus.length);
+
+        // Insert new data with proper totalFighterCred calculation
+        const insertData = await Promise.all(
+          results.map(async (row: any) => {
+            const userId = row.user_id;
+            const dailyCred = parseInt(row.daily_fighter_cred) || 0;
+            const previousTotal = previousCredMap.get(userId) || 0;
+            const totalCred = previousTotal + dailyCred;
+
+            return {
+              userId,
+              interactionDay: row.interaction_day,
+              likeCount: parseInt(row.like_count) || 0,
+              potdCount: parseInt(row.potd_count) || 0,
+              replyCount: parseInt(row.reply_count) || 0,
+              likeScore: parseInt(row.like_score) || 0,
+              potdScore: parseInt(row.potd_score) || 0,
+              replyScore: parseInt(row.reply_score) || 0,
+              dailyFighterCred: dailyCred,
+              totalFighterCred: totalCred,
+              currentStatus: await this.calculateUserStatus(
+                userId,
+                totalCred,
+                userDataForStatus,
+              ),
+            };
+          }),
+        );
 
         // Insert in batches to avoid overwhelming the database
         const batchSize = 100;
@@ -2631,6 +2675,98 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error updating all users' fighter cred:", error);
       return false;
+    }
+  }
+
+  async updateUserStatus(userId: string, status: string): Promise<boolean> {
+    try {
+      await db.execute(
+        sql`UPDATE users SET status = ${status} WHERE id = ${userId}`,
+      );
+      return true;
+    } catch (error) {
+      console.error("Error updating user status:", error);
+      return false;
+    }
+  }
+
+  async calculateUserStatus(
+    userId: string,
+    totalFighterCred: number,
+    allUserCreds?: Array<{ userId: string; totalFighterCred: number }>,
+  ): Promise<string> {
+    try {
+      let userCreds: Array<{ userId: string; totalFighterCred: number }>;
+
+      if (allUserCreds) {
+        // Use provided data (for when we're calculating during fighter cred recalculation)
+        userCreds = allUserCreds;
+      } else {
+        // Get all users' total fighter cred for today from database
+        const today = new Date().toISOString().split("T")[0];
+        userCreds = await db
+          .select({
+            userId: dailyFighterCred.userId,
+            totalFighterCred: dailyFighterCred.totalFighterCred,
+          })
+          .from(dailyFighterCred)
+          .where(eq(dailyFighterCred.interactionDay, today))
+          .orderBy(desc(dailyFighterCred.totalFighterCred));
+      }
+
+      if (userCreds.length === 0) {
+        await this.updateUserStatus(userId, "AMATEUR");
+        return "AMATEUR"; // Default status if no data
+      }
+
+      // Find the user's position in the ranking by userId
+      const userPosition = userCreds.findIndex(
+        (cred) => cred.totalFighterCred === totalFighterCred,
+      );
+
+      if (userPosition === -1) {
+        await this.updateUserStatus(userId, "AMATEUR");
+        return "AMATEUR"; // User not found in ranking
+      }
+
+      if (userPosition === 0) {
+        await this.updateUserStatus(userId, "GOAT");
+        return "GOAT"; // User is the top poster
+      }
+
+      // Calculate percentile (0-100)
+      const percentile = Math.round(
+        ((userCreds.length - userPosition - 1) / userCreds.length) * 100,
+      );
+
+      // Get status config from database
+      const statusConfigs = await db
+        .select()
+        .from(statusConfig)
+        .orderBy(desc(statusConfig.percentile));
+
+      // Find the appropriate status based on percentile
+      for (const config of statusConfigs) {
+        if (percentile >= config.percentile) {
+          // Convert database status names to expected format
+          let status = config.status;
+          if (status === "HALL_OF_FAMER") status = "HALL OF FAMER";
+          if (status === "RANKED_POSTER") status = "RANKED POSTER";
+          if (status === "REGIONAL_POSTER") status = "REGIONAL POSTER";
+
+          // Update the user's status in the users table
+          await this.updateUserStatus(userId, status);
+
+          return status;
+        }
+      }
+
+      await this.updateUserStatus(userId, "AMATEUR");
+
+      return "AMATEUR";
+    } catch (error) {
+      console.error("Error calculating user status:", error);
+      return "AMATEUR"; // Default status on error
     }
   }
 }

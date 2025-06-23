@@ -1,5 +1,11 @@
 // User related types
-export type UserRole = "ADMIN" | "MODERATOR" | "USER" | "PREMIUM_USER" | "FIGHTER" | "INDUSTRY_PROFESSIONAL";
+export type UserRole =
+  | "ADMIN"
+  | "MODERATOR"
+  | "USER"
+  | "PREMIUM_USER"
+  | "FIGHTER"
+  | "INDUSTRY_PROFESSIONAL";
 
 export type UserStatus =
   | "HALL OF FAMER"

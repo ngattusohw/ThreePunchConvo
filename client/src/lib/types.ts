@@ -1,5 +1,6 @@
 // User related types
 export type UserRole = "ADMIN" | "MODERATOR" | "USER" | "PREMIUM_USER" | "FIGHTER" | "INDUSTRY_PROFESSIONAL";
+
 export type UserStatus =
   | "HALL OF FAMER"
   | "CHAMPION"
@@ -19,6 +20,7 @@ export interface AuthUser {
   isOnline: boolean;
   postsCount: number;
   likesCount: number;
+  planType: string;
   pinnedByUserCount: number;
   pinnedCount: number;
   rank: number;
@@ -26,6 +28,7 @@ export interface AuthUser {
   followingCount: number;
   role: UserRole;
   socialLinks?: SocialLinks;
+  stripeId?: string;
 }
 
 export interface SocialLinks {
@@ -112,7 +115,14 @@ export interface ThreadReply {
 export interface Notification {
   id: string;
   userId: string;
-  type: "REPLY" | "MENTION" | "LIKE" | "SYSTEM" | "FOLLOW" | "POTD" | "THREAD_PINNED";
+  type:
+    | "REPLY"
+    | "MENTION"
+    | "LIKE"
+    | "SYSTEM"
+    | "FOLLOW"
+    | "POTD"
+    | "THREAD_PINNED";
   relatedUserId?: string;
   relatedUser?: AuthUser;
   threadId?: string;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,8 +10,17 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useClerk } from "@clerk/clerk-react";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
-import { ChevronsUpDown, LogOut, Trash2, User as UserIcon } from "lucide-react";
-import { formatUsername } from "@/lib/utils";
+import {
+  LogOut,
+  Trash2,
+  User as UserIcon,
+  CreditCard,
+  Crown,
+} from "lucide-react";
+import { useUserProfile } from "@/api/hooks/useUserProfile";
+import { useStripePlans } from "@/api/hooks/useStripePlans";
+import { SubscriptionModal } from "@/components/ui/subscription-modal";
+import { DeleteAccountModal } from "@/components/ui/delete-account-modal";
 
 interface UserMenuProps {
   handleDeleteAccount: () => void;
@@ -21,6 +30,8 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
   const { user } = useMemoizedUser();
   const { signOut, openUserProfile } = useClerk();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const { user: currentUser } = useUserProfile(user?.username);
 
   if (!user) {
     return null;
@@ -36,6 +47,7 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
     await signOut();
   };
 
+  const hasSubscription = currentUser?.planType !== "FREE";
 
   return (
     <>
@@ -49,7 +61,7 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
           </Avatar>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className="w-56 bg-ufc-black border-gray-700 text-white"
+          className="bg-ufc-black w-56 border-gray-700 text-white"
           align="end"
         >
           <DropdownMenuLabel className="font-normal">
@@ -60,6 +72,14 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
               <p className="text-xs leading-none text-gray-400">
                 @{user.username}
               </p>
+              {hasSubscription && (
+                <div className="flex items-center space-x-1">
+                  <Crown className="h-3 w-3 text-yellow-400" />
+                  <p className="text-xs font-medium text-yellow-400">
+                    {currentUser?.planType} Plan
+                  </p>
+                </div>
+              )}
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-gray-700" />
@@ -80,8 +100,16 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
           </DropdownMenuItem>
           <DropdownMenuSeparator className="bg-gray-700" />
           <DropdownMenuItem
+            onClick={() => setShowSubscriptionModal(true)}
+            className="cursor-pointer focus:bg-gray-700 focus:text-white"
+          >
+            <CreditCard className="mr-2 h-4 w-4" />
+            <span>Manage Subscription</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-gray-700" />
+          <DropdownMenuItem
             onClick={() => setShowDeleteModal(true)}
-            className="cursor-pointer focus:bg-red-700 focus:text-white text-red-400 hover:text-red-300"
+            className="cursor-pointer text-red-400 hover:text-red-300 focus:bg-red-700 focus:text-white"
           >
             <Trash2 className="mr-2 h-4 w-4" />
             <span>Delete Account</span>
@@ -89,49 +117,17 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* @TODO: Fix the content in this modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-ufc-black border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex items-center space-x-3 mb-4">
-              <Trash2 className="h-6 w-6 text-red-500" />
-              <h2 className="text-xl font-semibold text-white">Delete Account</h2>
-            </div>
-            
-            <div className="rounded-lg border border-red-800 bg-red-900/20 p-4 mb-4">
-              <p className="text-sm text-red-300">
-                This action cannot be undone. This will permanently disable your account and remove all your content from the platform.
-              </p>
-            </div>
-            
-            <div className="space-y-4 mb-6">
-              <p className="text-sm text-gray-400">
-                Before you delete your account, please consider:
-              </p>
-              <ul className="list-disc space-y-2 pl-5 text-sm text-gray-400">
-                <li>All your posts, comments, & rankings will be permanently removed</li>
-                <li>You will lose access to any premium features</li>
-                <li>This action cannot be reversed</li>
-              </ul>
-            </div>
-            
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="flex-1 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={deleteAccount}
-                className="flex-1 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-              >
-                Delete Account
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={deleteAccount}
+      />
+
+      <SubscriptionModal
+        isOpen={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+        username={user.username}
+      />
     </>
   );
-} 
+}

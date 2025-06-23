@@ -37,5 +37,5 @@ RUN ls -la dist || echo "dist directory doesn't exist"
 # Expose the port your app runs on (Railway will set PORT env var)
 EXPOSE $PORT
 
-# Command to run the application using node directly instead of npm
-CMD ["node", "node_modules/.bin/tsx", "server/index.ts"]
+# Use tsx directly to ensure Node.js is the direct child process for proper signal handling
+CMD ["node_modules/.bin/tsx", "server/index.ts"]

@@ -6,6 +6,7 @@ import FCBadge from "@/components/ui/fc-badge";
 import ThreadCard from "@/components/forum/ThreadCard";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/api";
+import { USER_ROLES } from "@/lib/constants";
 
 export default function UserProfile() {
   const { username } = useParams<{ username: string }>();
@@ -21,6 +22,7 @@ export default function UserProfile() {
     isPostsLoading,
     postsError
   } = useUserProfile(username);
+  const isNormalUser = user?.role !== USER_ROLES.FIGHTER && user?.role !== USER_ROLES.INDUSTRY_PROFESSIONAL && user?.role !== USER_ROLES.ADMIN && user?.role !== USER_ROLES.MODERATOR;
 
   // For demo purposes, create mock user if none is returned from the API
   const displayUser = user;
@@ -118,10 +120,12 @@ export default function UserProfile() {
                 {displayUser.username}
               </h1>
 
-              <FCBadge rank={displayUser.rank} size="md" />
+              {displayUser.role !== USER_ROLES.FIGHTER || displayUser.role !== USER_ROLES.INDUSTRY_PROFESSIONAL || displayUser.role !== USER_ROLES.ADMIN  && (
+                <FCBadge rank={displayUser.rank} size="md" />
+              )}
 
-              {displayUser.role === "FIGHTER" && (
-                <span className="flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-xs font-bold text-white">
+              {displayUser.role === USER_ROLES.FIGHTER && (
+                <span className="flex items-center rounded-full bg-ufc-gold px-2 py-0.5 text-xs font-bold text-white">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="mr-1 h-3 w-3"
@@ -134,7 +138,25 @@ export default function UserProfile() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  VERIFIED
+                  PRO FIGHTER
+                </span>
+              )}
+
+              {user?.role === "INDUSTRY_PROFESSIONAL" && (
+                <span className="flex items-center rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="mr-1 h-3 w-3"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  MMA INDUSTRY
                 </span>
               )}
 
@@ -150,8 +172,19 @@ export default function UserProfile() {
                 </span>
               )}
 
+{displayUser.role !== USER_ROLES.FIGHTER || displayUser.role !== USER_ROLES.INDUSTRY_PROFESSIONAL || displayUser.role !== USER_ROLES.ADMIN && (
+
               <StatusBadge status={displayUser.status} />
+)}
             </div>
+
+            {/* Display first and last name for fighters and industry professionals */}
+            {(displayUser.role === USER_ROLES.FIGHTER || displayUser.role === USER_ROLES.INDUSTRY_PROFESSIONAL) && 
+              displayUser.firstName && displayUser.lastName && (
+              <div className="text-gray-300 text-sm md:text-base mb-2">
+                {displayUser.firstName} {displayUser.lastName}
+              </div>
+            )}
 
             <div className="mt-2 flex items-center space-x-4 text-sm text-gray-400">
               <div className="flex items-center">
@@ -317,27 +350,31 @@ export default function UserProfile() {
             </h2>
 
             {/* Rank & Status */}
-            <div className="mb-6">
-              <h3 className="mb-2 font-medium text-gray-400">Rank & Status</h3>
-              <div className="mb-2 flex items-center space-x-4">
-                <div className="rounded-lg bg-gray-800 px-3 py-2">
-                  <span className="block text-xl font-bold text-white">
-                    #{displayUser.rank}
-                  </span>
-                  <span className="text-xs text-gray-400">Community Rank</span>
-                </div>
-                <div className="rounded-lg bg-gray-800 px-3 py-2">
-                  <FCBadge rank={displayUser.rank} size="lg" />
-                  <span className="text-xs text-gray-400 block mt-1">Fighter Cred</span>
-                </div>
-                <div className="rounded-lg bg-gray-800 px-3 py-2">
-                  <div className="mb-1 block">
-                    <StatusBadge status={displayUser.status} />
+            {isNormalUser && (
+              <div className="mb-6">
+                <h3 className="mb-2 font-medium text-gray-400">Rank & Status</h3>
+                <div className="mb-2 flex items-center space-x-4">
+                  <div className="rounded-lg bg-gray-800 px-3 py-2">
+                    <span className="block text-xl font-bold text-white">
+                      #{displayUser.rank}
+                    </span>
+                    <span className="text-xs text-gray-400">Community Rank</span>
+                    <div>
+                      <div className="rounded-lg bg-gray-800 px-3 py-2">
+                        <FCBadge rank={displayUser.rank} size="lg" />
+                        <span className="text-xs text-gray-400 block mt-1">Fighter Cred</span>
+                      </div>
+                      <div className="rounded-lg bg-gray-800 px-3 py-2">
+                        <div className="mb-1 block">
+                          <StatusBadge status={displayUser.status} />
+                        </div>
+                        <span className="text-xs text-gray-400">Current Status</span>
+                      </div>
+                    </div>  
                   </div>
-                  <span className="text-xs text-gray-400">Current Status</span>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Activity Stats */}
             <div className="mb-6">

@@ -211,7 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Get reply preview if applicable
             let replyPreview;
             if (notification.replyId) {
-              const reply = await storage.getReply(notification.replyId);
+              const reply = await storage.getReply(notification.replyId, userId);
               if (reply) {
                 replyPreview =
                   reply.content.length > 100
@@ -1070,18 +1070,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/threads/:id/replies", async (req: Request, res: Response) => {
     try {
       const threadId = req.params.id;
-
+      let localUserId: string | undefined = undefined;
+      const clerkUserId = req.query.userId as string | undefined;
       if (!threadId) {
         return res.status(400).json({ message: "Invalid thread ID" });
       }
-
-      const replies = await storage.getRepliesByThread(threadId);
+      if (clerkUserId) {
+        const localUser = await storage.getUserByExternalId(clerkUserId);
+        if (localUser) {
+          localUserId = localUser.id;
+        }
+      }
+      const replies = await storage.getRepliesByThread(threadId, localUserId);
 
       // Fetch user for each reply
       const repliesWithUser = await Promise.all(
         replies.map(async (reply) => {
-          const userId = reply.userId;
-          const user = await storage.getUser(userId);
+          const replyUserId = reply.userId;
+          const user = await storage.getUser(replyUserId);
 
           if (!user) {
             return { ...reply, user: null };
@@ -1202,7 +1208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Reply ID is required" });
         }
 
-        const reply = await storage.getReply(replyId);
+        const reply = await storage.getReply(replyId, localUser.id);
 
         if (!reply) {
           return res.status(404).json({ message: "Reply not found" });
@@ -1461,11 +1467,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put(
     "/api/users/:id/role",
     requireAuth(),
-    async (req: Request, res: Response) => {
+    ensureLocalUser,
+    async (req: any, res: Response) => {
       try {
-
         const userId = req.params.id;
-        const { role, updatedBy } = req.body;
+        const { role } = req.body;
 
         // Validate input
         if (!userId || !role) {
@@ -1482,6 +1488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "FIGHTER",
           "USER",
           "PREMIUM_USER",
+          "INDUSTRY_PROFESSIONAL",
         ];
 
         if (!validRoles.includes(role)) {
@@ -1492,9 +1499,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Get the user performing the update - only admins can update roles
-        const admin = await storage.getUser(updatedBy);
-        if (!admin || admin.role !== "ADMIN") {
+        // Get the authenticated user from the bearer token (req.localUser is set by ensureLocalUser middleware)
+        const authenticatedUser = req.localUser;
+        if (!authenticatedUser) {
+          return res.status(401).json({ message: "Authentication required" });
+        }
+
+        // Check if the authenticated user is an admin
+        if (authenticatedUser.role !== "ADMIN") {
           return res
             .status(403)
             .json({ message: "Only administrators can update user roles" });
@@ -1507,7 +1519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // If trying to set another user as ADMIN, require extra confirmation
-        if (role === "ADMIN" && updatedBy !== userId) {
+        if (role === "ADMIN" && authenticatedUser.id !== userId) {
           const { confirmAdminPromotion } = req.body;
           if (!confirmAdminPromotion) {
             return res.status(400).json({
@@ -1930,6 +1942,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+
+  // Add this GET endpoint after the existing POST endpoint
+  app.get("/api/users/clerk/:clerkId", async (req: Request, res: Response) => {
+    try {
+      const clerkId = req.params.clerkId;
+
+      if (!clerkId) {
+        return res.status(400).json({ message: "Clerk ID is required" });
+      }
+
+      const user = await storage.getUserByExternalId(clerkId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Don't return password in response
+      const { password, ...userWithoutPassword } = user;
+
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error fetching user by Clerk ID:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
 
   return httpServer;
 }

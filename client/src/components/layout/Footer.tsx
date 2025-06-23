@@ -10,13 +10,13 @@ export default function Footer() {
               href="/"
               className="flex items-center justify-center md:justify-start"
             >
-              <span className="text-ufc-blue font-accent text-xl font-bold">
-                3
+              <span className="text-ufc-blue font-accent ml-1 text-xl font-bold">
+                JOIN
               </span>
-              <span className="font-accent text-xl font-bold text-white">
-                PUNCH
+              <span className="font-accent ml-1 text-xl font-bold text-white">
+                THE
               </span>
-              <span className="text-ufc-gold font-accent ml-1 text-xl font-bold">
+              <span className="text-ufc-blue font-accent ml-1 text-xl font-bold">
                 CONVO
               </span>
             </Link>

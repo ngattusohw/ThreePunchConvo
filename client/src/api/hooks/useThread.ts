@@ -126,13 +126,8 @@ export function useThread({ threadId, userId }: UseThreadOptions) {
       return likeThread(threadId, userId);
     },
     onSuccess: () => {
-      const wasLiked = thread?.hasLiked;
       queryClient.invalidateQueries({
         queryKey: [`/api/threads/id/${threadId}`],
-      });
-      toast({
-        title: "Success",
-        description: wasLiked ? "You unliked this post" : "You liked this post",
       });
     },
     onError: (error: Error) => {

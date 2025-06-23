@@ -1,5 +1,12 @@
 // User related types
-export type UserRole = "ADMIN" | "MODERATOR" | "USER" | "PREMIUM_USER" | "FIGHTER" | "INDUSTRY_PROFESSIONAL";
+export type UserRole =
+  | "ADMIN"
+  | "MODERATOR"
+  | "USER"
+  | "PREMIUM_USER"
+  | "FIGHTER"
+  | "INDUSTRY_PROFESSIONAL";
+
 export type UserStatus =
   | "HALL OF FAMER"
   | "CHAMPION"
@@ -112,7 +119,14 @@ export interface ThreadReply {
 export interface Notification {
   id: string;
   userId: string;
-  type: "REPLY" | "MENTION" | "LIKE" | "SYSTEM" | "FOLLOW" | "POTD" | "THREAD_PINNED";
+  type:
+    | "REPLY"
+    | "MENTION"
+    | "LIKE"
+    | "SYSTEM"
+    | "FOLLOW"
+    | "POTD"
+    | "THREAD_PINNED";
   relatedUserId?: string;
   relatedUser?: AuthUser;
   threadId?: string;

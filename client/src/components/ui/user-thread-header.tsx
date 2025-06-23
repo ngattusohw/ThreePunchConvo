@@ -99,7 +99,7 @@ export default function UserThreadHeader({
                   clipRule="evenodd"
                 />
               </svg>
-              VERIFIED
+              PRO FIGHTER
             </span>
           )}
 
@@ -117,7 +117,7 @@ export default function UserThreadHeader({
                   clipRule="evenodd"
                 />
               </svg>
-              INDUSTRY
+              MMA INDUSTRY
             </span>
           )}
 

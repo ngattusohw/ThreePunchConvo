@@ -6,7 +6,7 @@ export async function up(db: any) {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS potd_count INTEGER NOT NULL DEFAULT 0;
   `);
 
-  // Add replies_count column to users table for tracking user's replies
+  // Add replies_count column to users table for tracking replies received on user's threads
   await db.execute(sql`
     ALTER TABLE users ADD COLUMN IF NOT EXISTS replies_count INTEGER NOT NULL DEFAULT 0;
   `);
@@ -21,13 +21,13 @@ export async function up(db: any) {
     )
   `);
 
-  // Initialize replies_count from existing replies by user
+  // Initialize replies_count from existing replies on user's threads
   await db.execute(sql`
     UPDATE users
     SET replies_count = (
-      SELECT COUNT(*)
-      FROM replies
-      WHERE replies.user_id = users.id
+      SELECT COALESCE(SUM(threads.replies_count), 0)
+      FROM threads
+      WHERE threads.user_id = users.id
     )
   `);
 
@@ -37,7 +37,7 @@ export async function up(db: any) {
   `);
 
   await db.execute(sql`
-    COMMENT ON COLUMN users.replies_count IS 'Count of replies made by the user';
+    COMMENT ON COLUMN users.replies_count IS 'Count of replies received on user threads';
   `);
 
   console.log("Added potd_count and replies_count columns to users table");

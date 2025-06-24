@@ -25,7 +25,7 @@ async function migrate() {
     await renamePotdToPinnedMigration.up(db);
     await addPotdCountMigration.up(db);
     await createNotificationsTableMigration.up(db);
-    
+
     console.log("Migrations completed successfully!");
     process.exit(0);
   } catch (error) {

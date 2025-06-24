@@ -2,7 +2,11 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
-import { createThread, uploadImages, CreateThreadParams } from "../queries/thread";
+import {
+  createThread,
+  uploadImages,
+  CreateThreadParams,
+} from "../queries/thread";
 import { useToast } from "@/hooks/use-toast";
 
 interface UseCreatePostOptions {
@@ -11,12 +15,16 @@ interface UseCreatePostOptions {
   categoryId: string;
 }
 
-export function useCreatePost({ onSuccess, onUpgradeRequired, categoryId }: UseCreatePostOptions) {
+export function useCreatePost({
+  onSuccess,
+  onUpgradeRequired,
+  categoryId,
+}: UseCreatePostOptions) {
   const { toast } = useToast();
   const { user } = useMemoizedUser();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  
+
   // Upload images state
   const [uploadingImages, setUploadingImages] = useState(false);
 
@@ -54,9 +62,9 @@ export function useCreatePost({ onSuccess, onUpgradeRequired, categoryId }: UseC
       }
 
       // Create media objects for the post
-      const media = mediaUrls.map(url => ({
-        type: 'IMAGE',
-        url: url
+      const media = mediaUrls.map((url) => ({
+        type: "IMAGE",
+        url: url,
       }));
 
       // Prepare params for thread creation
@@ -74,13 +82,13 @@ export function useCreatePost({ onSuccess, onUpgradeRequired, categoryId }: UseC
     onSuccess: () => {
       // Invalidate the specific thread queries to refetch the thread list
       // Invalidate pinned threads query
-      queryClient.invalidateQueries({ 
-        queryKey: [`/api/threads/${categoryId}`, 'pinned'] 
+      queryClient.invalidateQueries({
+        queryKey: [`/api/threads/${categoryId}`, "pinned"],
       });
-      
+
       // Invalidate regular threads queries for this category - all filter options
-      queryClient.invalidateQueries({ 
-        queryKey: [`/api/threads/${categoryId}`] 
+      queryClient.invalidateQueries({
+        queryKey: [`/api/threads/${categoryId}`],
       });
 
       toast({
@@ -88,7 +96,7 @@ export function useCreatePost({ onSuccess, onUpgradeRequired, categoryId }: UseC
         description: "Your post has been created.",
         variant: "default",
       });
-      
+
       if (onSuccess) {
         onSuccess();
       }
@@ -119,4 +127,4 @@ export function useCreatePost({ onSuccess, onUpgradeRequired, categoryId }: UseC
     uploadingImages,
     isUploading: uploadingImages,
   };
-} 
+}

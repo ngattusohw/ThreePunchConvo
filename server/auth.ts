@@ -90,11 +90,18 @@ export const requirePaidPlan = async (
     // Check if user has a special role that bypasses paid plan requirement
     const userRole = req.localUser.role || "USER";
     console.log("User role:", userRole);
-    const bypassRoles = ["ADMIN", "MODERATOR", "FIGHTER", "INDUSTRY_PROFESSIONAL"];
-    
+    const bypassRoles = [
+      "ADMIN",
+      "MODERATOR",
+      "FIGHTER",
+      "INDUSTRY_PROFESSIONAL",
+    ];
+
     if (bypassRoles.includes(userRole)) {
       // User has a special role, allow access without checking plan
-      console.log(`User ${req.localUser.id} (${userRole}) bypassed paid plan requirement`);
+      console.log(
+        `User ${req.localUser.id} (${userRole}) bypassed paid plan requirement`,
+      );
       return next();
     }
 

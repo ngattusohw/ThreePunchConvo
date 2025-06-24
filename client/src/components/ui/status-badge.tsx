@@ -13,7 +13,12 @@ export default function StatusBadge({ status, className }: StatusBadgeProps) {
   }
 
   return (
-    <Badge text={status} color={getStatusClass(status as UserStatus)} icon={null} textColor="text-white" />
+    <Badge
+      text={status}
+      color={getStatusClass(status as UserStatus)}
+      icon={null}
+      textColor='text-white'
+    />
   );
 }
 

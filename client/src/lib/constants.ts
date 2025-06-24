@@ -54,21 +54,21 @@ export const USER_ROLE_CONFIG = {
     icon: true,
   },
   [USER_ROLES.INDUSTRY_PROFESSIONAL]: {
-    label: "MMA INDUSTRY", 
+    label: "MMA INDUSTRY",
     color: "bg-ufc-red",
     textColor: "text-white",
     icon: true,
   },
   [USER_ROLES.ADMIN]: {
     label: "ADMIN",
-    color: "bg-ufc-admin-yellow", 
+    color: "bg-ufc-admin-yellow",
     textColor: "text-ufc-black",
     icon: false,
   },
   [USER_ROLES.MODERATOR]: {
     label: "MOD",
     color: "bg-green-600",
-    textColor: "text-white", 
+    textColor: "text-white",
     icon: false,
   },
 } as const;

@@ -15,37 +15,27 @@ export function useThreadsList({
   initialFilterOption = "recent",
   initialTimeRange = "all",
   limit = 10,
-  userId
+  userId,
 }: UseThreadsListOptions) {
-  const {
-    filterOption,
-    timeRange,
-    handleFilterChange,
-    handleTimeRangeChange
-  } = useThreadsFilters({
-    initialFilterOption,
-    initialTimeRange
+  const { filterOption, timeRange, handleFilterChange, handleTimeRangeChange } =
+    useThreadsFilters({
+      initialFilterOption,
+      initialTimeRange,
+    });
+
+  const { pinnedThreads, isPinnedLoading } = usePinnedThreads({
+    category,
+    userId,
   });
 
-  const { 
-    pinnedThreads,
-    isPinnedLoading 
-  } = usePinnedThreads({ category, userId });
-  
-  const {
-    regularThreads,
-    isRegularLoading,
-    error,
-    hasMore,
-    page,
-    loadMore
-  } = useRegularThreads({
-    category,
-    filterOption,
-    timeRange,
-    limit,
-    userId
-  });
+  const { regularThreads, isRegularLoading, error, hasMore, page, loadMore } =
+    useRegularThreads({
+      category,
+      filterOption,
+      timeRange,
+      limit,
+      userId,
+    });
 
   return {
     pinnedThreads,
@@ -60,4 +50,4 @@ export function useThreadsList({
     handleFilterChange,
     handleTimeRangeChange,
   };
-} 
+}

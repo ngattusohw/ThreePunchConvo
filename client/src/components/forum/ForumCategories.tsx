@@ -8,12 +8,12 @@ export default function ForumCategories() {
     : "general";
 
   return (
-    <aside className="hidden w-64 flex-shrink-0 md:block">
-      <div className="bg-dark-gray sticky top-20 rounded-lg p-4">
-        <h2 className="font-heading mb-4 text-lg font-bold text-white">
+    <aside className='hidden w-64 flex-shrink-0 md:block'>
+      <div className='bg-dark-gray sticky top-20 rounded-lg p-4'>
+        <h2 className='font-heading mb-4 text-lg font-bold text-white'>
           Categories
         </h2>
-        <ul className="space-y-1">
+        <ul className='space-y-1'>
           {FORUM_CATEGORIES.map((category) => (
             <li key={category.id}>
               <Link

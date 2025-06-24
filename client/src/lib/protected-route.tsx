@@ -21,8 +21,8 @@ export function ProtectedRoute({
       // If Clerk is still loading, show a loading state
       if (!isLoaded) {
         return (
-          <div className="flex min-h-screen items-center justify-center">
-            <div className="border-ufc-blue h-12 w-12 animate-spin rounded-full border-b-2 border-t-2"></div>
+          <div className='flex min-h-screen items-center justify-center'>
+            <div className='border-ufc-blue h-12 w-12 animate-spin rounded-full border-b-2 border-t-2'></div>
           </div>
         );
       }
@@ -39,10 +39,5 @@ export function ProtectedRoute({
     };
   }, [Component, isLoaded, userId, setLocation]);
 
-  return (
-    <Route
-      {...rest}
-      component={ProtectedComponent}
-    />
-  );
+  return <Route {...rest} component={ProtectedComponent} />;
 }

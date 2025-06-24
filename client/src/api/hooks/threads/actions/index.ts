@@ -1,7 +1,7 @@
 import { useLikeThread } from "./useLikeThread";
 import { useDislikeThread } from "./useDislikeThread";
 import { usePinThread } from "./usePinThread";
-import { useDeleteThread } from "./useDeleteThread"; 
+import { useDeleteThread } from "./useDeleteThread";
 import { usePotdThread } from "./usePotdThread";
 import { useEditThread } from "./useEditThread";
 
@@ -12,13 +12,23 @@ interface UseThreadActionsOptions {
   content?: string;
 }
 
-export function useThreadActions({ threadId, userId, title, content }: UseThreadActionsOptions) {
+export function useThreadActions({
+  threadId,
+  userId,
+  title,
+  content,
+}: UseThreadActionsOptions) {
   const likeThreadMutation = useLikeThread({ threadId, userId });
   const dislikeThreadMutation = useDislikeThread({ threadId, userId });
   const pinnedByUserThreadMutation = usePinThread({ threadId, userId });
   const deleteThreadMutation = useDeleteThread({ threadId, userId });
   const potdThreadMutation = usePotdThread({ threadId, userId });
-  const editThreadMutation = useEditThread({ threadId, userId, title, content });
+  const editThreadMutation = useEditThread({
+    threadId,
+    userId,
+    title,
+    content,
+  });
 
   return {
     likeThreadMutation,
@@ -28,4 +38,4 @@ export function useThreadActions({ threadId, userId, title, content }: UseThread
     potdThreadMutation,
     editThreadMutation,
   };
-} 
+}

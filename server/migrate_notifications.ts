@@ -10,7 +10,7 @@ async function migrateNotifications() {
 
     // Run only the notifications migration
     await createNotificationsTableMigration.up(db);
-    
+
     console.log("Notifications table migration completed successfully!");
     process.exit(0);
   } catch (error) {
@@ -19,4 +19,4 @@ async function migrateNotifications() {
   }
 }
 
-migrateNotifications(); 
+migrateNotifications();

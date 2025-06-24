@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { RankedUser } from '@/lib/types';
-import { fetchTopUsers } from '../queries/user';
+import { useQuery } from "@tanstack/react-query";
+import { RankedUser } from "@/lib/types";
+import { fetchTopUsers } from "../queries/user";
 
 export function useTopUsers() {
   const {
@@ -8,9 +8,9 @@ export function useTopUsers() {
     isLoading,
     error,
   } = useQuery<RankedUser[]>({
-    queryKey: ['/api/users/top'],
+    queryKey: ["/api/users/top"],
     queryFn: fetchTopUsers,
-    refetchOnMount: 'always',
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
@@ -20,4 +20,4 @@ export function useTopUsers() {
     isLoading,
     error,
   };
-} 
+}

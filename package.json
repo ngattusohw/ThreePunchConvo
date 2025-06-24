@@ -19,7 +19,8 @@
     "migrate:run": "tsx server/run-migration.ts",
     "migrate:potd": "tsx server/migrate_potd.ts",
     "migrate:rename": "tsx server/run_rename_migration.ts",
-    "check-db": "tsx server/check_db_structure.ts"
+    "check-db": "tsx server/check_db_structure.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.31.6",
@@ -133,6 +134,8 @@
     "eslint": "^9.29.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
     "postcss": "^8.4.47",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.12",
@@ -143,5 +146,13 @@
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
   }
 }

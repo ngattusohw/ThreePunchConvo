@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchNotifications, markAllNotificationsAsRead, markNotificationAsRead, generateMockNotifications } from "../queries/notification";
+import {
+  fetchNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+  generateMockNotifications,
+} from "../queries/notification";
 import { Notification } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,7 +24,7 @@ export function useNotifications() {
     : [];
 
   // Filter out read notifications for the UI
-  const notifications = allNotifications.filter(n => !n.isRead);
+  const notifications = allNotifications.filter((n) => !n.isRead);
 
   // Mark single notification as read mutation
   const markAsReadMutation = useMutation({
@@ -60,9 +65,10 @@ export function useNotifications() {
     allNotifications, // Keep this for the notification bell count
     isLoading: notificationsQuery.isLoading,
     error: notificationsQuery.error,
-    markAsRead: (notificationId: string) => markAsReadMutation.mutate(notificationId),
+    markAsRead: (notificationId: string) =>
+      markAsReadMutation.mutate(notificationId),
     markAllAsRead: () => markAllAsReadMutation.mutate(),
     isMarking: markAllAsReadMutation.isPending,
     isMarkingSingle: markAsReadMutation.isPending,
   };
-} 
+}

@@ -355,20 +355,20 @@ function App() {
 
   return (
     <div>
-      <div className="bg-ufc-black text-light-gray flex min-h-screen flex-col">
+      <div className='bg-ufc-black text-light-gray flex min-h-screen flex-col'>
         {location !== "/auth" &&
           location !== "/login" &&
           location !== "/register" && <Header />}
-        <main className="flex-grow">
+        <main className='flex-grow'>
           <ErrorBoundary
             fallback={
-              <div className="m-4 bg-red-800 p-4 text-white">
-                <h2 className="text-xl font-bold">Rendering Error</h2>
+              <div className='m-4 bg-red-800 p-4 text-white'>
+                <h2 className='text-xl font-bold'>Rendering Error</h2>
                 <p>There was an error rendering the components</p>
-                <p className="mt-2 text-sm">
+                <p className='mt-2 text-sm'>
                   Client Secret: {clientSecret ? "Available" : "Not available"}
                 </p>
-                <p className="text-sm">
+                <p className='text-sm'>
                   Loading: {isLoadingClientSecret ? "Yes" : "No"}
                 </p>
               </div>
@@ -379,28 +379,28 @@ function App() {
             ) : (
               <Switch>
                 {/* Public Routes - Always accessible */}
-                <ProtectedRoute path="/" component={Forum} />
-                <ProtectedRoute path="/forum" component={Forum} />
-                <Route path="/auth" component={AuthPage} />
-                <Route path="/login" component={AuthPage} />
-                <Route path="/register" component={AuthPage} />
-                <Route path="/privacy" component={PrivacyPolicy} />
-                <Route path="/terms" component={TermsOfService} />
+                <ProtectedRoute path='/' component={Forum} />
+                <ProtectedRoute path='/forum' component={Forum} />
+                <Route path='/auth' component={AuthPage} />
+                <Route path='/login' component={AuthPage} />
+                <Route path='/register' component={AuthPage} />
+                <Route path='/privacy' component={PrivacyPolicy} />
+                <Route path='/terms' component={TermsOfService} />
                 {/* <Route path="/schedule" component={Schedule} /> */}
-                <ProtectedRoute path="/rankings" component={Rankings} />
+                <ProtectedRoute path='/rankings' component={Rankings} />
 
                 {/* Protected Routes - Need auth but not checkout */}
-                <ProtectedRoute path="/forum/:categoryId" component={Forum} />
-                <ProtectedRoute path="/thread/:threadId" component={Thread} />
+                <ProtectedRoute path='/forum/:categoryId' component={Forum} />
+                <ProtectedRoute path='/thread/:threadId' component={Thread} />
                 <ProtectedRoute
-                  path="/user/:username"
+                  path='/user/:username'
                   component={UserProfile}
                 />
 
                 {/* Checkout Routes - Need auth AND checkout provider */}
                 {isSignedIn && clientSecret ? (
                   <>
-                    <Route path="/checkout">
+                    <Route path='/checkout'>
                       <CheckoutProvider
                         stripe={stripePromise}
                         options={{
@@ -417,7 +417,7 @@ function App() {
                         <CheckoutForm />
                       </CheckoutProvider>
                     </Route>
-                    <Route path="/return">
+                    <Route path='/return'>
                       <CheckoutProvider
                         stripe={stripePromise}
                         options={{
@@ -432,10 +432,10 @@ function App() {
                     </Route>
                   </>
                 ) : isSignedIn && debugInfo.error ? (
-                  <Route path="/checkout">
-                    <div className="container mx-auto mt-4 px-4">
-                      <div className="rounded-lg bg-red-800 p-4 text-white">
-                        <h2 className="mb-2 text-xl font-bold">
+                  <Route path='/checkout'>
+                    <div className='container mx-auto mt-4 px-4'>
+                      <div className='rounded-lg bg-red-800 p-4 text-white'>
+                        <h2 className='mb-2 text-xl font-bold'>
                           Payment Setup Error
                         </h2>
                         <p>{debugInfo.error}</p>
@@ -445,13 +445,13 @@ function App() {
                 ) : null}
 
                 {/* 404 Route */}
-                <ProtectedRoute path="*" component={NotFound} />
+                <ProtectedRoute path='*' component={NotFound} />
               </Switch>
             )}
             {!isLoadingApp && debugInfo.error && !isSignedIn && (
-              <div className="container mx-auto mt-4 px-4">
-                <div className="rounded-lg bg-yellow-800 p-4 text-white">
-                  <h2 className="mb-2 text-xl font-bold">
+              <div className='container mx-auto mt-4 px-4'>
+                <div className='rounded-lg bg-yellow-800 p-4 text-white'>
+                  <h2 className='mb-2 text-xl font-bold'>
                     Payment Features Unavailable
                   </h2>
                   <p>Please sign in to access checkout features.</p>

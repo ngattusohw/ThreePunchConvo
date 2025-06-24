@@ -3,37 +3,30 @@ export const USER_STATUSES = {
   HALL_OF_FAMER: {
     label: "HALL OF FAMER",
     className: "status-hof",
-    minPoints: 10000,
   },
   CHAMPION: {
     label: "CHAMPION",
     className: "status-champion",
-    minPoints: 5000,
   },
   CONTENDER: {
     label: "CONTENDER",
     className: "status-contender",
-    minPoints: 1000,
   },
   RANKED_POSTER: {
-    label: "RANKED POSTER",
+    label: "RANKED",
     className: "status-ranked",
-    minPoints: 500,
   },
   COMPETITOR: {
     label: "COMPETITOR",
     className: "status-competitor",
-    minPoints: 100,
   },
   REGIONAL_POSTER: {
-    label: "REGIONAL POSTER",
+    label: "REGIONAL",
     className: "status-regional",
-    minPoints: 50,
   },
   AMATEUR: {
     label: "AMATEUR",
     className: "status-amateur",
-    minPoints: 0,
   },
 };
 

@@ -1,13 +1,14 @@
-import { cn } from "@/lib/utils";
+import React from 'react';
 import { UserStatus } from "@/lib/types";
 import Badge from "./badge";
+import { USER_STATUSES } from "@/lib/constants";
 
 interface StatusBadgeProps {
   status?: UserStatus | string | null;
   className?: string;
 }
 
-export default function StatusBadge({ status, className }: StatusBadgeProps) {
+export default function StatusBadge({ status }: StatusBadgeProps) {
   if (!status) {
     return null;
   }
@@ -15,30 +16,8 @@ export default function StatusBadge({ status, className }: StatusBadgeProps) {
   return (
     <Badge
       text={status}
-      color={getStatusClass(status as UserStatus)}
+      className={USER_STATUSES[status as UserStatus]?.className}
       icon={null}
-      textColor='text-white'
     />
   );
-}
-
-function getStatusClass(status: UserStatus): string {
-  switch (status) {
-    case "HALL OF FAMER":
-      return "status-hof";
-    case "CHAMPION":
-      return "status-champion";
-    case "CONTENDER":
-      return "status-contender";
-    case "RANKED POSTER":
-      return "status-ranked";
-    case "COMPETITOR":
-      return "status-competitor";
-    case "REGIONAL POSTER":
-      return "status-regional";
-    case "AMATEUR":
-      return "status-amateur";
-    default:
-      return "status-amateur";
-  }
 }

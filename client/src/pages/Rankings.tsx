@@ -6,6 +6,7 @@ import StatusBadge from "@/components/ui/status-badge";
 import { shortenNumber } from "@/lib/utils";
 import { useTopUsers } from "@/api";
 import UserRoleBadge from "@/components/ui/UserBadge";
+import { USER_STATUSES } from "@/lib/constants";
 
 export default function Rankings() {
   const [rankingFilter, setRankingFilter] = useState<string>("all");
@@ -41,6 +42,18 @@ export default function Rankings() {
           user.user.status.toLowerCase().includes(rankingFilter.toLowerCase()),
         );
 
+  // Create filter options from constants in reverse order
+  const filterOptions = [
+    { key: "all", label: "All Ranks", className: "bg-ufc-blue text-black" },
+    ...Object.values(USER_STATUSES)
+      .reverse() // Reverse the order of statuses
+      .map((status) => ({
+        key: status.label.toLowerCase().replace(/\s+/g, ""),
+        label: status.label,
+        className: status.className,
+      })),
+  ];
+
   return (
     <div className='container mx-auto px-4 py-6'>
       <div className='mb-6'>
@@ -54,56 +67,19 @@ export default function Rankings() {
 
       {/* Filter Options */}
       <div className='mb-6 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap'>
-        <button
-          onClick={() => setRankingFilter("all")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-            rankingFilter === "all"
-              ? "bg-ufc-blue text-black"
-              : "bg-dark-gray text-gray-300 hover:bg-gray-800"
-          }`}
-        >
-          All Ranks
-        </button>
-        <button
-          onClick={() => setRankingFilter("hall")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-            rankingFilter === "hall"
-              ? "status-hof"
-              : "bg-dark-gray text-gray-300 hover:bg-gray-800"
-          }`}
-        >
-          Hall of Famers
-        </button>
-        <button
-          onClick={() => setRankingFilter("champion")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-            rankingFilter === "champion"
-              ? "status-champion"
-              : "bg-dark-gray text-gray-300 hover:bg-gray-800"
-          }`}
-        >
-          Champions
-        </button>
-        <button
-          onClick={() => setRankingFilter("contender")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-            rankingFilter === "contender"
-              ? "status-contender"
-              : "bg-dark-gray text-gray-300 hover:bg-gray-800"
-          }`}
-        >
-          Contenders
-        </button>
-        <button
-          onClick={() => setRankingFilter("ranked")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-            rankingFilter === "ranked"
-              ? "status-ranked text-white"
-              : "bg-dark-gray text-gray-300 hover:bg-gray-800"
-          }`}
-        >
-          Ranked Posters
-        </button>
+        {filterOptions.map((option) => (
+          <button
+            key={option.key}
+            onClick={() => setRankingFilter(option.key)}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+              rankingFilter === option.key
+                ? option.className
+                : "bg-dark-gray text-gray-300 hover:bg-gray-800"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
       {/* Ranking Explanation */}
@@ -113,8 +89,7 @@ export default function Rankings() {
           Rankings are calculated based on your community contributions. Earn
           points through posting quality content, receiving likes, having your
           posts selected as Post of the Day, and more. Status levels from
-          highest to lowest: Hall of Famer, Champion, Contender, Ranked Poster,
-          Competitor, Regional Poster, and Amateur.
+          highest to lowest: {Object.values(USER_STATUSES).map(s => s.label).join(", ")}.
         </p>
       </div>
 

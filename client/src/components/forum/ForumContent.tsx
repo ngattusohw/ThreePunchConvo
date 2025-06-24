@@ -300,14 +300,15 @@ export default function ForumContent({
                     <div className="border-ufc-blue mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-t-2"></div>
                   </div>
                 ) : (
-                  <button
-                    onClick={handleLoadMore}
-                    className={`rounded-lg bg-gray-800 px-6 py-3 text-sm font-medium text-white transition hover:bg-gray-700 ${!hasMore ? "cursor-not-allowed opacity-50" : ""}`}
-                    disabled={!hasMore || isLoading}
-                  >
-                    {!hasMore ? "No More Discussions" : "Load More Discussions"}
-                  </button>
-                )}
+                  hasMore && (
+                    <button
+                      onClick={handleLoadMore}
+                      className={`rounded-lg bg-gray-800 px-6 py-3 text-sm font-medium text-white transition hover:bg-gray-700 ${!hasMore ? "cursor-not-allowed opacity-50" : ""}`}
+                      disabled={!hasMore || isLoading}
+                    >
+                      Load more threads
+                    </button>
+                ))}
               </div>
             </div>
           ) : (

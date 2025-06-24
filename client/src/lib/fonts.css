@@ -127,6 +127,14 @@
   border-color: var(--ufc-gold);
 }
 
+.border-ufc-red {
+  border-color: var(--ufc-red);
+}
+
+.border-ufc-admin-yellow {
+  border-color: var(--ufc-admin-yellow);
+}
+
 /* Hover states */
 .hover\:bg-ufc-blue:hover {
   background-color: var(--ufc-blue);

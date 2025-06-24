@@ -30,7 +30,8 @@ import logoImage from "@/assets/3PC-Logo-FullColor-RGB.png";
 import { SignIn, useAuth } from "@clerk/clerk-react";
 import { Link, useLocation } from "wouter";
 import { dark } from "@clerk/themes";
-import jennyFlorianHeadshot from "@/assets/jenny_florian_headshot.png";
+import kennyFlorianHeadshot from "@/assets/kenny_florian_headshot.png";
+import brianPetriHeadshot from "@/assets/brian_petrie_headshot.png";
 
 export default function AuthPage() {
   const { isSignedIn, isLoaded } = useAuth();
@@ -47,10 +48,18 @@ export default function AuthPage() {
     {
       quote:
         "Before turning pro, I lived in the early MMA forums. 3PC brings that spirit back by involving fighters as contributors - on a slick platform that fans will love.",
-      author: "Jenny Florian",
+      author: "Kenny Florian",
       role: "MMA Fighter / Media Personality",
       category: "Fighter",
-      avatar: jennyFlorianHeadshot,
+      avatar: kennyFlorianHeadshot,
+    },
+    {
+      quote:
+        "3PunchConvo is a place where opinions matter and bonds are formed. No other MMA community is even remotely close",
+      author: "Brian Petrie",
+      role: "Host of MMA Takes Podcast",
+      category: "Host",
+      avatar: brianPetriHeadshot,
     },
   ];
 

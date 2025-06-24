@@ -1277,6 +1277,11 @@ export class DatabaseStorage implements IStorage {
           console.log("No notification created - same user or no thread found");
         }
 
+        // Increment the user's replies_count
+        await tx.execute(
+          sql`UPDATE users SET replies_count = replies_count + 1 WHERE id = ${replyValues.userId}`,
+        );
+
         return [reply];
       });
 
@@ -1920,6 +1925,11 @@ export class DatabaseStorage implements IStorage {
               createdAt: new Date(),
             });
           }
+
+          // Update thread owner's potdCount (the user who received the POTD)
+          await tx.execute(
+            sql`UPDATE users SET potd_count = potd_count + 1 WHERE id = ${thread.userId}`,
+          );
 
           return true;
         } catch (txError) {

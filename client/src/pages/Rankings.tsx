@@ -144,6 +144,8 @@ export default function Rankings() {
             <div className='w-24 text-center'>Status</div>
             <div className='w-20 text-center'>Posts</div>
             <div className='w-20 text-center'>Likes</div>
+            <div className='w-20 text-center'>POTD</div>
+            <div className='w-20 text-center'>Replies</div>
             <div className='w-20 text-center'>Pinned</div>
             <div className='w-24 text-center'>Score</div>
           </div>
@@ -160,7 +162,7 @@ export default function Rankings() {
                   className='p-4 transition hover:bg-gray-800'
                 >
                   {/* Desktop layout */}
-                  <div className='hidden items-center md:flex md:flex-nowrap'>
+                  <div className='hidden items-center lg:flex lg:flex-nowrap'>
                     {/* Rank */}
                     <div className='w-16 text-center'>
                       <span className='font-accent text-ufc-gold text-lg font-bold'>
@@ -206,6 +208,16 @@ export default function Rankings() {
                     </div>
                     <div className='w-20 text-center'>
                       <span className='text-white'>
+                        {rankedUser.user.potdCount}
+                      </span>
+                    </div>
+                    <div className='w-20 text-center'>
+                      <span className='text-white'>
+                        {rankedUser.user.repliesCount}
+                      </span>
+                    </div>
+                    <div className='w-20 text-center'>
+                      <span className='text-white'>
                         {rankedUser.user.pinnedByUserCount}
                       </span>
                     </div>
@@ -217,7 +229,7 @@ export default function Rankings() {
                   </div>
 
                   {/* Mobile layout */}
-                  <div className='md:hidden'>
+                  <div className='lg:hidden'>
                     <div className='mb-2 flex items-center justify-between'>
                       {/* Rank */}
                       <span className='font-accent text-ufc-gold text-xl font-bold'>
@@ -299,6 +311,18 @@ export default function Rankings() {
                           {shortenNumber(rankedUser.user.likesCount)}
                         </div>
                         <div className='text-xs text-gray-400'>Likes</div>
+                      </div>
+                      <div className='p-1'>
+                        <div className='font-medium text-white'>
+                          {shortenNumber(rankedUser.user.potdCount)}
+                        </div>
+                        <div className='text-xs text-gray-400'>POTD</div>
+                      </div>
+                      <div className='p-1'>
+                        <div className='font-medium text-white'>
+                          {shortenNumber(rankedUser.user.repliesCount)}
+                        </div>
+                        <div className='text-xs text-gray-400'>Replies</div>
                       </div>
                       <div className='p-1'>
                         <div className='font-medium text-white'>

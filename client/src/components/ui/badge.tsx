@@ -13,7 +13,7 @@ export function Badge({
 }) {
   return (
     <span
-      className={`flex items-center rounded-full ${color} px-2 py-0.5 text-xs font-bold ${textColor}`}
+      className={`flex items-center rounded-full ${color} px-2 py-0.5 text-xs font-bold ${textColor} justify-center`}
     >
       {icon && icon}
       {text}

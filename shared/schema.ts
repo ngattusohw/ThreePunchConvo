@@ -52,6 +52,8 @@ export const users = pgTable("users", {
   likesCount: integer("likes_count").notNull().default(0),
   pinnedByUserCount: integer("pinned_by_user_count").notNull().default(0),
   pinnedCount: integer("pinned_count").notNull().default(0),
+  potdCount: integer("potd_count").notNull().default(0), // Count of POTD reactions received on user threads
+  repliesCount: integer("replies_count").notNull().default(0),
   followersCount: integer("followers_count").notNull().default(0),
   followingCount: integer("following_count").notNull().default(0),
   socialLinks: json("social_links").$type<Record<string, string>>(),
@@ -338,6 +340,8 @@ export const insertUserSchema = createInsertSchema(users, {
   likesCount: z.number().optional(),
   pinnedByUserCount: z.number().optional(),
   pinnedCount: z.number().optional(),
+  potdCount: z.number().optional(),
+  repliesCount: z.number().optional(),
   followersCount: z.number().optional(),
   followingCount: z.number().optional(),
   socialLinks: z.record(z.string()).optional(),

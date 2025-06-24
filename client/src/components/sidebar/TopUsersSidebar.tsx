@@ -56,7 +56,7 @@ export default function TopUsersSidebar() {
                     >
                       {truncateText(rankedUser.user.username, 15)}
                     </Link>
-                    <StatusBadge status={rankedUser.user.status} />
+                    <div><StatusBadge status={rankedUser.user.status} /></div>
                   </div>
                   <div className='text-sm text-gray-400'>
                     <span className='flex items-center'>

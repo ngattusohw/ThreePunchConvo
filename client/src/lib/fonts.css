@@ -30,7 +30,7 @@
 }
 
 .status-champion {
-  background: linear-gradient(90deg, #c0c0c0 0%, #e0e0e0 100%);
+  background: linear-gradient(90deg, #dda15e 0%, #e0e0e0 100%);
   color: #121212;
 }
 
@@ -45,12 +45,12 @@
 }
 
 .status-competitor {
-  background-color: #4b5563;
+  background-color: #3c4552;
   color: white;
 }
 
 .status-regional {
-  background-color: #6b7280;
+  background-color: #5c6370;
   color: white;
 }
 
@@ -125,6 +125,14 @@
 
 .border-ufc-gold {
   border-color: var(--ufc-gold);
+}
+
+.border-ufc-red {
+  border-color: var(--ufc-red);
+}
+
+.border-ufc-admin-yellow {
+  border-color: var(--ufc-admin-yellow);
 }
 
 /* Hover states */

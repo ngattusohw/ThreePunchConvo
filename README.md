@@ -344,6 +344,12 @@ that use Drizzle ORM and are run through the migrate script.
 ```bash
 # Run all TypeScript migrations
 npm run migrate
+
+# Run a specific TypeScript migration
+npm run migrate:run <migration-name>
+
+# Example: Run a specific migration
+npm run migrate:run 0012_add_pinned_count
 ```
 
 ### Migration Sequence
@@ -362,6 +368,22 @@ When setting up a new database from scratch, follow this sequence:
    npm run migrate
    ```
 
+### Running Individual Migrations
+
+If you need to run a specific migration (for example, when testing or debugging):
+
+```bash
+# Run a specific migration by name
+npm run migrate:run <migration-name>
+
+# Examples:
+npm run migrate:run 0001_initial_schema
+npm run migrate:run 0002_add_missing_tables
+npm run migrate:run 0012_add_pinned_count
+```
+
+**Note**: Make sure the migration file exists in the `/server/migrations` directory before running the command.
+
 ### Troubleshooting Migrations
 
 If you encounter errors during migration:
@@ -376,3 +398,7 @@ If you encounter errors during migration:
 3. **Duplicate key violations**: This could happen if you try to insert data
    that already exists. Use `ON CONFLICT DO NOTHING` in your SQL statements to
    handle this.
+
+4. **Migration file not found**: When running individual migrations, ensure the
+   migration file exists in the `/server/migrations` directory with the exact
+   name you're specifying.

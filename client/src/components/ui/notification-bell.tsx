@@ -65,7 +65,7 @@ export default function NotificationBell() {
       </button>
 
       {isDropdownOpen && (
-        <div className='bg-dark-gray absolute right-0 top-full z-50 mt-2 w-96 rounded-lg border border-gray-800 shadow-xl'>
+        <div className='bg-dark-gray absolute right-0 top-full z-50 mt-2 w-80 md:w-96 rounded-lg border border-gray-800 shadow-xl transform translate-x-12 md:translate-x-0'>
           <NotificationDropdown onClose={handleCloseDropdown} />
         </div>
       )}

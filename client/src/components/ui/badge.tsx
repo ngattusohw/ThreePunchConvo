@@ -15,7 +15,7 @@ export function Badge({
 }) {
   return (
     <span
-      className={`flex items-center rounded-full ${color} px-2 py-0.5 text-xs font-bold ${textColor} justify-center ${className}`}
+      className={`inline-flex items-center rounded-full ${color} px-2 py-0.5 text-xs font-bold ${textColor} ${className}`}
     >
       {icon && icon}
       {text}

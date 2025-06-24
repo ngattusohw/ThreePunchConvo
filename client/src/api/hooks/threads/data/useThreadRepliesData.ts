@@ -8,7 +8,10 @@ interface UseThreadRepliesDataOptions {
   userId?: string;
 }
 
-export function useThreadRepliesData({ threadId, userId }: UseThreadRepliesDataOptions) {
+export function useThreadRepliesData({
+  threadId,
+  userId,
+}: UseThreadRepliesDataOptions) {
   const [displayReplies, setDisplayReplies] = useState<ThreadReply[]>([]);
 
   // Fetch thread replies
@@ -82,7 +85,7 @@ export function useThreadRepliesData({ threadId, userId }: UseThreadRepliesDataO
 
       return result;
     };
-    
+
     // Build the full reply tree starting from top-level replies (parentId = null)
     const processedReplies = buildReplyTree(null);
     setDisplayReplies(processedReplies);
@@ -94,4 +97,4 @@ export function useThreadRepliesData({ threadId, userId }: UseThreadRepliesDataO
     isLoading,
     error,
   };
-} 
+}

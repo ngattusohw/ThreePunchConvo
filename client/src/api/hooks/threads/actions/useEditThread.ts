@@ -9,7 +9,12 @@ interface UseEditThreadOptions {
   content: string;
 }
 
-export function useEditThread({ threadId, userId, title, content }: UseEditThreadOptions) {
+export function useEditThread({
+  threadId,
+  userId,
+  title,
+  content,
+}: UseEditThreadOptions) {
   const { toast } = useToast();
 
   return useMutation({
@@ -31,4 +36,4 @@ export function useEditThread({ threadId, userId, title, content }: UseEditThrea
       });
     },
   });
-} 
+}

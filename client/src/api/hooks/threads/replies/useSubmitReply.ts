@@ -33,7 +33,7 @@ export function useSubmitReply({
         threadId,
         userId,
         replyContent,
-        replyingTo?.id || null
+        replyingTo?.id || null,
       );
     },
     onSuccess: () => {
@@ -61,4 +61,4 @@ export function useSubmitReply({
       });
     },
   });
-} 
+}

@@ -7,6 +7,11 @@ interface FCBadgeProps {
 
 export default function FCBadge({ rank }: FCBadgeProps) {
   return (
-    <Badge text={`FC: ${rank}`} color="bg-ufc-red" icon={null} textColor="text-white" />
+    <Badge
+      text={`FC: ${rank}`}
+      color='bg-ufc-red'
+      icon={null}
+      textColor='text-white'
+    />
   );
-} 
+}

@@ -18,17 +18,24 @@ export default function ForumContent({
   modalOpen = false,
 }: ForumContentProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterOption, setFilterOption] = useState<"recent" | "popular" | "new">("recent");
-  const [timeRange, setTimeRange] = useState<"all" | "week" | "month" | "year">("all");
-  const [deletedThreadIds, setDeletedThreadIds] = useState<Set<string>>(new Set());
+  const [filterOption, setFilterOption] = useState<
+    "recent" | "popular" | "new"
+  >("recent");
+  const [timeRange, setTimeRange] = useState<"all" | "week" | "month" | "year">(
+    "all",
+  );
+  const [deletedThreadIds, setDeletedThreadIds] = useState<Set<string>>(
+    new Set(),
+  );
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef(0);
   const shouldRestoreScrollRef = useRef(false);
   const { user: currentUser } = useMemoizedUser();
-  
+
   // Get the current category info
-  const currentCategory = FORUM_CATEGORIES.find(cat => cat.id === category) || FORUM_CATEGORIES[0];
-  
+  const currentCategory =
+    FORUM_CATEGORIES.find((cat) => cat.id === category) || FORUM_CATEGORIES[0];
+
   // Use the thread hook
   const {
     pinnedThreads,
@@ -39,19 +46,22 @@ export default function ForumContent({
     page,
     loadMore,
     handleFilterChange,
-    handleTimeRangeChange
+    handleTimeRangeChange,
   } = useThreadsList({
     category,
     initialFilterOption: "recent",
     initialTimeRange: "all",
-    userId: currentUser?.id
+    userId: currentUser?.id,
   });
 
   // Filter out deleted threads
-  const filteredPinnedThreads = pinnedThreads.filter(thread => !deletedThreadIds.has(thread.id));
-  const filteredRegularThreads = allRegularThreads.filter(thread => 
-    !deletedThreadIds.has(thread.id) && 
-    !pinnedThreads.some(pinnedThread => pinnedThread.id === thread.id)
+  const filteredPinnedThreads = pinnedThreads.filter(
+    (thread) => !deletedThreadIds.has(thread.id),
+  );
+  const filteredRegularThreads = allRegularThreads.filter(
+    (thread) =>
+      !deletedThreadIds.has(thread.id) &&
+      !pinnedThreads.some((pinnedThread) => pinnedThread.id === thread.id),
   );
 
   // Store current scroll position before loading more
@@ -79,26 +89,26 @@ export default function ForumContent({
     if (onOpenModal) {
       onOpenModal();
     } else {
-      console.warn('No onOpenModal handler provided to ForumContent');
+      console.warn("No onOpenModal handler provided to ForumContent");
     }
   };
 
   const handleThreadDelete = (threadId: string) => {
-    setDeletedThreadIds(prev => new Set([...prev, threadId]));
+    setDeletedThreadIds((prev) => new Set([...prev, threadId]));
   };
 
   return (
-    <div className="flex-grow">
+    <div className='flex-grow'>
       {/* Forum Header and Actions */}
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="md:max-w-[70%]">
-          <h1 className="font-heading mb-1 text-2xl font-bold text-white">
+      <div className='mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between'>
+        <div className='md:max-w-[70%]'>
+          <h1 className='font-heading mb-1 text-2xl font-bold text-white'>
             {currentCategory.name}
           </h1>
-          <p className="text-sm text-gray-400">{currentCategory.description}</p>
+          <p className='text-sm text-gray-400'>{currentCategory.description}</p>
         </div>
 
-        <div className="mt-4 flex space-x-3 md:mt-0">
+        <div className='mt-4 flex space-x-3 md:mt-0'>
           {/* Hiding search */}
           {/* <div className="relative">
             <input 
@@ -117,20 +127,20 @@ export default function ForumContent({
           <SignedIn>
             <button
               onClick={handleOpenModal}
-              className="bg-ufc-blue hover:bg-ufc-blue-dark flex flex-shrink-0 items-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-black transition"
+              className='bg-ufc-blue hover:bg-ufc-blue-dark flex flex-shrink-0 items-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-black transition'
             >
               <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="mr-1 h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+                xmlns='http://www.w3.org/2000/svg'
+                className='mr-1 h-5 w-5'
+                fill='none'
+                viewBox='0 0 24 24'
+                stroke='currentColor'
               >
                 <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 4v16m8-8H4"
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth='2'
+                  d='M12 4v16m8-8H4'
                 />
               </svg>
               New Post
@@ -150,21 +160,21 @@ export default function ForumContent({
                   // Other color variables
                 },
               }}
-              mode="modal"
+              mode='modal'
             >
-              <button className="bg-ufc-blue hover:bg-ufc-blue-dark flex flex-shrink-0 items-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-black transition">
+              <button className='bg-ufc-blue hover:bg-ufc-blue-dark flex flex-shrink-0 items-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-black transition'>
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="mr-1 h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='mr-1 h-5 w-5'
+                  fill='none'
+                  viewBox='0 0 24 24'
+                  stroke='currentColor'
                 >
                   <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 4v16m8-8H4"
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth='2'
+                    d='M12 4v16m8-8H4'
                   />
                 </svg>
                 New Post
@@ -175,13 +185,13 @@ export default function ForumContent({
       </div>
 
       {/* Mobile Category Selection */}
-      <div className="mb-6 md:hidden">
+      <div className='mb-6 md:hidden'>
         <select
           value={category}
           onChange={(e) => {
             window.location.href = `/forum/${e.target.value}`;
           }}
-          className="bg-dark-gray focus:ring-ufc-blue w-full rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-300 focus:outline-none focus:ring-1"
+          className='bg-dark-gray focus:ring-ufc-blue w-full rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-300 focus:outline-none focus:ring-1'
         >
           {FORUM_CATEGORIES.map((cat) => (
             <option key={cat.id} value={cat.id}>
@@ -233,16 +243,16 @@ export default function ForumContent({
 
       {/* Loading State - Initial Page Load */}
       {isLoading && page === 0 && allRegularThreads.length === 0 && (
-        <div className="py-20 text-center">
-          <div className="border-ufc-blue mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-t-2"></div>
-          <p className="mt-4 text-gray-400">Loading discussions...</p>
+        <div className='py-20 text-center'>
+          <div className='border-ufc-blue mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-t-2'></div>
+          <p className='mt-4 text-gray-400'>Loading discussions...</p>
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div className="my-8 rounded-lg border border-red-500 bg-red-900 bg-opacity-20 p-4 text-center">
-          <p className="text-red-500">
+        <div className='my-8 rounded-lg border border-red-500 bg-red-900 bg-opacity-20 p-4 text-center'>
+          <p className='text-red-500'>
             Error loading threads. Please try again later.
           </p>
         </div>
@@ -250,17 +260,18 @@ export default function ForumContent({
 
       {/* Forum Thread List */}
       {(!isLoading || page > 0 || allRegularThreads.length > 0) && !error && (
-        <div className="space-y-4">
-          {(filteredPinnedThreads.length > 0 || filteredRegularThreads.length > 0) ? (
+        <div className='space-y-4'>
+          {filteredPinnedThreads.length > 0 ||
+          filteredRegularThreads.length > 0 ? (
             <div>
               {/* Pinned Section - only shown once at the top */}
               {filteredPinnedThreads.length > 0 && (
-                <div className="mb-6">
-                  <div className="space-y-4">
-                    {filteredPinnedThreads.map(thread => (
-                      <ThreadCard 
-                        key={thread.id} 
-                        thread={thread} 
+                <div className='mb-6'>
+                  <div className='space-y-4'>
+                    {filteredPinnedThreads.map((thread) => (
+                      <ThreadCard
+                        key={thread.id}
+                        thread={thread}
                         onDelete={() => handleThreadDelete(thread.id)}
                       />
                     ))}
@@ -270,11 +281,11 @@ export default function ForumContent({
 
               {/* Regular Threads Section - grows with infinite scrolling */}
               {filteredRegularThreads.length > 0 ? (
-                <div className="space-y-4">
+                <div className='space-y-4'>
                   {filteredRegularThreads.map((thread) => (
-                    <ThreadCard 
-                      key={thread.id} 
-                      thread={thread} 
+                    <ThreadCard
+                      key={thread.id}
+                      thread={thread}
                       onDelete={() => handleThreadDelete(thread.id)}
                     />
                   ))}
@@ -282,8 +293,8 @@ export default function ForumContent({
               ) : (
                 !isLoading &&
                 page === 0 && (
-                  <div className="py-6 text-center">
-                    <p className="text-gray-400">
+                  <div className='py-6 text-center'>
+                    <p className='text-gray-400'>
                       No threads found with the current filters.
                     </p>
                   </div>
@@ -294,10 +305,10 @@ export default function ForumContent({
               <div ref={loadMoreRef}></div>
 
               {/* Load More Button with loading state */}
-              <div className="mt-6 text-center">
+              <div className='mt-6 text-center'>
                 {isLoading && page > 0 ? (
-                  <div className="py-4">
-                    <div className="border-ufc-blue mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-t-2"></div>
+                  <div className='py-4'>
+                    <div className='border-ufc-blue mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-t-2'></div>
                   </div>
                 ) : (
                   hasMore && (
@@ -308,17 +319,18 @@ export default function ForumContent({
                     >
                       Load more threads
                     </button>
-                ))}
+                  )
+                )}
               </div>
             </div>
           ) : (
-            <div className="py-12 text-center">
-              <p className="text-gray-400">
+            <div className='py-12 text-center'>
+              <p className='text-gray-400'>
                 No discussions found in this category.
               </p>
               <button
                 onClick={handleOpenModal}
-                className="bg-ufc-blue hover:bg-ufc-blue-dark mt-4 rounded-lg px-6 py-3 text-sm font-medium text-black transition"
+                className='bg-ufc-blue hover:bg-ufc-blue-dark mt-4 rounded-lg px-6 py-3 text-sm font-medium text-black transition'
               >
                 Start a New Discussion
               </button>

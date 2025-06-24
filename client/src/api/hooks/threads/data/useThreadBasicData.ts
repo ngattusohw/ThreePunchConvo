@@ -7,7 +7,10 @@ interface UseThreadBasicDataOptions {
   userId?: string;
 }
 
-export function useThreadBasicData({ threadId, userId }: UseThreadBasicDataOptions) {
+export function useThreadBasicData({
+  threadId,
+  userId,
+}: UseThreadBasicDataOptions) {
   // Fetch thread data
   const {
     data: thread,
@@ -15,10 +18,11 @@ export function useThreadBasicData({ threadId, userId }: UseThreadBasicDataOptio
     error,
   } = useQuery<ForumThread>({
     queryKey: [`/api/threads/id/${threadId}`, userId],
-    queryFn: () => fetchThreadById(threadId, userId).then(data => {
-      console.log("Thread data received in hook:", data, "userId:", userId);
-      return data;
-    }),
+    queryFn: () =>
+      fetchThreadById(threadId, userId).then((data) => {
+        console.log("Thread data received in hook:", data, "userId:", userId);
+        return data;
+      }),
     enabled: !!threadId,
   });
 
@@ -27,4 +31,4 @@ export function useThreadBasicData({ threadId, userId }: UseThreadBasicDataOptio
     isLoading,
     error,
   };
-} 
+}

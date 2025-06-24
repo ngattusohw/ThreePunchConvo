@@ -6,7 +6,7 @@ export async function up(db) {
     ALTER TABLE threads 
     ADD COLUMN IF NOT EXISTS "potd_count" integer NOT NULL DEFAULT 0
   `);
-  
+
   // Initialize the potdCount from existing POTD reactions
   await db.execute(sql`
     UPDATE threads
@@ -24,4 +24,4 @@ export async function down(db) {
     ALTER TABLE threads
     DROP COLUMN IF EXISTS "potd_count"
   `);
-} 
+}

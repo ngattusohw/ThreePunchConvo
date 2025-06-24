@@ -1,4 +1,9 @@
-import express, { type Express, Response, NextFunction, Request } from "express";
+import express, {
+  type Express,
+  Response,
+  NextFunction,
+  Request,
+} from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { fetchUpcomingEvents } from "./espn-api";
@@ -36,9 +41,9 @@ declare global {
 }
 
 // Create uploads directory if it doesn't exist
-const uploadsDir = process.env.RAILWAY_VOLUME_MOUNT_PATH 
-  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'uploads')
-  : path.join(process.cwd(), 'uploads');
+const uploadsDir = process.env.RAILWAY_VOLUME_MOUNT_PATH
+  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, "uploads")
+  : path.join(process.cwd(), "uploads");
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -211,7 +216,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Get reply preview if applicable
             let replyPreview;
             if (notification.replyId) {
-              const reply = await storage.getReply(notification.replyId, userId);
+              const reply = await storage.getReply(
+                notification.replyId,
+                userId,
+              );
               if (reply) {
                 replyPreview =
                   reply.content.length > 100
@@ -276,8 +284,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               likesCount: user.likesCount || 0,
               pinnedByUserCount: user.pinnedByUserCount || 0,
               pinnedCount: user.pinnedCount || 0,
-              status: user.status || 'AMATEUR'
-            }
+              status: user.status || "AMATEUR",
+            },
           };
         });
 
@@ -446,11 +454,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { followerId } = req.body;
 
         if (!followingId || !followerId) {
-          return res
-            .status(400)
-            .json({
-              message: "Both follower ID and following ID are required",
-            });
+          return res.status(400).json({
+            message: "Both follower ID and following ID are required",
+          });
         }
 
         const success = await storage.followUser(followerId, followingId);
@@ -475,11 +481,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { followerId } = req.body;
 
         if (!followingId || !followerId) {
-          return res
-            .status(400)
-            .json({
-              message: "Both follower ID and following ID are required",
-            });
+          return res.status(400).json({
+            message: "Both follower ID and following ID are required",
+          });
         }
 
         const success = await storage.unfollowUser(followerId, followingId);
@@ -502,9 +506,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sort = (req.query.sort as string) || "recent";
       const limit = parseInt(req.query.limit as string) || 10;
       const offset = parseInt(req.query.offset as string) || 0;
-      const pinned = req.query.pinned === 'true';
+      const pinned = req.query.pinned === "true";
       const clerkUserId = req.query.userId as string | undefined;
-      
+
       // Set cache control headers
       res.set({
         "Cache-Control":
@@ -517,10 +521,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert Clerk user ID to local user ID if provided
       let localUserId = undefined;
       if (clerkUserId) {
-        console.log("Looking up user by externalId for thread list:", clerkUserId);
+        console.log(
+          "Looking up user by externalId for thread list:",
+          clerkUserId,
+        );
         const localUser = await storage.getUserByExternalId(clerkUserId);
         if (localUser) {
-          console.log(`Thread list: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
+          console.log(
+            `Thread list: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`,
+          );
           localUserId = localUser.id;
         } else {
           console.log(`No local user found for Clerk user ${clerkUserId}`);
@@ -528,12 +537,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get threads - if pinned is true, only get pinned threads
-      const threads = await storage.getThreadsByCategory(categoryId, sort, limit, offset);
-      
+      const threads = await storage.getThreadsByCategory(
+        categoryId,
+        sort,
+        limit,
+        offset,
+      );
+
       // Filter threads based on pinned status
       let filteredThreads: Thread[];
       if (pinned) {
-        filteredThreads = threads.filter(thread => thread.isPinned);
+        filteredThreads = threads.filter((thread) => thread.isPinned);
       } else {
         filteredThreads = threads;
       }
@@ -542,18 +556,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const threadsWithUser = await Promise.all(
         filteredThreads.map(async (thread) => {
           // Get the full thread data including hasLiked and hasPotd status
-          const fullThreadData = await storage.getThread(thread.id, localUserId);
-          
+          const fullThreadData = await storage.getThread(
+            thread.id,
+            localUserId,
+          );
+
           if (!fullThreadData) {
             return null;
           }
-          
+
           return fullThreadData;
         }),
       );
 
       // Filter out any null values from threads that couldn't be fetched
-      const validThreads = threadsWithUser.filter(thread => thread !== null);
+      const validThreads = threadsWithUser.filter((thread) => thread !== null);
 
       res.json(validThreads);
     } catch (error) {
@@ -572,13 +589,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       let localUserId = undefined;
-      
+
       // Convert Clerk user ID to local user ID if provided
       if (clerkUserId) {
-        console.log("Looking up user by externalId for thread view:", clerkUserId);
+        console.log(
+          "Looking up user by externalId for thread view:",
+          clerkUserId,
+        );
         const localUser = await storage.getUserByExternalId(clerkUserId);
         if (localUser) {
-          console.log(`Thread view: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
+          console.log(
+            `Thread view: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`,
+          );
           localUserId = localUser.id;
         } else {
           console.log(`No local user found for Clerk user ${clerkUserId}`);
@@ -660,103 +682,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  app.put('/api/threads/:id', requireAuth(), async (req: any, res: Response) => {
-    try {
-      const threadId = req.params.id;
-      const { userId, title, content } = req.body;
+  app.put(
+    "/api/threads/:id",
+    requireAuth(),
+    async (req: any, res: Response) => {
+      try {
+        const threadId = req.params.id;
+        const { userId, title, content } = req.body;
 
-      if (!userId) {
-        return res.status(400).json({ message: "User ID is required" });
-      }
+        if (!userId) {
+          return res.status(400).json({ message: "User ID is required" });
+        }
 
-      if (!title || !content) {
-        return res.status(400).json({ message: "Title and content are required" });
-      }
+        if (!title || !content) {
+          return res
+            .status(400)
+            .json({ message: "Title and content are required" });
+        }
 
-      const thread = await storage.getThread(threadId);
-      if (!thread) {
-        return res.status(404).json({ message: "Thread not found" });
-      }
+        const thread = await storage.getThread(threadId);
+        if (!thread) {
+          return res.status(404).json({ message: "Thread not found" });
+        }
 
-      // Verify user is the thread author
-      const user = await storage.getUserByExternalId(userId);
-      if (thread.userId !== user?.id) {
-        return res.status(403).json({ message: "Not authorized to edit this thread" });
-      }
+        // Verify user is the thread author
+        const user = await storage.getUserByExternalId(userId);
+        if (thread.userId !== user?.id) {
+          return res
+            .status(403)
+            .json({ message: "Not authorized to edit this thread" });
+        }
 
-      // Verify thread is less than 1 hour old
-      if (thread.createdAt < new Date(Date.now() - 1000 * 60 * 60)) {
-        return res.status(403).json({ message: "Not authorized to edit this thread" });
-      }
+        // Verify thread is less than 1 hour old
+        if (thread.createdAt < new Date(Date.now() - 1000 * 60 * 60)) {
+          return res
+            .status(403)
+            .json({ message: "Not authorized to edit this thread" });
+        }
 
-      const success = await storage.updateThread(threadId, { title, content, edited: true, editedAt: new Date() });
+        const success = await storage.updateThread(threadId, {
+          title,
+          content,
+          edited: true,
+          editedAt: new Date(),
+        });
 
-      if (!success) {
-        return res.status(400).json({ message: "Failed to edit thread" });
-      }
+        if (!success) {
+          return res.status(400).json({ message: "Failed to edit thread" });
+        }
 
-      res.json({ message: "Thread edited successfully" });
-    } catch (error) {
-      console.error("Error in thread edit:", error);
-    }
-  });
+        res.json({ message: "Thread edited successfully" });
+      } catch (error) {
+        console.error("Error in thread edit:", error);
+      }
+    },
+  );
 
-  app.post('/api/threads/:id/pin', requireAuth(), async (req: any, res: Response) => {
-    try {
-      const threadId = req.params.id;
-      
-      // Get the Clerk user ID from the request body
-      const clerkUserId = req.body.userId;
-      
-      if (!clerkUserId) {
-        return res.status(400).json({ message: 'User ID is required' });
+  app.post(
+    "/api/threads/:id/pin",
+    requireAuth(),
+    async (req: any, res: Response) => {
+      try {
+        const threadId = req.params.id;
+
+        // Get the Clerk user ID from the request body
+        const clerkUserId = req.body.userId;
+
+        if (!clerkUserId) {
+          return res.status(400).json({ message: "User ID is required" });
+        }
+
+        console.log("Using Clerk user ID from request body:", clerkUserId);
+
+        // Get the local user from the Clerk external ID
+        const localUser = await storage.getUserByExternalId(clerkUserId);
+
+        if (!localUser) {
+          return res
+            .status(400)
+            .json({ message: "User not found in database" });
+        }
+
+        console.log(
+          `Pin thread: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`,
+        );
+
+        // Check if user is admin or moderator
+        if (localUser.role !== "ADMIN" && localUser.role !== "MODERATOR") {
+          return res.status(403).json({
+            message: "Only administrators and moderators can pin threads",
+          });
+        }
+
+        if (!threadId) {
+          return res.status(400).json({ message: "Thread ID is required" });
+        }
+
+        // Get current thread to check pin status and get thread owner
+        const currentThread = await storage.getThread(threadId);
+        if (!currentThread) {
+          return res.status(404).json({ message: "Thread not found" });
+        }
+
+        // Toggle the pin status
+        const newPinStatus = !currentThread.isPinned;
+
+        // Update thread pin status and increment/decrement pinnedCount for thread owner
+        const success = await storage.updateThreadPinStatus(
+          threadId,
+          newPinStatus,
+          currentThread.userId,
+          localUser.id,
+        );
+
+        if (!success) {
+          return res
+            .status(400)
+            .json({ message: "Failed to update thread pin status" });
+        }
+
+        res.json({
+          message: `Thread ${newPinStatus ? "pinned" : "unpinned"} successfully`,
+          isPinned: newPinStatus,
+        });
+      } catch (error) {
+        console.error("Error in thread pin:", error);
+        res.status(500).json({ message: "Failed to update thread pin status" });
       }
-      
-      console.log("Using Clerk user ID from request body:", clerkUserId);
-      
-      // Get the local user from the Clerk external ID
-      const localUser = await storage.getUserByExternalId(clerkUserId);
-      
-      if (!localUser) {
-        return res.status(400).json({ message: 'User not found in database' });
-      }
-      
-      console.log(`Pin thread: Using local user ID ${localUser.id} for Clerk user ${clerkUserId}`);
-      
-      // Check if user is admin or moderator
-      if (localUser.role !== 'ADMIN' && localUser.role !== 'MODERATOR') {
-        return res.status(403).json({ message: 'Only administrators and moderators can pin threads' });
-      }
-      
-      if (!threadId) {
-        return res.status(400).json({ message: 'Thread ID is required' });
-      }
-      
-      // Get current thread to check pin status and get thread owner
-      const currentThread = await storage.getThread(threadId);
-      if (!currentThread) {
-        return res.status(404).json({ message: 'Thread not found' });
-      }
-      
-      // Toggle the pin status
-      const newPinStatus = !currentThread.isPinned;
-      
-      // Update thread pin status and increment/decrement pinnedCount for thread owner
-      const success = await storage.updateThreadPinStatus(threadId, newPinStatus, currentThread.userId, localUser.id);
-      
-      if (!success) {
-        return res.status(400).json({ message: 'Failed to update thread pin status' });
-      }
-      
-      res.json({ 
-        message: `Thread ${newPinStatus ? 'pinned' : 'unpinned'} successfully`,
-        isPinned: newPinStatus
-      });
-    } catch (error) {
-      console.error("Error in thread pin:", error);
-      res.status(500).json({ message: 'Failed to update thread pin status' });
-    }
-  });
+    },
+  );
 
   app.post(
     "/api/threads/:id/like",
@@ -886,44 +940,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         try {
-          console.log(`Starting POTD operation for thread ${threadId} by user ${localUser.id}`);
+          console.log(
+            `Starting POTD operation for thread ${threadId} by user ${localUser.id}`,
+          );
           await storage.potdThread(threadId, localUser.id);
-          console.log(`POTD set successfully for thread ${threadId} by user ${localUser.id}`);
-          
+          console.log(
+            `POTD set successfully for thread ${threadId} by user ${localUser.id}`,
+          );
+
           // Verify the update by fetching the thread with this user
           const updatedThread = await storage.getThread(threadId, localUser.id);
-          console.log(`After POTD, hasPotd flag: ${updatedThread?.hasPotd}, potdCount: ${updatedThread?.potdCount}`);
-          
+          console.log(
+            `After POTD, hasPotd flag: ${updatedThread?.hasPotd}, potdCount: ${updatedThread?.potdCount}`,
+          );
+
           res.json({ message: "Thread set as Post of the Day successfully" });
         } catch (potdError) {
           console.error("Error in thread POTD:", potdError);
-          
+
           // Check for specific error messages and return appropriate status codes
           if (potdError instanceof Error) {
             if (potdError.message.includes("already used")) {
-              return res.status(400).json({ 
+              return res.status(400).json({
                 message: potdError.message,
-                code: "ALREADY_USED_POTD"
+                code: "ALREADY_USED_POTD",
               });
             } else if (potdError.message.includes("Thread not found")) {
-              return res.status(404).json({ 
+              return res.status(404).json({
                 message: "Thread not found",
-                code: "THREAD_NOT_FOUND"
+                code: "THREAD_NOT_FOUND",
               });
             }
           }
-          
+
           // Generic error case
-          res.status(400).json({ 
-            message: potdError instanceof Error ? potdError.message : "Failed to set thread as Post of the Day",
-            code: "POTD_ERROR"
+          res.status(400).json({
+            message:
+              potdError instanceof Error
+                ? potdError.message
+                : "Failed to set thread as Post of the Day",
+            code: "POTD_ERROR",
           });
         }
       } catch (error) {
         console.error("Error in thread POTD:", error);
-        res.status(500).json({ 
+        res.status(500).json({
           message: "Server error while processing POTD request",
-          code: "SERVER_ERROR"
+          code: "SERVER_ERROR",
         });
       }
     },
@@ -996,12 +1059,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (error) {
         console.error("Error in poll vote:", error);
-        res
-          .status(500)
-          .json({
-            message: "Failed to vote in poll",
-            error: error instanceof Error ? error.message : String(error),
-          });
+        res.status(500).json({
+          message: "Failed to vote in poll",
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     },
   );
@@ -1015,9 +1076,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.query.userId as string;
 
         if (!threadId || !userId) {
-          return res.status(400).json({ 
+          return res.status(400).json({
             message: "Thread ID and user ID are required",
-            hasVoted: false
+            hasVoted: false,
           });
         }
 
@@ -1025,9 +1086,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const poll = await storage.getPollByThread(threadId);
 
         if (!poll) {
-          return res.status(404).json({ 
+          return res.status(404).json({
             message: "Poll not found for this thread",
-            hasVoted: false
+            hasVoted: false,
           });
         }
 
@@ -1035,8 +1096,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const localUser = await storage.getUserByExternalId(userId);
 
         if (!localUser) {
-          return res.status(200).json({ 
-            hasVoted: false 
+          return res.status(200).json({
+            hasVoted: false,
           });
         }
 
@@ -1063,7 +1124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: error instanceof Error ? error.message : String(error),
         });
       }
-    }
+    },
   );
 
   // Reply endpoints
@@ -1739,11 +1800,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check if the request is from an admin
         const admin = await storage.getUser(adminId);
         if (!admin || admin.role !== "ADMIN") {
-          return res
-            .status(403)
-            .json({
-              message: "Only administrators can trigger this operation",
-            });
+          return res.status(403).json({
+            message: "Only administrators can trigger this operation",
+          });
         }
 
         // Log that this admin triggered the operation
@@ -1816,7 +1875,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await handleUserDeleted(localUser.stripeId);
 
         // Mark user as deactivated in database
-        await storage.updateUser(localUser.id, { disabled: true, disabledAt: new Date(), planType: "FREE" });
+        await storage.updateUser(localUser.id, {
+          disabled: true,
+          disabledAt: new Date(),
+          planType: "FREE",
+        });
 
         // Delete all user's posts, comments, and rankings
         await storage.deleteUserPosts(localUser.id);
@@ -1907,7 +1970,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Serve uploaded files statically
-  app.use('/uploads', express.static(uploadsDir));
+  app.use("/uploads", express.static(uploadsDir));
 
   // Image upload endpoint with Railway Volume
   app.post(
@@ -1929,10 +1992,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await fs.promises.writeFile(filePath, file.buffer);
 
         // Generate the URL - use Railway app URL or localhost for development
-        const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
+        const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
           ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
           : `http://localhost:${process.env.PORT || 5001}`;
-        
+
         const fileUrl = `${baseUrl}/uploads/${fileName}`;
 
         res.json({ url: fileUrl });

@@ -13,7 +13,8 @@ export function useDeleteReply({ threadId, userId }: UseDeleteReplyOptions) {
 
   return useMutation({
     mutationFn: (replyId: string) => {
-      if (!userId) throw new Error("You must be logged in to delete this reply");
+      if (!userId)
+        throw new Error("You must be logged in to delete this reply");
       return deleteReply(replyId, userId);
     },
     onSuccess: () => {
@@ -33,4 +34,4 @@ export function useDeleteReply({ threadId, userId }: UseDeleteReplyOptions) {
       });
     },
   });
-} 
+}

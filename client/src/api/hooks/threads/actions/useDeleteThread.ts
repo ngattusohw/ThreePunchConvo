@@ -13,7 +13,8 @@ export function useDeleteThread({ threadId, userId }: UseDeleteThreadOptions) {
 
   return useMutation({
     mutationFn: () => {
-      if (!userId) throw new Error("You must be logged in to delete this thread");
+      if (!userId)
+        throw new Error("You must be logged in to delete this thread");
       return deleteThread(threadId, userId);
     },
     onSuccess: () => {
@@ -30,4 +31,4 @@ export function useDeleteThread({ threadId, userId }: UseDeleteThreadOptions) {
       });
     },
   });
-} 
+}

@@ -360,7 +360,6 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
 // Function to handle user deleted events
 export async function handleUserDeleted(stripeId: string) {
   try {
-
     // Mark user as disabled and remove payment method
     await stripe.customers.update(stripeId, {
       invoice_settings: {
@@ -381,8 +380,7 @@ export async function handleUserDeleted(stripeId: string) {
     for (const subscription of subscriptions.data) {
       await stripe.subscriptions.cancel(subscription.id);
     }
-
-  } catch (error) {   
+  } catch (error) {
     console.error(`Error handling user deleted: ${error}`);
     throw error;
   }

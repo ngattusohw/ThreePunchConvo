@@ -33,46 +33,46 @@ import { dark } from "@clerk/themes";
 
 export default function TermsOfService() {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gray-900 text-white">
+    <div className='min-h-screen overflow-x-hidden bg-gray-900 text-white'>
       {/* Terms of Service Content */}
-      <section className="bg-gray-800/50 px-4 py-20">
-        <div className="container mx-auto max-w-4xl">
+      <section className='bg-gray-800/50 px-4 py-20'>
+        <div className='container mx-auto max-w-4xl'>
           {/* Header */}
-          <div className="mb-16 text-center">
-            <h1 className="mb-4 text-3xl font-bold md:text-4xl">
+          <div className='mb-16 text-center'>
+            <h1 className='mb-4 text-3xl font-bold md:text-4xl'>
               3PunchConvo Terms of Use
             </h1>
-            <p className="text-gray-400">
+            <p className='text-gray-400'>
               <strong>Effective Date:</strong> 6/18/25
             </p>
           </div>
 
           {/* Terms Content */}
-          <div className="prose prose-invert max-w-none space-y-8">
+          <div className='prose prose-invert max-w-none space-y-8'>
             {/* Introduction */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <p className="leading-relaxed text-gray-300">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <p className='leading-relaxed text-gray-300'>
                 Welcome to 3PunchConvo, operated by 3PunchConvo, Inc.
                 ("Company," "we," "us," or "our"). These Terms of Use ("Terms")
                 govern your access to and use of the 3PunchConvo platform,
                 including our website, services, and features (collectively, the
                 "Service").
               </p>
-              <p className="mt-4 leading-relaxed text-gray-300">
+              <p className='mt-4 leading-relaxed text-gray-300'>
                 By using 3PunchConvo, you agree to be bound by these Terms. If
                 you do not agree, please do not use our Service.
               </p>
             </div>
 
             {/* Section 1: Definitions */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 1. Definitions
               </h2>
-              <p className="mb-4 text-gray-300">
+              <p className='mb-4 text-gray-300'>
                 For the purposes of these Terms of Use:
               </p>
-              <ul className="space-y-3 text-gray-300">
+              <ul className='space-y-3 text-gray-300'>
                 <li>
                   <strong>"Company," "we," "us," or "our"</strong> refers to
                   3PunchConvo, Inc.
@@ -117,11 +117,11 @@ export default function TermsOfService() {
             </div>
 
             {/* Section 2: Eligibility */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 2. Eligibility
               </h2>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 You must be at least 13 years old to use our platform. If you
                 are under the age of 18, you must have parental or legal
                 guardian permission.
@@ -129,11 +129,11 @@ export default function TermsOfService() {
             </div>
 
             {/* Section 3: Account Registration */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 3. Account Registration
               </h2>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 You are responsible for maintaining the confidentiality of your
                 login credentials and for any activity that occurs under your
                 account.
@@ -141,11 +141,11 @@ export default function TermsOfService() {
             </div>
 
             {/* Section 4: Platform Use and User Content */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 4. Platform Use and User Content
               </h2>
-              <p className="mb-4 text-gray-300">
+              <p className='mb-4 text-gray-300'>
                 You are solely responsible for the content you post on the
                 platform, including forum posts, replies, images, and other
                 media. By posting on 3PunchConvo, you grant us a non-exclusive,
@@ -153,7 +153,7 @@ export default function TermsOfService() {
                 distribute your content for promotional and operational
                 purposes, including across social media and marketing materials.
               </p>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 By posting or uploading content to the platform, you acknowledge
                 that it may be publicly visible and may be featured across our
                 services, social media, promotional campaigns, and editorial
@@ -164,23 +164,23 @@ export default function TermsOfService() {
             </div>
 
             {/* Section 5: Code of Conduct */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 5. Code of Conduct
               </h2>
-              <p className="mb-6 text-gray-300">
+              <p className='mb-6 text-gray-300'>
                 3PunchConvo is a space for passionate, respectful conversation
                 about combat sports. We're here to build a community. By using
                 the platform, you agree to uphold the following standards:
               </p>
 
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="rounded-lg border border-green-700 bg-green-900/20 p-6">
-                  <h3 className="mb-4 flex items-center text-lg font-semibold text-green-400">
-                    <Check className="mr-2 h-5 w-5" />
+              <div className='grid gap-6 md:grid-cols-2'>
+                <div className='rounded-lg border border-green-700 bg-green-900/20 p-6'>
+                  <h3 className='mb-4 flex items-center text-lg font-semibold text-green-400'>
+                    <Check className='mr-2 h-5 w-5' />
                     What's Cool:
                   </h3>
-                  <ul className="space-y-2 text-sm text-gray-300">
+                  <ul className='space-y-2 text-sm text-gray-300'>
                     <li>
                       • Sharing insights, stories, and experiences that elevate
                       the fight game
@@ -195,12 +195,12 @@ export default function TermsOfService() {
                   </ul>
                 </div>
 
-                <div className="rounded-lg border border-red-700 bg-red-900/20 p-6">
-                  <h3 className="mb-4 flex items-center text-lg font-semibold text-red-400">
-                    <X className="mr-2 h-5 w-5" />
+                <div className='rounded-lg border border-red-700 bg-red-900/20 p-6'>
+                  <h3 className='mb-4 flex items-center text-lg font-semibold text-red-400'>
+                    <X className='mr-2 h-5 w-5' />
                     What's Not Cool:
                   </h3>
-                  <ul className="space-y-2 text-sm text-gray-300">
+                  <ul className='space-y-2 text-sm text-gray-300'>
                     <li>• Harassment, hate speech, or threatening behavior</li>
                     <li>
                       • Bigotry of any kind (racism, sexism, homophobia, etc.)
@@ -213,25 +213,25 @@ export default function TermsOfService() {
                 </div>
               </div>
 
-              <p className="mt-6 text-gray-300">
+              <p className='mt-6 text-gray-300'>
                 Violating the Code of Conduct may result in the removal of
                 content, temporary suspension, or permanent account bans. We
                 reserve the right to take any of these actions at any time, at
                 our sole discretion.
               </p>
-              <p className="mt-4 font-semibold text-cyan-400">
+              <p className='mt-4 font-semibold text-cyan-400'>
                 Don't be a jerk. Let's keep 3PC a space where real fans & real
                 fighters want to show up.
               </p>
             </div>
 
             {/* Section 6: Prohibited Conduct */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 6. Prohibited Conduct
               </h2>
-              <p className="mb-4 text-gray-300">You agree not to:</p>
-              <ul className="space-y-2 text-gray-300">
+              <p className='mb-4 text-gray-300'>You agree not to:</p>
+              <ul className='space-y-2 text-gray-300'>
                 <li>
                   • Post or share hate speech, bigotry, threats, or harassment
                 </li>
@@ -240,18 +240,18 @@ export default function TermsOfService() {
                 <li>• Attempt to disrupt or harm the platform or its users</li>
                 <li>• Spam, self-promotion, or repetitive off-topic posts</li>
               </ul>
-              <p className="mt-4 text-gray-300">
+              <p className='mt-4 text-gray-300'>
                 We reserve the right to moderate and remove any content or
                 accounts that violate these rules.
               </p>
             </div>
 
             {/* Section 7: Subscriptions and Payments */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 7. Subscriptions and Payments
               </h2>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 We use Stripe to process payments securely. By subscribing, you
                 agree to the pricing and billing terms presented to you at the
                 time of purchase. Subscription plans may renew automatically
@@ -260,11 +260,11 @@ export default function TermsOfService() {
             </div>
 
             {/* Section 8: Email Communication */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 8. Email Communication
               </h2>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 We use Klaviyo to manage our email marketing. By creating an
                 account or subscribing, you consent to receive occasional
                 updates, marketing communications, and community announcements.
@@ -273,11 +273,11 @@ export default function TermsOfService() {
             </div>
 
             {/* Section 9: Fighter Revenue Sharing */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 9. Fighter Revenue Sharing
               </h2>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 Verified fighter accounts may participate in our revenue-sharing
                 model. Payouts are based on a formula determined by the Company
                 and may change over time. Fighters must maintain good standing
@@ -286,11 +286,11 @@ export default function TermsOfService() {
             </div>
 
             {/* Section 10: Intellectual Property */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 10. Intellectual Property
               </h2>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 All content and branding on 3PunchConvo not posted by users
                 (including logos, design elements, and platform features) are
                 the exclusive property of the Company.
@@ -298,22 +298,22 @@ export default function TermsOfService() {
             </div>
 
             {/* Section 11: Termination */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 11. Termination
               </h2>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 We reserve the right to suspend or terminate your account at any
                 time for any reason, including violations of these Terms.
               </p>
             </div>
 
             {/* Section 12: Disclaimers */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 12. Disclaimers
               </h2>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 The platform is provided "as is" without warranties of any kind.
                 We do not guarantee uninterrupted service or error-free
                 performance.
@@ -321,11 +321,11 @@ export default function TermsOfService() {
             </div>
 
             {/* Section 13: Limitation of Liability */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 13. Limitation of Liability
               </h2>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 To the fullest extent permitted by law, we shall not be liable
                 for any indirect, incidental, special, or consequential damages
                 resulting from your use of the Service.
@@ -333,28 +333,28 @@ export default function TermsOfService() {
             </div>
 
             {/* Section 14: Governing Law */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 14. Governing Law
               </h2>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 These Terms are governed by the laws of the State of Delaware,
                 without regard to conflict of law principles.
               </p>
             </div>
 
             {/* Section 15: Bans and Refund Policy */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 15. Bans and Refund Policy
               </h2>
-              <p className="mb-4 text-gray-300">
+              <p className='mb-4 text-gray-300'>
                 We reserve the right to ban or suspend users who engage in
                 hostile, abusive, or disruptive behavior, as determined at our
                 sole discretion. If your account is banned while you have an
                 active paid subscription:
               </p>
-              <ul className="space-y-2 text-gray-300">
+              <ul className='space-y-2 text-gray-300'>
                 <li>
                   • Monthly subscribers will receive a full refund of their most
                   recent monthly payment.
@@ -373,11 +373,11 @@ export default function TermsOfService() {
             </div>
 
             {/* Section 16: User Rankings and Recognition */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 16. User Rankings and Recognition
               </h2>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 As part of our community engagement features, users may earn
                 "Fight Cred" or other recognition based on their platform
                 activity. These rankings are for entertainment and engagement
@@ -388,11 +388,11 @@ export default function TermsOfService() {
             </div>
 
             {/* Section 17: Changes to the Terms */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 17. Changes to the Terms
               </h2>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 We may update these Terms from time to time. We will notify
                 users of any material changes. Continued use of the platform
                 after changes are made constitutes your acceptance of the new
@@ -401,11 +401,11 @@ export default function TermsOfService() {
             </div>
 
             {/* Section 18: International Use */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 18. International Use
               </h2>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 Our Service is operated from the United States and may not be
                 subject to the laws of your jurisdiction. If you access the
                 Service from outside the U.S., you do so at your own risk and
@@ -416,11 +416,11 @@ export default function TermsOfService() {
             </div>
 
             {/* Section 19: Indemnification */}
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'>
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 19. Indemnification
               </h2>
-              <p className="text-gray-300">
+              <p className='text-gray-300'>
                 You agree to indemnify and hold harmless 3PunchConvo, Inc., its
                 affiliates, officers, directors, and employees from and against
                 any claims, liabilities, damages, losses, and expenses
@@ -432,16 +432,16 @@ export default function TermsOfService() {
 
             {/* Section 20: Contact Us */}
             <div
-              className="rounded-lg border border-gray-700 bg-gray-800/50 p-8"
-              id="contact-us"
+              className='rounded-lg border border-gray-700 bg-gray-800/50 p-8'
+              id='contact-us'
             >
-              <h2 className="mb-6 text-2xl font-bold text-cyan-400">
+              <h2 className='mb-6 text-2xl font-bold text-cyan-400'>
                 20. Contact Us
               </h2>
-              <p className="mb-4 text-gray-300">
+              <p className='mb-4 text-gray-300'>
                 If you have questions about these Terms, please contact us at:
               </p>
-              <div className="text-gray-300">
+              <div className='text-gray-300'>
                 <p>
                   <strong>3PunchConvo, Inc.</strong>
                 </p>
@@ -449,8 +449,8 @@ export default function TermsOfService() {
                 <p>
                   Email:{" "}
                   <a
-                    href="mailto:support@3punchconvo.com"
-                    className="text-cyan-400 hover:text-cyan-300"
+                    href='mailto:support@3punchconvo.com'
+                    className='text-cyan-400 hover:text-cyan-300'
                   >
                     support@3punchconvo.com
                   </a>

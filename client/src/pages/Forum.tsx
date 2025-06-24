@@ -28,7 +28,7 @@ export default function Forum() {
   const [createPostModalOpen, setCreatePostModalOpen] = useState(() => {
     // Initialize from sessionStorage to persist across re-renders
     try {
-      return sessionStorage.getItem('createPostModalOpen') === 'true';
+      return sessionStorage.getItem("createPostModalOpen") === "true";
     } catch {
       return false;
     }
@@ -37,9 +37,12 @@ export default function Forum() {
   // Persist modal state to sessionStorage whenever it changes
   useEffect(() => {
     try {
-      sessionStorage.setItem('createPostModalOpen', createPostModalOpen.toString());
+      sessionStorage.setItem(
+        "createPostModalOpen",
+        createPostModalOpen.toString(),
+      );
     } catch (error) {
-      console.warn('Failed to save modal state to sessionStorage:', error);
+      console.warn("Failed to save modal state to sessionStorage:", error);
     }
   }, [createPostModalOpen]);
 
@@ -47,20 +50,20 @@ export default function Forum() {
   useEffect(() => {
     const handleBeforeUnload = () => {
       try {
-        sessionStorage.removeItem('createPostModalOpen');
+        sessionStorage.removeItem("createPostModalOpen");
       } catch (error) {
-        console.warn('Failed to clear modal state from sessionStorage:', error);
+        console.warn("Failed to clear modal state from sessionStorage:", error);
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
   const openModal = () => {
-    console.log('Opening modal from Forum page');
+    console.log("Opening modal from Forum page");
     if (!hasPaidPlan) {
-      console.log('Showing upgrade modal from Forum page');
+      console.log("Showing upgrade modal from Forum page");
       setShowUpgradeModal(true);
     } else {
       setCreatePostModalOpen(true);
@@ -68,35 +71,40 @@ export default function Forum() {
   };
 
   const closeModal = () => {
-    console.log('Closing modal from Forum page');
+    console.log("Closing modal from Forum page");
     setCreatePostModalOpen(false);
   };
 
-  console.log('Forum page rendered, category:', validCategoryId, 'modal open:', createPostModalOpen);
+  console.log(
+    "Forum page rendered, category:",
+    validCategoryId,
+    "modal open:",
+    createPostModalOpen,
+  );
 
   // Debug: Track what's causing Forum re-renders
   useEffect(() => {
-    console.log('Forum component mounted or categoryId changed:', categoryId);
+    console.log("Forum component mounted or categoryId changed:", categoryId);
   }, [categoryId]);
 
   useEffect(() => {
-    console.log('Forum params changed:', params);
+    console.log("Forum params changed:", params);
   }, [params]);
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex flex-col md:flex-row md:space-x-6">
+    <div className='container mx-auto px-4 py-6'>
+      <div className='flex flex-col md:flex-row md:space-x-6'>
         {/* Left Sidebar - Categories */}
         <ForumCategories />
         {/* Center - Forum Content */}
-        <ForumContent 
-          category={validCategoryId} 
+        <ForumContent
+          category={validCategoryId}
           onOpenModal={openModal}
           modalOpen={createPostModalOpen}
         />
 
         {/* Right Sidebar - Schedule and Rankings */}
-        <aside className="hidden w-80 flex-shrink-0 space-y-6 xl:block">
+        <aside className='hidden w-80 flex-shrink-0 space-y-6 xl:block'>
           {/* Upcoming Events */}
           {/* <EventsSidebar /> */}
 
@@ -107,15 +115,10 @@ export default function Forum() {
 
       {/* Modal at page level */}
       {createPostModalOpen && (
-        <CreatePostModal
-          onClose={closeModal}
-          categoryId={validCategoryId}
-        />
+        <CreatePostModal onClose={closeModal} categoryId={validCategoryId} />
       )}
       {showUpgradeModal && (
-        <UpgradeModal
-          setShowUpgradeModal={setShowUpgradeModal}
-        />
+        <UpgradeModal setShowUpgradeModal={setShowUpgradeModal} />
       )}
     </div>
   );

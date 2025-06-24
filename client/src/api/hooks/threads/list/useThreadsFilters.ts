@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 interface UseThreadsFiltersOptions {
   initialFilterOption: "recent" | "popular" | "new";
@@ -7,10 +7,14 @@ interface UseThreadsFiltersOptions {
 
 export function useThreadsFilters({
   initialFilterOption,
-  initialTimeRange
+  initialTimeRange,
 }: UseThreadsFiltersOptions) {
-  const [filterOption, setFilterOption] = useState<"recent" | "popular" | "new">(initialFilterOption);
-  const [timeRange, setTimeRange] = useState<"all" | "week" | "month" | "year">(initialTimeRange);
+  const [filterOption, setFilterOption] = useState<
+    "recent" | "popular" | "new"
+  >(initialFilterOption);
+  const [timeRange, setTimeRange] = useState<"all" | "week" | "month" | "year">(
+    initialTimeRange,
+  );
 
   // Helper function to handle filter changes
   const handleFilterChange = (newFilter: "recent" | "popular" | "new") => {
@@ -18,7 +22,7 @@ export function useThreadsFilters({
       // If clicking the same filter, force a refresh
       // This will be handled by the parent hook
       setTimeout(() => {
-        setFilterOption(prev => {
+        setFilterOption((prev) => {
           if (prev === newFilter) {
             // Toggle to force a refresh
             return "new" === prev ? "recent" : "new";
@@ -35,12 +39,14 @@ export function useThreadsFilters({
   };
 
   // Helper function to handle time range changes
-  const handleTimeRangeChange = (newTimeRange: "all" | "week" | "month" | "year") => {
+  const handleTimeRangeChange = (
+    newTimeRange: "all" | "week" | "month" | "year",
+  ) => {
     if (newTimeRange === timeRange) {
       // If selecting the same time range, force a refresh
       // This will be handled by the parent hook
       setTimeout(() => {
-        setTimeRange(prev => {
+        setTimeRange((prev) => {
           if (prev === newTimeRange) {
             // Toggle to force a refresh
             return "all" === prev ? "week" : "all";
@@ -62,4 +68,4 @@ export function useThreadsFilters({
     handleFilterChange,
     handleTimeRangeChange,
   };
-} 
+}

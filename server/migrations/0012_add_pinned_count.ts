@@ -10,7 +10,7 @@ export async function up(db: any) {
   await db.execute(sql`
     COMMENT ON COLUMN users.pinned_by_user_count IS 'Legacy field: Count of threads pinned by users (old system)';
   `);
-  
+
   await db.execute(sql`
     COMMENT ON COLUMN users.pinned_count IS 'Count of threads pinned globally by admins (new system)';
   `);
@@ -30,4 +30,4 @@ export async function down(db: any) {
   `);
 
   console.log("Removed pinned_count column from users table");
-} 
+}

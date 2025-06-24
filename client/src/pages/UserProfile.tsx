@@ -151,7 +151,7 @@ export default function UserProfile() {
                 </div>
               )}
 
-            <div className='mt-2 flex items-center space-x-4 text-sm text-gray-400'>
+            <div className='mt-2 flex flex-wrap gap-4 items-center text-sm text-gray-400'>
               <div className='flex items-center'>
                 <svg
                   xmlns='http://www.w3.org/2000/svg'

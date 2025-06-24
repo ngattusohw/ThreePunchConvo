@@ -30,6 +30,7 @@ import logoImage from "@/assets/3PC-Logo-FullColor-RGB.png";
 import { SignIn, useAuth } from "@clerk/clerk-react";
 import { Link, useLocation } from "wouter";
 import { dark } from "@clerk/themes";
+import jennyFlorianHeadshot from "@/assets/jenny_florian_headshot.png";
 
 export default function AuthPage() {
   const { isSignedIn, isLoaded } = useAuth();
@@ -45,48 +46,11 @@ export default function AuthPage() {
   const industryQuotes = [
     {
       quote:
-        "3PunchConvo has become my go-to platform for discussing fight strategy and connecting with real MMA minds.",
-      author: "Marcus 'Thunder' Johnson",
-      role: "UFC Lightweight Contender",
+        "Before turning pro, I lived in the early MMA forums. 3PC brings that spirit back by involving fighters as contributors - on a slick platform that fans will love.",
+      author: "Jenny Florian",
+      role: "MMA Fighter / Media Personality",
       category: "Fighter",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-    },
-    {
-      quote:
-        "The technical discussions here are top-notch. It's where I share insights with fighters and fans who truly understand the sport.",
-      author: "Coach Sarah Martinez",
-      role: "Head Coach, Elite MMA Academy",
-      category: "Coach",
-      avatar:
-        "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=150&h=150&fit=crop&crop=face",
-    },
-    {
-      quote:
-        "As someone who covers MMA professionally, 3PunchConvo gives me direct access to the pulse of the MMA community.",
-      author: "David Chen",
-      role: "Senior MMA Journalist, Fight Weekly",
-      category: "Journalist",
-      avatar:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-    },
-    {
-      quote:
-        "The level of fight analysis from the community here rivals what we see in professional breakdowns.",
-      author: "Amanda 'Storm' Rodriguez",
-      role: "Former Bantamweight Champion",
-      category: "Fighter",
-      avatar:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-    },
-    {
-      quote:
-        "This platform has revolutionized how I connect with my athletes and other coaches worldwide.",
-      author: "Tommy 'The Tactician' Williams",
-      role: "Olympic Wrestling Coach",
-      category: "Coach",
-      avatar:
-        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
+      avatar: jennyFlorianHeadshot,
     },
   ];
 
@@ -447,9 +411,20 @@ export default function AuthPage() {
           </div>
 
           <Carousel className='mx-auto max-w-6xl'>
-            <CarouselContent>
+            <CarouselContent
+              className={
+                industryQuotes.length === 1 ? "flex justify-center" : ""
+              }
+            >
               {industryQuotes.map((testimonial, index) => (
-                <CarouselItem key={index} className='md:basis-1/3'>
+                <CarouselItem
+                  key={index}
+                  className={
+                    industryQuotes.length === 1
+                      ? "mx-auto w-full max-w-xl"
+                      : "md:basis-1/3"
+                  }
+                >
                   <div className='h-full rounded-lg border border-gray-700 bg-gray-800 p-4 text-center md:p-6'>
                     <Quote className='mx-auto mb-4 h-8 w-8 text-cyan-400' />
                     <blockquote className='mb-6 text-base italic leading-relaxed text-gray-300 md:text-lg'>

@@ -56,7 +56,7 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
   });
 
   const borderColor = thread.isPinned
-    ? "border-ufc-gold"
+    ? "border-ufc-blue"
     : "";
 
   const handleEdit = () => {

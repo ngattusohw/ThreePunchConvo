@@ -182,8 +182,11 @@ export default function Rankings() {
                         <Link
                           href={`/user/${rankedUser.user.username}`}
                           className='hover:text-ufc-blue font-medium text-white transition'
+                          title={rankedUser.user.username}
                         >
-                          {rankedUser.user.username}
+                          {rankedUser.user.username.length > 25 
+                            ? `${rankedUser.user.username.slice(0, 25)}...` 
+                            : rankedUser.user.username}
                         </Link>
 
                         <UserRoleBadge role={rankedUser.user.role} />
@@ -254,7 +257,9 @@ export default function Rankings() {
                           href={`/user/${rankedUser.user.username}`}
                           className='hover:text-ufc-blue block truncate font-medium text-white transition'
                         >
-                          {rankedUser.user.username}
+                          {rankedUser.user.username.length > 20 
+                            ? `${rankedUser.user.username.slice(0, 20)}...` 
+                            : rankedUser.user.username}
                         </Link>
 
                         <div className='mt-1 flex items-center space-x-2'>
@@ -299,32 +304,32 @@ export default function Rankings() {
                       </div>
                     </div>
 
-                    <div className='mt-3 grid grid-cols-3 gap-2 rounded-lg bg-gray-800 p-2 text-center text-sm'>
-                      <div className='p-1'>
+                    <div className='mt-3 flex flex-wrap gap-2 rounded-lg bg-gray-800 p-2 text-center text-sm'>
+                      <div className='flex-1 min-w-[100px] p-1'>
                         <div className='font-medium text-white'>
                           {shortenNumber(rankedUser.user.postsCount)}
                         </div>
                         <div className='text-xs text-gray-400'>Posts</div>
                       </div>
-                      <div className='p-1'>
+                      <div className='flex-1 min-w-[100px] p-1'>
                         <div className='font-medium text-white'>
                           {shortenNumber(rankedUser.user.likesCount)}
                         </div>
                         <div className='text-xs text-gray-400'>Likes</div>
                       </div>
-                      <div className='p-1'>
+                      <div className='flex-1 min-w-[100px] p-1'>
                         <div className='font-medium text-white'>
                           {shortenNumber(rankedUser.user.potdCount)}
                         </div>
                         <div className='text-xs text-gray-400'>POTD</div>
                       </div>
-                      <div className='p-1'>
+                      <div className='flex-1 min-w-[100px] p-1'>
                         <div className='font-medium text-white'>
                           {shortenNumber(rankedUser.user.repliesCount)}
                         </div>
                         <div className='text-xs text-gray-400'>Replies</div>
                       </div>
-                      <div className='p-1'>
+                      <div className='flex-1 min-w-[100px] p-1'>
                         <div className='font-medium text-white'>
                           {rankedUser.user.pinnedByUserCount}
                         </div>

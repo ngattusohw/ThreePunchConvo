@@ -530,7 +530,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getTopUsersFromDailyCred(limit: number): Promise<User[]> {
+  async getTopUsersFromDailyCred(limit: number): Promise<any[]> {
     try {
       // First, get the latest interaction day from the daily_fighter_cred table
       const latestDayResult = await db
@@ -557,7 +557,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(dailyFighterCred)
         .where(eq(dailyFighterCred.interactionDay, latestDay))
-        .orderBy(desc(dailyFighterCred.dailyFighterCred))
+        .orderBy(desc(dailyFighterCred.totalFighterCred))
         .limit(limit);
 
       if (topDailyCredResults.length === 0) {
@@ -570,20 +570,15 @@ export class DatabaseStorage implements IStorage {
 
       // Now get the user information for these users
       const userResults = await db
-        .select()
+        .select({
+          id: users.id,
+          username: users.username,
+          avatar: users.avatar,
+          profileImageUrl: users.profileImageUrl,
+          role: users.role,
+        })
         .from(users)
-        .where(
-          and(
-            inArray(users.id, userIds),
-            eq(users.disabled, false),
-            notInArray(users.role, [
-              "ADMIN",
-              "MODERATOR",
-              "FIGHTER",
-              "INDUSTRY_PROFESSIONAL",
-            ]),
-          ),
-        );
+        .where(and(inArray(users.id, userIds), eq(users.disabled, false)));
 
       // Combine user data with daily fighter cred data, maintaining the order from daily_fighter_cred
       const combinedResults = topDailyCredResults
@@ -592,11 +587,11 @@ export class DatabaseStorage implements IStorage {
           if (!user) return null; // Skip if user not found or filtered out
 
           return {
+            id: user.id,
             username: user.username,
-            avatar: user.avatar || "",
-            profileImageUrl: user.profileImageUrl || "",
-            role: user.role || "",
-            rank: user.rank || 0,
+            avatar: user.avatar,
+            profileImageUrl: user.profileImageUrl,
+            role: user.role,
             status: dailyCredResult.currentStatus,
             dailyFighterCred: dailyCredResult.dailyFighterCred,
             totalFighterCred: dailyCredResult.totalFighterCred,
@@ -604,35 +599,35 @@ export class DatabaseStorage implements IStorage {
         })
         .filter(Boolean); // Remove null entries
 
-      console.log("combinedResults", combinedResults);
+      // console.log("combinedResults", combinedResults);
 
       // Process users to handle ties correctly
       let currentRank = 1;
-      let currentDailyFighterCred = -1;
+      let currentTotalFighterCred = -1;
       let usersAtCurrentRank = 0;
 
       // First pass: identify ties and assign ranks
       const processedUsers = combinedResults.map((user, index) => {
-        // If this is a new daily fighter cred value, update the rank
-        if (user.dailyFighterCred !== currentDailyFighterCred) {
+        // If this is a new total fighter cred value, update the rank
+        if (user.totalFighterCred !== currentTotalFighterCred) {
           // The new rank should be the position after all previous users
           currentRank = index + 1;
-          currentDailyFighterCred = user.dailyFighterCred;
+          currentTotalFighterCred = user.totalFighterCred;
           usersAtCurrentRank = 1;
         } else {
-          // Same daily fighter cred as previous user, keep the same rank
+          // Same total fighter cred as previous user, keep the same rank
           usersAtCurrentRank++;
         }
 
-        // Return user with updated rank and daily fighter cred data
+        // Return user with updated rank and total fighter cred data
         return {
           ...user,
           rank: currentRank,
-          points: user.dailyFighterCred, // Use daily fighter cred as points for ranking
+          points: user.totalFighterCred, // Use total fighter cred as points for ranking
         };
       });
 
-      return processedUsers as any;
+      return processedUsers;
     } catch (error) {
       console.error("Error getting top users from daily fighter cred:", error);
       return [];

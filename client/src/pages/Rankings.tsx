@@ -17,16 +17,20 @@ export default function Rankings() {
   const processedUsers =
     rankedUsers?.reduce((acc, user, index, array) => {
       // Find all users with the same points (including current user)
-      const tiedUsers = array.filter((u) => u.points === user.points);
+      const tiedUsers = array.filter(
+        (u) => u.user.totalFighterCred === user.user.totalFighterCred,
+      );
       const isTied = tiedUsers.length > 1;
 
       // Calculate position based on how many users with higher points exist
-      const usersWithHigherPoints = array.filter((u) => u.points > user.points);
+      const usersWithHigherPoints = array.filter(
+        (u) => u.user.totalFighterCred > user.user.totalFighterCred,
+      );
       const position = usersWithHigherPoints.length + 1;
 
       acc.push({
         ...user,
-        position,
+        rank: position,
         isTied,
       });
 
@@ -145,7 +149,7 @@ export default function Rankings() {
             <div className='w-20 text-center'>Posts</div>
             <div className='w-20 text-center'>Likes</div>
             <div className='w-20 text-center'>Pinned</div>
-            <div className='w-24 text-center'>Score</div>
+            <div className='w-24 text-center'>Fighter Cred</div>
           </div>
 
           {filteredUsers.length === 0 ? (
@@ -164,7 +168,7 @@ export default function Rankings() {
                     {/* Rank */}
                     <div className='w-16 text-center'>
                       <span className='font-accent text-ufc-gold text-lg font-bold'>
-                        #{rankedUser.position}
+                        #{rankedUser.rank}
                         {rankedUser.isTied ? "-T" : ""}
                       </span>
                     </div>
@@ -211,7 +215,7 @@ export default function Rankings() {
                     </div>
                     <div className='w-24 text-center'>
                       <span className='text-ufc-blue font-bold'>
-                        {shortenNumber(rankedUser.points)}
+                        {shortenNumber(rankedUser.user.totalFighterCred)}
                       </span>
                     </div>
                   </div>

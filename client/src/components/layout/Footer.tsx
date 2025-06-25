@@ -115,7 +115,7 @@ export default function Footer() {
                 className='text-sm text-gray-400 transition hover:text-white'
               >
                 Help
-              </a>
+              </Link>
             </div>
 
             <p className='text-sm text-gray-500'>

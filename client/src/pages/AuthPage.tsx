@@ -32,6 +32,7 @@ import { Link, useLocation } from "wouter";
 import { dark } from "@clerk/themes";
 import kennyFlorianHeadshot from "@/assets/kenny_florian_headshot.png";
 import brianPetriHeadshot from "@/assets/brian_petrie_headshot.png";
+import mattFrevolaHeadshot from "@/assets/matt_frevola_headshot.jpg";
 
 export default function AuthPage() {
   const { isSignedIn, isLoaded } = useAuth();
@@ -60,6 +61,14 @@ export default function AuthPage() {
       role: "Host of MMA Takes Podcast",
       category: "Host",
       avatar: brianPetriHeadshot,
+    },
+    {
+      quote:
+        "As a fighter and huge fan of all things MMA, I love interacting with REAL fans. Can’t wait to chop it up on 3PC and share my perspectives!",
+      author: "Matt Frevola",
+      role: "UFC Fighter",
+      category: "Fighter",
+      avatar: mattFrevolaHeadshot,
     },
   ];
 

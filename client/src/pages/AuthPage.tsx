@@ -327,7 +327,7 @@ export default function AuthPage() {
                   </li>
                   <li className='flex items-center space-x-3'>
                     <X className='h-5 w-5 flex-shrink-0 text-red-400' />
-                    <span className='text-gray-300'>
+                    <span className='text-gray-500'>
                       Reply to Pro Fighter posts
                     </span>
                   </li>

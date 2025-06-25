@@ -28,6 +28,7 @@ export function useMemoizedUser() {
       fullName: user.fullName,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+      planType: user.publicMetadata?.planType,
       // Add publicMetadata to the memoized user
       publicMetadata: user.publicMetadata,
     };
@@ -42,6 +43,7 @@ export function useMemoizedUser() {
     user?.createdAt,
     user?.updatedAt,
     user?.publicMetadata,
+    user?.publicMetadata?.planType,
   ]);
 
   return {

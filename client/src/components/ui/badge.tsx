@@ -2,10 +2,10 @@ import react, { ReactNode } from "react";
 
 export function Badge({
   text,
-  color = '',
+  color = "",
   icon,
   textColor = "text-white",
-  className='',
+  className = "",
 }: {
   text: string;
   color?: string;
@@ -15,7 +15,7 @@ export function Badge({
 }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full ${color} px-2 py-0.5 text-xs font-bold ${textColor} ${className}`}
+      className={`inline-flex items-center rounded-md ${color} px-2 py-0.5 text-xs font-bold ${textColor} ${className}`}
     >
       {icon && icon}
       {text}

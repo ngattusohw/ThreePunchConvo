@@ -124,7 +124,7 @@ const gracefulShutdown = (signal: string) => {
     setTimeout(() => {
       console.error("\x1b[31m❌ Forced shutdown after timeout\x1b[0m");
       process.exit(1);
-    }, 30000);
+    }, 6000);
   } else {
     console.log("\x1b[32m✅ No server to close, exiting\x1b[0m");
     process.exit(0);

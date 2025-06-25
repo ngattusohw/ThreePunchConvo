@@ -304,20 +304,18 @@ export default function AuthPage() {
                   <li className='flex items-center space-x-3'>
                     <Check className='h-5 w-5 flex-shrink-0 text-green-400' />
                     <span className='text-gray-300'>
-                      Access to general forums
+                      Can scroll forums and view posts
                     </span>
                   </li>
                   <li className='flex items-center space-x-3'>
                     <Check className='h-5 w-5 flex-shrink-0 text-green-400' />
                     <span className='text-gray-300'>
-                      Post and reply to other members
+                      Can view ranked/top users
                     </span>
                   </li>
                   <li className='flex items-center space-x-3'>
                     <Check className='h-5 w-5 flex-shrink-0 text-green-400' />
-                    <span className='text-gray-300'>
-                      Community discussion access
-                    </span>
+                    <span className='text-gray-300'>Can like member posts</span>
                   </li>
                   <li className='flex items-center space-x-3'>
                     <X className='h-5 w-5 flex-shrink-0 text-red-400' />

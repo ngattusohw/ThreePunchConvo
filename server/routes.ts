@@ -244,13 +244,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // User endpoints
+  // Get top users based on daily fighter cred for the current day
   app.get("/api/users/top", async (req: Request, res: Response) => {
     try {
       const limit = parseInt(req.query.limit as string) || 20;
 
       try {
-        const topUsers = await storage.getTopUsers(limit);
+        const topUsers = await storage.getTopUsersFromDailyCred(limit);
 
         if (!topUsers || topUsers.length === 0) {
           return res.json([]); // Return empty array if no users found

@@ -547,31 +547,14 @@ export class DatabaseStorage implements IStorage {
       const latestDay = latestDayResult[0].interactionDay;
       console.log("Looking for daily fighter cred for date:", latestDay);
 
-      // First, get the top users from daily_fighter_cred table for the latest day
+      // First, get the top users from daily_fighter_cred table for the latest day with a single query
       const topDailyCredResults = await db
         .select({
           userId: dailyFighterCred.userId,
           currentStatus: dailyFighterCred.currentStatus,
           dailyFighterCred: dailyFighterCred.dailyFighterCred,
           totalFighterCred: dailyFighterCred.totalFighterCred,
-        })
-        .from(dailyFighterCred)
-        .where(eq(dailyFighterCred.interactionDay, latestDay))
-        .orderBy(desc(dailyFighterCred.totalFighterCred))
-        .limit(limit);
-
-      if (topDailyCredResults.length === 0) {
-        console.log("No daily fighter cred data found for the latest day");
-        return [];
-      }
-
-      // Get the user IDs from the top results
-      const userIds = topDailyCredResults.map((result) => result.userId);
-
-      // Now get the user information for these users
-      const userResults = await db
-        .select({
-          id: users.id,
+          // User data from the join
           username: users.username,
           avatar: users.avatar,
           profileImageUrl: users.profileImageUrl,
@@ -582,62 +565,46 @@ export class DatabaseStorage implements IStorage {
           potdCount: users.potdCount,
           pinnedCount: users.pinnedCount,
         })
-        .from(users)
-        .where(and(inArray(users.id, userIds), eq(users.disabled, false)));
+        .from(dailyFighterCred)
+        .innerJoin(users, eq(dailyFighterCred.userId, users.id))
+        .where(
+          and(
+            eq(dailyFighterCred.interactionDay, latestDay),
+            eq(users.disabled, false),
+            notInArray(users.role, [
+              "ADMIN",
+              "MODERATOR",
+              "FIGHTER",
+              "INDUSTRY_PROFESSIONAL",
+            ]),
+          ),
+        )
+        .orderBy(desc(dailyFighterCred.totalFighterCred))
+        .limit(limit);
 
-      // Combine user data with daily fighter cred data, maintaining the order from daily_fighter_cred
-      const combinedResults = topDailyCredResults
-        .map((dailyCredResult) => {
-          const user = userResults.find((u) => u.id === dailyCredResult.userId);
-          if (!user) return null; // Skip if user not found or filtered out
+      if (topDailyCredResults.length === 0) {
+        console.log("No daily fighter cred data found for the latest day");
+        return [];
+      }
 
-          return {
-            id: user.id,
-            username: user.username,
-            avatar: user.avatar,
-            profileImageUrl: user.profileImageUrl,
-            role: user.role,
-            likesCount: user.likesCount,
-            postsCount: user.postsCount,
-            repliesCount: user.repliesCount,
-            potdCount: user.potdCount,
-            pinnedCount: user.pinnedCount,
-            status: dailyCredResult.currentStatus,
-            dailyFighterCred: dailyCredResult.dailyFighterCred,
-            totalFighterCred: dailyCredResult.totalFighterCred,
-          };
-        })
-        .filter(Boolean); // Remove null entries
+      // No need for separate user query or combining - we have all data in one result
+      const combinedResults = topDailyCredResults.map((result) => ({
+        id: result.userId,
+        username: result.username,
+        avatar: result.avatar,
+        profileImageUrl: result.profileImageUrl,
+        role: result.role,
+        likesCount: result.likesCount,
+        postsCount: result.postsCount,
+        repliesCount: result.repliesCount,
+        potdCount: result.potdCount,
+        pinnedCount: result.pinnedCount,
+        status: result.currentStatus,
+        dailyFighterCred: result.dailyFighterCred,
+        totalFighterCred: result.totalFighterCred,
+      }));
 
-      // console.log("combinedResults", combinedResults);
-
-      // Process users to handle ties correctly
-      let currentRank = 1;
-      let currentTotalFighterCred = -1;
-      let usersAtCurrentRank = 0;
-
-      // First pass: identify ties and assign ranks
-      const processedUsers = combinedResults.map((user, index) => {
-        // If this is a new total fighter cred value, update the rank
-        if (user.totalFighterCred !== currentTotalFighterCred) {
-          // The new rank should be the position after all previous users
-          currentRank = index + 1;
-          currentTotalFighterCred = user.totalFighterCred;
-          usersAtCurrentRank = 1;
-        } else {
-          // Same total fighter cred as previous user, keep the same rank
-          usersAtCurrentRank++;
-        }
-
-        // Return user with updated rank and total fighter cred data
-        return {
-          ...user,
-          rank: currentRank,
-          points: user.totalFighterCred, // Use total fighter cred as points for ranking
-        };
-      });
-
-      return processedUsers;
+      return combinedResults;
     } catch (error) {
       console.error("Error getting top users from daily fighter cred:", error);
       return [];
@@ -2659,6 +2626,7 @@ export class DatabaseStorage implements IStorage {
         FROM users u
         LEFT JOIN aggregated_scores a ON a.user_id = u.id
         WHERE u.disabled IS DISTINCT FROM TRUE
+          AND u.role NOT IN ('ADMIN', 'MODERATOR', 'FIGHTER', 'INDUSTRY_PROFESSIONAL')
         ORDER BY COALESCE(a.daily_fighter_cred, 0) DESC;
       `;
 

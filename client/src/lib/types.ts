@@ -14,7 +14,8 @@ export type UserStatus =
   | "RANKED POSTER"
   | "COMPETITOR"
   | "REGIONAL POSTER"
-  | "AMATEUR";
+  | "AMATEUR"
+  | "GOAT";
 
 export interface AuthUser {
   id: string;
@@ -26,6 +27,7 @@ export interface AuthUser {
   isOnline: boolean;
   postsCount: number;
   likesCount: number;
+  planType: string;
   pinnedByUserCount: number;
   pinnedCount: number;
   rank: number;
@@ -33,6 +35,7 @@ export interface AuthUser {
   followingCount: number;
   role: UserRole;
   socialLinks?: SocialLinks;
+  stripeId?: string;
 }
 
 export interface SocialLinks {
@@ -171,8 +174,24 @@ export interface Fight {
 
 // Ranking types
 export interface RankedUser {
-  user: AuthUser;
-  points: number;
   position: number;
   isTied: boolean;
+  points: number;
+  user: {
+    id: string;
+    username: string;
+    avatar: string | null;
+    profileImageUrl: string;
+    role: UserRole;
+    status: UserStatus;
+    dailyFighterCred: number;
+    totalFighterCred: number;
+    rank: number;
+    points: number;
+    postsCount: number;
+    likesCount: number;
+    pinnedByUserCount: number;
+    pinnedCount: number;
+  };
+  rank: number;
 }

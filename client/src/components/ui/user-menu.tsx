@@ -52,8 +52,8 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center space-x-2 text-sm font-medium text-white outline-none">
-          <Avatar className="h-8 w-8">
+        <DropdownMenuTrigger className='flex items-center space-x-2 text-sm font-medium text-white outline-none'>
+          <Avatar className='h-8 w-8'>
             <AvatarImage src={user.imageUrl} alt={user.username ?? ""} />
             <AvatarFallback>
               {user.username?.charAt(0).toUpperCase()}
@@ -61,15 +61,15 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
           </Avatar>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className="bg-ufc-black w-56 border-gray-700 text-white"
-          align="end"
+          className='bg-ufc-black w-56 border-gray-700 text-white'
+          align='end'
         >
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">
+          <DropdownMenuLabel className='font-normal'>
+            <div className='flex flex-col space-y-1'>
+              <p className='text-sm font-medium leading-none'>
                 {user.fullName}
               </p>
-              <p className="text-xs leading-none text-gray-400">
+              <p className='text-xs leading-none text-gray-400'>
                 @{user.username}
               </p>
               {hasSubscription && (
@@ -82,23 +82,23 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
               )}
             </div>
           </DropdownMenuLabel>
-          <DropdownMenuSeparator className="bg-gray-700" />
+          <DropdownMenuSeparator className='bg-gray-700' />
           <DropdownMenuItem
             onClick={() => openUserProfile()}
-            className="cursor-pointer focus:bg-gray-700 focus:text-white"
+            className='cursor-pointer focus:bg-gray-700 focus:text-white'
           >
-            <UserIcon className="mr-2 h-4 w-4" />
+            <UserIcon className='mr-2 h-4 w-4' />
             <span>Manage Account</span>
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-gray-700" />
+          <DropdownMenuSeparator className='bg-gray-700' />
           <DropdownMenuItem
             onClick={handleSignOut}
-            className="cursor-pointer focus:bg-gray-700 focus:text-white"
+            className='cursor-pointer focus:bg-gray-700 focus:text-white'
           >
-            <LogOut className="mr-2 h-4 w-4" />
+            <LogOut className='mr-2 h-4 w-4' />
             <span>Sign Out</span>
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-gray-700" />
+          <DropdownMenuSeparator className='bg-gray-700' />
           <DropdownMenuItem
             onClick={() => setShowSubscriptionModal(true)}
             className="cursor-pointer focus:bg-gray-700 focus:text-white"
@@ -109,9 +109,9 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
           <DropdownMenuSeparator className="bg-gray-700" />
           <DropdownMenuItem
             onClick={() => setShowDeleteModal(true)}
-            className="cursor-pointer text-red-400 hover:text-red-300 focus:bg-red-700 focus:text-white"
+            className='cursor-pointer text-red-400 hover:text-red-300 focus:bg-red-700 focus:text-white'
           >
-            <Trash2 className="mr-2 h-4 w-4" />
+            <Trash2 className='mr-2 h-4 w-4' />
             <span>Delete Account</span>
           </DropdownMenuItem>
         </DropdownMenuContent>

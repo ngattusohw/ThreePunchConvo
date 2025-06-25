@@ -90,7 +90,8 @@ psql "your_neon_connection_string" -c "INSERT INTO categories (id, name, descrip
 
 1. Sign up at [neon.tech](https://neon.tech)
 2. Create a new project
-3. Copy your connection string from the dashboard (it should look like: `postgresql://user:password@hostname/dbname?sslmode=require`)
+3. Copy your connection string from the dashboard (it should look like:
+   `postgresql://user:password@hostname/dbname?sslmode=require`)
 4. Add it to your `.env` file:
 
 ```bash
@@ -125,7 +126,8 @@ psql "your_neon_connection_string" -c "INSERT INTO categories (id, name, descrip
 ('one', 'ONE', 'ONE Championship discussions', 0);"
 ```
 
-Note: Replace `your_neon_connection_string` with your actual Neon database connection string. It should look something like:
+Note: Replace `your_neon_connection_string` with your actual Neon database
+connection string. It should look something like:
 
 ```
 postgresql://user:password@hostname/dbname?sslmode=require
@@ -190,7 +192,8 @@ This application uses Clerk for authentication. Follow these steps to set it up:
 
 2. **Configure your Clerk application**:
 
-   - Set up the authentication methods you want to support (email/password, social logins, etc.)
+   - Set up the authentication methods you want to support (email/password,
+     social logins, etc.)
    - Configure your application's URLs (add your app's domain)
    - In your Clerk application settings, find your API keys
 
@@ -219,7 +222,8 @@ This application uses Clerk for authentication. Follow these steps to set it up:
 
 ### Getting Your Clerk Token
 
-To make authenticated API requests, you'll need your Clerk token. Here's how to get it:
+To make authenticated API requests, you'll need your Clerk token. Here's how to
+get it:
 
 #### How to get your initial token:
 
@@ -232,7 +236,8 @@ To make authenticated API requests, you'll need your Clerk token. Here's how to 
 
 ### Using the Token for API Requests
 
-Once you have your token, you can use it for authenticated API requests. Here are some common examples:
+Once you have your token, you can use it for authenticated API requests. Here
+are some common examples:
 
 #### Update User Role
 
@@ -246,7 +251,8 @@ curl -X PUT http://localhost:5001/api/users/USER_ID/role \
   }'
 ```
 
-**Valid roles:** `ADMIN`, `MODERATOR`, `FIGHTER`, `USER`, `PREMIUM_USER`
+**Valid roles:** `ADMIN`, `MODERATOR`, `FIGHTER`, `USER`, `PREMIUM_USER`,
+`INDUSTRY_PROFESSIONAL`
 
 #### Create a Thread
 
@@ -281,7 +287,8 @@ curl -X GET http://localhost:5001/api/notifications \
 - **Token Security**: Keep your token secure and don't share it publicly
 - **Token Expiration**: Tokens expire based on your Clerk session settings
 - **Authentication Required**: Most API endpoints require authentication
-- **Role-based Access**: Some endpoints require specific user roles (e.g., only admins can update user roles)
+- **Role-based Access**: Some endpoints require specific user roles (e.g., only
+  admins can update user roles)
 
 ## Development
 
@@ -318,7 +325,8 @@ The application uses two types of migrations:
 
 ## SQL Migrations
 
-Located in the `/migrations` directory, these are raw SQL files that can be run directly against your PostgreSQL database.
+Located in the `/migrations` directory, these are raw SQL files that can be run
+directly against your PostgreSQL database.
 
 ```bash
 # Run a specific SQL migration file
@@ -330,7 +338,8 @@ psql "your_connection_string" -f migrations/000_create_categories_table.sql
 
 ## TypeScript Migrations
 
-Located in the `/server/migrations` directory, these are programmatic migrations that use Drizzle ORM and are run through the migrate script.
+Located in the `/server/migrations` directory, these are programmatic migrations
+that use Drizzle ORM and are run through the migrate script.
 
 ```bash
 # Run all TypeScript migrations
@@ -347,7 +356,8 @@ When setting up a new database from scratch, follow this sequence:
    psql "your_connection_string" -f migrations/000_create_categories_table.sql
    ```
 
-2. Run the TypeScript migrations which will handle all other table creation and data initialization:
+2. Run the TypeScript migrations which will handle all other table creation and
+   data initialization:
    ```bash
    npm run migrate
    ```
@@ -356,9 +366,13 @@ When setting up a new database from scratch, follow this sequence:
 
 If you encounter errors during migration:
 
-1. **"relation does not exist"**: This usually means you're trying to reference a table that hasn't been created yet. Make sure to run migrations in the correct order.
+1. **"relation does not exist"**: This usually means you're trying to reference
+   a table that hasn't been created yet. Make sure to run migrations in the
+   correct order.
 
-2. **Foreign key constraint failures**: Ensure you've created all required tables before adding foreign key constraints.
+2. **Foreign key constraint failures**: Ensure you've created all required
+   tables before adding foreign key constraints.
 
-3. **Duplicate key violations**: This could happen if you try to insert data that already exists. Use `ON CONFLICT DO NOTHING` in your SQL statements to handle this.
-
+3. **Duplicate key violations**: This could happen if you try to insert data
+   that already exists. Use `ON CONFLICT DO NOTHING` in your SQL statements to
+   handle this.

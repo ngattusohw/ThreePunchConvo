@@ -6,6 +6,8 @@
   --ufc-gold: #f5c518;
   --dark-gray: #1e1e1e;
   --light-gray: #f5f5f5;
+  --ufc-red: #ff3b3b; /* #ef4444 */
+  --ufc-admin-yellow: #f2e6b8;
 }
 
 /* Font family utilities */
@@ -87,6 +89,14 @@
 
 .bg-ufc-gold {
   background-color: var(--ufc-gold);
+}
+
+.bg-ufc-red {
+  background-color: var(--ufc-red);
+}
+
+.bg-ufc-admin-yellow {
+  background-color: var(--ufc-admin-yellow);
 }
 
 .bg-dark-gray {

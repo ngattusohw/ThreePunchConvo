@@ -12,7 +12,7 @@ import {
   likeReply,
   dislikeReply,
   deleteThread,
-  deleteReply
+  deleteReply,
 } from "../queries/thread";
 
 interface UseThreadOptions {
@@ -126,13 +126,8 @@ export function useThread({ threadId, userId }: UseThreadOptions) {
       return likeThread(threadId, userId);
     },
     onSuccess: () => {
-      const wasLiked = thread?.hasLiked;
       queryClient.invalidateQueries({
         queryKey: [`/api/threads/id/${threadId}`],
-      });
-      toast({
-        title: "Success",
-        description: wasLiked ? "You unliked this post" : "You liked this post",
       });
     },
     onError: (error: Error) => {
@@ -176,7 +171,9 @@ export function useThread({ threadId, userId }: UseThreadOptions) {
     },
     onSuccess: () => {
       // Invalidate queries to refetch thread and related data
-      queryClient.invalidateQueries({ queryKey: [`/api/threads/id/${threadId}`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/threads/id/${threadId}`],
+      });
       toast({
         title: "Success!",
         description: "Thread pin status updated.",
@@ -202,7 +199,7 @@ export function useThread({ threadId, userId }: UseThreadOptions) {
         threadId,
         userId,
         replyContent,
-        replyingTo?.id || null
+        replyingTo?.id || null,
       );
     },
     onSuccess: () => {
@@ -282,7 +279,8 @@ export function useThread({ threadId, userId }: UseThreadOptions) {
   // Add delete thread mutation
   const deleteThreadMutation = useMutation({
     mutationFn: () => {
-      if (!userId) throw new Error("You must be logged in to delete this thread");
+      if (!userId)
+        throw new Error("You must be logged in to delete this thread");
       return deleteThread(threadId, userId);
     },
     onSuccess: () => {
@@ -303,7 +301,8 @@ export function useThread({ threadId, userId }: UseThreadOptions) {
   // Add delete reply mutation
   const deleteReplyMutation = useMutation({
     mutationFn: (replyId: string) => {
-      if (!userId) throw new Error("You must be logged in to delete this reply");
+      if (!userId)
+        throw new Error("You must be logged in to delete this reply");
       return deleteReply(replyId, userId, thread?.user?.role);
     },
     onSuccess: () => {
@@ -354,4 +353,4 @@ export function useThread({ threadId, userId }: UseThreadOptions) {
     deleteReplyMutation,
     handleReplySubmit,
   };
-} 
+}

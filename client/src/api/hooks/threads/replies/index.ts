@@ -9,7 +9,10 @@ interface UseThreadRepliesOptions {
   userId?: string;
 }
 
-export function useThreadReplies({ threadId, userId }: UseThreadRepliesOptions) {
+export function useThreadReplies({
+  threadId,
+  userId,
+}: UseThreadRepliesOptions) {
   const {
     replyContent,
     setReplyContent,
@@ -54,4 +57,4 @@ export function useThreadReplies({ threadId, userId }: UseThreadRepliesOptions) 
     handleQuoteReply,
     handleReplySubmit,
   };
-} 
+}

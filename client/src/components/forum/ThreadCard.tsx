@@ -48,20 +48,18 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
   const [isDeleted, setIsDeleted] = useState(false);
   const { user: currentUser } = useMemoizedUser();
 
-  const { editThreadMutation, deleteThreadMutation } = useThreadActions({ 
-    threadId: thread.id, 
-    userId: currentUser?.id, 
-    title: editTitle, 
-    content: editContent 
+  const { editThreadMutation, deleteThreadMutation } = useThreadActions({
+    threadId: thread.id,
+    userId: currentUser?.id,
+    title: editTitle,
+    content: editContent,
   });
 
-  const borderColor = thread.isPinned
-    ? "border-ufc-gold"
-    : "";
+  const borderColor = thread.isPinned ? "border-ufc-blue" : "";
 
   const handleEdit = () => {
     setIsEditing(true);
-  }
+  };
 
   const handleSave = async () => {
     try {
@@ -77,13 +75,13 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const handleCancel = () => {
     setEditTitle(thread.title);
     setEditContent(thread.content);
     setIsEditing(false);
-  }
+  };
 
   const handleDelete = async () => {
     try {
@@ -98,7 +96,7 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   // Don't render if deleted
   if (isDeleted) {
@@ -107,70 +105,76 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
 
   return (
     <div
-      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} overflow-hidden rounded-lg shadow-lg transition hover:shadow-xl relative`}
+      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} relative overflow-hidden rounded-lg shadow-lg transition hover:shadow-xl`}
     >
-      <div className="p-4">
-        <div className="flex items-start">
+      <div className='p-4'>
+        <div className='flex items-start'>
           {/* Thread Content */}
-          <div className="flex-grow">
+          <div className='flex-grow'>
             {/* Thread header with user info */}
-            <div className="mb-2">
-              <UserThreadHeader 
+            <div className='mb-2'>
+              <UserThreadHeader
                 user={thread.user}
                 createdAt={thread.createdAt}
                 isPinned={thread.isPinned}
                 showStatus={true}
-                size="md"
-                pinnedPosition="right"
+                size='md'
+                pinnedPosition='right'
               />
             </div>
 
             {loading ? (
-              <div className="flex justify-center items-center h-full">
-                <Loader2 className="h-4 w-4 animate-spin" />
+              <div className='flex h-full items-center justify-center'>
+                <Loader2 className='h-4 w-4 animate-spin' />
               </div>
             ) : isEditing ? (
               // Edit Mode
-              <div className="space-y-4">
+              <div className='space-y-4'>
                 <div>
-                  <label htmlFor="edit-title" className="block text-sm font-medium text-gray-300 mb-1">
+                  <label
+                    htmlFor='edit-title'
+                    className='mb-1 block text-sm font-medium text-gray-300'
+                  >
                     Title
                   </label>
                   <input
-                    id="edit-title"
-                    type="text"
+                    id='edit-title'
+                    type='text'
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-ufc-blue focus:border-transparent"
-                    placeholder="Enter thread title..."
+                    className='focus:ring-ufc-blue w-full rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2'
+                    placeholder='Enter thread title...'
                   />
                 </div>
-                
+
                 <div>
-                  <label htmlFor="edit-content" className="block text-sm font-medium text-gray-300 mb-1">
+                  <label
+                    htmlFor='edit-content'
+                    className='mb-1 block text-sm font-medium text-gray-300'
+                  >
                     Content
                   </label>
                   <textarea
-                    id="edit-content"
+                    id='edit-content'
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     rows={4}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-ufc-blue focus:border-transparent resize-vertical"
-                    placeholder="Enter thread content..."
+                    className='focus:ring-ufc-blue resize-vertical w-full rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2'
+                    placeholder='Enter thread content...'
                   />
                 </div>
 
                 {/* Edit Actions */}
-                <div className="flex space-x-2">
+                <div className='flex space-x-2'>
                   <button
                     onClick={handleSave}
-                    className="px-4 py-2 bg-ufc-blue text-white rounded-md hover:bg-blue-600 transition-colors"
+                    className='bg-ufc-blue rounded-md px-4 py-2 text-white transition-colors hover:bg-blue-600'
                   >
                     Save
                   </button>
                   <button
                     onClick={handleCancel}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                    className='rounded-md bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700'
                   >
                     Cancel
                   </button>
@@ -180,17 +184,17 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
               // View Mode
               <>
                 <Link href={`/thread/${thread.id}`}>
-                  <h3 className="hover:text-ufc-blue mb-2 text-lg font-bold text-white transition">
+                  <h3 className='hover:text-ufc-blue mb-2 text-lg font-bold text-white transition'>
                     {title}
                     {isEdited && editedAt && (
-                      <span className="ml-2 text-sm font-normal text-gray-400">
+                      <span className='ml-2 text-sm font-normal text-gray-400'>
                         (edited {formatEditedDate(editedAt)})
                       </span>
                     )}
                   </h3>
                 </Link>
 
-                <p className="mb-4 line-clamp-2 text-gray-300">
+                <p className='mb-4 line-clamp-2 text-gray-300'>
                   {truncateText(content, 280)}
                 </p>
               </>
@@ -198,11 +202,11 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
 
             {/* Thread Poll Preview - only show in view mode */}
             {!isEditing && thread.poll && (
-              <div className="mb-4 rounded-lg bg-gray-800 p-3">
-                <p className="mb-2 font-medium text-white">
+              <div className='mb-4 rounded-lg bg-gray-800 p-3'>
+                <p className='mb-2 font-medium text-white'>
                   {thread.poll.question}
                 </p>
-                <div className="space-y-2">
+                <div className='space-y-2'>
                   {thread.poll.options.slice(0, 2).map((option) => {
                     const percentage = thread.poll?.votesCount
                       ? Math.round(
@@ -211,19 +215,19 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
                       : 0;
 
                     return (
-                      <div className="relative pt-1" key={option.id}>
-                        <div className="mb-1 flex items-center justify-between">
-                          <span className="text-sm text-gray-300">
+                      <div className='relative pt-1' key={option.id}>
+                        <div className='mb-1 flex items-center justify-between'>
+                          <span className='text-sm text-gray-300'>
                             {option.text}
                           </span>
-                          <span className="text-sm text-gray-300">
+                          <span className='text-sm text-gray-300'>
                             {percentage}%
                           </span>
                         </div>
-                        <div className="flex h-2 overflow-hidden rounded bg-gray-700 text-xs">
+                        <div className='flex h-2 overflow-hidden rounded bg-gray-700 text-xs'>
                           <div
                             style={{ width: `${percentage}%` }}
-                            className="flex flex-col justify-center whitespace-nowrap text-center text-white shadow-none bg-blue-500"
+                            className='flex flex-col justify-center whitespace-nowrap bg-blue-500 text-center text-white shadow-none'
                           />
                         </div>
                       </div>
@@ -232,12 +236,12 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
                 </div>
 
                 {thread.poll.options.length > 2 && (
-                  <p className="mt-1 text-sm text-gray-400">
+                  <p className='mt-1 text-sm text-gray-400'>
                     +{thread.poll.options.length - 2} more options
                   </p>
                 )}
 
-                <p className="mt-2 text-xs text-gray-400">
+                <p className='mt-2 text-xs text-gray-400'>
                   {thread.poll.votesCount == 1
                     ? "1 vote"
                     : `${thread.poll.votesCount} votes`}{" "}
@@ -251,17 +255,28 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
 
             {/* Thread Media Preview - only show in view mode */}
             {!isEditing && thread.media && thread.media.length > 0 && (
-              <div className="mb-4 overflow-hidden rounded-lg">
-                <MediaPreview 
-                  media={thread.media[0]} 
+              <div className='mb-4 overflow-hidden rounded-lg'>
+                <MediaPreview
+                  media={thread.media[0]}
                   threadTitle={thread.title}
                 />
                 {thread.media.length > 1 && (
-                  <div className="mt-2 text-sm text-gray-400 flex items-center">
-                    <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  <div className='mt-2 flex items-center text-sm text-gray-400'>
+                    <svg
+                      className='mr-1 h-4 w-4'
+                      fill='none'
+                      viewBox='0 0 24 24'
+                      stroke='currentColor'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'
+                      />
                     </svg>
-                    +{thread.media.length - 1} more {thread.media.length === 2 ? 'image' : 'images'}
+                    +{thread.media.length - 1} more{" "}
+                    {thread.media.length === 2 ? "image" : "images"}
                   </div>
                 )}
               </div>
@@ -269,33 +284,33 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
 
             {/* Thread Stats and Actions - only show in view mode */}
             {!isEditing && (
-              <div className="flex items-center justify-between">
+              <div className='flex items-center justify-between'>
                 {/* Thread reply count */}
-                <div className="flex items-center text-sm text-gray-400">
+                <div className='flex items-center text-sm text-gray-400'>
                   <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="mr-1 h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                    xmlns='http://www.w3.org/2000/svg'
+                    className='mr-1 h-5 w-5'
+                    fill='none'
+                    viewBox='0 0 24 24'
+                    stroke='currentColor'
                   >
                     <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth='2'
+                      d='M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z'
                     />
                   </svg>
                   {thread.repliesCount} replies
                 </div>
 
                 {/* Thread Actions */}
-                <ThreadActions 
+                <ThreadActions
                   thread={thread}
                   onClickEdit={handleEdit}
                   onClickDelete={handleDelete}
-                  size="sm"
-                  className="ml-2"
+                  size='sm'
+                  className='ml-2'
                 />
               </div>
             )}

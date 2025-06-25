@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { sql } from "drizzle-orm";
 
 export async function up(db: any) {
   // Rename potd_count to pinned_by_user_count in users table
@@ -30,4 +30,4 @@ export async function down(db: any) {
   await db.execute(sql`
     UPDATE thread_reactions SET type = 'POTD' WHERE type = 'PINNED_BY_USER';
   `);
-} 
+}

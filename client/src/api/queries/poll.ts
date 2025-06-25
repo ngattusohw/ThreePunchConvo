@@ -5,30 +5,30 @@ import { apiRequest } from "@/lib/queryClient";
  */
 export async function checkPollVote(threadId: string, userId?: string) {
   if (!userId) return { hasVoted: false, votedOptionId: null };
-  
+
   const response = await apiRequest(
     "GET",
     `/api/threads/${threadId}/poll/check-vote?userId=${userId}`,
-    null
+    null,
   );
-  
+
   if (!response.ok) {
     throw new Error("Failed to check vote status");
   }
-  
+
   return response.json();
 }
 
 /**
  * Submit a vote for a poll option
  */
-export async function submitPollVote({ 
-  threadId, 
-  optionId, 
-  currentUser 
-}: { 
-  threadId: string; 
-  optionId: string; 
+export async function submitPollVote({
+  threadId,
+  optionId,
+  currentUser,
+}: {
+  threadId: string;
+  optionId: string;
   currentUser: any;
 }) {
   if (!currentUser) throw new Error("You must be logged in to vote");
@@ -80,4 +80,4 @@ export async function submitPollVote({
     console.error("Error in poll vote:", error);
     throw error;
   }
-} 
+}

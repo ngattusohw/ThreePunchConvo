@@ -30,6 +30,8 @@ import logoImage from "@/assets/3PC-Logo-FullColor-RGB.png";
 import { SignIn, useAuth } from "@clerk/clerk-react";
 import { Link, useLocation } from "wouter";
 import { dark } from "@clerk/themes";
+import kennyFlorianHeadshot from "@/assets/kenny_florian_headshot.png";
+import brianPetriHeadshot from "@/assets/brian_petrie_headshot.png";
 
 export default function AuthPage() {
   const { isSignedIn, isLoaded } = useAuth();
@@ -45,112 +47,83 @@ export default function AuthPage() {
   const industryQuotes = [
     {
       quote:
-        "3PunchConvo has become my go-to platform for discussing fight strategy and connecting with real MMA minds.",
-      author: "Marcus 'Thunder' Johnson",
-      role: "UFC Lightweight Contender",
+        "Before turning pro, I lived in the early MMA forums. 3PC brings that spirit back by involving fighters as contributors - on a slick platform that fans will love.",
+      author: "Kenny Florian",
+      role: "MMA Fighter / Media Personality",
       category: "Fighter",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+      avatar: kennyFlorianHeadshot,
     },
     {
       quote:
-        "The technical discussions here are top-notch. It's where I share insights with fighters and fans who truly understand the sport.",
-      author: "Coach Sarah Martinez",
-      role: "Head Coach, Elite MMA Academy",
-      category: "Coach",
-      avatar:
-        "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=150&h=150&fit=crop&crop=face",
-    },
-    {
-      quote:
-        "As someone who covers MMA professionally, 3PunchConvo gives me direct access to the pulse of the MMA community.",
-      author: "David Chen",
-      role: "Senior MMA Journalist, Fight Weekly",
-      category: "Journalist",
-      avatar:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-    },
-    {
-      quote:
-        "The level of fight analysis from the community here rivals what we see in professional breakdowns.",
-      author: "Amanda 'Storm' Rodriguez",
-      role: "Former Bantamweight Champion",
-      category: "Fighter",
-      avatar:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-    },
-    {
-      quote:
-        "This platform has revolutionized how I connect with my athletes and other coaches worldwide.",
-      author: "Tommy 'The Tactician' Williams",
-      role: "Olympic Wrestling Coach",
-      category: "Coach",
-      avatar:
-        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
+        "3PunchConvo is a place where opinions matter and bonds are formed. No other MMA community is even remotely close",
+      author: "Brian Petrie",
+      role: "Host of MMA Takes Podcast",
+      category: "Host",
+      avatar: brianPetriHeadshot,
     },
   ];
 
   if (!isLoaded) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="border-ufc-blue h-12 w-12 animate-spin rounded-full border-b-2 border-t-2"></div>
+      <div className='flex min-h-screen items-center justify-center'>
+        <div className='border-ufc-blue h-12 w-12 animate-spin rounded-full border-b-2 border-t-2'></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gray-900 text-white">
+    <div className='min-h-screen overflow-x-hidden bg-gray-900 text-white'>
       {/* Header */}
-      <header className="border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4">
-          <div className="flex items-center space-x-2">
-            <Link href="/" className="flex items-center">
-              <img src={logoImage} alt="3 PUNCH CONVO" className="h-8" />
+      <header className='border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm'>
+        <div className='container mx-auto flex items-center justify-between px-4 py-4'>
+          <div className='flex items-center space-x-2'>
+            <Link href='/' className='flex items-center'>
+              <img src={logoImage} alt='3 PUNCH CONVO' className='h-8' />
             </Link>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="px-4 py-20">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
+      <section className='px-4 py-20'>
+        <div className='container mx-auto max-w-6xl'>
+          <div className='grid items-center gap-12 lg:grid-cols-2'>
             <div>
-              <Badge className="mb-4 border-cyan-500/20 bg-cyan-500/10 text-cyan-400">
+              <Badge className='mb-4 border-cyan-500/20 bg-cyan-500/10 text-cyan-400'>
                 Now Open for Registration
               </Badge>
-              <h2 className="mb-6 text-4xl font-bold leading-tight md:text-5xl">
+              <h2 className='mb-6 text-4xl font-bold leading-tight md:text-5xl'>
                 The Fight Game Has a
-                <span className="text-cyan-400"> New Home</span>
+                <span className='text-cyan-400'> New Home</span>
               </h2>
-              <p className="mb-8 text-lg leading-relaxed text-gray-300 md:text-xl">
+              <p className='mb-8 text-lg leading-relaxed text-gray-300 md:text-xl'>
                 Interact with fans, fighters and industry experts. It's like
                 your MMA group chat - but with your favorite fighters IN the
                 convo. The best fight forums online, period.
               </p>
 
-              <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="flex items-center space-x-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4">
-                  <Users className="h-5 w-5 flex-shrink-0 text-cyan-400" />
+              <div className='mb-8 grid grid-cols-1 gap-4 md:grid-cols-3'>
+                <div className='flex items-center space-x-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4'>
+                  <Users className='h-5 w-5 flex-shrink-0 text-cyan-400' />
                   <div>
-                    <p className="font-semibold">Mobile Friendly</p>
-                    <p className="text-sm text-gray-400">
+                    <p className='font-semibold'>Mobile Friendly</p>
+                    <p className='text-sm text-gray-400'>
                       No App Download Required
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4">
-                  <MessageSquare className="h-5 w-5 flex-shrink-0 text-cyan-400" />
+                <div className='flex items-center space-x-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4'>
+                  <MessageSquare className='h-5 w-5 flex-shrink-0 text-cyan-400' />
                   <div>
-                    <p className="font-semibold">Actively Moderated</p>
-                    <p className="text-sm text-gray-400">Trolls Get Banned</p>
+                    <p className='font-semibold'>Actively Moderated</p>
+                    <p className='text-sm text-gray-400'>Trolls Get Banned</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4">
-                  <Trophy className="h-5 w-5 flex-shrink-0 text-cyan-400" />
+                <div className='flex items-center space-x-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4'>
+                  <Trophy className='h-5 w-5 flex-shrink-0 text-cyan-400' />
                   <div>
-                    <p className="font-semibold">Expert Analysis</p>
-                    <p className="text-sm text-gray-400">
+                    <p className='font-semibold'>Expert Analysis</p>
+                    <p className='text-sm text-gray-400'>
                       Pro Fighter Insights
                     </p>
                   </div>
@@ -159,10 +132,10 @@ export default function AuthPage() {
             </div>
 
             {/* Registration Form */}
-            <div className="flex h-full w-full items-center justify-center">
-              <div className="w-full max-w-md">
+            <div className='flex h-full w-full items-center justify-center'>
+              <div className='w-full max-w-md'>
                 <SignIn
-                  forceRedirectUrl="/"
+                  forceRedirectUrl='/'
                   appearance={{
                     baseTheme: dark,
                     elements: {
@@ -243,54 +216,54 @@ export default function AuthPage() {
       </section>
 
       {/* Features Section */}
-      <section className="bg-gray-800/50 px-4 py-20">
-        <div className="container mx-auto max-w-6xl">
-          <div className="mb-16 text-center">
-            <h3 className="mb-4 text-2xl font-bold md:text-3xl">
+      <section className='bg-gray-800/50 px-4 py-20'>
+        <div className='container mx-auto max-w-6xl'>
+          <div className='mb-16 text-center'>
+            <h3 className='mb-4 text-2xl font-bold md:text-3xl'>
               Why Join 3Punch?
             </h3>
-            <p className="text-base text-gray-400 md:text-lg">
+            <p className='text-base text-gray-400 md:text-lg'>
               Participate in the most engaging MMA community online - while
               supporting your favorite fighters!
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-3">
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-6 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-cyan-500/10">
-                <MessageSquare className="h-8 w-8 text-cyan-400" />
+          <div className='grid gap-8 md:grid-cols-3'>
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-6 text-center'>
+              <div className='mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-cyan-500/10'>
+                <MessageSquare className='h-8 w-8 text-cyan-400' />
               </div>
-              <h4 className="mb-3 text-xl font-semibold">
+              <h4 className='mb-3 text-xl font-semibold'>
                 Accumulate Fight Cred
               </h4>
-              <p className="text-gray-400">
+              <p className='text-gray-400'>
                 Our proprietary algorithm awards "Fight Cred" that members amass
                 as they climb the ranks from Amateur to Champion
               </p>
             </div>
 
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-6 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-cyan-500/10">
-                <Zap className="h-8 w-8 text-cyan-400" />
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-6 text-center'>
+              <div className='mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-cyan-500/10'>
+                <Zap className='h-8 w-8 text-cyan-400' />
               </div>
-              <h4 className="mb-3 text-xl font-semibold">
+              <h4 className='mb-3 text-xl font-semibold'>
                 Support Your Favorite Fighters
               </h4>
-              <p className="text-gray-400">
+              <p className='text-gray-400'>
                 A percentage of all member subscription fees are distributed to
                 the platform's most active pro fighters. We also fund robbery
                 insurance!
               </p>
             </div>
 
-            <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-6 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-cyan-500/10">
-                <Shield className="h-8 w-8 text-cyan-400" />
+            <div className='rounded-lg border border-gray-700 bg-gray-800/50 p-6 text-center'>
+              <div className='mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-cyan-500/10'>
+                <Shield className='h-8 w-8 text-cyan-400' />
               </div>
-              <h4 className="mb-3 text-xl font-semibold">
+              <h4 className='mb-3 text-xl font-semibold'>
                 Podcast Feedback Loops
               </h4>
-              <p className="text-gray-400">
+              <p className='text-gray-400'>
                 Dedicated forums for some of your favorite MMA podcasts spawn
                 topics that are actually discussed on the shows - and spill back
                 into the forums!
@@ -301,68 +274,68 @@ export default function AuthPage() {
       </section>
 
       {/* Premium Section */}
-      <section className="px-4 py-20">
-        <div className="container mx-auto max-w-6xl">
-          <div className="mb-16 text-center">
-            <h3 className="mb-4 text-2xl font-bold md:text-3xl">
+      <section className='px-4 py-20'>
+        <div className='container mx-auto max-w-6xl'>
+          <div className='mb-16 text-center'>
+            <h3 className='mb-4 text-2xl font-bold md:text-3xl'>
               Why Go Premium?
             </h3>
-            <p className="text-base text-gray-400 md:text-lg">
+            <p className='text-base text-gray-400 md:text-lg'>
               Unlock exclusive features and support the MMA community
             </p>
           </div>
 
-          <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-2">
+          <div className='mx-auto grid max-w-4xl gap-8 md:grid-cols-2'>
             {/* Basic Membership */}
-            <Card className="relative border-gray-700 bg-gray-800">
-              <CardHeader className="text-center">
-                <CardTitle className="text-xl text-white md:text-2xl">
+            <Card className='relative border-gray-700 bg-gray-800'>
+              <CardHeader className='text-center'>
+                <CardTitle className='text-xl text-white md:text-2xl'>
                   Basic
                 </CardTitle>
-                <CardDescription className="text-gray-400">
+                <CardDescription className='text-gray-400'>
                   Free Forever
                 </CardDescription>
-                <div className="mt-4 text-3xl font-bold text-cyan-400 md:text-4xl">
+                <div className='mt-4 text-3xl font-bold text-cyan-400 md:text-4xl'>
                   $0
                 </div>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-4">
-                  <li className="flex items-center space-x-3">
-                    <Check className="h-5 w-5 flex-shrink-0 text-green-400" />
-                    <span className="text-gray-300">
+                <ul className='space-y-4'>
+                  <li className='flex items-center space-x-3'>
+                    <Check className='h-5 w-5 flex-shrink-0 text-green-400' />
+                    <span className='text-gray-300'>
                       Access to general forums
                     </span>
                   </li>
-                  <li className="flex items-center space-x-3">
-                    <Check className="h-5 w-5 flex-shrink-0 text-green-400" />
-                    <span className="text-gray-300">
+                  <li className='flex items-center space-x-3'>
+                    <Check className='h-5 w-5 flex-shrink-0 text-green-400' />
+                    <span className='text-gray-300'>
                       Post and reply to other members
                     </span>
                   </li>
-                  <li className="flex items-center space-x-3">
-                    <Check className="h-5 w-5 flex-shrink-0 text-green-400" />
-                    <span className="text-gray-300">
+                  <li className='flex items-center space-x-3'>
+                    <Check className='h-5 w-5 flex-shrink-0 text-green-400' />
+                    <span className='text-gray-300'>
                       Community discussion access
                     </span>
                   </li>
-                  <li className="flex items-center space-x-3">
-                    <X className="h-5 w-5 flex-shrink-0 text-red-400" />
-                    <span className="text-gray-500">Accumulate fight cred</span>
+                  <li className='flex items-center space-x-3'>
+                    <X className='h-5 w-5 flex-shrink-0 text-red-400' />
+                    <span className='text-gray-500'>Accumulate fight cred</span>
                   </li>
-                  <li className="flex items-center space-x-3">
-                    <X className="h-5 w-5 flex-shrink-0 text-red-400" />
-                    <span className="text-gray-500">See pro fighter posts</span>
+                  <li className='flex items-center space-x-3'>
+                    <X className='h-5 w-5 flex-shrink-0 text-red-400' />
+                    <span className='text-gray-500'>See pro fighter posts</span>
                   </li>
-                  <li className="flex items-center space-x-3">
-                    <X className="h-5 w-5 flex-shrink-0 text-red-400" />
-                    <span className="text-gray-300">
+                  <li className='flex items-center space-x-3'>
+                    <X className='h-5 w-5 flex-shrink-0 text-red-400' />
+                    <span className='text-gray-300'>
                       Reply to Pro Fighter posts
                     </span>
                   </li>
-                  <li className="flex items-center space-x-3">
-                    <X className="h-5 w-5 flex-shrink-0 text-red-400" />
-                    <span className="text-gray-500">
+                  <li className='flex items-center space-x-3'>
+                    <X className='h-5 w-5 flex-shrink-0 text-red-400' />
+                    <span className='text-gray-500'>
                       Vote in robbery insurance polls
                     </span>
                   </li>
@@ -371,59 +344,59 @@ export default function AuthPage() {
             </Card>
 
             {/* Premium Membership */}
-            <Card className="relative border-gray-700 bg-gray-800">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 transform">
-                <Badge className="bg-cyan-500 px-4 py-1 font-semibold text-gray-900">
+            <Card className='relative border-gray-700 bg-gray-800'>
+              <div className='absolute -top-3 left-1/2 -translate-x-1/2 transform'>
+                <Badge className='bg-cyan-500 px-4 py-1 font-semibold text-gray-900'>
                   Most Popular
                 </Badge>
               </div>
-              <CardHeader className="text-center">
-                <CardTitle className="text-xl text-white md:text-2xl">
+              <CardHeader className='text-center'>
+                <CardTitle className='text-xl text-white md:text-2xl'>
                   Premium
                 </CardTitle>
-                <CardDescription className="text-gray-400">
+                <CardDescription className='text-gray-400'>
                   Unlock everything
                 </CardDescription>
-                <div className="mt-4 text-3xl font-bold text-cyan-400 md:text-4xl">
+                <div className='mt-4 text-3xl font-bold text-cyan-400 md:text-4xl'>
                   $4.99
                 </div>
-                <p className="text-sm text-gray-400">per month</p>
+                <p className='text-sm text-gray-400'>per month</p>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-4">
-                  <li className="flex items-center space-x-3">
-                    <Check className="h-5 w-5 flex-shrink-0 text-green-400" />
-                    <span className="text-gray-300">Everything in Basic</span>
+                <ul className='space-y-4'>
+                  <li className='flex items-center space-x-3'>
+                    <Check className='h-5 w-5 flex-shrink-0 text-green-400' />
+                    <span className='text-gray-300'>Everything in Basic</span>
                   </li>
-                  <li className="flex items-center space-x-3">
-                    <Check className="h-5 w-5 flex-shrink-0 text-green-400" />
-                    <span className="text-gray-300">See pro fighter posts</span>
+                  <li className='flex items-center space-x-3'>
+                    <Check className='h-5 w-5 flex-shrink-0 text-green-400' />
+                    <span className='text-gray-300'>See pro fighter posts</span>
                   </li>
-                  <li className="flex items-center space-x-3">
-                    <Check className="h-5 w-5 flex-shrink-0 text-green-400" />
-                    <span className="text-gray-300">
+                  <li className='flex items-center space-x-3'>
+                    <Check className='h-5 w-5 flex-shrink-0 text-green-400' />
+                    <span className='text-gray-300'>
                       Reply to Pro Fighter posts
                     </span>
                   </li>
-                  <li className="flex items-center space-x-3">
-                    <Check className="h-5 w-5 flex-shrink-0 text-green-400" />
-                    <span className="text-gray-300">Accumulate fight cred</span>
+                  <li className='flex items-center space-x-3'>
+                    <Check className='h-5 w-5 flex-shrink-0 text-green-400' />
+                    <span className='text-gray-300'>Accumulate fight cred</span>
                   </li>
-                  <li className="flex items-center space-x-3">
-                    <Check className="h-5 w-5 flex-shrink-0 text-green-400" />
-                    <span className="text-gray-300">
+                  <li className='flex items-center space-x-3'>
+                    <Check className='h-5 w-5 flex-shrink-0 text-green-400' />
+                    <span className='text-gray-300'>
                       Early access to new features
                     </span>
                   </li>
-                  <li className="flex items-center space-x-3">
-                    <Check className="h-5 w-5 flex-shrink-0 text-green-400" />
-                    <span className="text-gray-300">
+                  <li className='flex items-center space-x-3'>
+                    <Check className='h-5 w-5 flex-shrink-0 text-green-400' />
+                    <span className='text-gray-300'>
                       Vote in robbery insurance polls
                     </span>
                   </li>
-                  <li className="flex items-center space-x-3">
-                    <Check className="h-5 w-5 flex-shrink-0 text-green-400" />
-                    <span className="text-gray-300">
+                  <li className='flex items-center space-x-3'>
+                    <Check className='h-5 w-5 flex-shrink-0 text-green-400' />
+                    <span className='text-gray-300'>
                       Support active fighters
                     </span>
                   </li>
@@ -435,43 +408,54 @@ export default function AuthPage() {
       </section>
 
       {/* Industry Quotes Carousel */}
-      <section className="bg-gray-800/50 px-4 py-20">
-        <div className="container mx-auto max-w-6xl">
-          <div className="mb-16 text-center">
-            <h3 className="mb-4 text-2xl font-bold md:text-3xl">
+      <section className='bg-gray-800/50 px-4 py-20'>
+        <div className='container mx-auto max-w-6xl'>
+          <div className='mb-16 text-center'>
+            <h3 className='mb-4 text-2xl font-bold md:text-3xl'>
               The MMA Industry is Active on 3PunchConvo
             </h3>
-            <p className="text-base text-gray-400 md:text-lg">
+            <p className='text-base text-gray-400 md:text-lg'>
               Hear from professional fighters, coaches, and journalists
             </p>
           </div>
 
-          <Carousel className="mx-auto max-w-6xl">
-            <CarouselContent>
+          <Carousel className='mx-auto max-w-6xl'>
+            <CarouselContent
+              className={
+                industryQuotes.length === 1 ? "flex justify-center" : ""
+              }
+            >
               {industryQuotes.map((testimonial, index) => (
-                <CarouselItem key={index} className="md:basis-1/3">
-                  <div className="h-full rounded-lg border border-gray-700 bg-gray-800 p-4 text-center md:p-6">
-                    <Quote className="mx-auto mb-4 h-8 w-8 text-cyan-400" />
-                    <blockquote className="mb-6 text-base italic leading-relaxed text-gray-300 md:text-lg">
+                <CarouselItem
+                  key={index}
+                  className={
+                    industryQuotes.length === 1
+                      ? "mx-auto w-full max-w-xl"
+                      : "md:basis-1/3"
+                  }
+                >
+                  <div className='h-full rounded-lg border border-gray-700 bg-gray-800 p-4 text-center md:p-6'>
+                    <Quote className='mx-auto mb-4 h-8 w-8 text-cyan-400' />
+                    <blockquote className='mb-6 text-base italic leading-relaxed text-gray-300 md:text-lg'>
                       "{testimonial.quote}"
                     </blockquote>
-                    <div className="border-t border-gray-700 pt-6">
-                      <Avatar className="mx-auto mb-4 h-16 w-16">
+                    <div className='border-t border-gray-700 pt-6'>
+                      <Avatar className='mx-auto mb-4 h-16 w-16'>
                         <AvatarImage
                           src={testimonial.avatar}
                           alt={testimonial.author}
                         />
-                        <AvatarFallback className="bg-cyan-500/10 text-lg font-semibold text-cyan-400">
+                        <AvatarFallback className='bg-cyan-500/10 text-lg font-semibold text-cyan-400'>
                           {testimonial.author
                             .split(" ")
                             .map((n) => n[0])
                             .join("")}
                         </AvatarFallback>
                       </Avatar>
-                      <p className="mb-1 text-base font-semibold text-white">
+                      <p className='mb-1 text-base font-semibold text-white'>
                         {testimonial.author}
                       </p>
-                      <p className="mb-3 text-sm text-gray-400">
+                      <p className='mb-3 text-sm text-gray-400'>
                         {testimonial.role}
                       </p>
                       <Badge
@@ -490,46 +474,46 @@ export default function AuthPage() {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious className="border-gray-700 bg-gray-800 text-white hover:bg-gray-700" />
-            <CarouselNext className="border-gray-700 bg-gray-800 text-white hover:bg-gray-700" />
+            <CarouselPrevious className='border-gray-700 bg-gray-800 text-white hover:bg-gray-700' />
+            <CarouselNext className='border-gray-700 bg-gray-800 text-white hover:bg-gray-700' />
           </Carousel>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-800 bg-gray-900 px-4 py-12">
-        <div className="container mx-auto max-w-6xl">
-          <div className="flex flex-col items-center space-y-8">
-            <div className="flex items-center space-x-2">
-              <Link href="/" className="flex items-center">
-                <img src={logoImage} alt="3 PUNCH CONVO" className="h-8" />
+      <footer className='border-t border-gray-800 bg-gray-900 px-4 py-12'>
+        <div className='container mx-auto max-w-6xl'>
+          <div className='flex flex-col items-center space-y-8'>
+            <div className='flex items-center space-x-2'>
+              <Link href='/' className='flex items-center'>
+                <img src={logoImage} alt='3 PUNCH CONVO' className='h-8' />
               </Link>
             </div>
-            <p className="max-w-md text-center text-sm text-gray-400">
+            <p className='max-w-md text-center text-sm text-gray-400'>
               The premier destination for MMA discussion and community
               engagement.
             </p>
-            <div className="flex flex-wrap justify-center gap-6 text-sm">
+            <div className='flex flex-wrap justify-center gap-6 text-sm'>
               <a
-                href="/terms"
-                className="text-gray-400 transition-colors hover:text-cyan-400"
+                href='/terms'
+                className='text-gray-400 transition-colors hover:text-cyan-400'
               >
                 Terms of Service
               </a>
               <a
-                href="/privacy"
-                className="text-gray-400 transition-colors hover:text-cyan-400"
+                href='/privacy'
+                className='text-gray-400 transition-colors hover:text-cyan-400'
               >
                 Privacy Policy
               </a>
               <a
-                href="/terms#contact-us"
-                className="text-gray-400 transition-colors hover:text-cyan-400"
+                href='/terms#contact-us'
+                className='text-gray-400 transition-colors hover:text-cyan-400'
               >
                 Contact Us
               </a>
             </div>
-            <div className="w-full border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
+            <div className='w-full border-t border-gray-800 pt-8 text-center text-sm text-gray-400'>
               <p>&copy; 2024 3PUNCH CONVO. All rights reserved.</p>
             </div>
           </div>

@@ -30,21 +30,21 @@ export const Return = () => {
 
   if (status === "complete") {
     return (
-      <div className="mx-auto flex max-w-md flex-col p-6">
-        <section id="success">
+      <div className='mx-auto flex max-w-md flex-col p-6'>
+        <section id='success'>
           {/* TODO change  */}
-          <p className="text-white">
+          <p className='text-white'>
             We appreciate your business! A confirmation email will be sent to{" "}
             {customerEmail}.
             <br />
             <br />
             If you have any questions, please email{" "}
-            <a href="mailto:orders@example.com">orders@example.com</a>.
+            <a href='mailto:orders@example.com'>orders@example.com</a>.
           </p>
         </section>
         <div>
           <button
-            className="bg-ufc-blue hover:bg-ufc-blue-dark mt-6 flex flex-shrink-0 items-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-black transition"
+            className='bg-ufc-blue hover:bg-ufc-blue-dark mt-6 flex flex-shrink-0 items-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-black transition'
             onClick={() => setLocation("/forum")}
           >
             Return to Home

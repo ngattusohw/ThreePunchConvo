@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { AuthUser } from "@/lib/types";
+import { USER_ROLES } from "@/lib/constants";
 
 interface UserAvatarProps {
   user?: AuthUser | null;
@@ -44,17 +45,17 @@ export default function UserAvatar({
           )}
         >
           <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-1/2 w-1/2"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+            xmlns='http://www.w3.org/2000/svg'
+            className='h-1/2 w-1/2'
+            fill='none'
+            viewBox='0 0 24 24'
+            stroke='currentColor'
           >
             <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              strokeLinecap='round'
+              strokeLinejoin='round'
               strokeWidth={2}
-              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
             />
           </svg>
         </div>
@@ -63,12 +64,12 @@ export default function UserAvatar({
   }
 
   // For pro users with verified status
-  if (user?.role === "FIGHTER") {
+  if (user?.role === USER_ROLES.FIGHTER) {
     return (
       <div className={cn("relative", className)}>
         <img
           src={
-            user?.avatar ||
+            user?.profileImageUrl ||
             `https://ui-avatars.com/api/?name=${user?.username || "User"}&background=random`
           }
           alt={`${user?.username || "User"}'s avatar`}
@@ -84,15 +85,51 @@ export default function UserAvatar({
           )}
         >
           <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-2/3 w-2/3"
-            viewBox="0 0 20 20"
-            fill="currentColor"
+            xmlns='http://www.w3.org/2000/svg'
+            className='h-2/3 w-2/3'
+            viewBox='0 0 20 20'
+            fill='currentColor'
           >
             <path
-              fillRule="evenodd"
-              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-              clipRule="evenodd"
+              fillRule='evenodd'
+              d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
+              clipRule='evenodd'
+            />
+          </svg>
+        </div>
+      </div>
+    );
+  } else if (user?.role === USER_ROLES.INDUSTRY_PROFESSIONAL) {
+    console.log("Industry Professional:", user);
+    return (
+      <div className={cn("relative", className)}>
+        <img
+          src={
+            user?.profileImageUrl ||
+            `https://ui-avatars.com/api/?name=${user?.username || "User"}&background=random`
+          }
+          alt={`${user?.username || "User"}'s avatar`}
+          className={cn(
+            sizeClasses[size],
+            "rounded-full border-2 border-red-500 object-cover",
+          )}
+        />
+        <div
+          className={cn(
+            verifiedIndicatorSizeClasses[size],
+            "text-ufc-black absolute flex items-center justify-center rounded-full bg-red-500",
+          )}
+        >
+          <svg
+            xmlns='http://www.w3.org/2000/svg'
+            className='h-2/3 w-2/3'
+            viewBox='0 0 20 20'
+            fill='white'
+          >
+            <path
+              fillRule='evenodd'
+              d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
+              clipRule='evenodd'
             />
           </svg>
         </div>

@@ -8,11 +8,11 @@ export default function MobileNavigation({ onClose }: MobileNavigationProps) {
   const [location] = useLocation();
 
   return (
-    <div className="bg-dark-gray border-b border-gray-800 md:hidden">
-      <nav className="container mx-auto px-4 py-3">
-        <div className="flex flex-col space-y-3">
+    <div className='bg-dark-gray border-b border-gray-800 md:hidden'>
+      <nav className='container mx-auto px-4 py-3'>
+        <div className='flex flex-col space-y-3'>
           <Link
-            href="/forum"
+            href='/forum'
             onClick={onClose}
             className={`${location === "/forum" ? "text-white" : "text-gray-400"} font-heading border-b border-gray-800 py-2 font-medium`}
           >
@@ -26,7 +26,7 @@ export default function MobileNavigation({ onClose }: MobileNavigationProps) {
             SCHEDULE
           </Link> */}
           <Link
-            href="/rankings"
+            href='/rankings'
             onClick={onClose}
             className={`${location === "/rankings" ? "text-white" : "text-gray-400"} font-heading py-2 font-medium`}
           >

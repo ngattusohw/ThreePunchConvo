@@ -43,7 +43,35 @@ export const USER_ROLES = {
   MODERATOR: "MODERATOR",
   FIGHTER: "FIGHTER", // Verified pro fighter
   USER: "USER", // Regular user
+  INDUSTRY_PROFESSIONAL: "INDUSTRY_PROFESSIONAL", // Industry professional
 };
+
+export const USER_ROLE_CONFIG = {
+  [USER_ROLES.FIGHTER]: {
+    label: "PRO FIGHTER",
+    color: "bg-ufc-red",
+    textColor: "text-white",
+    icon: true,
+  },
+  [USER_ROLES.INDUSTRY_PROFESSIONAL]: {
+    label: "MMA INDUSTRY",
+    color: "bg-ufc-red",
+    textColor: "text-white",
+    icon: true,
+  },
+  [USER_ROLES.ADMIN]: {
+    label: "ADMIN",
+    color: "bg-ufc-admin-yellow",
+    textColor: "text-ufc-black",
+    icon: false,
+  },
+  [USER_ROLES.MODERATOR]: {
+    label: "MOD",
+    color: "bg-green-600",
+    textColor: "text-white",
+    icon: false,
+  },
+} as const;
 
 // Forum Categories
 export const FORUM_CATEGORIES = [

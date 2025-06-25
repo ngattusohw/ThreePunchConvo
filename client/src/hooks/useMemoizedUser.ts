@@ -5,7 +5,7 @@ import { useUser, useAuth } from "@clerk/clerk-react";
  * Custom hook that provides memoized user data to prevent unnecessary re-renders
  * when Clerk refreshes user data. This helps prevent form resets and other
  * unwanted re-renders throughout the app.
- * 
+ *
  * @returns Memoized user data and auth state
  */
 export function useMemoizedUser() {
@@ -15,7 +15,7 @@ export function useMemoizedUser() {
   // Memoize user data to prevent unnecessary re-renders
   const memoizedUser = useMemo(() => {
     if (!user) return null;
-    
+
     return {
       id: user.id,
       username: user.username,
@@ -52,4 +52,4 @@ export function useMemoizedUser() {
     // Provide the original user object for cases where you need all properties
     originalUser: user,
   };
-} 
+}

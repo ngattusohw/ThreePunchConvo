@@ -1,4 +1,4 @@
-import 'react';
+import "react";
 
 declare global {
   namespace JSX {
@@ -6,4 +6,4 @@ declare global {
       [elemName: string]: any;
     }
   }
-} 
+}

@@ -1,5 +1,5 @@
-import { useThreadBasicData } from './useThreadBasicData';
-import { useThreadRepliesData } from './useThreadRepliesData';
+import { useThreadBasicData } from "./useThreadBasicData";
+import { useThreadRepliesData } from "./useThreadRepliesData";
 
 interface UseThreadDataOptions {
   threadId: string;
@@ -17,7 +17,7 @@ export function useThreadData({ threadId, userId }: UseThreadDataOptions) {
     displayReplies,
     isLoading: isRepliesLoading,
     error: repliesError,
-  } = useThreadRepliesData({ threadId });
+  } = useThreadRepliesData({ threadId, userId });
 
   return {
     thread,
@@ -27,4 +27,4 @@ export function useThreadData({ threadId, userId }: UseThreadDataOptions) {
     repliesError,
     displayReplies,
   };
-} 
+}

@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { UserStatus } from "@/lib/types";
+import Badge from "./badge";
 
 interface StatusBadgeProps {
   status?: UserStatus | string | null;
@@ -12,15 +13,12 @@ export default function StatusBadge({ status, className }: StatusBadgeProps) {
   }
 
   return (
-    <span
-      className={cn(
-        getStatusClass(status as UserStatus),
-        "rounded px-2 py-0.5 text-xs font-bold",
-        className,
-      )}
-    >
-      {status}
-    </span>
+    <Badge
+      text={status}
+      color={getStatusClass(status as UserStatus)}
+      icon={null}
+      textColor='text-white'
+    />
   );
 }
 

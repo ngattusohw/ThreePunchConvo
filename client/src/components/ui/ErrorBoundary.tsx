@@ -25,12 +25,12 @@ class ErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         this.props.fallback || (
-          <div className="bg-red-900 p-4 text-white">
+          <div className='bg-red-900 p-4 text-white'>
             <h2>Something went wrong</h2>
             <p>{this.state.error?.message}</p>
             <button
               onClick={() => this.setState({ hasError: false })}
-              className="mt-2 bg-white px-2 py-1 text-red-900"
+              className='mt-2 bg-white px-2 py-1 text-red-900'
             >
               Try again
             </button>

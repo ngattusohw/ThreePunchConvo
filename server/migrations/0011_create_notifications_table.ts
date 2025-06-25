@@ -40,4 +40,4 @@ export async function down(db: any) {
 
   // Drop table
   await db.execute(sql`DROP TABLE IF EXISTS notifications;`);
-} 
+}

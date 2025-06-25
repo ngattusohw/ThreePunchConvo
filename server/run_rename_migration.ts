@@ -4,10 +4,10 @@ import * as renamePotdToPinnedMigration from "./migrations/0008_rename_potd_to_p
 async function runRenameMigration() {
   try {
     console.log("Running POTD to PINNED_BY_USER rename migration...");
-    
+
     // Only run the rename migration
     await renamePotdToPinnedMigration.up(db);
-    
+
     console.log("Rename migration completed successfully!");
     process.exit(0);
   } catch (error) {
@@ -16,4 +16,4 @@ async function runRenameMigration() {
   }
 }
 
-runRenameMigration(); 
+runRenameMigration();

@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { fetchUserFightCred } from '../queries/user';
+import { useQuery } from "@tanstack/react-query";
+import { fetchUserFightCred } from "../queries/user";
 
 /**
  * Hook to fetch a user's Fight Cred score
@@ -23,4 +23,4 @@ export function useUserFightCred(userId: string) {
     isLoading,
     error,
   };
-} 
+}

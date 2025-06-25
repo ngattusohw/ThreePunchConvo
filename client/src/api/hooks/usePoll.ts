@@ -31,49 +31,54 @@ export function usePollVote(threadId: string) {
   const { toast } = useToast();
   const [hasVoted, setHasVoted] = useState(false);
   const [userVotedOption, setUserVotedOption] = useState<string | null>(null);
-  
+
   const mutation = useMutation({
-    mutationFn: ({ optionId, currentUser }: { optionId: string, currentUser: any }) => 
-      submitPollVote({ threadId, optionId, currentUser }),
-    
+    mutationFn: ({
+      optionId,
+      currentUser,
+    }: {
+      optionId: string;
+      currentUser: any;
+    }) => submitPollVote({ threadId, optionId, currentUser }),
+
     onSuccess: (data, variables) => {
       const userId = variables.currentUser?.id;
-      
+
       // Update local state
       setHasVoted(true);
       setUserVotedOption(variables.optionId);
-      
+
       // Show success toast
       toast({
         title: "Success",
         description: "Your vote has been recorded",
       });
-      
+
       // Invalidate queries to update data
       queryClient.invalidateQueries({
         queryKey: [`/api/threads/id/${threadId}`],
       });
-      
+
       // Also update the vote check query cache directly
       queryClient.setQueryData(
-        [`thread-poll-vote-check-${threadId}-${userId}`], 
-        { hasVoted: true, votedOptionId: variables.optionId }
+        [`thread-poll-vote-check-${threadId}-${userId}`],
+        { hasVoted: true, votedOptionId: variables.optionId },
       );
     },
-    
+
     onError: (error: Error, variables) => {
       const userId = variables.currentUser?.id;
-      
+
       // If the error message contains "already voted", it means the user has voted
       if (error.message.includes("already voted")) {
         setHasVoted(true);
-        
+
         // Update the vote check query cache
         queryClient.setQueryData(
-          [`thread-poll-vote-check-${threadId}-${userId}`], 
-          { hasVoted: true }
+          [`thread-poll-vote-check-${threadId}-${userId}`],
+          { hasVoted: true },
         );
-        
+
         toast({
           title: "Already voted",
           description: "You have already voted on this poll",
@@ -86,7 +91,7 @@ export function usePollVote(threadId: string) {
           variant: "destructive",
         });
       }
-    }
+    },
   });
 
   return {
@@ -97,6 +102,6 @@ export function usePollVote(threadId: string) {
     setUserVotedOption,
     handleVote: (optionId: string, currentUser: any) => {
       mutation.mutate({ optionId, currentUser });
-    }
+    },
   };
-} 
+}

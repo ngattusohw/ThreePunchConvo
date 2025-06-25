@@ -29,4 +29,4 @@ export function useDislikeReply({ threadId, userId }: UseDislikeReplyOptions) {
       });
     },
   });
-} 
+}

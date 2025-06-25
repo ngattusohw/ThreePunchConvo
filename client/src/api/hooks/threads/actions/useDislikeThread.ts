@@ -7,7 +7,10 @@ interface UseDislikeThreadOptions {
   userId?: string;
 }
 
-export function useDislikeThread({ threadId, userId }: UseDislikeThreadOptions) {
+export function useDislikeThread({
+  threadId,
+  userId,
+}: UseDislikeThreadOptions) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -33,4 +36,4 @@ export function useDislikeThread({ threadId, userId }: UseDislikeThreadOptions) 
       });
     },
   });
-} 
+}

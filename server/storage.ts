@@ -576,6 +576,11 @@ export class DatabaseStorage implements IStorage {
           avatar: users.avatar,
           profileImageUrl: users.profileImageUrl,
           role: users.role,
+          likesCount: users.likesCount,
+          postsCount: users.postsCount,
+          repliesCount: users.repliesCount,
+          potdCount: users.potdCount,
+          pinnedCount: users.pinnedCount,
         })
         .from(users)
         .where(and(inArray(users.id, userIds), eq(users.disabled, false)));
@@ -592,6 +597,11 @@ export class DatabaseStorage implements IStorage {
             avatar: user.avatar,
             profileImageUrl: user.profileImageUrl,
             role: user.role,
+            likesCount: user.likesCount,
+            postsCount: user.postsCount,
+            repliesCount: user.repliesCount,
+            potdCount: user.potdCount,
+            pinnedCount: user.pinnedCount,
             status: dailyCredResult.currentStatus,
             dailyFighterCred: dailyCredResult.dailyFighterCred,
             totalFighterCred: dailyCredResult.totalFighterCred,

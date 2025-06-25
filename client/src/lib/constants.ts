@@ -1,5 +1,9 @@
 // User Status Options
 export const USER_STATUSES = {
+  GOAT: {
+    label: "GOAT",
+    className: "status-goat",
+  },
   HALL_OF_FAMER: {
     label: "HALL OF FAMER",
     className: "status-hof",

@@ -132,7 +132,7 @@ export default function Rankings() {
             <div className='w-20 text-center'>POTD</div>
             <div className='w-20 text-center'>Replies</div>
             <div className='w-20 text-center'>Pinned</div>
-            <div className='w-24 text-center'>Fighter Cred</div>
+            <div className='w-24 text-center'>Fight Cred</div>
           </div>
 
           {filteredUsers.length === 0 ? (

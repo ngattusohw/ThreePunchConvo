@@ -22,43 +22,6 @@
 .font-accent {
   font-family: "Oswald", sans-serif;
 }
-
-/* Status badges */
-.status-hof {
-  background: linear-gradient(90deg, #f5c518 0%, #e6a819 100%);
-  color: #121212;
-}
-
-.status-champion {
-  background: linear-gradient(90deg, #c0c0c0 0%, #e0e0e0 100%);
-  color: #121212;
-}
-
-.status-contender {
-  background: linear-gradient(90deg, #cd7f32 0%, #dda15e 100%);
-  color: #121212;
-}
-
-.status-ranked {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.status-competitor {
-  background-color: #4b5563;
-  color: white;
-}
-
-.status-regional {
-  background-color: #6b7280;
-  color: white;
-}
-
-.status-amateur {
-  background-color: #9ca3af;
-  color: black;
-}
-
 /* Custom scrollbar for the dark theme */
 ::-webkit-scrollbar {
   width: 8px;
@@ -125,6 +88,14 @@
 
 .border-ufc-gold {
   border-color: var(--ufc-gold);
+}
+
+.border-ufc-red {
+  border-color: var(--ufc-red);
+}
+
+.border-ufc-admin-yellow {
+  border-color: var(--ufc-admin-yellow);
 }
 
 /* Hover states */

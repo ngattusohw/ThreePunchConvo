@@ -576,6 +576,11 @@ export class DatabaseStorage implements IStorage {
           avatar: users.avatar,
           profileImageUrl: users.profileImageUrl,
           role: users.role,
+          likesCount: users.likesCount,
+          postsCount: users.postsCount,
+          repliesCount: users.repliesCount,
+          potdCount: users.potdCount,
+          pinnedCount: users.pinnedCount,
         })
         .from(users)
         .where(and(inArray(users.id, userIds), eq(users.disabled, false)));
@@ -592,6 +597,11 @@ export class DatabaseStorage implements IStorage {
             avatar: user.avatar,
             profileImageUrl: user.profileImageUrl,
             role: user.role,
+            likesCount: user.likesCount,
+            postsCount: user.postsCount,
+            repliesCount: user.repliesCount,
+            potdCount: user.potdCount,
+            pinnedCount: user.pinnedCount,
             status: dailyCredResult.currentStatus,
             dailyFighterCred: dailyCredResult.dailyFighterCred,
             totalFighterCred: dailyCredResult.totalFighterCred,
@@ -1062,6 +1072,8 @@ export class DatabaseStorage implements IStorage {
           columns: {
             userId: true,
             likesCount: true,
+            repliesCount: true,
+            potdCount: true,
           },
         });
 
@@ -1075,6 +1087,8 @@ export class DatabaseStorage implements IStorage {
           .set({
             postsCount: sql`${users.postsCount} - 1`,
             likesCount: sql`${users.likesCount} - ${thread.likesCount}`, // Remove all likes from user's total
+            repliesCount: sql`${users.repliesCount} - ${thread.repliesCount}`, // Remove all replies from user's total
+            potdCount: sql`${users.potdCount} - ${thread.potdCount}`, // Remove all POTD from user's total
           })
           .where(eq(users.id, thread.userId));
 
@@ -1382,6 +1396,13 @@ export class DatabaseStorage implements IStorage {
           console.log("No notification created - same user or no thread found");
         }
 
+        // Increment the thread owner's replies_count (replies received on their threads)
+        if (thread && thread.userId !== replyValues.userId) {
+          await tx.execute(
+            sql`UPDATE users SET replies_count = replies_count + 1 WHERE id = ${thread.userId}`,
+          );
+        }
+
         return [reply];
       });
 
@@ -1442,12 +1463,20 @@ export class DatabaseStorage implements IStorage {
 
   async deleteReply(id: string): Promise<boolean> {
     try {
-      // Get the reply to find its threadId
+      // Get the reply to find its threadId and the thread owner
       const [reply] = await db.select().from(replies).where(eq(replies.id, id));
 
       if (!reply) {
         return false;
       }
+
+      // Get the thread to find the owner
+      const thread = await db.query.threads.findFirst({
+        where: eq(threads.id, reply.threadId),
+        columns: {
+          userId: true,
+        },
+      });
 
       // Start a transaction
       await db.transaction(async (tx) => {
@@ -1461,6 +1490,13 @@ export class DatabaseStorage implements IStorage {
             repliesCount: sql`${threads.repliesCount} - 1`,
           })
           .where(eq(threads.id, reply.threadId));
+
+        // Decrement the thread owner's replies_count (replies received on their threads)
+        if (thread && thread.userId !== reply.userId) {
+          await tx.execute(
+            sql`UPDATE users SET replies_count = replies_count - 1 WHERE id = ${thread.userId}`,
+          );
+        }
       });
 
       return true;
@@ -2025,6 +2061,11 @@ export class DatabaseStorage implements IStorage {
               createdAt: new Date(),
             });
           }
+
+          // Update thread owner's potdCount (the user who received the POTD)
+          await tx.execute(
+            sql`UPDATE users SET potd_count = potd_count + 1 WHERE id = ${thread.userId}`,
+          );
 
           return true;
         } catch (txError) {

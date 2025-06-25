@@ -452,19 +452,19 @@ export default function Thread() {
                       poll={thread.poll}
                     />
                   )}
-
-                  {/* Thread Actions - only show in view mode */}
-                  {!isEditing && (
-                    <div className='mb-6'>
-                      <ThreadActions
-                        thread={thread}
-                        onClickEdit={handleEdit}
-                        onClickDelete={handleThreadDelete}
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
+
+              {/* Thread Actions - moved to bottom right of card */}
+              {!isEditing && (
+                <div className='flex justify-end mt-6 pt-4 border-t border-gray-700'>
+                  <ThreadActions
+                    thread={thread}
+                    onClickEdit={handleEdit}
+                    onClickDelete={handleThreadDelete}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -586,10 +586,10 @@ export default function Thread() {
             <div className='mb-4'>
               <p className='mb-1 text-sm text-gray-400'>Stats</p>
               <div className='grid grid-cols-2 gap-2'>
-                {/* <div className="bg-gray-800 p-2 rounded-lg text-center">
-                  <span className="block text-ufc-blue font-bold">{thread.viewCount}</span>
-                  <span className="text-gray-400 text-xs">Views</span>
-                </div> */}
+                <div className="bg-gray-800 p-2 rounded-lg text-center">
+                  <span className="block text-ufc-blue font-bold">{thread.likesCount}</span>
+                  <span className="text-gray-400 text-xs">Likes</span>
+                </div>
                 <div className='rounded-lg bg-gray-800 p-2 text-center'>
                   <span className='text-ufc-blue block font-bold'>
                     {thread.repliesCount}
@@ -807,7 +807,33 @@ function ReplyCard({
             )}
 
             {/* Reply Actions */}
-            <div className='flex flex-wrap items-center gap-4'>
+            <div className='flex items-center justify-between'>
+              <button
+                onClick={() => {
+                  document
+                    .getElementById("reply-form")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                  onQuote(reply);
+                }}
+                disabled={!currentUser}
+                className='flex items-center text-gray-400 transition hover:text-white'
+              >
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='mr-1 h-5 w-5'
+                  fill='none'
+                  viewBox='0 0 24 24'
+                  stroke='currentColor'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth='2'
+                    d='M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6'
+                  />
+                </svg>
+                <span className='font-medium'>Reply</span>
+              </button>
               <button
                 onClick={() => likeReplyMutation.mutate(reply.id.toString())}
                 disabled={
@@ -830,33 +856,6 @@ function ReplyCard({
                   />
                 </svg>
                 <span className='font-medium'>{reply.likesCount}</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  document
-                    .getElementById("reply-form")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                  onQuote(reply);
-                }}
-                disabled={!currentUser}
-                className='ml-auto flex items-center text-gray-400 transition hover:text-white'
-              >
-                <svg
-                  xmlns='http://www.w3.org/2000/svg'
-                  className='mr-1 h-5 w-5'
-                  fill='none'
-                  viewBox='0 0 24 24'
-                  stroke='currentColor'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    d='M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6'
-                  />
-                </svg>
-                <span className='font-medium'>Reply</span>
               </button>
             </div>
 

@@ -6,6 +6,7 @@ import StatusBadge from "@/components/ui/status-badge";
 import { shortenNumber } from "@/lib/utils";
 import { useTopUsers } from "@/api";
 import UserRoleBadge from "@/components/ui/UserBadge";
+import { USER_STATUSES } from "@/lib/constants";
 
 export default function Rankings() {
   const [rankingFilter, setRankingFilter] = useState<string>("all");
@@ -45,6 +46,20 @@ export default function Rankings() {
           user.user.status.toLowerCase().includes(rankingFilter.toLowerCase()),
         );
 
+  // Create filter options from constants in reverse order
+  const filterOptions = [
+    { key: "all", label: "All Ranks", className: "bg-ufc-blue text-black" },
+    ...Object.values(USER_STATUSES)
+      .reverse() // Reverse the order of statuses
+      .map((status) => ({
+        key: status.label.toLowerCase().replace(/\s+/g, ""),
+        label: status.label,
+        className: status.className,
+      })),
+  ];
+
+  console.log("filteredUsers", filteredUsers);
+
   return (
     <div className='container mx-auto px-4 py-6'>
       <div className='mb-6'>
@@ -58,56 +73,19 @@ export default function Rankings() {
 
       {/* Filter Options */}
       <div className='mb-6 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap'>
-        <button
-          onClick={() => setRankingFilter("all")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-            rankingFilter === "all"
-              ? "bg-ufc-blue text-black"
-              : "bg-dark-gray text-gray-300 hover:bg-gray-800"
-          }`}
-        >
-          All Ranks
-        </button>
-        <button
-          onClick={() => setRankingFilter("hall")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-            rankingFilter === "hall"
-              ? "status-hof"
-              : "bg-dark-gray text-gray-300 hover:bg-gray-800"
-          }`}
-        >
-          Hall of Famers
-        </button>
-        <button
-          onClick={() => setRankingFilter("champion")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-            rankingFilter === "champion"
-              ? "status-champion"
-              : "bg-dark-gray text-gray-300 hover:bg-gray-800"
-          }`}
-        >
-          Champions
-        </button>
-        <button
-          onClick={() => setRankingFilter("contender")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-            rankingFilter === "contender"
-              ? "status-contender"
-              : "bg-dark-gray text-gray-300 hover:bg-gray-800"
-          }`}
-        >
-          Contenders
-        </button>
-        <button
-          onClick={() => setRankingFilter("ranked")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-            rankingFilter === "ranked"
-              ? "status-ranked text-white"
-              : "bg-dark-gray text-gray-300 hover:bg-gray-800"
-          }`}
-        >
-          Ranked Posters
-        </button>
+        {filterOptions.map((option) => (
+          <button
+            key={option.key}
+            onClick={() => setRankingFilter(option.key)}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+              rankingFilter === option.key
+                ? option.className
+                : "bg-dark-gray text-gray-300 hover:bg-gray-800"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
       {/* Ranking Explanation */}
@@ -117,8 +95,11 @@ export default function Rankings() {
           Rankings are calculated based on your community contributions. Earn
           points through posting quality content, receiving likes, having your
           posts selected as Post of the Day, and more. Status levels from
-          highest to lowest: Hall of Famer, Champion, Contender, Ranked Poster,
-          Competitor, Regional Poster, and Amateur.
+          highest to lowest:{" "}
+          {Object.values(USER_STATUSES)
+            .map((s) => s.label)
+            .join(", ")}
+          .
         </p>
       </div>
 
@@ -148,6 +129,8 @@ export default function Rankings() {
             <div className='w-24 text-center'>Status</div>
             <div className='w-20 text-center'>Posts</div>
             <div className='w-20 text-center'>Likes</div>
+            <div className='w-20 text-center'>POTD</div>
+            <div className='w-20 text-center'>Replies</div>
             <div className='w-20 text-center'>Pinned</div>
             <div className='w-24 text-center'>Fighter Cred</div>
           </div>
@@ -164,7 +147,7 @@ export default function Rankings() {
                   className='p-4 transition hover:bg-gray-800'
                 >
                   {/* Desktop layout */}
-                  <div className='hidden items-center md:flex md:flex-nowrap'>
+                  <div className='hidden items-center lg:flex lg:flex-nowrap'>
                     {/* Rank */}
                     <div className='w-16 text-center'>
                       <span className='font-accent text-ufc-gold text-lg font-bold'>
@@ -183,9 +166,12 @@ export default function Rankings() {
                       <div>
                         <Link
                           href={`/user/${rankedUser.user.username}`}
-                          className='hover:text-ufc-blue font-medium text-white transition'
+                          className='hover:text-ufc-blue mr-4 font-medium text-white transition'
+                          title={rankedUser.user.username}
                         >
-                          {rankedUser.user.username}
+                          {rankedUser.user.username.length > 25
+                            ? `${rankedUser.user.username.slice(0, 25)}...`
+                            : rankedUser.user.username}
                         </Link>
 
                         <UserRoleBadge role={rankedUser.user.role} />
@@ -210,7 +196,17 @@ export default function Rankings() {
                     </div>
                     <div className='w-20 text-center'>
                       <span className='text-white'>
-                        {rankedUser.user.pinnedByUserCount}
+                        {rankedUser.user.potdCount}
+                      </span>
+                    </div>
+                    <div className='w-20 text-center'>
+                      <span className='text-white'>
+                        {rankedUser.user.repliesCount}
+                      </span>
+                    </div>
+                    <div className='w-20 text-center'>
+                      <span className='text-white'>
+                        {rankedUser.user.pinnedCount}
                       </span>
                     </div>
                     <div className='w-24 text-center'>
@@ -221,7 +217,7 @@ export default function Rankings() {
                   </div>
 
                   {/* Mobile layout */}
-                  <div className='md:hidden'>
+                  <div className='lg:hidden'>
                     <div className='mb-2 flex items-center justify-between'>
                       {/* Rank */}
                       <span className='font-accent text-ufc-gold text-xl font-bold'>
@@ -246,7 +242,9 @@ export default function Rankings() {
                           href={`/user/${rankedUser.user.username}`}
                           className='hover:text-ufc-blue block truncate font-medium text-white transition'
                         >
-                          {rankedUser.user.username}
+                          {rankedUser.user.username.length > 20
+                            ? `${rankedUser.user.username.slice(0, 20)}...`
+                            : rankedUser.user.username}
                         </Link>
 
                         <div className='mt-1 flex items-center space-x-2'>
@@ -291,20 +289,32 @@ export default function Rankings() {
                       </div>
                     </div>
 
-                    <div className='mt-3 grid grid-cols-3 gap-2 rounded-lg bg-gray-800 p-2 text-center text-sm'>
-                      <div className='p-1'>
+                    <div className='mt-3 flex flex-wrap gap-2 rounded-lg bg-gray-800 p-2 text-center text-sm'>
+                      <div className='min-w-[100px] flex-1 p-1'>
                         <div className='font-medium text-white'>
                           {shortenNumber(rankedUser.user.postsCount)}
                         </div>
                         <div className='text-xs text-gray-400'>Posts</div>
                       </div>
-                      <div className='p-1'>
+                      <div className='min-w-[100px] flex-1 p-1'>
                         <div className='font-medium text-white'>
                           {shortenNumber(rankedUser.user.likesCount)}
                         </div>
                         <div className='text-xs text-gray-400'>Likes</div>
                       </div>
-                      <div className='p-1'>
+                      <div className='min-w-[100px] flex-1 p-1'>
+                        <div className='font-medium text-white'>
+                          {shortenNumber(rankedUser.user.potdCount)}
+                        </div>
+                        <div className='text-xs text-gray-400'>POTD</div>
+                      </div>
+                      <div className='min-w-[100px] flex-1 p-1'>
+                        <div className='font-medium text-white'>
+                          {shortenNumber(rankedUser.user.repliesCount)}
+                        </div>
+                        <div className='text-xs text-gray-400'>Replies</div>
+                      </div>
+                      <div className='min-w-[100px] flex-1 p-1'>
                         <div className='font-medium text-white'>
                           {rankedUser.user.pinnedByUserCount}
                         </div>

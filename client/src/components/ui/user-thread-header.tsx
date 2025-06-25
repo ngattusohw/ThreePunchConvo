@@ -31,32 +31,6 @@ export default function UserThreadHeader({
     user?.role !== USER_ROLES.ADMIN &&
     user?.role !== USER_ROLES.MODERATOR;
 
-  // Get status color class
-  const getStatusColorClass = (status: string): string => {
-    switch (status) {
-      case "HALL OF FAMER":
-        return "text-amber-300"; // Gold for hall of famers
-      case "CHAMPION":
-        return "text-purple-400"; // Purple for champions
-      case "CONTENDER":
-        return "text-red-400"; // Red for contenders
-      case "RANKED POSTER":
-        return "text-orange-400"; // Orange for ranked posters
-      case "COMPETITOR":
-        return "text-green-400"; // Green for competitors
-      case "REGIONAL POSTER":
-        return "text-blue-400"; // Blue for regional posters
-      case "AMATEUR":
-        return "text-cyan-400"; // Cyan for amateurs
-      default:
-        return "text-gray-400"; // Gray as fallback
-    }
-  };
-
-  const statusColorClass = user?.status
-    ? getStatusColorClass(user.status)
-    : "text-gray-400";
-
   return (
     <div className='relative flex flex-wrap items-center gap-2'>
       {/* Pinned badge - for right position (absolute) */}
@@ -106,7 +80,6 @@ export default function UserThreadHeader({
           {user?.rank !== undefined && isNormalUser && (
             <FCBadge
               rank={user.rank}
-              size={size === "lg" ? "lg" : size === "sm" ? "sm" : "md"}
             />
           )}
         </div>

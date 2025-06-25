@@ -1,18 +1,3 @@
-// Define User type that can be imported directly
-export type User = {
-  id: string;
-  username: string;
-  email?: string | null;
-  avatar?: string | null;
-  role?: string;
-  status?: string;
-  externalId?: string;
-  stripeId?: string;
-  firstName?: string | null;
-  lastName?: string | null;
-  profileImageUrl?: string | null;
-};
-
 // Augment Express namespace (no export needed)
 declare global {
   namespace Express {
@@ -28,7 +13,40 @@ declare global {
 
     // Extend the Request interface to include localUser
     interface Request {
-      localUser?: User;
+      localUser?: {
+        id: string;
+        username: string;
+        email?: string | null;
+        password?: string | null;
+        externalId?: string | null;
+        stripeId?: string | null;
+        planType?: string;
+        avatar?: string | null;
+        firstName?: string | null;
+        lastName?: string | null;
+        bio?: string | null;
+        profileImageUrl?: string | null;
+        updatedAt?: Date;
+        role?: string;
+        status?: string;
+        createdAt?: Date;
+        isOnline?: boolean;
+        lastActive?: Date;
+        points?: number;
+        rank?: number;
+        postsCount?: number;
+        likesCount?: number;
+        pinnedByUserCount?: number;
+        pinnedCount?: number;
+        potdCount?: number;
+        repliesCount?: number;
+        followersCount?: number;
+        followingCount?: number;
+        socialLinks?: Record<string, string>;
+        disabled?: boolean;
+        disabledAt?: Date;
+        metadata?: Record<string, string>;
+      };
       auth?: {
         userId?: string;
         sessionId?: string;

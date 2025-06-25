@@ -1,5 +1,13 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1750786642694,
+      "tag": "0000_confused_sunfire",
+      "breakpoints": true
+    }
+  ]
 }

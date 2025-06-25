@@ -151,7 +151,7 @@ export default function UserProfile() {
                 </div>
               )}
 
-            <div className='mt-2 flex items-center space-x-4 text-sm text-gray-400'>
+            <div className='mt-2 flex flex-wrap gap-4 items-center text-sm text-gray-400'>
               <div className='flex items-center'>
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
@@ -189,7 +189,7 @@ export default function UserProfile() {
               <div className='flex items-center'>
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
-                  className='text-ufc-blue mr-1 h-4 w-4'
+                  className='text-ufc-gold mr-1 h-4 w-4'
                   fill='none'
                   viewBox='0 0 24 24'
                   stroke='currentColor'
@@ -201,7 +201,41 @@ export default function UserProfile() {
                     d='M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z'
                   />
                 </svg>
+                {displayUser.potdCount} POTD
+              </div>
+              <div className='flex items-center'>
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='text-ufc-blue mr-1 h-4 w-4'
+                  fill="none"
+                  viewBox='0 0 24 24'
+                  stroke='currentColor'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth='2'
+                    d='M16 12V4h1V2H7v2h1v8l-2 2v2h5v6h2v-6h5v-2l-2-2z'
+                  />
+                </svg>
                 {displayUser.pinnedByUserCount} PINNED
+              </div>
+              <div className='flex items-center'>
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='mr-1 h-3 w-3'
+                  fill='none'
+                  viewBox='0 0 24 24'
+                  stroke='currentColor'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6'
+                  />
+                </svg>
+                {displayUser.repliesCount} REPLIES
               </div>
             </div>
 
@@ -367,9 +401,21 @@ export default function UserProfile() {
                 </div>
                 <div className='rounded-lg bg-gray-800 p-3 text-center'>
                   <span className='text-ufc-blue block text-xl font-bold'>
+                    {displayUser.potdCount}
+                  </span>
+                  <span className='text-sm text-gray-400'>POTD Count</span>
+                </div>
+                <div className='rounded-lg bg-gray-800 p-3 text-center'>
+                  <span className='text-ufc-blue block text-xl font-bold'>
                     {displayUser.pinnedByUserCount}
                   </span>
                   <span className='text-sm text-gray-400'>Post Pins</span>
+                </div>
+                <div className='rounded-lg bg-gray-800 p-3 text-center'>
+                  <span className='text-ufc-blue block text-xl font-bold'>
+                    {displayUser.repliesCount}
+                  </span>
+                  <span className='text-sm text-gray-400'>Replies Received</span>
                 </div>
                 {/* <div className="bg-gray-800 p-3 rounded-lg text-center">
                   <span className="block text-ufc-blue font-bold text-xl">{displayUser.followersCount}</span>

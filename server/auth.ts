@@ -1,15 +1,43 @@
 import { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 
-// Extend the Request interface to include localUser with planType
+// Extend the Request interface to include localUser with all necessary fields
 declare global {
   namespace Express {
     interface Request {
       localUser?: {
         id: string;
         username: string;
+        email?: string | null;
+        password?: string | null;
+        externalId?: string | null;
+        stripeId?: string | null;
         planType?: string;
-        [key: string]: any;
+        avatar?: string | null;
+        firstName?: string | null;
+        lastName?: string | null;
+        bio?: string | null;
+        profileImageUrl?: string | null;
+        updatedAt?: Date;
+        role?: string;
+        status?: string;
+        createdAt?: Date;
+        isOnline?: boolean;
+        lastActive?: Date;
+        points?: number;
+        rank?: number;
+        postsCount?: number;
+        likesCount?: number;
+        pinnedByUserCount?: number;
+        pinnedCount?: number;
+        potdCount?: number;
+        repliesCount?: number;
+        followersCount?: number;
+        followingCount?: number;
+        socialLinks?: Record<string, string>;
+        disabled?: boolean;
+        disabledAt?: Date;
+        metadata?: Record<string, string>;
       };
     }
   }

@@ -24,3 +24,57 @@
 .cl-profileSection.cl-profileSection__danger {
   display: none !important;
 }
+
+/* Status badges */
+.status-hof {
+  background: linear-gradient(90deg, #f5c518 0%, #e6a819 100%);
+  color: #121212;
+}
+
+.status-champion {
+  background: linear-gradient(90deg, #dda15e 0%, #e0e0e0 100%);
+  color: #121212;
+}
+
+.status-contender {
+  background: linear-gradient(90deg, #cd7f32 0%, #dda15e 100%);
+  color: #121212;
+}
+
+.status-ranked {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.status-competitor {
+  background-color: #3c4552;
+  color: white;
+}
+
+.status-regional {
+  background-color: #5c6370;
+  color: white;
+}
+
+.status-amateur {
+  background-color: #9ca3af;
+  color: #121212;
+}
+
+.status-goat {
+  background: linear-gradient(
+    135deg,
+    #ffd700 0%,
+    #ffed4e 25%,
+    #f5c518 50%,
+    #e6a819 75%,
+    #b8860b 100%
+  );
+  color: #121212;
+  box-shadow:
+    0 0 10px rgba(255, 215, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: 1px solid #ffd700;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}

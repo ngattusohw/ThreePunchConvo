@@ -109,21 +109,6 @@ export default function ForumContent({
         </div>
 
         <div className='mt-4 flex space-x-3 md:mt-0'>
-          {/* Hiding search */}
-          {/* <div className="relative">
-            <input 
-              type="text" 
-              placeholder="Search discussions..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-dark-gray border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300 w-full md:w-64 focus:outline-none focus:ring-1 focus:ring-ufc-blue"
-            />
-            <button className="absolute right-2 top-2 text-gray-400">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
-          </div> */}
           <SignedIn>
             <button
               onClick={handleOpenModal}
@@ -196,50 +181,10 @@ export default function ForumContent({
           {FORUM_CATEGORIES.map((cat) => (
             <option key={cat.id} value={cat.id}>
               {cat.name}
-              {/* ({cat.count}) */}
             </option>
           ))}
         </select>
       </div>
-
-      {/* Forum Filter Options */}
-      {/* <div className="flex items-center justify-between mb-4 bg-dark-gray p-3 rounded-lg">
-        <div className="flex space-x-4">
-          <button 
-            onClick={() => handleFilterChange("recent")}
-            className={`font-medium text-sm pb-1 ${filterOption === "recent" ? "text-white border-b-2 border-ufc-blue" : "text-gray-400 hover:text-white"}`}
-          >
-            Recent Activity
-          </button>
-          <button 
-            onClick={() => handleFilterChange("popular")}
-            className={`font-medium text-sm pb-1 ${filterOption === "popular" ? "text-white border-b-2 border-ufc-blue" : "text-gray-400 hover:text-white"}`}
-          >
-            Most Popular
-          </button>
-          <button 
-            onClick={() => handleFilterChange("new")}
-            className={`font-medium text-sm pb-1 hidden md:block ${filterOption === "new" ? "text-white border-b-2 border-ufc-blue" : "text-gray-400 hover:text-white"}`}
-          >
-            New Posts
-          </button>
-        </div>
-        
-        <div>
-          <select 
-            value={timeRange}
-            onChange={(e) => {
-              handleTimeRangeChange(e.target.value as any);
-            }}
-            className="bg-dark-gray text-gray-300 text-sm border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ufc-blue"
-          >
-            <option value="all">All Time</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="year">This Year</option>
-          </select>
-        </div>
-      </div> */}
 
       {/* Loading State - Initial Page Load */}
       {isLoading && page === 0 && allRegularThreads.length === 0 && (

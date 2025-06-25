@@ -16,6 +16,7 @@ import { useThreadActions } from "@/api/hooks/threads/actions";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalUser } from "@/api/hooks/useLocalUser";
+import ThreadCard from "@/components/forum/ThreadCard";
 
 // Helper function to format edited date
 const formatEditedDate = (editedAt: Date) => {
@@ -311,6 +312,9 @@ export default function Thread() {
     );
   }
 
+  const shouldBlurContent =
+    currentUser?.planType === "FREE" && thread.user.role === "FIGHTER";
+
   // Only render metadata when we have thread data
   const metadata = <ThreadMetadata thread={thread} />;
 
@@ -343,130 +347,11 @@ export default function Thread() {
           </div>
 
           {/* Thread Card */}
-          <div
-            className={`bg-dark-gray ${thread.isPinned ? "border-ufc-blue border-l-4" : ""} mb-6 rounded-lg shadow-lg`}
-          >
-            <div className='p-5'>
-              {/* Thread Header */}
-              <div className='flex items-start'>
-                <div className='flex-grow'>
-                  <div className='mb-2'>
-                    <UserThreadHeader
-                      user={thread.user}
-                      createdAt={thread.createdAt}
-                      isPinned={thread.isPinned}
-                      pinnedPosition='right'
-                    />
-                  </div>
-
-                  {loading ? (
-                    <div className='flex items-center justify-center py-8'>
-                      <Loader2 className='h-6 w-6 animate-spin' />
-                    </div>
-                  ) : isEditing ? (
-                    // Edit Mode
-                    <div className='space-y-4'>
-                      <div>
-                        <label
-                          htmlFor='edit-title'
-                          className='mb-1 block text-sm font-medium text-gray-300'
-                        >
-                          Title
-                        </label>
-                        <input
-                          id='edit-title'
-                          type='text'
-                          value={editTitle}
-                          onChange={(e) => setEditTitle(e.target.value)}
-                          className='focus:ring-ufc-blue w-full rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2'
-                          placeholder='Enter thread title...'
-                        />
-                      </div>
-
-                      <div>
-                        <label
-                          htmlFor='edit-content'
-                          className='mb-1 block text-sm font-medium text-gray-300'
-                        >
-                          Content
-                        </label>
-                        <textarea
-                          id='edit-content'
-                          value={editContent}
-                          onChange={(e) => setEditContent(e.target.value)}
-                          rows={8}
-                          className='focus:ring-ufc-blue resize-vertical w-full rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2'
-                          placeholder='Enter thread content...'
-                        />
-                      </div>
-
-                      {/* Edit Actions */}
-                      <div className='flex space-x-2'>
-                        <button
-                          onClick={handleSave}
-                          className='bg-ufc-blue rounded-md px-4 py-2 text-white transition-colors hover:bg-blue-600'
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={handleCancel}
-                          className='rounded-md bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700'
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    // View Mode
-                    <>
-                      <h1 className='mb-4 text-2xl font-bold text-white'>
-                        {title}
-                        {thread.edited && thread.editedAt && (
-                          <span className='ml-2 text-sm font-normal text-gray-400'>
-                            (edited {formatEditedDate(thread.editedAt)})
-                          </span>
-                        )}
-                      </h1>
-
-                      <div className='mb-6 whitespace-pre-line text-gray-300'>
-                        {content}
-                      </div>
-                    </>
-                  )}
-
-                  {/* Thread Media - only show in view mode */}
-                  {!isEditing && thread.media && thread.media.length > 0 && (
-                    <div className='mb-6'>
-                      <MediaPreview
-                        media={thread.media[0]}
-                        threadTitle={thread.title}
-                      />
-                    </div>
-                  )}
-
-                  {/* Thread Poll - only show in view mode */}
-                  {!isEditing && thread?.poll && (
-                    <ThreadPoll
-                      key={`poll-${threadId}`}
-                      threadId={threadId}
-                      poll={thread.poll}
-                    />
-                  )}
-                </div>
-              </div>
-
-              {/* Thread Actions - moved to bottom right of card */}
-              {!isEditing && (
-                <div className='flex justify-end mt-6 pt-4 border-t border-gray-700'>
-                  <ThreadActions
-                    thread={thread}
-                    onClickEdit={handleEdit}
-                    onClickDelete={handleThreadDelete}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
+          <ThreadCard
+            thread={thread}
+            onDelete={handleThreadDelete}
+            mainThreadMode={true}
+          />
 
           {/* Thread Replies */}
           <div className='mb-6'>
@@ -505,6 +390,7 @@ export default function Thread() {
                     onDelete={() =>
                       deleteReplyMutation.mutate(reply.id.toString())
                     }
+                    forceBlur={shouldBlurContent}
                   />
                 ))}
               </div>
@@ -586,9 +472,11 @@ export default function Thread() {
             <div className='mb-4'>
               <p className='mb-1 text-sm text-gray-400'>Stats</p>
               <div className='grid grid-cols-2 gap-2'>
-                <div className="bg-gray-800 p-2 rounded-lg text-center">
-                  <span className="block text-ufc-blue font-bold">{thread.likesCount}</span>
-                  <span className="text-gray-400 text-xs">Likes</span>
+                <div className='rounded-lg bg-gray-800 p-2 text-center'>
+                  <span className='text-ufc-blue block font-bold'>
+                    {thread.likesCount}
+                  </span>
+                  <span className='text-xs text-gray-400'>Likes</span>
                 </div>
                 <div className='rounded-lg bg-gray-800 p-2 text-center'>
                   <span className='text-ufc-blue block font-bold'>
@@ -724,6 +612,7 @@ interface ReplyCardProps {
   likeReplyMutation: any; // Use any for now to avoid complex typing
   onDislike: () => void;
   onDelete: () => void;
+  forceBlur?: boolean;
 }
 
 function ReplyCard({
@@ -732,6 +621,7 @@ function ReplyCard({
   likeReplyMutation,
   onDislike,
   onDelete,
+  forceBlur = false,
 }: ReplyCardProps) {
   const { user: currentUser } = useMemoizedUser();
   const { localUser } = useLocalUser();
@@ -752,6 +642,11 @@ function ReplyCard({
       (currentUser.publicMetadata?.role as string) === "MODERATOR");
 
   const canLikeReply = localUser && localUser?.id !== reply.userId;
+
+  // Check if content should be blurred (free user viewing fighter content)
+  const shouldBlurContent =
+    forceBlur ||
+    (currentUser?.planType === "FREE" && reply.user.role === "FIGHTER");
 
   return (
     <div
@@ -791,20 +686,54 @@ function ReplyCard({
               />
             </div>
 
-            <div className='mb-4 whitespace-pre-line text-gray-300'>
-              {reply.content}
-            </div>
-
-            {/* Reply Media */}
-            {reply.media && reply.media.length > 0 && (
-              <div className='mb-4'>
-                <img
-                  src={reply.media[0].url}
-                  alt={`Media for reply`}
-                  className='max-h-72 w-auto rounded-lg'
-                />
+            {/* Content container with blur and overlay */}
+            <div className={shouldBlurContent ? "relative" : ""}>
+              <div
+                className={`mb-4 whitespace-pre-line text-gray-300 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
+              >
+                {shouldBlurContent ? "Premium Content" : reply.content}
               </div>
-            )}
+
+              {/* Reply Media */}
+              {reply.media && reply.media.length > 0 && (
+                <div
+                  className={`mb-4 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
+                >
+                  <img
+                    src={reply.media[0].url}
+                    alt={`Media for reply`}
+                    className='max-h-72 w-auto rounded-lg'
+                  />
+                </div>
+              )}
+
+              {/* Premium Content Overlay */}
+              {shouldBlurContent && (
+                <div className='absolute inset-0 flex items-center justify-center rounded-lg bg-black bg-opacity-50'>
+                  <div className='rounded-lg border border-gray-600 bg-gray-900 p-4 text-center shadow-xl'>
+                    <div className='mb-2'>
+                      <svg
+                        className='mx-auto h-8 w-8 text-yellow-500'
+                        fill='currentColor'
+                        viewBox='0 0 20 20'
+                      >
+                        <path
+                          fillRule='evenodd'
+                          d='M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z'
+                          clipRule='evenodd'
+                        />
+                      </svg>
+                    </div>
+                    <p className='mb-1 text-sm font-medium text-white'>
+                      Premium Content
+                    </p>
+                    <p className='text-xs text-gray-400'>
+                      Upgrade to view fighter posts
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Reply Actions */}
             <div className='flex items-center justify-between'>

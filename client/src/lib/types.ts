@@ -27,6 +27,7 @@ export interface AuthUser {
   isOnline: boolean;
   postsCount: number;
   likesCount: number;
+  planType: string;
   pinnedByUserCount: number;
   pinnedCount: number;
   rank: number;
@@ -34,6 +35,7 @@ export interface AuthUser {
   followingCount: number;
   role: UserRole;
   socialLinks?: SocialLinks;
+  stripeId?: string;
 }
 
 export interface SocialLinks {

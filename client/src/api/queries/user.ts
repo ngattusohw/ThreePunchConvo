@@ -81,6 +81,35 @@ export const fetchUserFightCred = async (userId: string): Promise<number> => {
 };
 
 /**
+ * Create a Stripe customer portal session for billing management
+ *
+ * @param customerId - The Stripe customer ID
+ * @returns The URL to redirect to for the customer portal
+ */
+export const createCustomerPortalSession = async (
+  customerId: string,
+): Promise<string> => {
+  if (!customerId) throw new Error("Customer ID is required");
+
+  try {
+    const response = await apiRequest("POST", "/create-portal-session", {
+      customerId,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || "Failed to create portal session");
+    }
+
+    const data = await response.json();
+    return data.url;
+  } catch (error) {
+    console.error("Error creating customer portal session:", error);
+    throw error;
+  }
+};
+
+/**
  * Delete user account from the database
  *
  * @param userId - The Clerk user ID to delete

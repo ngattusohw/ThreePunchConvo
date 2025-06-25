@@ -1,8 +1,5 @@
-import React from "react";
-import { Link } from "wouter";
 import ForumCategories from "@/components/forum/ForumCategories";
 import ForumContent from "@/components/forum/ForumContent";
-import EventsSidebar from "@/components/sidebar/EventsSidebar";
 import TopUsersSidebar from "@/components/sidebar/TopUsersSidebar";
 
 export default function Home() {

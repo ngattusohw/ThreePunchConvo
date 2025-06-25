@@ -12,6 +12,7 @@ import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 interface ThreadCardProps {
   thread: ForumThread;
   onDelete?: () => void;
+  mainThreadMode?: boolean;
 }
 
 // Helper function to format edited date
@@ -36,7 +37,11 @@ const formatEditedDate = (editedAt: Date) => {
   }
 };
 
-export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
+export default function ThreadCard({
+  thread,
+  onDelete,
+  mainThreadMode = false,
+}: ThreadCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(thread.title);
   const [title, setTitle] = useState(thread.title);
@@ -56,6 +61,10 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
   });
 
   const borderColor = thread.isPinned ? "border-ufc-blue" : "";
+
+  // Check if content should be blurred (free user viewing fighter content)
+  const shouldBlurContent =
+    currentUser?.planType === "FREE" && thread.user.role === "FIGHTER";
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -105,35 +114,37 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
 
   return (
     <div
-      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} relative overflow-hidden rounded-lg shadow-lg transition hover:shadow-xl`}
+      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} relative overflow-hidden rounded-lg ${mainThreadMode ? "mb-6" : "mb-4"} shadow-lg transition hover:shadow-xl`}
     >
-      <div className='p-4'>
+      <div className={`${mainThreadMode ? "p-8" : "p-4"}`}>
         <div className='flex items-start'>
           {/* Thread Content */}
           <div className='flex-grow'>
             {/* Thread header with user info */}
-            <div className='mb-2'>
+            <div className={`${mainThreadMode ? "mb-4" : "mb-2"}`}>
               <UserThreadHeader
                 user={thread.user}
                 createdAt={thread.createdAt}
                 isPinned={thread.isPinned}
                 showStatus={true}
-                size='md'
+                size={mainThreadMode ? "lg" : "md"}
                 pinnedPosition='right'
               />
             </div>
 
             {loading ? (
               <div className='flex h-full items-center justify-center'>
-                <Loader2 className='h-4 w-4 animate-spin' />
+                <Loader2
+                  className={`${mainThreadMode ? "h-6 w-6" : "h-4 w-4"} animate-spin`}
+                />
               </div>
             ) : isEditing ? (
               // Edit Mode
-              <div className='space-y-4'>
+              <div className={`${mainThreadMode ? "space-y-6" : "space-y-4"}`}>
                 <div>
                   <label
                     htmlFor='edit-title'
-                    className='mb-1 block text-sm font-medium text-gray-300'
+                    className={`mb-1 block ${mainThreadMode ? "text-base" : "text-sm"} font-medium text-gray-300`}
                   >
                     Title
                   </label>
@@ -142,7 +153,7 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
                     type='text'
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className='focus:ring-ufc-blue w-full rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2'
+                    className={`focus:ring-ufc-blue w-full rounded-md border border-gray-600 bg-gray-800 ${mainThreadMode ? "px-4 py-3 text-lg" : "px-3 py-2"} text-white placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2`}
                     placeholder='Enter thread title...'
                   />
                 </div>
@@ -150,7 +161,7 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
                 <div>
                   <label
                     htmlFor='edit-content'
-                    className='mb-1 block text-sm font-medium text-gray-300'
+                    className={`mb-1 block ${mainThreadMode ? "text-base" : "text-sm"} font-medium text-gray-300`}
                   >
                     Content
                   </label>
@@ -158,8 +169,8 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
                     id='edit-content'
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    rows={4}
-                    className='focus:ring-ufc-blue resize-vertical w-full rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2'
+                    rows={mainThreadMode ? 6 : 4}
+                    className={`focus:ring-ufc-blue resize-vertical w-full rounded-md border border-gray-600 bg-gray-800 ${mainThreadMode ? "px-4 py-3 text-lg" : "px-3 py-2"} text-white placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2`}
                     placeholder='Enter thread content...'
                   />
                 </div>
@@ -168,13 +179,13 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
                 <div className='flex space-x-2'>
                   <button
                     onClick={handleSave}
-                    className='bg-ufc-blue rounded-md px-4 py-2 text-white transition-colors hover:bg-blue-600'
+                    className={`bg-ufc-blue rounded-md ${mainThreadMode ? "px-6 py-3 text-lg" : "px-4 py-2"} text-white transition-colors hover:bg-blue-600`}
                   >
                     Save
                   </button>
                   <button
                     onClick={handleCancel}
-                    className='rounded-md bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700'
+                    className={`rounded-md bg-gray-600 ${mainThreadMode ? "px-6 py-3 text-lg" : "px-4 py-2"} text-white transition-colors hover:bg-gray-700`}
                   >
                     Cancel
                   </button>
@@ -184,112 +195,173 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
               // View Mode
               <>
                 <Link href={`/thread/${thread.id}`}>
-                  <h3 className='hover:text-ufc-blue mb-2 text-lg font-bold text-white transition'>
-                    {title}
+                  <h3
+                    className={`hover:text-ufc-blue ${mainThreadMode ? "mb-4 text-3xl" : "mb-2 text-lg"} font-bold text-white transition`}
+                  >
+                    {!shouldBlurContent && title}
                     {isEdited && editedAt && (
-                      <span className='ml-2 text-sm font-normal text-gray-400'>
+                      <span
+                        className={`ml-2 ${mainThreadMode ? "text-lg" : "text-sm"} font-normal text-gray-400`}
+                      >
                         (edited {formatEditedDate(editedAt)})
                       </span>
                     )}
                   </h3>
                 </Link>
 
-                <p className='mb-4 line-clamp-2 text-gray-300'>
-                  {truncateText(content, 280)}
-                </p>
-              </>
-            )}
-
-            {/* Thread Poll Preview - only show in view mode */}
-            {!isEditing && thread.poll && (
-              <div className='mb-4 rounded-lg bg-gray-800 p-3'>
-                <p className='mb-2 font-medium text-white'>
-                  {thread.poll.question}
-                </p>
-                <div className='space-y-2'>
-                  {thread.poll.options.slice(0, 2).map((option) => {
-                    const percentage = thread.poll?.votesCount
-                      ? Math.round(
-                          (option.votesCount / thread.poll.votesCount) * 100,
-                        )
-                      : 0;
-
-                    return (
-                      <div className='relative pt-1' key={option.id}>
-                        <div className='mb-1 flex items-center justify-between'>
-                          <span className='text-sm text-gray-300'>
-                            {option.text}
-                          </span>
-                          <span className='text-sm text-gray-300'>
-                            {percentage}%
-                          </span>
-                        </div>
-                        <div className='flex h-2 overflow-hidden rounded bg-gray-700 text-xs'>
-                          <div
-                            style={{ width: `${percentage}%` }}
-                            className='flex flex-col justify-center whitespace-nowrap bg-blue-500 text-center text-white shadow-none'
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {thread.poll.options.length > 2 && (
-                  <p className='mt-1 text-sm text-gray-400'>
-                    +{thread.poll.options.length - 2} more options
+                {/* Content container with blur and overlay */}
+                <div className={shouldBlurContent ? "relative" : ""}>
+                  <p
+                    className={`${mainThreadMode ? "mb-6 text-lg leading-relaxed" : "mb-4"} line-clamp-2 text-gray-300 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
+                  >
+                    {shouldBlurContent
+                      ? "Premium Content"
+                      : truncateText(content, mainThreadMode ? 480 : 280)}
                   </p>
-                )}
 
-                <p className='mt-2 text-xs text-gray-400'>
-                  {thread.poll.votesCount == 1
-                    ? "1 vote"
-                    : `${thread.poll.votesCount} votes`}{" "}
-                  •
-                  {new Date() > new Date(thread.poll.expiresAt)
-                    ? " Ended"
-                    : ` ${Math.ceil((new Date(thread.poll.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`}
-                </p>
-              </div>
-            )}
-
-            {/* Thread Media Preview - only show in view mode */}
-            {!isEditing && thread.media && thread.media.length > 0 && (
-              <div className='mb-4 overflow-hidden rounded-lg'>
-                <MediaPreview
-                  media={thread.media[0]}
-                  threadTitle={thread.title}
-                />
-                {thread.media.length > 1 && (
-                  <div className='mt-2 flex items-center text-sm text-gray-400'>
-                    <svg
-                      className='mr-1 h-4 w-4'
-                      fill='none'
-                      viewBox='0 0 24 24'
-                      stroke='currentColor'
+                  {/* Thread Poll Preview - only show in view mode */}
+                  {thread.poll && (
+                    <div
+                      className={`${mainThreadMode ? "mb-6 p-4" : "mb-4 p-3"} rounded-lg bg-gray-800 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
                     >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'
+                      <p
+                        className={`${mainThreadMode ? "mb-3 text-lg" : "mb-2"} font-medium text-white`}
+                      >
+                        {thread.poll.question}
+                      </p>
+                      <div
+                        className={`${mainThreadMode ? "space-y-3" : "space-y-2"}`}
+                      >
+                        {thread.poll.options.slice(0, 2).map((option) => {
+                          const percentage = thread.poll?.votesCount
+                            ? Math.round(
+                                (option.votesCount / thread.poll.votesCount) *
+                                  100,
+                              )
+                            : 0;
+
+                          return (
+                            <div className='relative pt-1' key={option.id}>
+                              <div className='mb-1 flex items-center justify-between'>
+                                <span
+                                  className={`${mainThreadMode ? "text-base" : "text-sm"} text-gray-300`}
+                                >
+                                  {option.text}
+                                </span>
+                                <span
+                                  className={`${mainThreadMode ? "text-base" : "text-sm"} text-gray-300`}
+                                >
+                                  {percentage}%
+                                </span>
+                              </div>
+                              <div
+                                className={`flex ${mainThreadMode ? "h-3" : "h-2"} overflow-hidden rounded bg-gray-700 text-xs`}
+                              >
+                                <div
+                                  style={{ width: `${percentage}%` }}
+                                  className='flex flex-col justify-center whitespace-nowrap bg-blue-500 text-center text-white shadow-none'
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {thread.poll.options.length > 2 && (
+                        <p
+                          className={`mt-1 ${mainThreadMode ? "text-base" : "text-sm"} text-gray-400`}
+                        >
+                          +{thread.poll.options.length - 2} more options
+                        </p>
+                      )}
+
+                      <p
+                        className={`mt-2 ${mainThreadMode ? "text-sm" : "text-xs"} text-gray-400`}
+                      >
+                        {thread.poll.votesCount == 1
+                          ? "1 vote"
+                          : `${thread.poll.votesCount} votes`}{" "}
+                        •
+                        {new Date() > new Date(thread.poll.expiresAt)
+                          ? " Ended"
+                          : ` ${Math.ceil((new Date(thread.poll.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Thread Media Preview - only show in view mode */}
+                  {thread.media && thread.media.length > 0 && (
+                    <div
+                      className={`${mainThreadMode ? "mb-6" : "mb-4"} overflow-hidden rounded-lg ${shouldBlurContent ? "select-none blur-lg" : ""}`}
+                    >
+                      <MediaPreview
+                        media={thread.media[0]}
+                        threadTitle={thread.title}
                       />
-                    </svg>
-                    +{thread.media.length - 1} more{" "}
-                    {thread.media.length === 2 ? "image" : "images"}
-                  </div>
-                )}
-              </div>
+                      {thread.media.length > 1 && (
+                        <div
+                          className={`mt-2 flex items-center ${mainThreadMode ? "text-base" : "text-sm"} text-gray-400`}
+                        >
+                          <svg
+                            className={`mr-1 ${mainThreadMode ? "h-5 w-5" : "h-4 w-4"}`}
+                            fill='none'
+                            viewBox='0 0 24 24'
+                            stroke='currentColor'
+                          >
+                            <path
+                              strokeLinecap='round'
+                              strokeLinejoin='round'
+                              strokeWidth={2}
+                              d='M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z'
+                            />
+                          </svg>
+                          +{thread.media.length - 1} more{" "}
+                          {thread.media.length === 2 ? "image" : "images"}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Premium Content Overlay */}
+                  {shouldBlurContent && (
+                    <div className='absolute inset-0 flex items-center justify-center rounded-lg bg-black bg-opacity-50'>
+                      <div className='rounded-lg border border-gray-600 bg-gray-900 p-4 text-center shadow-xl'>
+                        <div className='mb-2'>
+                          <svg
+                            className='mx-auto h-8 w-8 text-yellow-500'
+                            fill='currentColor'
+                            viewBox='0 0 20 20'
+                          >
+                            <path
+                              fillRule='evenodd'
+                              d='M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z'
+                              clipRule='evenodd'
+                            />
+                          </svg>
+                        </div>
+                        <p className='mb-1 text-sm font-medium text-white'>
+                          Premium Content
+                        </p>
+                        <p className='text-xs text-gray-400'>
+                          Upgrade to view fighter posts
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
 
             {/* Thread Stats and Actions - only show in view mode */}
             {!isEditing && (
               <div className='flex items-center justify-between'>
                 {/* Thread reply count */}
-                <div className='flex items-center text-sm text-gray-400'>
+                <div
+                  className={`flex items-center ${mainThreadMode ? "text-base" : "text-sm"} text-gray-400`}
+                >
                   <svg
                     xmlns='http://www.w3.org/2000/svg'
-                    className='mr-1 h-5 w-5'
+                    className={`mr-1 ${mainThreadMode ? "h-6 w-6" : "h-5 w-5"}`}
                     fill='none'
                     viewBox='0 0 24 24'
                     stroke='currentColor'
@@ -309,7 +381,7 @@ export default function ThreadCard({ thread, onDelete }: ThreadCardProps) {
                   thread={thread}
                   onClickEdit={handleEdit}
                   onClickDelete={handleDelete}
-                  size='sm'
+                  size={mainThreadMode ? "md" : "sm"}
                   className='ml-2'
                 />
               </div>

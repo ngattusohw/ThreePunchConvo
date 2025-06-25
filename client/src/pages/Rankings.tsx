@@ -131,7 +131,6 @@ export default function Rankings() {
             <div className='w-20 text-center'>Likes</div>
             <div className='w-20 text-center'>POTD</div>
             <div className='w-20 text-center'>Replies</div>
-            <div className='w-20 text-center'>Pinned</div>
             <div className='w-24 text-center'>Fight Cred</div>
           </div>
 
@@ -202,11 +201,6 @@ export default function Rankings() {
                     <div className='w-20 text-center'>
                       <span className='text-white'>
                         {rankedUser.user.repliesCount}
-                      </span>
-                    </div>
-                    <div className='w-20 text-center'>
-                      <span className='text-white'>
-                        {rankedUser.user.pinnedCount}
                       </span>
                     </div>
                     <div className='w-24 text-center'>
@@ -313,12 +307,6 @@ export default function Rankings() {
                           {shortenNumber(rankedUser.user.repliesCount)}
                         </div>
                         <div className='text-xs text-gray-400'>Replies</div>
-                      </div>
-                      <div className='min-w-[100px] flex-1 p-1'>
-                        <div className='font-medium text-white'>
-                          {rankedUser.user.pinnedByUserCount}
-                        </div>
-                        <div className='text-xs text-gray-400'>Pinned</div>
                       </div>
                     </div>
                   </div>

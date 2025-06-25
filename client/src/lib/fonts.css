@@ -22,43 +22,6 @@
 .font-accent {
   font-family: "Oswald", sans-serif;
 }
-
-/* Status badges */
-.status-hof {
-  background: linear-gradient(90deg, #f5c518 0%, #e6a819 100%);
-  color: #121212;
-}
-
-.status-champion {
-  background: linear-gradient(90deg, #dda15e 0%, #e0e0e0 100%);
-  color: #121212;
-}
-
-.status-contender {
-  background: linear-gradient(90deg, #cd7f32 0%, #dda15e 100%);
-  color: #121212;
-}
-
-.status-ranked {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.status-competitor {
-  background-color: #3c4552;
-  color: white;
-}
-
-.status-regional {
-  background-color: #5c6370;
-  color: white;
-}
-
-.status-amateur {
-  background-color: #9ca3af;
-  color: black;
-}
-
 /* Custom scrollbar for the dark theme */
 ::-webkit-scrollbar {
   width: 8px;

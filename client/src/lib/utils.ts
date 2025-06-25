@@ -36,6 +36,10 @@ export function formatDate(date: Date | string | number): string {
 }
 
 export function shortenNumber(num: number): string {
+  if (num === undefined || num === null) {
+    return "-";
+  }
+
   if (num >= 1000000) {
     return (num / 1000000).toFixed(1) + "M";
   } else if (num >= 1000) {

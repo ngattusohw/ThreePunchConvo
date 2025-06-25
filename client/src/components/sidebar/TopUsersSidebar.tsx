@@ -18,7 +18,7 @@ export default function TopUsersSidebar() {
 
   return (
     topUsers?.length && (
-      <div className='bg-dark-gray rounded-lg p-4'>
+      <div className='bg-dark-gray right-30 fixed top-20 z-40 w-80 rounded-lg p-4'>
         <h2 className='font-heading mb-4 text-lg font-bold text-white'>
           Top Users
         </h2>
@@ -56,7 +56,9 @@ export default function TopUsersSidebar() {
                     >
                       {truncateText(rankedUser.user.username, 15)}
                     </Link>
-                    <div><StatusBadge status={rankedUser.user.status} /></div>
+                    <div>
+                      <StatusBadge status={rankedUser.user.status} />
+                    </div>
                   </div>
                   <div className='text-sm text-gray-400'>
                     <span className='flex items-center'>

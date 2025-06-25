@@ -192,6 +192,8 @@ export interface RankedUser {
     likesCount: number;
     pinnedByUserCount: number;
     pinnedCount: number;
+    potdCount: number;
+    repliesCount: number;
   };
   rank: number;
 }

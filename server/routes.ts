@@ -284,6 +284,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               likesCount: user.likesCount || 0,
               pinnedByUserCount: user.pinnedByUserCount || 0,
               pinnedCount: user.pinnedCount || 0,
+              potdCount: user.potdCount || 0,
+              repliesCount: user.repliesCount || 0,
               status: user.status || "AMATEUR",
             },
           };

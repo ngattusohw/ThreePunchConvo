@@ -319,7 +319,7 @@ export default function Thread() {
   }
 
   const shouldBlurContent =
-    currentUser?.planType === "FREE" && thread.user.role === "FIGHTER";
+    (!currentUser?.planType || currentUser?.planType === "FREE")  && thread.user.role === "FIGHTER";
 
   // Only render metadata when we have thread data
   const metadata = <ThreadMetadata thread={thread} />;
@@ -659,6 +659,7 @@ function ReplyCard({
 }: ReplyCardProps) {
   const { user: currentUser } = useMemoizedUser();
   const { localUser } = useLocalUser();
+  console.log("localUser", localUser);
   // Calculate indentation based on the reply's level in the thread
   const level = reply.level || 0;
 

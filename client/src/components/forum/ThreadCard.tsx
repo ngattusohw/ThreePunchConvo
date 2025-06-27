@@ -67,7 +67,7 @@ export default function ThreadCard({
 
   // Check if content should be blurred (free user viewing fighter content)
   const shouldBlurContent = isPlanLoading ||
-    (currentUser?.planType === "FREE" && thread.user.role === "FIGHTER");
+    (!currentUser?.planType || currentUser?.planType === "FREE")  && thread.user.role === "FIGHTER";
 
   const handleEdit = () => {
     setIsEditing(true);

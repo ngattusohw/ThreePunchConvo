@@ -21,6 +21,7 @@ const CheckCircleSVG = ({ className = "" }) => (
 export const Return = () => {
   const [status, setStatus] = useState(null);
   const [customerEmail, setCustomerEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const [, setLocation] = useLocation();
 
   useEffect(() => {
@@ -33,12 +34,24 @@ export const Return = () => {
       .then((data) => {
         setStatus(data.status);
         setCustomerEmail(data.customer_email);
+        setIsLoading(false);
       })
       .catch((err) => {
         console.error("Error fetching client secret:", err);
+        setIsLoading(false);
         return null; // TODO reroute to error page
       });
   }, []);
+
+  // Show loading spinner while fetching status
+  if (isLoading) {
+    return (
+      <div className="mx-auto my-10 flex max-w-md flex-col items-center justify-center rounded-xl border border-gray-800 bg-gradient-to-br from-gray-900 to-gray-800 p-8 shadow-2xl">
+        <div className='border-ufc-blue mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-t-2'></div>
+        <p className="text-gray-300 mt-4 text-center">Loading...</p>
+      </div>
+    );
+  }
 
   if (status === "open") {
     setLocation("/checkout");

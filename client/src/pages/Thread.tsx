@@ -627,6 +627,10 @@ export default function Thread() {
   );
 }
 
+const handleUpgrade = () => {
+  window.location.href = "/checkout";
+};
+
 // Helper function to get category name
 function getCategoryName(categoryId: string): string {
   const category = FORUM_CATEGORIES.find((cat) => cat.id === categoryId);
@@ -676,7 +680,7 @@ function ReplyCard({
   // Check if content should be blurred (free user viewing fighter content)
   const shouldBlurContent =
     forceBlur ||
-    (currentUser?.planType === "FREE" && reply.user.role === "FIGHTER");
+    (localUser?.planType === "FREE" && reply.user.role === "FIGHTER");
 
   return (
     <div
@@ -739,7 +743,10 @@ function ReplyCard({
 
               {/* Premium Content Overlay */}
               {shouldBlurContent && (
-                <div className='absolute inset-0 flex items-center justify-center rounded-lg bg-black bg-opacity-50'>
+                <button
+                  onClick={handleUpgrade}
+                  className='absolute inset-0 flex items-center justify-center rounded-lg bg-black bg-opacity-50'
+                >
                   <div className='rounded-lg border border-gray-600 bg-gray-900 p-4 text-center shadow-xl'>
                     <div className='mb-2'>
                       <svg
@@ -761,7 +768,7 @@ function ReplyCard({
                       Upgrade to view fighter posts
                     </p>
                   </div>
-                </div>
+                </button>
               )}
             </div>
 

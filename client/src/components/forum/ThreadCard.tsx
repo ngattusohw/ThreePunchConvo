@@ -8,6 +8,7 @@ import ThreadActions from "@/components/thread/ThreadActions";
 import { useThreadActions } from "@/api/hooks/threads/actions";
 import { Loader2 } from "lucide-react";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
+import { useUserProfile } from "@/api/hooks/useUserProfile";
 
 interface ThreadCardProps {
   thread: ForumThread;
@@ -51,7 +52,9 @@ export default function ThreadCard({
   const [isEdited, setIsEdited] = useState(thread.edited);
   const [editedAt, setEditedAt] = useState(thread.editedAt);
   const [isDeleted, setIsDeleted] = useState(false);
-  const { user: currentUser } = useMemoizedUser();
+  const { user } = useMemoizedUser();
+  const { user: currentUser, isPlanLoading } = useUserProfile(user?.username);
+
 
   const { editThreadMutation, deleteThreadMutation } = useThreadActions({
     threadId: thread.id,
@@ -63,8 +66,8 @@ export default function ThreadCard({
   const borderColor = thread.isPinned ? "border-ufc-blue" : "";
 
   // Check if content should be blurred (free user viewing fighter content)
-  const shouldBlurContent =
-    currentUser?.planType === "FREE" && thread.user.role === "FIGHTER";
+  const shouldBlurContent = isPlanLoading ||
+    (currentUser?.planType === "FREE" && thread.user.role === "FIGHTER");
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -111,6 +114,10 @@ export default function ThreadCard({
   if (isDeleted) {
     return null;
   }
+
+  const handleUpgrade = () => {
+    window.location.href = "/checkout";
+  };
 
   return (
     <div
@@ -324,7 +331,7 @@ export default function ThreadCard({
 
                   {/* Premium Content Overlay */}
                   {shouldBlurContent && (
-                    <div className='absolute inset-0 flex items-center justify-center rounded-lg bg-black bg-opacity-50'>
+                    <button className='absolute inset-0 flex items-center justify-center rounded-lg bg-black bg-opacity-50' onClick={handleUpgrade}>
                       <div className='rounded-lg border border-gray-600 bg-gray-900 p-4 text-center shadow-xl'>
                         <div className='mb-2'>
                           <svg
@@ -346,7 +353,7 @@ export default function ThreadCard({
                           Upgrade to view fighter posts
                         </p>
                       </div>
-                    </div>
+                    </button>
                   )}
                 </div>
               </>

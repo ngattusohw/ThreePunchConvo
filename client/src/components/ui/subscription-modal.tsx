@@ -25,8 +25,8 @@ export function SubscriptionModal({
     return null;
   }
 
-  const hasSubscription = currentUser?.planType !== "FREE";
   const currentPlan = currentUser?.planType || "FREE";
+  const hasSubscription = currentPlan !== "FREE";
   const currentPlanPrice = plans.find((plan) =>
     plan.name.toUpperCase().includes(currentUser?.planType || "FREE"),
   )?.price;

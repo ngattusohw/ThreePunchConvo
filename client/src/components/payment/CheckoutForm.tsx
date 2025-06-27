@@ -202,32 +202,55 @@ const CheckoutForm = () => {
           <h5 className='mb-4 font-medium text-white'>Promo Code</h5>
 
           {appliedPromoCode ? (
-            <div className='flex items-center justify-between rounded-lg border border-green-700 bg-green-900/20 p-4'>
-              <div className='flex items-center'>
-                <svg
-                  xmlns='http://www.w3.org/2000/svg'
-                  className='mr-2 h-5 w-5 text-green-400'
-                  viewBox='0 0 20 20'
-                  fill='currentColor'
+            <div className='flex flex-col gap-4'>
+              <div className='flex items-center justify-between rounded-lg border border-green-700 bg-green-900/20 p-4'>
+                <div className='flex items-center'>
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    className='mr-2 h-5 w-5 text-green-400'
+                    viewBox='0 0 20 20'
+                    fill='currentColor'
+                  >
+                    <path
+                      fillRule='evenodd'
+                      d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
+                      clipRule='evenodd'
+                    />
+                  </svg>
+                  <span className='font-medium text-green-400'>
+                    {appliedPromoCode}
+                  </span>
+                  <span className='ml-2 text-sm text-green-300'>Applied</span>
+                </div>
+                <button
+                  type='button'
+                  onClick={handleRemovePromoCode}
+                  className='text-sm font-medium text-red-400 hover:text-red-300'
                 >
-                  <path
-                    fillRule='evenodd'
-                    d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
-                    clipRule='evenodd'
-                  />
-                </svg>
-                <span className='font-medium text-green-400'>
-                  {appliedPromoCode}
-                </span>
-                <span className='ml-2 text-sm text-green-300'>Applied</span>
+                  Remove
+                </button>
               </div>
-              <button
-                type='button'
-                onClick={handleRemovePromoCode}
-                className='text-sm font-medium text-red-400 hover:text-red-300'
-              >
-                Remove
-              </button>
+              <div className='flex items-center justify-center rounded-lg border border-amber-600 bg-gradient-to-r from-amber-900/30 to-yellow-900/30 p-4'>
+                <div className='flex items-center'>
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    className='mr-2 h-5 w-5 flex-shrink-0 text-amber-400'
+                    viewBox='0 0 20 20'
+                    fill='currentColor'
+                  >
+                    <path
+                      fillRule='evenodd'
+                      d='M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
+                      clipRule='evenodd'
+                    />
+                  </svg>
+                  <span className='text-sm font-bold text-amber-300'>
+                    Valid for a whole FREE YEAR. Your card will only start being
+                    charged $4.99/month after the end of the free period. You
+                    can cancel at any time.
+                  </span>
+                </div>
+              </div>
             </div>
           ) : (
             <div className='flex gap-3'>

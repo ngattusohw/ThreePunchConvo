@@ -19,6 +19,7 @@ export type UserStatus =
 
 export interface AuthUser {
   id: string;
+  externalId: string;
   username: string;
   avatar?: string;
   firstName?: string | null;

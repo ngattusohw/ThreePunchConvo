@@ -55,6 +55,8 @@ export default function ThreadCard({
   const { user } = useMemoizedUser();
   const { user: currentUser, isPlanLoading } = useUserProfile(user?.username);
 
+  console.log("currentUseThread", currentUser);
+
   const { editThreadMutation, deleteThreadMutation } = useThreadActions({
     threadId: thread.id,
     userId: currentUser?.externalId,

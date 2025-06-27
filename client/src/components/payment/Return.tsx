@@ -39,7 +39,7 @@ export const Return = () => {
             <br />
             <br />
             If you have any questions, please email{" "}
-            <a href='mailto:orders@example.com'>orders@example.com</a>.
+            <a href='mailto:3punchconvo@gmail.com'>3punchconvo@gmail.com</a>.
           </p>
         </section>
         <div>

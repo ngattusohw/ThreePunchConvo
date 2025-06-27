@@ -237,7 +237,8 @@ export const registerStripeEndpoints = (app: Express) => {
 
       const subscriptions = await stripe.subscriptions.list(params);
 
-      res.send(subscriptions);
+      // Return in the format expected by the frontend
+      res.json({ subscriptions: subscriptions.data });
     } catch (error: any) {
       res.status(400).send({ error: { message: error.message } });
     }

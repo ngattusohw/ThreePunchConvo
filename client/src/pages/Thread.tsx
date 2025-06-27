@@ -319,7 +319,7 @@ export default function Thread() {
   }
 
   const shouldBlurContent =
-    currentUser?.planType === "FREE" && thread.user.role === "FIGHTER";
+    (!currentUser?.planType || currentUser?.planType === "FREE")  && thread.user.role === "FIGHTER";
 
   // Only render metadata when we have thread data
   const metadata = <ThreadMetadata thread={thread} />;

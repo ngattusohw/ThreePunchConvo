@@ -85,7 +85,7 @@ export const registerStripeEndpoints = (app: Express) => {
         customer: customerId,
         // customer_email: email,
         // TODO: change to production url
-        return_url: `http://${process.env.RAILWAY_PUBLIC_DOMAIN || "threepunchconvo-production.up.railway.app"}/return?session_id={CHECKOUT_SESSION_ID}`,
+        return_url: `http://${process.env.EXTERNAL_URL || "threepunchconvo-production.up.railway.app"}/return?session_id={CHECKOUT_SESSION_ID}`,
       });
 
       res.send({ clientSecret: session.client_secret });
@@ -277,9 +277,9 @@ export const registerStripeEndpoints = (app: Express) => {
       // Create a customer portal session
       const session = await stripe.billingPortal.sessions.create({
         customer: customerId,
-        return_url: process.env.RAILWAY_PUBLIC_DOMAIN
-          ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/forum`
-          : "https://threepunchconvo-production.up.railway.app/forum",
+        return_url: process.env.EXTERNAL_URL
+          ? `https://${process.env.EXTERNAL_URL}/forum`
+          : "https://threepunchconvo.com/forum",
       });
 
       res.send({ url: session.url });

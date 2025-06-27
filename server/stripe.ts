@@ -80,6 +80,7 @@ export const registerStripeEndpoints = (app: Express) => {
         // Create the checkout session with the customer ID
         const session = await stripe.checkout.sessions.create({
           ui_mode: "custom",
+          allow_promotion_codes: true,
           discounts: [
             {
               coupon: process.env.STRIPE_COUPON_CODE || "",

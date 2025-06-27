@@ -63,9 +63,7 @@ function App() {
   );
 
   useEffect(() => {
-    getToken().then((token) => {
-      console.log("Your token:", token);
-    });
+    getToken();
   }, []);
 
   // Clear React Query cache when auth state changes (on logout)
@@ -113,12 +111,6 @@ function App() {
         }
 
         const data = await response.json();
-
-        if (data.created) {
-          console.log("Created new local user for Clerk user:", data.user);
-        } else {
-          console.log("Found existing local user:", data.user);
-        }
 
         setLocalUser(data.user);
         setLocalUserChecked(true);
@@ -174,7 +166,8 @@ function App() {
         }
 
         const data = await response.json();
-        const subscriptionsData = data.data || [];
+        const subscriptionsData = data.subscriptions || [];
+
         setSubscriptions(subscriptionsData);
 
         // Get subscription status using the utility function
@@ -188,8 +181,8 @@ function App() {
           await updateUserPlanType(user.id, planType);
         }
 
-        if (data.data && data.data.length > 0) {
-          console.log("User has active subscriptions:", data.data);
+        if (subscriptionsData && subscriptionsData.length > 0) {
+          console.log("User has active subscriptions:", subscriptionsData);
           console.log("Subscription status:", status);
         } else {
           console.log("User has no active subscriptions");

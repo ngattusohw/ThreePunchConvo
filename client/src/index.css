@@ -12,6 +12,11 @@
   }
 }
 
+/* @TODO: Remove this once we have a better way to handle this */
+.cl-profileSection__username {
+  display: none !important;
+}
+
 /* Make Clerk Google social button logo larger */
 .cl-socialButtonsProviderIcon__google {
   width: 1.25rem !important;

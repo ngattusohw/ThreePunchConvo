@@ -115,9 +115,14 @@ export default function Thread() {
     isRepliesLoading,
     repliesError,
     displayReplies,
+    hasMore,
+    loadMore,
+    resetPagination,
+    currentPage,
   } = useThreadData({
     threadId: threadId || "",
     userId: currentUser?.id,
+    pageSize: 10,
   });
 
   // Initialize edit form when thread data is available
@@ -154,6 +159,7 @@ export default function Thread() {
   } = useThreadReplies({
     threadId: threadId || "",
     userId: currentUser?.id,
+    resetPagination,
   });
 
   // Edit handlers
@@ -393,6 +399,30 @@ export default function Thread() {
                     forceBlur={shouldBlurContent}
                   />
                 ))}
+
+                {/* Load More Button */}
+                {hasMore && (
+                  <div className='flex justify-center pt-4'>
+                    <button
+                      type='button'
+                      onClick={(e) => {
+                        e.preventDefault();
+                        loadMore();
+                      }}
+                      disabled={isRepliesLoading}
+                      className='bg-ufc-blue hover:bg-ufc-blue-dark flex items-center rounded-lg px-6 py-3 text-sm font-medium text-black transition disabled:cursor-not-allowed disabled:bg-gray-600'
+                    >
+                      {isRepliesLoading ? (
+                        <>
+                          <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                          Loading...
+                        </>
+                      ) : (
+                        "Load More Replies"
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

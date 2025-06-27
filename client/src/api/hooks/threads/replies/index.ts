@@ -7,11 +7,13 @@ import { useReplyState } from "./useReplyState";
 interface UseThreadRepliesOptions {
   threadId: string;
   userId?: string;
+  resetPagination?: () => void;
 }
 
 export function useThreadReplies({
   threadId,
   userId,
+  resetPagination,
 }: UseThreadRepliesOptions) {
   const {
     replyContent,
@@ -31,6 +33,7 @@ export function useThreadReplies({
     setReplyContent,
     setReplyingTo,
     setShowUpgradeModal,
+    resetPagination,
   });
 
   const likeReplyMutation = useLikeReply({ threadId, userId });

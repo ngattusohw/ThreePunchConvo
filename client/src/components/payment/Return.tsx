@@ -45,7 +45,7 @@ export const Return = () => {
         <div>
           <button
             className='bg-ufc-blue hover:bg-ufc-blue-dark mt-6 flex flex-shrink-0 items-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-black transition'
-            onClick={() => setLocation("/forum")}
+            onClick={() => (window.location.href = "/forum")}
           >
             Return to Home
           </button>

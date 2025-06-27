@@ -659,7 +659,6 @@ function ReplyCard({
 }: ReplyCardProps) {
   const { user: currentUser } = useMemoizedUser();
   const { localUser } = useLocalUser();
-  console.log("localUser", localUser);
   // Calculate indentation based on the reply's level in the thread
   const level = reply.level || 0;
 

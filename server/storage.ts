@@ -84,6 +84,8 @@ export interface IStorage {
   getRepliesByThread(
     threadId: string,
     currentUserId?: string,
+    limit?: number,
+    offset?: number,
   ): Promise<Reply[]>;
   createReply(reply: InsertReply): Promise<Reply>;
   updateReply(
@@ -1185,10 +1187,16 @@ export class DatabaseStorage implements IStorage {
   async getRepliesByThread(
     threadId: string,
     currentUserId?: string,
+    limit?: number,
+    offset?: number,
   ): Promise<Reply[]> {
     try {
+      console.log(
+        `getRepliesByThread: threadId=${threadId}, limit=${limit}, offset=${offset}`,
+      );
+
       // Build query with explicit column selection
-      const threadReplies = await db
+      const baseQuery = db
         .select({
           id: replies.id,
           threadId: replies.threadId,
@@ -1203,6 +1211,20 @@ export class DatabaseStorage implements IStorage {
         .from(replies)
         .where(eq(replies.threadId, threadId))
         .orderBy(replies.createdAt);
+
+      // Apply pagination
+      let query = baseQuery;
+      if (limit !== undefined) {
+        query = query.limit(limit);
+        console.log(`Applied limit: ${limit}`);
+      }
+      if (offset !== undefined) {
+        query = query.offset(offset);
+        console.log(`Applied offset: ${offset}`);
+      }
+
+      const threadReplies = await query;
+      console.log(`Database query returned ${threadReplies.length} replies`);
 
       // If we have a current user, check which replies they've liked
       if (currentUserId) {
@@ -1225,14 +1247,21 @@ export class DatabaseStorage implements IStorage {
           }),
         );
 
+        console.log(
+          `Returning ${repliesWithLikeStatus.length} replies with like status`,
+        );
         return repliesWithLikeStatus;
       }
 
       // If no current user, return replies without like status
-      return threadReplies.map((reply) => ({
+      const repliesWithoutLikeStatus = threadReplies.map((reply) => ({
         ...reply,
         hasLiked: false,
       }));
+      console.log(
+        `Returning ${repliesWithoutLikeStatus.length} replies without like status`,
+      );
+      return repliesWithoutLikeStatus;
     } catch (error) {
       // Log the specific error for debugging
       console.error("Error fetching replies for thread:", {
@@ -1246,7 +1275,7 @@ export class DatabaseStorage implements IStorage {
         console.log("Attempting to reconnect to database...");
         try {
           // Use the existing db instance instead of creating a new one
-          const threadReplies = await db
+          const baseQuery = db
             .select({
               id: replies.id,
               threadId: replies.threadId,
@@ -1261,6 +1290,17 @@ export class DatabaseStorage implements IStorage {
             .from(replies)
             .where(eq(replies.threadId, threadId))
             .orderBy(replies.createdAt);
+
+          // Apply pagination
+          let query = baseQuery;
+          if (limit !== undefined) {
+            query = query.limit(limit);
+          }
+          if (offset !== undefined) {
+            query = query.offset(offset);
+          }
+
+          const threadReplies = await query;
 
           // If we have a current user, check which replies they've liked
           if (currentUserId) {

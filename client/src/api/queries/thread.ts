@@ -131,10 +131,21 @@ export const fetchThreadById = async (threadId: string, userId?: string) => {
 };
 
 // Fetch thread replies
-export const fetchThreadReplies = async (threadId: string, userId?: string) => {
+export const fetchThreadReplies = async (
+  threadId: string,
+  userId?: string,
+  limit?: number,
+  offset?: number,
+) => {
   const params = new URLSearchParams();
   if (userId) {
     params.append("userId", userId);
+  }
+  if (limit !== undefined) {
+    params.append("limit", limit.toString());
+  }
+  if (offset !== undefined) {
+    params.append("offset", offset.toString());
   }
 
   const url = `/api/threads/${threadId}/replies${params.toString() ? `?${params.toString()}` : ""}`;

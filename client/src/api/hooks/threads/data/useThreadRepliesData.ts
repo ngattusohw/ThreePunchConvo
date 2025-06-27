@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ThreadReply } from "@/lib/types";
 import { fetchThreadReplies } from "../../../queries/thread";
@@ -6,22 +6,35 @@ import { fetchThreadReplies } from "../../../queries/thread";
 interface UseThreadRepliesDataOptions {
   threadId: string;
   userId?: string;
+  pageSize?: number;
 }
 
 export function useThreadRepliesData({
   threadId,
   userId,
+  pageSize = 10,
 }: UseThreadRepliesDataOptions) {
   const [displayReplies, setDisplayReplies] = useState<ThreadReply[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [allReplies, setAllReplies] = useState<ThreadReply[]>([]);
+  const scrollPositionRef = useRef<number>(0);
 
-  // Fetch thread replies
+  // Fetch thread replies with pagination
   const {
     data: replies,
     isLoading,
     error,
+    refetch,
   } = useQuery<ThreadReply[]>({
-    queryKey: [`/api/threads/${threadId}/replies`, userId],
-    queryFn: () => fetchThreadReplies(threadId, userId),
+    queryKey: [
+      `/api/threads/${threadId}/replies`,
+      userId,
+      currentPage,
+      pageSize,
+    ],
+    queryFn: () =>
+      fetchThreadReplies(threadId, userId, pageSize, currentPage * pageSize),
     enabled: !!threadId,
   });
 
@@ -88,13 +101,65 @@ export function useThreadRepliesData({
 
     // Build the full reply tree starting from top-level replies (parentId = null)
     const processedReplies = buildReplyTree(null);
-    setDisplayReplies(processedReplies);
-  }, [replies]);
+
+    // Update all replies and check if we have more
+    if (currentPage === 0) {
+      setAllReplies(processedReplies);
+      setDisplayReplies(processedReplies);
+    } else {
+      // Merge with existing replies, avoiding duplicates
+      setAllReplies((prev) => {
+        const existingIds = new Set(prev.map((reply) => reply.id));
+        const newReplies = processedReplies.filter(
+          (reply) => !existingIds.has(reply.id),
+        );
+        const merged = [...prev, ...newReplies];
+        setDisplayReplies(merged);
+
+        // Restore scroll position after state update
+        if (scrollPositionRef.current > 0) {
+          setTimeout(() => {
+            window.scrollTo(0, scrollPositionRef.current);
+          }, 0);
+        }
+
+        return merged;
+      });
+    }
+
+    // Check if we have more replies to load
+    // If we got fewer replies than requested, we've reached the end
+    const hasMoreReplies = replies.length >= pageSize;
+    setHasMore(hasMoreReplies);
+  }, [replies, currentPage, pageSize]);
+
+  // Function to load more replies
+  const loadMore = () => {
+    if (hasMore && !isLoading) {
+      // Save current scroll position before loading more
+      scrollPositionRef.current = window.scrollY;
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  // Function to reset pagination
+  const resetPagination = () => {
+    setCurrentPage(0);
+    setAllReplies([]);
+    setDisplayReplies([]);
+    setHasMore(true);
+    scrollPositionRef.current = 0;
+    refetch();
+  };
 
   return {
-    replies,
+    replies: allReplies,
     displayReplies,
     isLoading,
     error,
+    hasMore,
+    loadMore,
+    resetPagination,
+    currentPage,
   };
 }

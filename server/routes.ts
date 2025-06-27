@@ -1135,6 +1135,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const threadId = req.params.id;
       let localUserId: string | undefined = undefined;
       const clerkUserId = req.query.userId as string | undefined;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string)
+        : undefined;
+      const offset = req.query.offset
+        ? parseInt(req.query.offset as string)
+        : undefined;
+
+      console.log(
+        `Replies request for thread ${threadId}: limit=${limit}, offset=${offset}`,
+      );
+
       if (!threadId) {
         return res.status(400).json({ message: "Invalid thread ID" });
       }
@@ -1144,7 +1155,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           localUserId = localUser.id;
         }
       }
-      const replies = await storage.getRepliesByThread(threadId, localUserId);
+      const replies = await storage.getRepliesByThread(
+        threadId,
+        localUserId,
+        limit,
+        offset,
+      );
+
+      console.log(`Replies response: returning ${replies.length} replies`);
 
       // Fetch user for each reply
       const repliesWithUser = await Promise.all(

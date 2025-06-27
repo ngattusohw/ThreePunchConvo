@@ -10,6 +10,7 @@ interface UseSubmitReplyOptions {
   setReplyContent: (content: string) => void;
   setReplyingTo: (replyingTo: { id: string; username: string } | null) => void;
   setShowUpgradeModal: (show: boolean) => void;
+  resetPagination?: () => void;
 }
 
 export function useSubmitReply({
@@ -20,6 +21,7 @@ export function useSubmitReply({
   setReplyContent,
   setReplyingTo,
   setShowUpgradeModal,
+  resetPagination,
 }: UseSubmitReplyOptions) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -42,6 +44,12 @@ export function useSubmitReply({
       });
       setReplyContent("");
       setReplyingTo(null);
+
+      // Reset pagination to show the new reply
+      if (resetPagination) {
+        resetPagination();
+      }
+
       toast({
         title: "Success",
         description: "Your reply has been posted",

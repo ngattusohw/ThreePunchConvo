@@ -27,7 +27,7 @@ import {
   X,
 } from "lucide-react";
 import logoImage from "@/assets/3PC-Logo-FullColor-RGB.png";
-import { SignIn, useAuth } from "@clerk/clerk-react";
+import { SignIn, SignInButton, useAuth } from "@clerk/clerk-react";
 import { Link, useLocation } from "wouter";
 import { dark } from "@clerk/themes";
 import kennyFlorianHeadshot from "@/assets/kenny_florian_headshot.png";
@@ -64,7 +64,7 @@ export default function AuthPage() {
     },
     {
       quote:
-        "As a fighter and huge fan of all things MMA, I love interacting with REAL fans. Can’t wait to chop it up on 3PC and share my perspectives!",
+        "As a fighter and huge fan of all things MMA, I love interacting with REAL fans. Can't wait to chop it up on 3PC and share my perspectives!",
       author: "Matt Frevola",
       role: "UFC Fighter",
       category: "Fighter",
@@ -98,9 +98,11 @@ export default function AuthPage() {
         <div className='container mx-auto max-w-6xl'>
           <div className='grid items-center gap-12 lg:grid-cols-2'>
             <div>
-              <Badge className='mb-4 border-cyan-500/20 bg-cyan-500/10 text-cyan-400'>
-                Now Open for Registration
-              </Badge>
+              <Badge
+                text='Now Open for Registration'
+                icon={null}
+                className='mb-4 border-cyan-500/20 bg-cyan-500/10 text-cyan-400'
+              />
               <h2 className='mb-6 text-4xl font-bold leading-tight md:text-5xl'>
                 The Fight Game Has a
                 <span className='text-cyan-400'> New Home</span>
@@ -110,6 +112,87 @@ export default function AuthPage() {
                 your MMA group chat - but with your favorite fighters IN the
                 convo. The best fight forums online, period.
               </p>
+
+              {/* Mobile Registration Form - Above feature cards */}
+              <div className='mb-8 lg:hidden'>
+                <div className='mx-auto w-full max-w-md'>
+                  <SignIn
+                    forceRedirectUrl='/'
+                    appearance={{
+                      baseTheme: dark,
+                      elements: {
+                        rootBox: "w-full",
+                        card: "bg-gray-800 border border-gray-700 shadow-xl p-4 md:p-6",
+                        headerTitle:
+                          "text-xl md:text-2xl font-bold text-white mb-1 mt-2",
+                        headerSubtitle: "text-gray-400",
+                        formButtonPrimary:
+                          "bg-cyan-500 hover:bg-cyan-600 text-black font-semibold py-2 px-6 rounded-lg transition-colors",
+                        formButtonSecondary:
+                          "bg-gray-700 hover:bg-gray-600 text-white font-semibold py-4 px-6 rounded-lg transition-colors",
+                        footerActionLink:
+                          "text-cyan-400 hover:text-cyan-300 transition-colors ml-2",
+                        formFieldInput:
+                          "bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-500 focus:ring-cyan-500 py-4 px-4 h-14",
+                        formFieldLabel: "text-gray-300 font-medium mb-2",
+                        dividerLine: "bg-gray-600",
+                        dividerText: "text-gray-400",
+                        socialButtonsBlockButton:
+                          "hover:bg-gray-600 border-gray-800 text-white py-2 px-6 h-14",
+                        socialButtonsBlockButtonText: "text-white",
+                        formFieldLabelRow: "text-gray-300",
+                        formFieldInputShowPasswordButton:
+                          "text-gray-400 hover:text-gray-300",
+                        formResendCodeLink: "text-cyan-400 hover:text-cyan-300",
+                        formFieldAction: "text-cyan-400 hover:text-cyan-300",
+                        alert: "bg-red-900/50 border-red-700 text-red-200",
+                        alertText: "text-red-200",
+                        formHeaderTitle:
+                          "text-xl md:text-2xl font-bold text-white",
+                        formHeaderSubtitle: "text-gray-400",
+                        identityPreviewText: "text-gray-300",
+                        identityPreviewEditButton:
+                          "text-cyan-400 hover:text-cyan-300",
+                        formFieldRow: "space-y-2",
+                        formField: "space-y-2",
+                        form: "space-y-6",
+                        footer: "text-center",
+                        header: "text-center",
+                        main: "space-y-6",
+                        pageScrollBox: "p-4 md:p-6",
+                        cardContent: "p-4 md:p-6",
+                        cardHeader: "p-4 md:p-6 pb-0",
+                        cardFooter: "p-4 md:p-6 pt-0",
+                        logoImage: "hidden",
+                        logoBox: "hidden",
+                        footerAction: "my-4 text-center",
+                        socialButtonsBlockButtonIcon: "!w-10 !h-10 mr-3",
+                        socialButtonsBlockButtonIcon__google: "w-10 h-10",
+                        otpCodeFieldInput:
+                          "w-10 h-10 text-base bg-gray-700 border-gray-600 text-white focus:border-cyan-500 focus:ring-cyan-500 rounded-lg mx-1",
+                      },
+                      variables: {
+                        colorPrimary: "#06b6d4", // cyan-500
+                        colorBackground: "#1f2937", // gray-800
+                        colorInputBackground: "#374151", // gray-700
+                        colorInputText: "#ffffff",
+                        colorText: "#ffffff",
+                        colorTextSecondary: "#9ca3af", // gray-400
+                        colorTextOnPrimaryBackground: "#000000",
+                        borderRadius: "0.5rem",
+                        fontFamily: "inherit",
+                        fontSize: "0.875rem",
+                        spacingUnit: "0.25rem",
+                      },
+                      layout: {
+                        socialButtonsPlacement: "bottom",
+                        showOptionalFields: false,
+                        logoImageUrl: "",
+                      },
+                    }}
+                  />
+                </div>
+              </div>
 
               <div className='mb-8 grid grid-cols-1 gap-4 md:grid-cols-3'>
                 <div className='flex items-center space-x-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4'>
@@ -140,8 +223,8 @@ export default function AuthPage() {
               </div>
             </div>
 
-            {/* Registration Form */}
-            <div className='flex h-full w-full items-center justify-center'>
+            {/* Desktop Registration Form */}
+            <div className='hidden h-full w-full items-center justify-center lg:flex'>
               <div className='w-full max-w-md'>
                 <SignIn
                   forceRedirectUrl='/'
@@ -353,9 +436,11 @@ export default function AuthPage() {
             {/* Premium Membership */}
             <Card className='relative border-gray-700 bg-gray-800'>
               <div className='absolute -top-3 left-1/2 -translate-x-1/2 transform'>
-                <Badge className='bg-cyan-500 px-4 py-1 font-semibold text-gray-900'>
-                  Most Popular
-                </Badge>
+                <Badge
+                  text='Most Popular'
+                  icon={null}
+                  className='bg-cyan-500 px-4 py-1 font-semibold text-gray-900'
+                />
               </div>
               <CardHeader className='text-center'>
                 <CardTitle className='text-xl text-white md:text-2xl'>
@@ -466,6 +551,8 @@ export default function AuthPage() {
                         {testimonial.role}
                       </p>
                       <Badge
+                        text={testimonial.category}
+                        icon={null}
                         className={
                           testimonial.category === "Fighter"
                             ? "border-red-500/20 bg-red-500/10 text-red-400"
@@ -473,9 +560,7 @@ export default function AuthPage() {
                               ? "border-blue-500/20 bg-blue-500/10 text-blue-400"
                               : "border-green-500/20 bg-green-500/10 text-green-400"
                         }
-                      >
-                        {testimonial.category}
-                      </Badge>
+                      />
                     </div>
                   </div>
                 </CarouselItem>

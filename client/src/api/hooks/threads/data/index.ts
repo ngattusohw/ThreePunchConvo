@@ -4,9 +4,14 @@ import { useThreadRepliesData } from "./useThreadRepliesData";
 interface UseThreadDataOptions {
   threadId: string;
   userId?: string;
+  pageSize?: number;
 }
 
-export function useThreadData({ threadId, userId }: UseThreadDataOptions) {
+export function useThreadData({
+  threadId,
+  userId,
+  pageSize = 10,
+}: UseThreadDataOptions) {
   const {
     thread,
     isLoading: isThreadLoading,
@@ -17,7 +22,11 @@ export function useThreadData({ threadId, userId }: UseThreadDataOptions) {
     displayReplies,
     isLoading: isRepliesLoading,
     error: repliesError,
-  } = useThreadRepliesData({ threadId, userId });
+    hasMore,
+    loadMore,
+    resetPagination,
+    currentPage,
+  } = useThreadRepliesData({ threadId, userId, pageSize });
 
   return {
     thread,
@@ -26,5 +35,9 @@ export function useThreadData({ threadId, userId }: UseThreadDataOptions) {
     isRepliesLoading,
     repliesError,
     displayReplies,
+    hasMore,
+    loadMore,
+    resetPagination,
+    currentPage,
   };
 }

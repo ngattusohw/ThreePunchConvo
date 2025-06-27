@@ -124,7 +124,7 @@ export default function ThreadCard({
 
   return (
     <div
-      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} relative overflow-hidden rounded-lg ${mainThreadMode ? "mb-6" : "mb-4"} shadow-lg transition hover:shadow-xl`}
+      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} relative rounded-lg ${mainThreadMode ? "mb-6" : "mb-4"} shadow-lg transition hover:shadow-xl`}
     >
       <div className={`${mainThreadMode ? "p-8" : "p-4"}`}>
         <div className='flex items-start'>

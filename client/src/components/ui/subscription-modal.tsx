@@ -4,6 +4,7 @@ import { useUserProfile } from "@/api/hooks/useUserProfile";
 import { useStripePlans } from "@/api/hooks/useStripePlans";
 import { createCustomerPortalSession } from "@/api/queries/user";
 import { useToast } from "@/hooks/use-toast";
+import { useStripeSubscriptions } from "@/api/hooks/useStripeUser";
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -18,6 +19,8 @@ export function SubscriptionModal({
 }: SubscriptionModalProps) {
   const { user: currentUser, isPlanLoading } = useUserProfile(username);
   const { plans, isLoading: isPlansLoading } = useStripePlans();
+  const { subscriptions, isLoading: isSubscriptionsLoading } =
+    useStripeSubscriptions(currentUser?.stripeId || "");
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -30,6 +33,11 @@ export function SubscriptionModal({
   const currentPlanPrice = plans.find((plan) =>
     plan.name.toUpperCase().includes(currentUser?.planType || "FREE"),
   )?.price;
+
+  // @TODO: make this more dynamic for other discounts
+  const hasDiscount = subscriptions.some(
+    (subscription) => subscription.discounts.length > 0,
+  );
 
   const handleManageBilling = async () => {
     if (!currentUser?.stripeId) {
@@ -72,7 +80,7 @@ export function SubscriptionModal({
           </button>
         </div>
 
-        {isPlanLoading || isPlansLoading ? (
+        {isPlanLoading || isPlansLoading || isSubscriptionsLoading ? (
           <div className='mb-6'>
             <div className='animate-pulse space-y-3'>
               <div className='h-4 rounded bg-gray-700'></div>
@@ -126,7 +134,26 @@ export function SubscriptionModal({
                     <div className='flex items-center justify-between'>
                       <span className='text-gray-400'>Price:</span>
                       <span className='text-white'>
-                        ${currentPlanPrice / 100}
+                        {hasDiscount ? (
+                          <>
+                            <span className='text-gray-500 line-through'>
+                              ${currentPlanPrice / 100}
+                            </span>
+                            <span className='text-white'> $0.00</span>
+                          </>
+                        ) : (
+                          `$${currentPlanPrice / 100}`
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  {hasDiscount && (
+                    <div className='flex items-center justify-between'>
+                      <span className='text-gray-400'>
+                        1 year free promotion:
+                      </span>
+                      <span className='font-bold text-green-400'>
+                        {hasDiscount ? "Applied" : "None"}
                       </span>
                     </div>
                   )}

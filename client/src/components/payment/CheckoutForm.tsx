@@ -246,8 +246,8 @@ const CheckoutForm = () => {
                   </svg>
                   <span className='text-sm font-bold text-amber-300'>
                     Valid for a whole FREE YEAR. Your card will only start being
-                    charged $4.99/month after the end of the free period. You
-                    can cancel at any time.
+                    charged $5/month after the end of the free period. You can
+                    cancel at any time.
                   </span>
                 </div>
               </div>

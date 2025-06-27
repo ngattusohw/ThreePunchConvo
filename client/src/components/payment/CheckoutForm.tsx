@@ -75,6 +75,8 @@ const CheckoutForm = () => {
         });
       }
     } catch (error) {
+      console.error(error);
+
       toast({
         title: "Error",
         description: "Failed to apply promo code. Please try again.",

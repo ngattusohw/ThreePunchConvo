@@ -77,7 +77,7 @@ export const registerStripeEndpoints = (app: Express) => {
         line_items: [
           {
             // Provide the exact Price ID (e.g. price_1234) of the product you want to sell
-            price: "price_1RTZenQt7iN2KzepXaYJIwtM",
+            price: process.env.STRIPE_PRICE_ID || "",
             quantity: 1,
           },
         ],

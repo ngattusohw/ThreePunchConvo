@@ -86,18 +86,14 @@ export function formatUsername(username: string, maxLength = 15): string {
 }
 
 export function getSubscriptionStatus(subscriptions: any[]): string {
-  if (subscriptions && subscriptions.length > 0) {
-    // get the product for the subscription
-    const subscription = subscriptions[0];
-    const { plan } = subscription;
-    const { product } = plan;
+  // TODO: implement dynamic subscription for higher tiers in futurre
+  const subscription = subscriptions.find(
+    (subscription) => subscription.status === "active",
+  );
 
-    if (product && SUBSCRIPTION_STATUS[product]) {
-      return SUBSCRIPTION_STATUS[product];
-    } else {
-      return "";
-    }
-  } else {
-    return "";
+  if (subscription) {
+    return "BASIC";
   }
+
+  return "";
 }

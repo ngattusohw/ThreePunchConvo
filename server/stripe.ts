@@ -80,7 +80,6 @@ export const registerStripeEndpoints = (app: Express) => {
         // Create the checkout session with the customer ID
         const session = await stripe.checkout.sessions.create({
           ui_mode: "custom",
-          allow_promotion_codes: true,
           line_items: [
             {
               // Provide the exact Price ID (e.g. price_1234) of the product you want to sell

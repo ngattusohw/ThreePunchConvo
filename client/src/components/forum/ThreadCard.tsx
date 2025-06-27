@@ -55,10 +55,9 @@ export default function ThreadCard({
   const { user } = useMemoizedUser();
   const { user: currentUser, isPlanLoading } = useUserProfile(user?.username);
 
-
   const { editThreadMutation, deleteThreadMutation } = useThreadActions({
     threadId: thread.id,
-    userId: currentUser?.id,
+    userId: currentUser?.externalId,
     title: editTitle,
     content: editContent,
   });
@@ -66,8 +65,10 @@ export default function ThreadCard({
   const borderColor = thread.isPinned ? "border-ufc-blue" : "";
 
   // Check if content should be blurred (free user viewing fighter content)
-  const shouldBlurContent = isPlanLoading ||
-    (!currentUser?.planType || currentUser?.planType === "FREE")  && thread.user.role === "FIGHTER";
+  const shouldBlurContent =
+    isPlanLoading ||
+    ((!currentUser?.planType || currentUser?.planType === "FREE") &&
+      thread.user.role === "FIGHTER");
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -331,7 +332,10 @@ export default function ThreadCard({
 
                   {/* Premium Content Overlay */}
                   {shouldBlurContent && (
-                    <button className='absolute inset-0 flex items-center justify-center rounded-lg bg-black bg-opacity-50' onClick={handleUpgrade}>
+                    <button
+                      className='absolute inset-0 flex items-center justify-center rounded-lg bg-black bg-opacity-50'
+                      onClick={handleUpgrade}
+                    >
                       <div className='rounded-lg border border-gray-600 bg-gray-900 p-4 text-center shadow-xl'>
                         <div className='mb-2'>
                           <svg

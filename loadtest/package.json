@@ -1,0 +1,28 @@
+{
+  "name": "threepunchconvo-loadtest",
+  "version": "1.0.0",
+  "description": "Load testing suite for ThreePunchConvo MMA forum",
+  "type": "module",
+  "main": "loadtest.js",
+  "scripts": {
+    "test": "node loadtest.js",
+    "test:basic": "node loadtest.js --scenario=basic",
+    "test:realistic": "node loadtest.js --scenario=realistic_load",
+    "test:mixed": "node loadtest.js --scenario=mixed_traffic",
+    "test:mass-posting": "node loadtest.js --scenario=mass_posting",
+    "test:all": "node loadtest.js --scenario=all",
+    "setup": "npm install"
+  },
+  "dependencies": {
+    "autocannon": "^7.12.0",
+    "@faker-js/faker": "^8.4.1"
+  },
+  "keywords": [
+    "load-testing",
+    "performance",
+    "mma-forum",
+    "api-testing"
+  ],
+  "author": "ThreePunchConvo Team",
+  "license": "ISC"
+}

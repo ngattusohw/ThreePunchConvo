@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
 import { ForumThread } from "@/lib/types";
-import { truncateText } from "@/lib/utils";
+import { checkIsNormalUser, truncateText } from "@/lib/utils";
+import ThreadPoll from "@/components/thread/poll";
 import MediaPreview from "@/components/ui/media-preview";
 import UserThreadHeader from "@/components/ui/user-thread-header";
 import ThreadActions from "@/components/thread/ThreadActions";
@@ -9,6 +10,7 @@ import { useThreadActions } from "@/api/hooks/threads/actions";
 import { Loader2 } from "lucide-react";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { useUserProfile } from "@/api/hooks/useUserProfile";
+import { USER_ROLES } from "@/lib/constants";
 
 interface ThreadCardProps {
   thread: ForumThread;
@@ -55,8 +57,6 @@ export default function ThreadCard({
   const { user } = useMemoizedUser();
   const { user: currentUser, isPlanLoading } = useUserProfile(user?.username);
 
-  console.log("currentUseThread", currentUser);
-
   const { editThreadMutation, deleteThreadMutation } = useThreadActions({
     threadId: thread.id,
     userId: currentUser?.externalId,
@@ -66,11 +66,12 @@ export default function ThreadCard({
 
   const borderColor = thread.isPinned ? "border-ufc-blue" : "";
 
+  const isNormalUser = checkIsNormalUser(currentUser?.role);
   // Check if content should be blurred (free user viewing fighter content)
-  const shouldBlurContent =
+  const shouldBlurContent = isNormalUser && (
     isPlanLoading ||
     ((!currentUser?.planType || currentUser?.planType === "FREE") &&
-      thread.user.role === "FIGHTER");
+      thread.user.role === USER_ROLES.FIGHTER));
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -124,7 +125,7 @@ export default function ThreadCard({
 
   return (
     <div
-      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} relative overflow-hidden rounded-lg ${mainThreadMode ? "mb-6" : "mb-4"} shadow-lg transition hover:shadow-xl`}
+      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} relative rounded-lg ${mainThreadMode ? "mb-6" : "mb-4"} shadow-lg transition hover:shadow-xl`}
     >
       <div className={`${mainThreadMode ? "p-8" : "p-4"}`}>
         <div className='flex items-start'>
@@ -222,27 +223,21 @@ export default function ThreadCard({
                 {/* Content container with blur and overlay */}
                 <div className={shouldBlurContent ? "relative" : ""}>
                   <p
-                    className={`${mainThreadMode ? "mb-6 text-lg leading-relaxed" : "mb-4"} line-clamp-2 text-gray-300 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
+                    className={`${mainThreadMode ? "mb-6 text-lg leading-relaxed" : "mb-4 line-clamp-3"} whitespace-pre-line text-gray-300 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
                   >
-                    {shouldBlurContent
-                      ? "Premium Content"
-                      : truncateText(content, mainThreadMode ? 480 : 280)}
+                    {shouldBlurContent ? "Premium Content" : content}
                   </p>
 
                   {/* Thread Poll Preview - only show in view mode */}
-                  {thread.poll && (
+                  {thread.poll && !mainThreadMode && (
                     <div
-                      className={`${mainThreadMode ? "mb-6 p-4" : "mb-4 p-3"} rounded-lg bg-gray-800 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
+                      className={`mb-4 rounded-lg bg-gray-800 p-3 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
                     >
-                      <p
-                        className={`${mainThreadMode ? "mb-3 text-lg" : "mb-2"} font-medium text-white`}
-                      >
+                      <p className={"mb-2 font-medium text-white"}>
                         {thread.poll.question}
                       </p>
-                      <div
-                        className={`${mainThreadMode ? "space-y-3" : "space-y-2"}`}
-                      >
-                        {thread.poll.options.slice(0, 2).map((option) => {
+                      <div className={"space-y-2"}>
+                        {thread.poll.options.slice(0, 4).map((option) => {
                           const percentage = thread.poll?.votesCount
                             ? Math.round(
                                 (option.votesCount / thread.poll.votesCount) *
@@ -253,19 +248,17 @@ export default function ThreadCard({
                           return (
                             <div className='relative pt-1' key={option.id}>
                               <div className='mb-1 flex items-center justify-between'>
-                                <span
-                                  className={`${mainThreadMode ? "text-base" : "text-sm"} text-gray-300`}
-                                >
+                                <span className={"text-sm text-gray-300"}>
                                   {option.text}
                                 </span>
-                                <span
-                                  className={`${mainThreadMode ? "text-base" : "text-sm"} text-gray-300`}
-                                >
+                                <span className={"text-sm text-gray-300"}>
                                   {percentage}%
                                 </span>
                               </div>
                               <div
-                                className={`flex ${mainThreadMode ? "h-3" : "h-2"} overflow-hidden rounded bg-gray-700 text-xs`}
+                                className={
+                                  "flex h-2 overflow-hidden rounded bg-gray-700 text-xs"
+                                }
                               >
                                 <div
                                   style={{ width: `${percentage}%` }}
@@ -277,11 +270,11 @@ export default function ThreadCard({
                         })}
                       </div>
 
-                      {thread.poll.options.length > 2 && (
+                      {thread.poll.options.length > 4 && (
                         <p
                           className={`mt-1 ${mainThreadMode ? "text-base" : "text-sm"} text-gray-400`}
                         >
-                          +{thread.poll.options.length - 2} more options
+                          +{thread.poll.options.length - 4} more options
                         </p>
                       )}
 
@@ -330,6 +323,14 @@ export default function ThreadCard({
                         </div>
                       )}
                     </div>
+                  )}
+
+                  {thread.poll && mainThreadMode && (
+                    <ThreadPoll
+                      key={`poll-${thread.id}`}
+                      threadId={thread.id}
+                      poll={thread.poll}
+                    />
                   )}
 
                   {/* Premium Content Overlay */}

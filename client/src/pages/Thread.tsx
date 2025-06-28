@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet";
-import { formatDate } from "@/lib/utils";
+import { checkIsNormalUser, formatDate } from "@/lib/utils";
 import { useThreadData, useThreadReplies } from "@/api/hooks/threads";
 import UserAvatar from "@/components/ui/user-avatar";
-import { FORUM_CATEGORIES } from "@/lib/constants";
+import { FORUM_CATEGORIES, USER_ROLES } from "@/lib/constants";
+import UserThreadHeader from "@/components/ui/user-thread-header";
+import ReplyForm from "@/components/thread/ReplyForm";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { useToast } from "@/hooks/use-toast";
 import ThreadCard from "@/components/forum/ThreadCard";
@@ -76,7 +78,7 @@ export default function Thread() {
   } = useThreadData({
     threadId: threadId || "",
     userId: currentUser?.id,
-    pageSize: 10,
+    pageSize: 100, //updated this to 100
   });
 
   // Scroll to specific reply if replyId is provided in URL query params (only on first load)
@@ -220,18 +222,18 @@ export default function Thread() {
           <div className='mb-4 flex items-center text-sm'>
             <Link
               href='/forum'
-              className='text-gray-400 transition hover:text-white'
+              className='flex-shrink-0 text-gray-400 transition hover:text-white'
             >
               Forum
             </Link>
-            <span className='mx-2 text-gray-600'>/</span>
+            <span className='mx-2 flex-shrink-0 text-gray-600'>/</span>
             <Link
               href={`/forum/${thread.categoryId}`}
-              className='text-gray-400 transition hover:text-white'
+              className='flex-shrink-0 text-gray-400 transition hover:text-white'
             >
               {getCategoryName(thread.categoryId)}
             </Link>
-            <span className='mx-2 text-gray-600'>/</span>
+            <span className='mx-2 flex-shrink-0 text-gray-600'>/</span>
             <span className='truncate text-white'>
               {thread.title.length > 30
                 ? thread.title.substring(0, 30) + "..."

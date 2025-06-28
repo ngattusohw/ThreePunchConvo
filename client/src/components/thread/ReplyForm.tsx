@@ -59,6 +59,26 @@ export default function ReplyForm({
     submitReplyMutation.mutate();
   };
 
+  // Handle keyboard shortcuts
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Check for Cmd+Enter (Mac) or Ctrl+Enter (Windows/Linux)
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault(); // Prevent default behavior (like adding new line)
+
+      // Check if the form can be submitted
+      const canSubmit =
+        !isLoading &&
+        !submitReplyMutation.isPending &&
+        replyContent.trim() &&
+        !isPlanLoading &&
+        hasPaidPlan;
+
+      if (canSubmit) {
+        submitReplyMutation.mutate();
+      }
+    }
+  };
+
   return (
     <form onSubmit={handleReplySubmit}>
       {replyingTo && (
@@ -107,6 +127,7 @@ export default function ReplyForm({
         id='reply-input'
         value={replyContent}
         onChange={(e) => setReplyContent(e.target.value)}
+        onKeyDown={handleKeyDown}
         placeholder='Write your reply here...'
         disabled={isLoading || isPlanLoading}
         className='focus:ring-ufc-blue min-h-[150px] w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-gray-300 focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:opacity-50'

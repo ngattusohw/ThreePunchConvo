@@ -5,9 +5,8 @@ import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
 import FCBadge from "@/components/ui/fc-badge";
 import { AuthUser } from "@/lib/types";
-import { USER_ROLES } from "@/lib/constants";
 import UserRoleBadge from "./UserBadge";
-
+import { checkIsNormalUser } from "@/lib/utils";
 interface UserThreadHeaderProps {
   user: Partial<AuthUser>;
   createdAt: string | Date;
@@ -25,11 +24,7 @@ export default function UserThreadHeader({
   size = "md",
   pinnedPosition = "inline",
 }: UserThreadHeaderProps) {
-  const isNormalUser =
-    user?.role !== USER_ROLES.FIGHTER &&
-    user?.role !== USER_ROLES.INDUSTRY_PROFESSIONAL &&
-    user?.role !== USER_ROLES.ADMIN &&
-    user?.role !== USER_ROLES.MODERATOR;
+  const isNormalUser = checkIsNormalUser(user?.role);
 
   return (
     <div className='relative flex flex-wrap items-center gap-2'>

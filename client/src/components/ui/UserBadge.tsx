@@ -1,11 +1,12 @@
 import react from "react";
 import { USER_ROLE_CONFIG, USER_ROLES } from "@/lib/constants";
 import Badge from "./badge";
+import { checkIsNormalUser } from "@/lib/utils";
 
 type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
 
 export default function UserRoleBadge({ role }: { role: UserRole }) {
-  if (!role || role === USER_ROLES.USER) return null;
+  if (checkIsNormalUser(role)) return null;
   const badgeColor = USER_ROLE_CONFIG[role]?.color || "bg-ufc-gold";
   const badgeTextColor = USER_ROLE_CONFIG[role]?.textColor || "text-white";
   const badgeText = USER_ROLE_CONFIG[role]?.label || role;

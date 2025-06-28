@@ -3,6 +3,7 @@ import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { ThreadReply } from "@/lib/types";
 import UserThreadHeader from "../ui/user-thread-header";
 import { useState } from "react";
+import { checkIsNormalUser } from "@/lib/utils";
 
 interface ReplyCardProps {
   reply: ThreadReply & {
@@ -45,14 +46,16 @@ function ReplyCard({
       (currentUser.publicMetadata?.role as string) === "ADMIN" ||
       (currentUser.publicMetadata?.role as string) === "MODERATOR");
 
-  // Check if content should be blurred (free user viewing fighter content)
-  const shouldBlurContent =
-    forceBlur ||
-    (localUser?.planType === "FREE" && reply.user.role === "FIGHTER");
-
   // Check if user can like this reply
   const canLikeReply =
     currentUser && currentUser.id !== reply.user.externalId && !hasLiked;
+
+  const isNormalUser = checkIsNormalUser(localUser?.role);
+  // Check if content should be blurred (free user viewing fighter content)
+  const shouldBlurContent =
+    isNormalUser &&
+    (forceBlur ||
+      (localUser?.planType === "FREE" && reply.user.role === "FIGHTER"));
 
   const handleUpgrade = () => {
     window.location.href = "/checkout";

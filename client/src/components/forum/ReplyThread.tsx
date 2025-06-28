@@ -6,7 +6,6 @@ import { useThreadData, useThreadReplies } from "@/api/hooks/threads";
 import { MemoizedUser } from "@/hooks/useMemoizedUser";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { useGetMoreReplies } from "@/api/hooks/threads/replies/useGetMoreReplies";
 
 interface ReplyThreadProps {
   currentUser: MemoizedUser | null;
@@ -16,7 +15,7 @@ interface ReplyThreadProps {
 export default function ReplyThread({ currentUser, thread }: ReplyThreadProps) {
   const [, setLocation] = useLocation();
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const pageSize = 10;
+  const pageSize = 100;
 
   const {
     isThreadLoading,

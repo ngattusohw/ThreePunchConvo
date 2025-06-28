@@ -119,7 +119,7 @@ export default function Thread() {
   } = useThreadData({
     threadId: threadId || "",
     userId: currentUser?.id,
-    pageSize: 10,
+    pageSize: 100, //updated this to 100
   });
 
   // Initialize edit form when thread data is available
@@ -672,9 +672,10 @@ function ReplyCard({
 
   const isNormalUser = checkIsNormalUser(localUser?.role);
   // Check if content should be blurred (free user viewing fighter content)
-  const shouldBlurContent = isNormalUser && (
-    forceBlur ||
-    (localUser?.planType === "FREE" && reply.user.role === "FIGHTER"));
+  const shouldBlurContent =
+    isNormalUser &&
+    (forceBlur ||
+      (localUser?.planType === "FREE" && reply.user.role === "FIGHTER"));
 
   return (
     <div

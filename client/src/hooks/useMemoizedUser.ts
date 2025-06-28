@@ -1,21 +1,5 @@
 import { useMemo } from "react";
 import { useUser, useAuth } from "@clerk/clerk-react";
-import { EmailAddressResource } from "@clerk/types";
-
-export type MemoizedUser = {
-  id: string;
-  username: string;
-  emailAddresses: EmailAddressResource[];
-  firstName: string;
-  lastName: string;
-  imageUrl: string;
-  emailAddress: string;
-  fullName: string;
-  createdAt: Date;
-  updatedAt: Date;
-  planType: string | undefined;
-  publicMetadata: any;
-};
 
 /**
  * Custom hook that provides memoized user data to prevent unnecessary re-renders
@@ -63,7 +47,7 @@ export function useMemoizedUser() {
   ]);
 
   return {
-    user: memoizedUser as MemoizedUser,
+    user: memoizedUser,
     isSignedIn,
     isLoaded: isUserLoaded,
     userId,

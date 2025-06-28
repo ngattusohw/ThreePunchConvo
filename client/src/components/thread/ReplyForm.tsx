@@ -1,14 +1,26 @@
+import react from "react";
 import { useState } from "react";
 import { useSubmitReply } from "@/api/hooks/threads/replies/useSubmitReply";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/api/hooks/useUserProfile";
 import { useLocation } from "wouter";
-import { MemoizedUser } from "@/hooks/useMemoizedUser";
 
 interface ReplyFormProps {
   threadId: string;
   isLoading: boolean;
-  currentUser?: MemoizedUser;
+  currentUser?: {
+    id: string;
+    username: string;
+    emailAddresses: any[];
+    firstName: string;
+    lastName: string;
+    imageUrl: string;
+    emailAddress: string;
+    fullName: string;
+    createdAt: Date;
+    updatedAt: Date;
+    publicMetadata?: any;
+  };
   replyingTo: { id: string; username: string } | null;
   setReplyingTo: (replyingTo: { id: string; username: string } | null) => void;
 }

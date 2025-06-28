@@ -12,7 +12,7 @@ interface UseThreadRepliesDataOptions {
 export function useThreadRepliesData({
   threadId,
   userId,
-  pageSize,
+  pageSize = 10,
 }: UseThreadRepliesDataOptions) {
   const [displayReplies, setDisplayReplies] = useState<ThreadReply[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
@@ -40,52 +40,7 @@ export function useThreadRepliesData({
 
   // Process replies to create a proper threaded structure
   useEffect(() => {
-    console.log(
-      "Processing replies:",
-      replies?.length,
-      "currentPage:",
-      currentPage,
-    );
     if (!replies) return;
-
-    // For subsequent pages, append the new replies to the existing ones
-    if (currentPage === 0) {
-      // First page: start fresh
-      console.log("Setting allReplies to first page replies:", replies.length);
-      setAllReplies(replies);
-    } else {
-      // Subsequent pages: append new replies, avoiding duplicates
-      setAllReplies((prev) => {
-        const existingIds = new Set(prev.map((reply) => reply.id));
-        const newReplies = replies.filter(
-          (reply) => !existingIds.has(reply.id),
-        );
-        console.log(
-          "Appending new replies:",
-          newReplies.length,
-          "to existing:",
-          prev.length,
-        );
-        return [...prev, ...newReplies];
-      });
-    }
-
-    // Check if we have more replies to load
-    const hasMoreReplies = replies.length >= (pageSize || 10);
-    setHasMore(hasMoreReplies);
-  }, [replies, currentPage, pageSize]);
-
-  // Build the threaded structure whenever allReplies changes
-  useEffect(() => {
-    console.log(
-      "Building threaded structure with allReplies:",
-      allReplies.length,
-    );
-
-    if (allReplies.length === 0) {
-      setDisplayReplies([]);
-      return;
-    }
 
     // Create a map of parent IDs to their child replies
     const replyMap = new Map<string | null, ThreadReply[]>();
@@ -97,7 +52,7 @@ export function useThreadRepliesData({
     replyMap.set(null, []); // Top-level replies have null parentReplyId
 
     // Group replies by their parent ID and build username map
-    allReplies.forEach((reply) => {
+    replies.forEach((reply) => {
       const parentId = reply.parentReplyId || null;
       if (!replyMap.has(parentId)) {
         replyMap.set(parentId, []);
@@ -146,16 +101,37 @@ export function useThreadRepliesData({
 
     // Build the full reply tree starting from top-level replies (parentId = null)
     const processedReplies = buildReplyTree(null);
-    console.log("Processed replies:", processedReplies.length);
-    setDisplayReplies(processedReplies);
 
-    // Restore scroll position after state update for pagination
-    if (scrollPositionRef.current > 0) {
-      setTimeout(() => {
-        window.scrollTo(0, scrollPositionRef.current);
-      }, 0);
+    // Update all replies and check if we have more
+    if (currentPage === 0) {
+      setAllReplies(processedReplies);
+      setDisplayReplies(processedReplies);
+    } else {
+      // Merge with existing replies, avoiding duplicates
+      setAllReplies((prev) => {
+        const existingIds = new Set(prev.map((reply) => reply.id));
+        const newReplies = processedReplies.filter(
+          (reply) => !existingIds.has(reply.id),
+        );
+        const merged = [...prev, ...newReplies];
+        setDisplayReplies(merged);
+
+        // Restore scroll position after state update
+        if (scrollPositionRef.current > 0) {
+          setTimeout(() => {
+            window.scrollTo(0, scrollPositionRef.current);
+          }, 0);
+        }
+
+        return merged;
+      });
     }
-  }, [allReplies]);
+
+    // Check if we have more replies to load
+    // If we got fewer replies than requested, we've reached the end
+    const hasMoreReplies = replies.length >= pageSize;
+    setHasMore(hasMoreReplies);
+  }, [replies, currentPage, pageSize]);
 
   // Function to load more replies
   const loadMore = () => {

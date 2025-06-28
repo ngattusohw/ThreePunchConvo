@@ -383,8 +383,12 @@ export default function CreatePostModal({
                   placeholder="What's your topic about?"
                   value={formData.title}
                   onChange={(e) => updateFormData({ title: e.target.value })}
+                  maxLength={150}
                   className='focus:ring-ufc-blue w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:outline-none focus:ring-1'
                 />
+                <div className={`mt-1 text-right text-xs ${formData.title.length >= 150 ? 'text-red-400 font-medium' : 'text-gray-400'}`}>
+                  {formData.title.length}/150
+                </div>
               </FormField>
 
               <FormField label='Category'>

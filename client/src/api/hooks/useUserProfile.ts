@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { AuthUser, ForumThread } from "@/lib/types";
 import { fetchUserByUsername, fetchUserPosts } from "../queries/user";
-import { USER_ROLES } from "@/lib/constants";
+import { checkIsExemptUser } from "@/lib/utils";
 
 // Add a function to fetch user plan
 const fetchUserPlan = async (userId: string) => {
@@ -46,11 +46,7 @@ export function useUserProfile(username: string) {
     enabled: !!user?.id,
   });
 
-  const isExemptUser =
-    user?.role === USER_ROLES.FIGHTER ||
-    user?.role === USER_ROLES.INDUSTRY_PROFESSIONAL ||
-    user?.role === USER_ROLES.ADMIN ||
-    user?.role === USER_ROLES.MODERATOR;
+  const isExemptUser = checkIsExemptUser(user?.role);
 
   return {
     user,

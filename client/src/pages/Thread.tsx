@@ -4,11 +4,8 @@ import { Helmet } from "react-helmet";
 import { formatDate } from "@/lib/utils";
 import { useThreadData, useThreadReplies } from "@/api/hooks/threads";
 import UserAvatar from "@/components/ui/user-avatar";
-import { FORUM_CATEGORIES } from "@/lib/constants";
-import ThreadPoll from "@/components/thread/poll";
+import { FORUM_CATEGORIES, USER_ROLES } from "@/lib/constants";
 import UserThreadHeader from "@/components/ui/user-thread-header";
-import ThreadActions from "@/components/thread/ThreadActions";
-import MediaPreview from "../components/ui/media-preview";
 import ReplyForm from "@/components/thread/ReplyForm";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { ThreadReply } from "@/lib/types";
@@ -318,8 +315,11 @@ export default function Thread() {
     );
   }
 
-  const shouldBlurContent =
-    (!currentUser?.planType || currentUser?.planType === "FREE")  && thread.user.role === "FIGHTER";
+  const isExcemptRole = currentUser?.role === USER_ROLES.ADMIN  || currentUser?.role === USER_ROLES.MODERATOR || currentUser?.role === USER_ROLES.FIGHTER || currentUser?.role === USER_ROLES.INDUSTRY_PROFESSIONAL;
+
+  const shouldBlurContent = !isExcemptRole && (
+    ((!currentUser?.planType || currentUser?.planType === "FREE") &&
+      thread.user.role === USER_ROLES.FIGHTER));
 
   // Only render metadata when we have thread data
   const metadata = <ThreadMetadata thread={thread} />;

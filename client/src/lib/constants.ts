@@ -75,7 +75,7 @@ export const FORUM_CATEGORIES = [
   {
     id: "general",
     name: "General MMA Discussion",
-    description: "The place for all things MMA that don't fit elsewhere",
+    description: "Wide-ranging conversations on all things MMA",
     count: 24,
   },
   {

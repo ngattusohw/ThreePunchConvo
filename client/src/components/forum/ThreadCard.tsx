@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
 import { ForumThread } from "@/lib/types";
-import { truncateText } from "@/lib/utils";
+import { checkIsNormalUser, truncateText } from "@/lib/utils";
 import ThreadPoll from "@/components/thread/poll";
 import MediaPreview from "@/components/ui/media-preview";
 import UserThreadHeader from "@/components/ui/user-thread-header";
@@ -66,17 +66,12 @@ export default function ThreadCard({
 
   const borderColor = thread.isPinned ? "border-ufc-blue" : "";
 
-  const isExcemptRole =
-    currentUser?.role === USER_ROLES.ADMIN ||
-    currentUser?.role === USER_ROLES.MODERATOR ||
-    currentUser?.role === USER_ROLES.FIGHTER ||
-    currentUser?.role === USER_ROLES.INDUSTRY_PROFESSIONAL;
+  const isNormalUser = checkIsNormalUser(currentUser?.role);
   // Check if content should be blurred (free user viewing fighter content)
-  const shouldBlurContent =
-    !isExcemptRole &&
-    (isPlanLoading ||
-      ((!currentUser?.planType || currentUser?.planType === "FREE") &&
-        thread.user.role === USER_ROLES.FIGHTER));
+  const shouldBlurContent = isNormalUser && (
+    isPlanLoading ||
+    ((!currentUser?.planType || currentUser?.planType === "FREE") &&
+      thread.user.role === USER_ROLES.FIGHTER));
 
   const handleEdit = () => {
     setIsEditing(true);

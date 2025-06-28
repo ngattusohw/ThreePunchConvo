@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { SUBSCRIPTION_STATUS } from "./constants";
+import { USER_ROLES } from "./constants";
+import { UserRole } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -96,4 +97,19 @@ export function getSubscriptionStatus(subscriptions: any[]): string {
   }
 
   return "";
+}
+
+export function checkIsExemptUser(role: UserRole) {
+  return (
+    role === USER_ROLES.ADMIN ||
+    role === USER_ROLES.MODERATOR ||
+    role === USER_ROLES.FIGHTER ||
+    role === USER_ROLES.INDUSTRY_PROFESSIONAL
+  );
+}
+
+export function checkIsNormalUser(role: UserRole) {
+  return (
+     !role || role === USER_ROLES.USER
+  );
 }

@@ -319,7 +319,8 @@ export default function Thread() {
   }
 
   const shouldBlurContent =
-    (!currentUser?.planType || currentUser?.planType === "FREE")  && thread.user.role === "FIGHTER";
+    (!currentUser?.planType || currentUser?.planType === "FREE") &&
+    thread.user.role === "FIGHTER";
 
   // Only render metadata when we have thread data
   const metadata = <ThreadMetadata thread={thread} />;
@@ -335,18 +336,18 @@ export default function Thread() {
           <div className='mb-4 flex items-center text-sm'>
             <Link
               href='/forum'
-              className='text-gray-400 transition hover:text-white'
+              className='flex-shrink-0 text-gray-400 transition hover:text-white'
             >
               Forum
             </Link>
-            <span className='mx-2 text-gray-600'>/</span>
+            <span className='mx-2 flex-shrink-0 text-gray-600'>/</span>
             <Link
               href={`/forum/${thread.categoryId}`}
-              className='text-gray-400 transition hover:text-white'
+              className='flex-shrink-0 text-gray-400 transition hover:text-white'
             >
               {getCategoryName(thread.categoryId)}
             </Link>
-            <span className='mx-2 text-gray-600'>/</span>
+            <span className='mx-2 flex-shrink-0 text-gray-600'>/</span>
             <span className='truncate text-white'>
               {title.length > 30 ? title.substring(0, 30) + "..." : title}
             </span>

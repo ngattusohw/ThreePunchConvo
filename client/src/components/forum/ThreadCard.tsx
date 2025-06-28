@@ -66,12 +66,17 @@ export default function ThreadCard({
 
   const borderColor = thread.isPinned ? "border-ufc-blue" : "";
 
-  const isExcemptRole = currentUser?.role === USER_ROLES.ADMIN  || currentUser?.role === USER_ROLES.MODERATOR || currentUser?.role === USER_ROLES.FIGHTER || currentUser?.role === USER_ROLES.INDUSTRY_PROFESSIONAL;
+  const isExcemptRole =
+    currentUser?.role === USER_ROLES.ADMIN ||
+    currentUser?.role === USER_ROLES.MODERATOR ||
+    currentUser?.role === USER_ROLES.FIGHTER ||
+    currentUser?.role === USER_ROLES.INDUSTRY_PROFESSIONAL;
   // Check if content should be blurred (free user viewing fighter content)
-  const shouldBlurContent = !isExcemptRole && (
-    isPlanLoading ||
-    ((!currentUser?.planType || currentUser?.planType === "FREE") &&
-      thread.user.role === USER_ROLES.FIGHTER));
+  const shouldBlurContent =
+    !isExcemptRole &&
+    (isPlanLoading ||
+      ((!currentUser?.planType || currentUser?.planType === "FREE") &&
+        thread.user.role === USER_ROLES.FIGHTER));
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -220,35 +225,23 @@ export default function ThreadCard({
                   </h3>
                 </Link>
 
-                {console.log("content", content)}
-                {console.log("result", shouldBlurContent
-                      ? "Premium Content"
-                      : (mainThreadMode ? content : truncateText(content, 280)))}
-
                 {/* Content container with blur and overlay */}
                 <div className={shouldBlurContent ? "relative" : ""}>
                   <p
-                    className={`${mainThreadMode ? "mb-6 text-lg leading-relaxed" : "mb-4"} text-gray-300 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
+                    className={`${mainThreadMode ? "mb-6 text-lg leading-relaxed" : "mb-4 line-clamp-3"} whitespace-pre-line text-gray-300 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
                   >
-                    
-                    {shouldBlurContent
-                      ? "Premium Content"
-                      : (mainThreadMode ? content : truncateText(content, 280))}
+                    {shouldBlurContent ? "Premium Content" : content}
                   </p>
 
                   {/* Thread Poll Preview - only show in view mode */}
                   {thread.poll && !mainThreadMode && (
                     <div
-                      className={`mb-4 p-3 rounded-lg bg-gray-800 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
+                      className={`mb-4 rounded-lg bg-gray-800 p-3 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
                     >
-                      <p
-                        className={"mb-2 font-medium text-white"}
-                      >
+                      <p className={"mb-2 font-medium text-white"}>
                         {thread.poll.question}
                       </p>
-                      <div
-                        className={"space-y-2"}
-                      >
+                      <div className={"space-y-2"}>
                         {thread.poll.options.slice(0, 4).map((option) => {
                           const percentage = thread.poll?.votesCount
                             ? Math.round(
@@ -260,19 +253,17 @@ export default function ThreadCard({
                           return (
                             <div className='relative pt-1' key={option.id}>
                               <div className='mb-1 flex items-center justify-between'>
-                                <span
-                                  className={"text-sm text-gray-300"}
-                                >
+                                <span className={"text-sm text-gray-300"}>
                                   {option.text}
                                 </span>
-                                <span
-                                  className={"text-sm text-gray-300"}
-                                >
+                                <span className={"text-sm text-gray-300"}>
                                   {percentage}%
                                 </span>
                               </div>
                               <div
-                                className={"flex h-2 overflow-hidden rounded bg-gray-700 text-xs"}
+                                className={
+                                  "flex h-2 overflow-hidden rounded bg-gray-700 text-xs"
+                                }
                               >
                                 <div
                                   style={{ width: `${percentage}%` }}
@@ -340,7 +331,7 @@ export default function ThreadCard({
                   )}
 
                   {thread.poll && mainThreadMode && (
-                    <ThreadPoll 
+                    <ThreadPoll
                       key={`poll-${thread.id}`}
                       threadId={thread.id}
                       poll={thread.poll}

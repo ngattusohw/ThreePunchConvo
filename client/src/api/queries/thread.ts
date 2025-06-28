@@ -141,6 +141,7 @@ export const fetchThreadReplies = async (
   if (userId) {
     params.append("userId", userId);
   }
+
   if (limit !== undefined) {
     params.append("limit", limit.toString());
   }

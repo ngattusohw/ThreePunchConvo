@@ -1,7 +1,7 @@
 import react, { useEffect, useRef, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet";
-import { formatDate } from "@/lib/utils";
+import { checkIsNormalUser, formatDate } from "@/lib/utils";
 import { useThreadData, useThreadReplies } from "@/api/hooks/threads";
 import UserAvatar from "@/components/ui/user-avatar";
 import { FORUM_CATEGORIES, USER_ROLES } from "@/lib/constants";
@@ -315,12 +315,6 @@ export default function Thread() {
     );
   }
 
-  const isExcemptRole = currentUser?.role === USER_ROLES.ADMIN  || currentUser?.role === USER_ROLES.MODERATOR || currentUser?.role === USER_ROLES.FIGHTER || currentUser?.role === USER_ROLES.INDUSTRY_PROFESSIONAL;
-
-  const shouldBlurContent = !isExcemptRole && (
-    ((!currentUser?.planType || currentUser?.planType === "FREE") &&
-      thread.user.role === USER_ROLES.FIGHTER));
-
   // Only render metadata when we have thread data
   const metadata = <ThreadMetadata thread={thread} />;
 
@@ -396,7 +390,6 @@ export default function Thread() {
                     onDelete={() =>
                       deleteReplyMutation.mutate(reply.id.toString())
                     }
-                    forceBlur={shouldBlurContent}
                   />
                 ))}
 
@@ -677,10 +670,11 @@ function ReplyCard({
 
   const canLikeReply = localUser && localUser?.id !== reply.userId;
 
+  const isNormalUser = checkIsNormalUser(localUser?.role);
   // Check if content should be blurred (free user viewing fighter content)
-  const shouldBlurContent =
+  const shouldBlurContent = isNormalUser && (
     forceBlur ||
-    (localUser?.planType === "FREE" && reply.user.role === "FIGHTER");
+    (localUser?.planType === "FREE" && reply.user.role === "FIGHTER"));
 
   return (
     <div

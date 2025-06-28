@@ -7,9 +7,8 @@ import ThreadCard from "@/components/forum/ThreadCard";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/api";
 import { USER_ROLES } from "@/lib/constants";
-import UserTag from "@/components/ui/UserBadge";
 import UserRoleBadge from "@/components/ui/UserBadge";
-
+import { checkIsNormalUser } from "@/lib/utils";
 export default function UserProfile() {
   const { username } = useParams<{ username: string }>();
   const { toast } = useToast();
@@ -24,11 +23,7 @@ export default function UserProfile() {
     isPostsLoading,
     postsError,
   } = useUserProfile(username);
-  const isNormalUser =
-    user?.role !== USER_ROLES.FIGHTER &&
-    user?.role !== USER_ROLES.INDUSTRY_PROFESSIONAL &&
-    user?.role !== USER_ROLES.ADMIN &&
-    user?.role !== USER_ROLES.MODERATOR;
+  const isNormalUser = checkIsNormalUser(user?.role);
 
   // For demo purposes, create mock user if none is returned from the API
   const displayUser = user;
@@ -126,19 +121,15 @@ export default function UserProfile() {
                 {displayUser.username}
               </h1>
 
-              {displayUser.role !== USER_ROLES.FIGHTER ||
-                displayUser.role !== USER_ROLES.INDUSTRY_PROFESSIONAL ||
-                (displayUser.role !== USER_ROLES.ADMIN && (
+              {isNormalUser && (
                   <FCBadge rank={displayUser.rank} size='md' />
-                ))}
+                )}
 
               <UserRoleBadge role={displayUser.role} />
 
-              {displayUser.role !== USER_ROLES.FIGHTER ||
-                displayUser.role !== USER_ROLES.INDUSTRY_PROFESSIONAL ||
-                (displayUser.role !== USER_ROLES.ADMIN && (
+              {isNormalUser && (
                   <StatusBadge status={displayUser.status} />
-                ))}
+                )}
             </div>
 
             {/* Display first and last name for fighters and industry professionals */}

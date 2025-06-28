@@ -1132,8 +1132,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reply endpoints
   app.get("/api/threads/:id/replies", async (req: Request, res: Response) => {
     try {
-      const threadId = req.params.id;
       let localUserId: string | undefined = undefined;
+      const threadId = req.params.id;
       const clerkUserId = req.query.userId as string | undefined;
       const limit = req.query.limit
         ? parseInt(req.query.limit as string)

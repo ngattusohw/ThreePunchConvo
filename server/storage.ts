@@ -1195,8 +1195,8 @@ export class DatabaseStorage implements IStorage {
         `getRepliesByThread: threadId=${threadId}, limit=${limit}, offset=${offset}`,
       );
 
-      // Build query with explicit column selection
-      const baseQuery = db
+      // Build query with explicit column selection and apply pagination
+      const threadReplies = await db
         .select({
           id: replies.id,
           threadId: replies.threadId,
@@ -1210,20 +1210,10 @@ export class DatabaseStorage implements IStorage {
         })
         .from(replies)
         .where(eq(replies.threadId, threadId))
-        .orderBy(replies.createdAt);
+        .orderBy(replies.createdAt)
+        .limit(limit || 1000) // Use a reasonable default if limit is undefined
+        .offset(offset || 0); // Use 0 as default if offset is undefined
 
-      // Apply pagination
-      let query = baseQuery;
-      if (limit !== undefined) {
-        query = query.limit(limit);
-        console.log(`Applied limit: ${limit}`);
-      }
-      if (offset !== undefined) {
-        query = query.offset(offset);
-        console.log(`Applied offset: ${offset}`);
-      }
-
-      const threadReplies = await query;
       console.log(`Database query returned ${threadReplies.length} replies`);
 
       // If we have a current user, check which replies they've liked
@@ -1275,7 +1265,7 @@ export class DatabaseStorage implements IStorage {
         console.log("Attempting to reconnect to database...");
         try {
           // Use the existing db instance instead of creating a new one
-          const baseQuery = db
+          const threadReplies = await db
             .select({
               id: replies.id,
               threadId: replies.threadId,
@@ -1289,18 +1279,9 @@ export class DatabaseStorage implements IStorage {
             })
             .from(replies)
             .where(eq(replies.threadId, threadId))
-            .orderBy(replies.createdAt);
-
-          // Apply pagination
-          let query = baseQuery;
-          if (limit !== undefined) {
-            query = query.limit(limit);
-          }
-          if (offset !== undefined) {
-            query = query.offset(offset);
-          }
-
-          const threadReplies = await query;
+            .orderBy(replies.createdAt)
+            .limit(limit || 1000) // Use a reasonable default if limit is undefined
+            .offset(offset || 0); // Use 0 as default if offset is undefined
 
           // If we have a current user, check which replies they've liked
           if (currentUserId) {

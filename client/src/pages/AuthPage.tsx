@@ -382,10 +382,10 @@ export default function AuthPage() {
             <Card className='relative border-gray-700 bg-gray-800'>
               <CardHeader className='text-center'>
                 <CardTitle className='text-xl text-white md:text-2xl'>
-                  Basic
+                  Free
                 </CardTitle>
                 <CardDescription className='text-gray-400'>
-                  Free Forever
+                  Read and React
                 </CardDescription>
                 <div className='mt-4 text-3xl font-bold text-cyan-400 md:text-4xl'>
                   $0
@@ -444,7 +444,7 @@ export default function AuthPage() {
               </div>
               <CardHeader className='text-center'>
                 <CardTitle className='text-xl text-white md:text-2xl'>
-                  Premium
+                  Basic
                 </CardTitle>
                 <CardDescription className='text-gray-400'>
                   Unlock everything
@@ -458,7 +458,7 @@ export default function AuthPage() {
                 <ul className='space-y-4'>
                   <li className='flex items-center space-x-3'>
                     <Check className='h-5 w-5 flex-shrink-0 text-green-400' />
-                    <span className='text-gray-300'>Everything in Basic</span>
+                    <span className='text-gray-300'>Everything in Free</span>
                   </li>
                   <li className='flex items-center space-x-3'>
                     <Check className='h-5 w-5 flex-shrink-0 text-green-400' />

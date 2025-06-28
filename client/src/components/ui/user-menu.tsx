@@ -92,19 +92,19 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
           </DropdownMenuItem>
           <DropdownMenuSeparator className='bg-gray-700' />
           <DropdownMenuItem
-            onClick={() => setShowSubscriptionModal(true)}
-            className='cursor-pointer focus:bg-gray-700 focus:text-white'
-          >
-            <CreditCard className='mr-2 h-4 w-4' />
-            <span>Manage Subscription</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className='bg-gray-700' />
-          <DropdownMenuItem
             onClick={() => setShowDeleteModal(true)}
             className='cursor-pointer text-red-400 hover:text-red-300 focus:bg-red-700 focus:text-white'
           >
             <Trash2 className='mr-2 h-4 w-4' />
             <span>Delete Account</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className='bg-gray-700' />
+          <DropdownMenuItem
+            onClick={() => setShowSubscriptionModal(true)}
+            className='cursor-pointer focus:bg-gray-700 focus:text-white'
+          >
+            <CreditCard className='mr-2 h-4 w-4' />
+            <span>Manage Subscription</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator className='bg-gray-700' />
           <DropdownMenuItem

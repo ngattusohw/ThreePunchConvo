@@ -315,12 +315,6 @@ export default function Thread() {
     );
   }
 
-  const isNormalUser = checkIsNormalUser(currentUser?.role);
-
-  const shouldBlurContent = isNormalUser && (
-    ((!currentUser?.planType || currentUser?.planType === "FREE") &&
-      thread.user.role === USER_ROLES.FIGHTER));
-
   // Only render metadata when we have thread data
   const metadata = <ThreadMetadata thread={thread} />;
 
@@ -396,7 +390,6 @@ export default function Thread() {
                     onDelete={() =>
                       deleteReplyMutation.mutate(reply.id.toString())
                     }
-                    forceBlur={shouldBlurContent}
                   />
                 ))}
 

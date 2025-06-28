@@ -450,7 +450,7 @@ export default function AuthPage() {
                   Unlock everything
                 </CardDescription>
                 <div className='mt-4 text-3xl font-bold text-cyan-400 md:text-4xl'>
-                  $4.99
+                  $5.00
                 </div>
                 <p className='text-sm text-gray-400'>per month</p>
               </CardHeader>

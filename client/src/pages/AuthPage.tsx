@@ -94,7 +94,7 @@ export default function AuthPage() {
       </header>
 
       {/* Hero Section */}
-      <section className='px-4 py-20'>
+      <section className='px-4 py-8'>
         <div className='container mx-auto max-w-6xl'>
           <div className='grid items-center gap-12 lg:grid-cols-2'>
             <div>

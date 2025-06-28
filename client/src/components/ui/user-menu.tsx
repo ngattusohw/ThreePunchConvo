@@ -73,9 +73,9 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
                 @{user.username}
               </p>
               {hasSubscription && (
-                <div className="flex items-center space-x-1">
-                  <Crown className="h-3 w-3 text-yellow-400" />
-                  <p className="text-xs font-medium text-yellow-400">
+                <div className='flex items-center space-x-1'>
+                  <Crown className='h-3 w-3 text-yellow-400' />
+                  <p className='text-xs font-medium text-yellow-400'>
                     {currentUser?.planType} Plan
                   </p>
                 </div>
@@ -92,27 +92,27 @@ export function UserMenu({ handleDeleteAccount }: UserMenuProps) {
           </DropdownMenuItem>
           <DropdownMenuSeparator className='bg-gray-700' />
           <DropdownMenuItem
-            onClick={handleSignOut}
+            onClick={() => setShowSubscriptionModal(true)}
             className='cursor-pointer focus:bg-gray-700 focus:text-white'
           >
-            <LogOut className='mr-2 h-4 w-4' />
-            <span>Sign Out</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className='bg-gray-700' />
-          <DropdownMenuItem
-            onClick={() => setShowSubscriptionModal(true)}
-            className="cursor-pointer focus:bg-gray-700 focus:text-white"
-          >
-            <CreditCard className="mr-2 h-4 w-4" />
+            <CreditCard className='mr-2 h-4 w-4' />
             <span>Manage Subscription</span>
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-gray-700" />
+          <DropdownMenuSeparator className='bg-gray-700' />
           <DropdownMenuItem
             onClick={() => setShowDeleteModal(true)}
             className='cursor-pointer text-red-400 hover:text-red-300 focus:bg-red-700 focus:text-white'
           >
             <Trash2 className='mr-2 h-4 w-4' />
             <span>Delete Account</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className='bg-gray-700' />
+          <DropdownMenuItem
+            onClick={handleSignOut}
+            className='cursor-pointer focus:bg-gray-700 focus:text-white'
+          >
+            <LogOut className='mr-2 h-4 w-4' />
+            <span>Sign Out</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

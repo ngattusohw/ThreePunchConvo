@@ -2737,10 +2737,39 @@ export class DatabaseStorage implements IStorage {
           }),
         );
 
+        // Create a map to sum duplicate user entries
+        const summedDataMap = new Map<string, any>();
+
+        insertData.forEach((data) => {
+          if (summedDataMap.has(data.userId)) {
+            const existingData = summedDataMap.get(data.userId);
+            summedDataMap.set(data.userId, {
+              ...existingData,
+              likeCount: existingData.likeCount + data.likeCount,
+              potdCount: existingData.potdCount + data.potdCount,
+              replyCount: existingData.replyCount + data.replyCount,
+              likeScore: existingData.likeScore + data.likeScore,
+              potdScore: existingData.potdScore + data.potdScore,
+              replyScore: existingData.replyScore + data.replyScore,
+              dailyFighterCred:
+                existingData.dailyFighterCred + data.dailyFighterCred,
+              totalFighterCred:
+                existingData.totalFighterCred + data.totalFighterCred,
+            });
+          } else {
+            summedDataMap.set(data.userId, data);
+          }
+        });
+
+        // Replace the original array with the fixed users
+        insertData.length = 0; // Clear the original array
+        insertData.push(...summedDataMap.values()); // Add the fixed users
+
         // Insert in batches to avoid overwhelming the database
         const batchSize = 1;
-        for (let i = 0; i < insertData.length; i += batchSize) {
-          const batch = insertData.slice(i, i + batchSize);
+        const dataToInsert = Array.from(summedDataMap.values());
+        for (let i = 0; i < dataToInsert.length; i += batchSize) {
+          const batch = dataToInsert.slice(i, i + batchSize);
           await db.insert(dailyFighterCred).values(batch);
         }
 

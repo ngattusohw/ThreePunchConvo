@@ -121,15 +121,11 @@ export default function UserProfile() {
                 {displayUser.username}
               </h1>
 
-              {isNormalUser && (
-                  <FCBadge rank={displayUser.rank} size='md' />
-                )}
+              {isNormalUser && <FCBadge rank={displayUser.points} size='md' />}
 
               <UserRoleBadge role={displayUser.role} />
 
-              {isNormalUser && (
-                  <StatusBadge status={displayUser.status} />
-                )}
+              {isNormalUser && <StatusBadge status={displayUser.status} />}
             </div>
 
             {/* Display first and last name for fighters and industry professionals */}
@@ -142,7 +138,7 @@ export default function UserProfile() {
                 </div>
               )}
 
-            <div className='mt-2 flex flex-wrap gap-4 items-center text-sm text-gray-400'>
+            <div className='mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-400'>
               <div className='flex items-center'>
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
@@ -198,7 +194,7 @@ export default function UserProfile() {
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
                   className='text-ufc-blue mr-1 h-4 w-4'
-                  fill="none"
+                  fill='none'
                   viewBox='0 0 24 24'
                   stroke='currentColor'
                 >
@@ -355,7 +351,7 @@ export default function UserProfile() {
                     </span>
                     <div>
                       <div className='rounded-lg bg-gray-800 px-3 py-2'>
-                        <FCBadge rank={displayUser.rank} size='lg' />
+                        <FCBadge rank={displayUser.points} size='lg' />
                         <span className='mt-1 block text-xs text-gray-400'>
                           Fighter Cred
                         </span>
@@ -406,7 +402,9 @@ export default function UserProfile() {
                   <span className='text-ufc-blue block text-xl font-bold'>
                     {displayUser.repliesCount}
                   </span>
-                  <span className='text-sm text-gray-400'>Replies Received</span>
+                  <span className='text-sm text-gray-400'>
+                    Replies Received
+                  </span>
                 </div>
                 {/* <div className="bg-gray-800 p-3 rounded-lg text-center">
                   <span className="block text-ufc-blue font-bold text-xl">{displayUser.followersCount}</span>

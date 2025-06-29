@@ -72,10 +72,8 @@ export default function UserThreadHeader({
           )}
           <UserRoleBadge role={user?.role || ""} />
           {/* FC Badge */}
-          {user?.rank !== undefined && isNormalUser && (
-            <FCBadge
-              rank={user.rank}
-            />
+          {user?.points !== undefined && isNormalUser && (
+            <FCBadge rank={user.points} />
           )}
         </div>
 

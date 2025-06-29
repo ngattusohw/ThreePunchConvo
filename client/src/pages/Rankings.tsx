@@ -221,7 +221,7 @@ export default function Rankings() {
 
                       {/* Points */}
                       <span className='text-ufc-blue text-lg font-bold'>
-                        {shortenNumber(rankedUser.points)} pts
+                        {shortenNumber(rankedUser.user.totalFighterCred)} pts
                       </span>
                     </div>
 

@@ -2613,6 +2613,8 @@ export class DatabaseStorage implements IStorage {
                AND w.role = u.role
           WHERE u.disabled IS DISTINCT FROM TRUE
             AND ai.interaction_timestamp >= NOW() - INTERVAL '24 hours'
+            AND u.plan_type != 'FREE'
+            AND u.role NOT IN ('ADMIN', 'MODERATOR', 'FIGHTER', 'INDUSTRY_PROFESSIONAL')
         ),
 
         aggregated_scores AS (
@@ -2648,6 +2650,7 @@ export class DatabaseStorage implements IStorage {
         LEFT JOIN aggregated_scores a ON a.user_id = u.id
         WHERE u.disabled IS DISTINCT FROM TRUE
           AND u.role NOT IN ('ADMIN', 'MODERATOR', 'FIGHTER', 'INDUSTRY_PROFESSIONAL')
+          AND u.plan_type != 'FREE'
         ORDER BY COALESCE(a.daily_fighter_cred, 0) DESC;
       `;
 
@@ -2735,7 +2738,7 @@ export class DatabaseStorage implements IStorage {
         );
 
         // Insert in batches to avoid overwhelming the database
-        const batchSize = 100;
+        const batchSize = 1;
         for (let i = 0; i < insertData.length; i += batchSize) {
           const batch = insertData.slice(i, i + batchSize);
           await db.insert(dailyFighterCred).values(batch);

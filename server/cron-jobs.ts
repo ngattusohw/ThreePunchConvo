@@ -7,7 +7,7 @@ import { storage } from "./storage";
 export function setupCronJobs(): void {
   // Recalculate fighter cred at 5:01 AM EST every day
   cron.schedule(
-    "1 5 * * *",
+    "5 7 * * *",
     async () => {
       console.log("Running scheduled job: recalculateFighterCred");
       try {

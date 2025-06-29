@@ -59,10 +59,6 @@ export default function ReplyThread({ currentUser, thread }: ReplyThreadProps) {
   const isLoading =
     replies.length === 0 && (isThreadLoading || isRepliesLoading);
 
-  const shouldBlurContent =
-    (!currentUser?.planType || currentUser?.planType === "FREE") &&
-    thread.user.role === "FIGHTER";
-
   return (
     <>
       <div className='mb-6'>
@@ -106,7 +102,6 @@ export default function ReplyThread({ currentUser, thread }: ReplyThreadProps) {
                   onDelete={() =>
                     deleteReplyMutation.mutate(reply.id.toString())
                   }
-                  forceBlur={shouldBlurContent}
                 />
               ))}
           </div>

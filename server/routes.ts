@@ -247,7 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get top users based on daily fighter cred for the current day
   app.get("/api/users/top", async (req: Request, res: Response) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 20;
+      const limit = parseInt(req.query.limit as string) || 200;
 
       try {
         const topUsers = await storage.getTopUsersFromDailyCred(limit);

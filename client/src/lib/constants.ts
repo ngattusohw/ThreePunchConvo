@@ -4,6 +4,10 @@ export const USER_STATUSES = {
     label: "GOAT",
     className: "status-goat",
   },
+  P4P: {
+    label: "P4P",
+    className: "status-p4p",
+  },
   HALL_OF_FAMER: {
     label: "HALL OF FAMER",
     className: "status-hof",

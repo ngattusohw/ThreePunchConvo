@@ -43,7 +43,10 @@ export default function Rankings() {
     rankingFilter === "all"
       ? processedUsers
       : processedUsers.filter((user) =>
-          user.user.status.toLowerCase().includes(rankingFilter.toLowerCase()),
+          user.user.status
+            .toLowerCase()
+            .replace(/\s+/g, "")
+            .includes(rankingFilter.toLowerCase()),
         );
 
   // Create filter options from constants in reverse order

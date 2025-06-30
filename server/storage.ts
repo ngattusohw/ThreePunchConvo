@@ -2877,7 +2877,7 @@ export class DatabaseStorage implements IStorage {
           userPositions.length +
         1;
       const percentile =
-        N === 1 ? 100 : Math.round(((avgRank - 1) / (N - 1)) * 100);
+        N === 1 ? 100 : Math.round(((N - avgRank) / (N - 1)) * 100);
 
       if (Math.min(...userPositions) === 0) {
         await this.updateUserStatus(userId, "GOAT");

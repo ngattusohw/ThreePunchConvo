@@ -2607,7 +2607,7 @@ export class DatabaseStorage implements IStorage {
             ai.interaction_type,
             COALESCE(w.weight, 0) AS weight
           FROM all_interactions ai
-          LEFT JOIN users u ON ai.actor_id = u.id 
+          LEFT JOIN users u ON ai.user_id = u.id 
           LEFT JOIN reaction_weights w
             ON w.reaction_type = ai.interaction_type
                AND w.role = u.role
@@ -2620,7 +2620,6 @@ export class DatabaseStorage implements IStorage {
         aggregated_scores AS (
           SELECT
             si.user_id,
-            si.interaction_day,
             COUNT(*) FILTER (WHERE si.interaction_type = 'LIKE') AS like_count,
             COUNT(*) FILTER (WHERE si.interaction_type = 'POTD') AS potd_count,
             COUNT(*) FILTER (WHERE si.interaction_type = 'REPLY') AS reply_count,
@@ -2631,7 +2630,7 @@ export class DatabaseStorage implements IStorage {
 
             SUM(weight) AS daily_fighter_cred
           FROM scored_interactions_today si
-          GROUP BY si.user_id, si.interaction_day
+          GROUP BY si.user_id
         )
 
         SELECT
@@ -2857,50 +2856,50 @@ export class DatabaseStorage implements IStorage {
         return "AMATEUR"; // Default status if no data
       }
 
-      // Find the user's position in the ranking by userId
-      const userPosition = userCreds.findIndex(
-        (cred) => cred.totalFighterCred === totalFighterCred,
-      );
+      const N = userCreds.length;
 
-      if (userPosition === -1) {
+      const credMap = new Map<number, number[]>();
+      userCreds.forEach((user, i) => {
+        const pts = user.totalFighterCred;
+        if (!credMap.has(pts)) credMap.set(pts, []);
+        credMap.get(pts)!.push(i);
+      });
+
+      const userPositions = credMap.get(totalFighterCred);
+
+      if (!userPositions) {
         await this.updateUserStatus(userId, "AMATEUR");
         return "AMATEUR"; // User not found in ranking
       }
 
-      if (userPosition === 0) {
+      const avgRank =
+        userPositions.reduce((acc, curr) => acc + curr, 0) /
+          userPositions.length +
+        1;
+      const percentile =
+        N === 1 ? 100 : Math.round(((avgRank - 1) / (N - 1)) * 100);
+
+      if (Math.min(...userPositions) === 0) {
         await this.updateUserStatus(userId, "GOAT");
         return "GOAT"; // User is the top poster
       }
 
-      // Calculate percentile (0-100)
-      const percentile = Math.round(
-        ((userCreds.length - userPosition - 1) / userCreds.length) * 100,
-      );
-
-      // Get status config from database
       const statusConfigs = await db
         .select()
         .from(statusConfig)
         .orderBy(desc(statusConfig.percentile));
 
-      // Find the appropriate status based on percentile
       for (const config of statusConfigs) {
         if (percentile >= config.percentile) {
-          // Convert database status names to expected format
-          let status = config.status;
-          if (status === "HALL_OF_FAMER") status = "HALL OF FAMER";
-          if (status === "RANKED_POSTER") status = "RANKED POSTER";
-          if (status === "REGIONAL_POSTER") status = "REGIONAL POSTER";
-
-          // Update the user's status in the users table
-          await this.updateUserStatus(userId, status);
-
-          return status;
+          const formattedStatus = config.status
+            .replace(/_/g, " ")
+            .toUpperCase(); // HALL_OF_FAMER → HALL OF FAMER
+          await this.updateUserStatus(userId, formattedStatus);
+          return formattedStatus;
         }
       }
 
       await this.updateUserStatus(userId, "AMATEUR");
-
       return "AMATEUR";
     } catch (error) {
       console.error("Error calculating user status:", error);

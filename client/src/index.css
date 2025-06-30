@@ -31,6 +31,11 @@
 }
 
 /* Status badges */
+.status-p4p {
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ffd700 100%);
+  color: #121212;
+}
+
 .status-hof {
   background: linear-gradient(90deg, #f5c518 0%, #e6a819 100%);
   color: #121212;

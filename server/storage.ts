@@ -2861,7 +2861,7 @@ export class DatabaseStorage implements IStorage {
         return "AMATEUR"; // Default status if no data
       }
 
-      const N = userCreds.length;
+      const N = userCreds.filter((user) => user.totalFighterCred > 0).length;
 
       const credMap = new Map<number, number[]>();
       userCreds.forEach((user, i) => {

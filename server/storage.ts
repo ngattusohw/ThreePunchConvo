@@ -2861,12 +2861,14 @@ export class DatabaseStorage implements IStorage {
         return "AMATEUR"; // Default status if no data
       }
 
-      const N = userCreds.filter((user) => user.totalFighterCred > 0).length;
+      const userCredsWithoutZero = userCreds.filter(
+        (user) => user.totalFighterCred > 0,
+      );
+
+      const N = userCredsWithoutZero.length;
 
       const credMap = new Map<number, number[]>();
-      userCreds.forEach((user, i) => {
-        if (user.totalFighterCred === 0) return;
-
+      userCredsWithoutZero.forEach((user, i) => {
         const pts = user.totalFighterCred;
         if (!credMap.has(pts)) credMap.set(pts, []);
         credMap.get(pts)!.push(i);

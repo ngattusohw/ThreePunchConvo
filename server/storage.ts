@@ -2835,6 +2835,11 @@ export class DatabaseStorage implements IStorage {
     try {
       let userCreds: Array<{ userId: string; totalFighterCred: number }>;
 
+      if (totalFighterCred === 0) {
+        await this.updateUserStatus(userId, "AMATEUR");
+        return "AMATEUR";
+      }
+
       if (allUserCreds) {
         // Use provided data (for when we're calculating during fighter cred recalculation)
         userCreds = allUserCreds;
@@ -2860,6 +2865,8 @@ export class DatabaseStorage implements IStorage {
 
       const credMap = new Map<number, number[]>();
       userCreds.forEach((user, i) => {
+        if (user.totalFighterCred === 0) return;
+
         const pts = user.totalFighterCred;
         if (!credMap.has(pts)) credMap.set(pts, []);
         credMap.get(pts)!.push(i);

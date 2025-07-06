@@ -224,7 +224,7 @@ export default function Thread() {
               href='/forum'
               className='flex-shrink-0 text-gray-400 transition hover:text-white'
             >
-              Forum
+              Forums
             </Link>
             <span className='mx-2 flex-shrink-0 text-gray-600'>/</span>
             <Link

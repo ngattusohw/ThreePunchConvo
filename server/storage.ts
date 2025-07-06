@@ -879,7 +879,6 @@ export class DatabaseStorage implements IStorage {
         await tx
           .update(users)
           .set({
-            points: sql`${users.points} + 1`,
             postsCount: sql`${users.postsCount} + 1`,
           })
           .where(eq(users.id, thread.userId));
@@ -1776,7 +1775,6 @@ export class DatabaseStorage implements IStorage {
           await tx
             .update(users)
             .set({
-              points: sql`${users.points} + 2`,
               likesCount: sql`${users.likesCount} + 1`, // Track total likes received
             })
             .where(eq(users.id, thread.userId));
@@ -1958,7 +1956,6 @@ export class DatabaseStorage implements IStorage {
             .update(users)
             .set({
               pinnedByUserCount: sql`${users.pinnedByUserCount} + 1`,
-              points: sql`${users.points} + 40`, // Add 40 points for PINNED_BY_USER
             })
             .where(eq(users.id, userId));
 
@@ -2034,10 +2031,6 @@ export class DatabaseStorage implements IStorage {
 
           // Add bonus points for thread owner (if not marking their own thread)
           if (thread.userId !== userId) {
-            await tx.execute(
-              sql`UPDATE users SET points = points + 5 WHERE id = ${thread.userId}`,
-            );
-
             // Create notification for thread owner
             await tx.insert(notifications).values({
               id: uuidv4(),
@@ -2122,13 +2115,6 @@ export class DatabaseStorage implements IStorage {
 
         // Add points for reply owner (if not liking their own reply)
         if (reply.userId !== userId) {
-          await tx
-            .update(users)
-            .set({
-              points: sql`${users.points} + 1`, // 1 point for a reply like
-            })
-            .where(eq(users.id, reply.userId));
-
           // Create notification for reply owner
           await tx.insert(notifications).values({
             id: uuidv4(),
@@ -2589,7 +2575,7 @@ export class DatabaseStorage implements IStorage {
 
           -- Reactions to replies
           SELECT
-            t.user_id,
+            r.user_id,
             rr.user_id AS actor_id,
             rr.type AS interaction_type,
             DATE_TRUNC('day', rr.created_at) AS interaction_day,

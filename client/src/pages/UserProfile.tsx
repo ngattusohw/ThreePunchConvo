@@ -107,7 +107,7 @@ export default function UserProfile() {
     <div className='container mx-auto px-4 py-6'>
       <div className='bg-dark-gray overflow-hidden rounded-lg shadow-lg'>
         {/* Banner and Avatar */}
-        <div className='from-ufc-black to-ufc-blue relative h-32 bg-gradient-to-r md:h-48'>
+        <div className='from-ufc-black to-ufc-blue relative h-16 bg-gradient-to-r md:h-16'>
           <div className='absolute -bottom-12 left-4 md:left-8'>
             <UserAvatar user={displayUser} size='xl' />
           </div>
@@ -227,13 +227,13 @@ export default function UserProfile() {
             </div>
 
             {/* <div className="flex items-center space-x-4 mt-2 text-sm">
-              <button 
+              <button
                 className="text-ufc-blue hover:underline"
-                onClick={() => 
+                onClick={() =>
               >
                 <span className="font-bold">{displayUser.followersCount}</span> followers
               </button>
-              <button 
+              <button
                 className="text-ufc-blue hover:underline"
                 onClick={() =>
               >
@@ -244,18 +244,18 @@ export default function UserProfile() {
 
           <div className='mt-4 flex space-x-3 md:mt-0'>
             {/* {currentUser && currentUser.id !== displayUser.id && (
-              <button 
+              <button
                 onClick={handleFollowToggle}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  isFollowing 
-                    ? "bg-gray-700 text-white hover:bg-gray-600" 
+                  isFollowing
+                    ? "bg-gray-700 text-white hover:bg-gray-600"
                     : "bg-ufc-blue text-black hover:bg-ufc-blue-dark"
                 }`}
               >
                 {isFollowing ? "Following" : "Follow"}
               </button>
             )}
-            
+
             {currentUser && currentUser.id !== displayUser.id && (
               <button className="bg-dark-gray border border-gray-700 hover:bg-gray-800 text-white font-medium px-4 py-2 rounded-lg text-sm transition">
                 Message

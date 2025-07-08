@@ -549,49 +549,29 @@ export class DatabaseStorage implements IStorage {
       const latestDay = latestDayResult[0].interactionDay;
       console.log("Looking for daily fighter cred for date:", latestDay);
 
-      // Get aggregated counts across all days and latest day's total fighter cred
+      // First, get the top users from daily_fighter_cred table for the latest day with a single query
       const topDailyCredResults = await db
         .select({
           userId: dailyFighterCred.userId,
-          // Get current status and totals from latest day
-          currentStatus: sql<string>`(
-            SELECT current_status 
-            FROM daily_fighter_cred 
-            WHERE user_id = ${dailyFighterCred.userId} 
-            AND interaction_day = ${latestDay}
-            LIMIT 1
-          )`,
-          dailyFighterCred: sql<number>`(
-            SELECT daily_fighter_cred 
-            FROM daily_fighter_cred 
-            WHERE user_id = ${dailyFighterCred.userId} 
-            AND interaction_day = ${latestDay}
-            LIMIT 1
-          )`,
-          totalFighterCred: sql<number>`(
-            SELECT total_fighter_cred 
-            FROM daily_fighter_cred 
-            WHERE user_id = ${dailyFighterCred.userId} 
-            AND interaction_day = ${latestDay}
-            LIMIT 1
-          )`,
-          // Aggregate counts across all days
-          likesCount: sql<number>`SUM(${dailyFighterCred.likeCount})`,
-          potdCount: sql<number>`SUM(${dailyFighterCred.potdCount})`,
-          replyCount: sql<number>`SUM(${dailyFighterCred.replyCount})`,
+          currentStatus: dailyFighterCred.currentStatus,
+          dailyFighterCred: dailyFighterCred.dailyFighterCred,
+          totalFighterCred: dailyFighterCred.totalFighterCred,
           // User data from the join
           username: users.username,
           avatar: users.avatar,
           profileImageUrl: users.profileImageUrl,
           role: users.role,
+          likesCount: users.likesCount,
           postsCount: users.postsCount,
           repliesCount: users.repliesCount,
+          potdCount: users.potdCount,
           pinnedCount: users.pinnedCount,
         })
         .from(dailyFighterCred)
         .innerJoin(users, eq(dailyFighterCred.userId, users.id))
         .where(
           and(
+            eq(dailyFighterCred.interactionDay, latestDay),
             eq(users.disabled, false),
             notInArray(users.role, [
               "ADMIN",
@@ -601,34 +581,7 @@ export class DatabaseStorage implements IStorage {
             ]),
           ),
         )
-        .groupBy(
-          dailyFighterCred.userId,
-          users.username,
-          users.avatar,
-          users.profileImageUrl,
-          users.role,
-          users.postsCount,
-          users.repliesCount,
-          users.pinnedCount,
-        )
-        .having(
-          sql`(
-            SELECT total_fighter_cred 
-            FROM daily_fighter_cred 
-            WHERE user_id = ${dailyFighterCred.userId} 
-            AND interaction_day = ${latestDay}
-            LIMIT 1
-          ) IS NOT NULL`,
-        )
-        .orderBy(
-          desc(sql`(
-            SELECT total_fighter_cred 
-            FROM daily_fighter_cred 
-            WHERE user_id = ${dailyFighterCred.userId} 
-            AND interaction_day = ${latestDay}
-            LIMIT 1
-          )`),
-        )
+        .orderBy(desc(dailyFighterCred.totalFighterCred))
         .limit(limit);
 
       if (topDailyCredResults.length === 0) {
@@ -636,21 +589,21 @@ export class DatabaseStorage implements IStorage {
         return [];
       }
 
-      // Map results to the expected format
+      // No need for separate user query or combining - we have all data in one result
       const combinedResults = topDailyCredResults.map((result) => ({
         id: result.userId,
         username: result.username,
         avatar: result.avatar,
         profileImageUrl: result.profileImageUrl,
         role: result.role,
-        likesCount: result.likesCount || 0,
+        likesCount: result.likesCount,
         postsCount: result.postsCount,
         repliesCount: result.repliesCount,
-        potdCount: result.potdCount || 0,
+        potdCount: result.potdCount,
         pinnedCount: result.pinnedCount,
         status: result.currentStatus,
-        dailyFighterCred: result.dailyFighterCred || 0,
-        totalFighterCred: result.totalFighterCred || 0,
+        dailyFighterCred: result.dailyFighterCred,
+        totalFighterCred: result.totalFighterCred,
       }));
 
       return combinedResults;

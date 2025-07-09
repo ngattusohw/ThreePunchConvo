@@ -2609,14 +2609,15 @@ export class DatabaseStorage implements IStorage {
 
           -- Replies
           SELECT 
-            t.user_id,
+            COALESCE(pr.user_id, t.user_id) AS user_id,
             r.user_id AS actor_id,
             'REPLY' AS interaction_type,
             DATE_TRUNC('day', r.created_at) AS interaction_day,
             r.created_at AS interaction_timestamp
           FROM threads t
           JOIN replies r ON r.thread_id = t.id 
-          WHERE r.user_id IS DISTINCT FROM t.user_id
+          LEFT JOIN replies pr ON r.parent_reply_id = pr.id
+          WHERE r.user_id IS DISTINCT FROM COALESCE(pr.user_id, t.user_id)
 
           UNION ALL
 

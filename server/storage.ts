@@ -9,7 +9,6 @@ import {
   Poll,
   InsertPoll,
   PollOption,
-  InsertPollOption,
   Media,
   InsertMedia,
   Notification,
@@ -17,10 +16,6 @@ import {
   MMAEvent,
   Fighter,
   Fight,
-  DailyFighterCred,
-  InsertDailyFighterCred,
-  ReactionWeight,
-  StatusConfig,
   users,
   threads,
   replies,
@@ -32,7 +27,6 @@ import {
   pollVotes,
   replyReactions,
   dailyFighterCred,
-  reactionWeights,
   statusConfig,
 } from "@shared/schema";
 import session from "express-session";
@@ -40,6 +34,7 @@ import connectPg from "connect-pg-simple";
 import { pool, db } from "./db";
 import { eq, and, sql, desc, inArray, not, notInArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { USER_ROLES, NOTIFICATION_EXCLUDED_ROLES, NOTIFICATION_TYPES } from "@shared/constants";
 
 export interface IStorage {
   // Session store
@@ -867,18 +862,6 @@ export class DatabaseStorage implements IStorage {
         potdCount: 0,
       };
 
-      // check if user is fighter or mma industry role
-      const user = await this.getUser(thread.userId);
-      if (user?.role === "FIGHTER" || user?.role === "MMA_INDUSTRY") {
-        // add notification for all users (excluding other fighters and MMA industry users)
-        await this.createNotificationForAllUsers({
-          type: "SYSTEM",
-          relatedUserId: thread.userId,
-          threadId: threadValues.id,
-          message: `${user.username} just posted! Check out their latest thread.`,
-        }); // No need to pass excludeUserId since we're already excluding by role
-      }
-
       // Start a transaction to create thread and update user points
       const [newThread] = await db.transaction(async (tx) => {
         // Create the thread
@@ -894,6 +877,23 @@ export class DatabaseStorage implements IStorage {
             postsCount: sql`${users.postsCount} + 1`,
           })
           .where(eq(users.id, thread.userId));
+
+        // check if user is fighter or mma industry role
+        const user = await this.getUser(thread.userId);
+        if (user?.role === USER_ROLES.FIGHTER || user?.role === USER_ROLES.INDUSTRY_PROFESSIONAL) {
+          // add notification for all users (excluding other fighters and MMA industry users)
+          const postType = user.role === USER_ROLES.FIGHTER ? NOTIFICATION_TYPES.FIGHTER_POST : NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST;
+          await this.createNotificationForAllNormalUsers(
+            {
+              type: postType,
+              relatedUserId: thread.userId,
+              threadId: thread.id, // Use the actual thread ID from the database
+              message: `${user.username} just posted! Check out their latest thread.`,
+            },
+            undefined, // excludeUserId
+            tx // Pass the transaction context
+          );
+        }
 
         return [thread];
       });
@@ -946,7 +946,7 @@ export class DatabaseStorage implements IStorage {
         if (thread) {
           await this.createNotification({
             userId: threadOwnerId,
-            type: "THREAD_PINNED",
+            type: NOTIFICATION_TYPES.THREAD_PINNED,
             threadId: threadId,
             relatedUserId: moderatorId,
             message: "Your thread has been pinned by a moderator",
@@ -2916,25 +2916,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Helper function to create notifications for all users when a fighter/MMA person posts
-  async createNotificationForAllUsers(
+  async createNotificationForAllNormalUsers(
     notificationData: Omit<InsertNotification, 'userId'>,
-    excludeUserId?: string
+    excludeUserId?: string,
+    transaction?: any // Add transaction parameter
   ): Promise<void> {
     try {
+      // Use transaction if provided, otherwise use global db
+      const dbInstance = transaction || db;
+      
       // Get all users except fighters and MMA industry users (and the excluded user if provided)
-      const allUsers = await db
+      const allUsers = await dbInstance
         .select({ id: users.id })
         .from(users)
         .where(
           excludeUserId 
             ? and(
                 eq(users.disabled, false),
-                notInArray(users.role, ["FIGHTER", "MMA_INDUSTRY"]),
+                notInArray(users.role, NOTIFICATION_EXCLUDED_ROLES),
                 not(eq(users.id, excludeUserId))
               )
             : and(
                 eq(users.disabled, false),
-                notInArray(users.role, ["FIGHTER", "MMA_INDUSTRY"])
+                notInArray(users.role, NOTIFICATION_EXCLUDED_ROLES)
               )
         );
 
@@ -2960,7 +2964,7 @@ export class DatabaseStorage implements IStorage {
           createdAt: new Date(),
         }));
 
-        await db.insert(notifications).values(notificationsToInsert);
+        await dbInstance.insert(notifications).values(notificationsToInsert);
       }
 
       console.log(`Created notifications for ${allUsers.length} users`);

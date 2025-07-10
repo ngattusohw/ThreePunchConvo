@@ -867,6 +867,18 @@ export class DatabaseStorage implements IStorage {
         potdCount: 0,
       };
 
+      // check if user is fighter or mma industry role
+      const user = await this.getUser(thread.userId);
+      if (user?.role === "FIGHTER" || user?.role === "MMA_INDUSTRY") {
+        // add notification for all users (excluding other fighters and MMA industry users)
+        await this.createNotificationForAllUsers({
+          type: "SYSTEM",
+          relatedUserId: thread.userId,
+          threadId: threadValues.id,
+          message: `${user.username} just posted! Check out their latest thread.`,
+        }); // No need to pass excludeUserId since we're already excluding by role
+      }
+
       // Start a transaction to create thread and update user points
       const [newThread] = await db.transaction(async (tx) => {
         // Create the thread
@@ -2900,6 +2912,61 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error calculating user status:", error);
       return "AMATEUR"; // Default status on error
+    }
+  }
+
+  // Helper function to create notifications for all users when a fighter/MMA person posts
+  async createNotificationForAllUsers(
+    notificationData: Omit<InsertNotification, 'userId'>,
+    excludeUserId?: string
+  ): Promise<void> {
+    try {
+      // Get all users except fighters and MMA industry users (and the excluded user if provided)
+      const allUsers = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(
+          excludeUserId 
+            ? and(
+                eq(users.disabled, false),
+                notInArray(users.role, ["FIGHTER", "MMA_INDUSTRY"]),
+                not(eq(users.id, excludeUserId))
+              )
+            : and(
+                eq(users.disabled, false),
+                notInArray(users.role, ["FIGHTER", "MMA_INDUSTRY"])
+              )
+        );
+
+      if (allUsers.length === 0) {
+        console.log("No users found to notify");
+        return;
+      }
+
+      // Create notifications for all users in batches to avoid overwhelming the database
+      const batchSize = 50;
+      for (let i = 0; i < allUsers.length; i += batchSize) {
+        const batch = allUsers.slice(i, i + batchSize);
+        
+        const notificationsToInsert = batch.map(user => ({
+          id: uuidv4(),
+          userId: user.id,
+          type: notificationData.type,
+          relatedUserId: notificationData.relatedUserId || null,
+          threadId: notificationData.threadId || null,
+          replyId: notificationData.replyId || null,
+          message: notificationData.message || null,
+          isRead: false,
+          createdAt: new Date(),
+        }));
+
+        await db.insert(notifications).values(notificationsToInsert);
+      }
+
+      console.log(`Created notifications for ${allUsers.length} users`);
+    } catch (error) {
+      console.error("Error creating notifications for all users:", error);
+      // Don't throw error to avoid breaking the main operation
     }
   }
 }

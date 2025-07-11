@@ -29,7 +29,7 @@ function ThreadMetadata({ thread }: { thread: any }) {
   const currentUrl =
     typeof window !== "undefined"
       ? window.location.href
-      : "https://threepunchconvo.com";
+      : "https://3punchconvo.com";
 
   // Ensure all values are strings and sanitized
   const title = thread?.title

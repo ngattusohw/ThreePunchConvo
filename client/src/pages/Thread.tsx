@@ -19,7 +19,7 @@ function ThreadMetadata({ thread }: { thread: any }) {
   const fullImageUrl = imageUrl?.startsWith("http")
     ? imageUrl
     : imageUrl
-      ? `https://threepunchconvo-production.up.railway.app${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`
+      ? `https://www.3punchconvo.com${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`
       : undefined;
 
   // Debug logging

@@ -9,7 +9,6 @@ import {
   Poll,
   InsertPoll,
   PollOption,
-  InsertPollOption,
   Media,
   InsertMedia,
   Notification,
@@ -17,10 +16,6 @@ import {
   MMAEvent,
   Fighter,
   Fight,
-  DailyFighterCred,
-  InsertDailyFighterCred,
-  ReactionWeight,
-  StatusConfig,
   users,
   threads,
   replies,
@@ -32,7 +27,6 @@ import {
   pollVotes,
   replyReactions,
   dailyFighterCred,
-  reactionWeights,
   statusConfig,
 } from "@shared/schema";
 import session from "express-session";
@@ -40,6 +34,7 @@ import connectPg from "connect-pg-simple";
 import { pool, db } from "./db";
 import { eq, and, sql, desc, inArray, not, notInArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { USER_ROLES, NOTIFICATION_EXCLUDED_ROLES, NOTIFICATION_TYPES } from "@shared/constants";
 
 export interface IStorage {
   // Session store
@@ -930,6 +925,23 @@ export class DatabaseStorage implements IStorage {
           })
           .where(eq(users.id, thread.userId));
 
+        // check if user is fighter or mma industry role
+        const user = await this.getUser(thread.userId);
+        if (user?.role === USER_ROLES.FIGHTER || user?.role === USER_ROLES.INDUSTRY_PROFESSIONAL) {
+          // add notification for all users (excluding other fighters and MMA industry users)
+          const postType = user.role === USER_ROLES.FIGHTER ? NOTIFICATION_TYPES.FIGHTER_POST : NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST;
+          await this.createNotificationForAllNormalUsers(
+            {
+              type: postType,
+              relatedUserId: thread.userId,
+              threadId: thread.id, // Use the actual thread ID from the database
+              message: `${user.username} just posted! Check out their latest thread.`,
+            },
+            undefined, // excludeUserId
+            tx // Pass the transaction context
+          );
+        }
+
         return [thread];
       });
 
@@ -981,7 +993,7 @@ export class DatabaseStorage implements IStorage {
         if (thread) {
           await this.createNotification({
             userId: threadOwnerId,
-            type: "THREAD_PINNED",
+            type: NOTIFICATION_TYPES.THREAD_PINNED,
             threadId: threadId,
             relatedUserId: moderatorId,
             message: "Your thread has been pinned by a moderator",
@@ -2947,6 +2959,65 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error calculating user status:", error);
       return "AMATEUR"; // Default status on error
+    }
+  }
+
+  // Helper function to create notifications for all users when a fighter/MMA person posts
+  async createNotificationForAllNormalUsers(
+    notificationData: Omit<InsertNotification, 'userId'>,
+    excludeUserId?: string,
+    transaction?: any // Add transaction parameter
+  ): Promise<void> {
+    try {
+      // Use transaction if provided, otherwise use global db
+      const dbInstance = transaction || db;
+      
+      // Get all users except fighters and MMA industry users (and the excluded user if provided)
+      const allUsers = await dbInstance
+        .select({ id: users.id })
+        .from(users)
+        .where(
+          excludeUserId 
+            ? and(
+                eq(users.disabled, false),
+                notInArray(users.role, NOTIFICATION_EXCLUDED_ROLES),
+                not(eq(users.id, excludeUserId))
+              )
+            : and(
+                eq(users.disabled, false),
+                notInArray(users.role, NOTIFICATION_EXCLUDED_ROLES)
+              )
+        );
+
+      if (allUsers.length === 0) {
+        console.log("No users found to notify");
+        return;
+      }
+
+      // Create notifications for all users in batches to avoid overwhelming the database
+      const batchSize = 50;
+      for (let i = 0; i < allUsers.length; i += batchSize) {
+        const batch = allUsers.slice(i, i + batchSize);
+        
+        const notificationsToInsert = batch.map(user => ({
+          id: uuidv4(),
+          userId: user.id,
+          type: notificationData.type,
+          relatedUserId: notificationData.relatedUserId || null,
+          threadId: notificationData.threadId || null,
+          replyId: notificationData.replyId || null,
+          message: notificationData.message || null,
+          isRead: false,
+          createdAt: new Date(),
+        }));
+
+        await dbInstance.insert(notifications).values(notificationsToInsert);
+      }
+
+      console.log(`Created notifications for ${allUsers.length} users`);
+    } catch (error) {
+      console.error("Error creating notifications for all users:", error);
+      // Don't throw error to avoid breaking the main operation
     }
   }
 }

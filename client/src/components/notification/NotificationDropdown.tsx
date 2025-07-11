@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
 import { useNotifications } from "@/api/hooks/useNotifications";
 import { Notification } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
 import UserAvatar from "@/components/ui/user-avatar";
+import { NOTIFICATION_TYPES } from "@/lib/constants";
 
 interface NotificationDropdownProps {
   onClose: () => void;
@@ -142,7 +142,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
       className={`flex items-start p-3 ${notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} cursor-pointer rounded-lg transition-all hover:bg-opacity-70`}
       onClick={onClick}
     >
-      {notification.type === "SYSTEM" ? (
+      {notification.type === NOTIFICATION_TYPES.SYSTEM ? (
         <div className='bg-ufc-blue mr-3 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-bold text-black'>
           3PC
         </div>
@@ -159,7 +159,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
       )}
 
       <div className='flex-1'>
-        {notification.type === "REPLY" &&
+        {notification.type === NOTIFICATION_TYPES.REPLY &&
           notification.relatedUser &&
           notification.threadTitle && (
             <p className='text-gray-300'>
@@ -173,7 +173,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
             </p>
           )}
 
-        {notification.type === "MENTION" &&
+        {notification.type === NOTIFICATION_TYPES.MENTION &&
           notification.relatedUser &&
           notification.threadTitle && (
             <p className='text-gray-300'>
@@ -187,7 +187,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
             </p>
           )}
 
-        {notification.type === "LIKE" &&
+        {notification.type === NOTIFICATION_TYPES.LIKE &&
           notification.relatedUser &&
           notification.threadTitle && (
             <p className='text-gray-300'>
@@ -212,7 +212,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
             </p>
           )}
 
-        {notification.type === "POTD" &&
+        {notification.type === NOTIFICATION_TYPES.POTD &&
           notification.relatedUser &&
           notification.threadTitle && (
             <p className='text-gray-300'>
@@ -227,7 +227,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
             </p>
           )}
 
-        {notification.type === "FOLLOW" && notification.relatedUser && (
+        {notification.type === NOTIFICATION_TYPES.FOLLOW && notification.relatedUser && (
           <p className='text-gray-300'>
             <span className='font-medium text-white'>
               {notification.relatedUser.username}
@@ -236,18 +236,24 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
           </p>
         )}
 
-        {notification.type === "SYSTEM" && notification.message && (
+        {notification.type === NOTIFICATION_TYPES.SYSTEM && notification.message && (
           <p className='text-gray-300'>
             <span className='font-medium text-white'>System</span>{" "}
             {notification.message}
           </p>
         )}
 
-        {notification.type === "THREAD_PINNED" && notification.threadTitle && (
+        {notification.type === NOTIFICATION_TYPES.THREAD_PINNED && notification.threadTitle && (
           <p className='text-gray-300'>
             <span className='font-medium text-white'>System</span> Your post{" "}
             <span className='text-ufc-blue'>"{notification.threadTitle}"</span>{" "}
             has been pinned by a moderator
+          </p>
+        )}
+
+        {(notification.type === NOTIFICATION_TYPES.FIGHTER_POST || notification.type === NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST) && notification.relatedUser && (
+          <p className='text-gray-300'>
+            <span className='font-medium text-white'>{notification.relatedUser.username}</span> just posted! Check out their latest thread.
           </p>
         )}
 

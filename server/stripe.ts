@@ -92,7 +92,7 @@ export const registerStripeEndpoints = (app: Express) => {
           customer: customerId,
           // customer_email: email,
           // TODO: change to production url
-          return_url: `https://${process.env.EXTERNAL_URL || "threepunchconvo-production.up.railway.app"}/return?session_id={CHECKOUT_SESSION_ID}`,
+          return_url: `https://www.${process.env.EXTERNAL_URL || "threepunchconvo-production.up.railway.app"}/return?session_id={CHECKOUT_SESSION_ID}`,
         });
 
         res.send({ clientSecret: session.client_secret });

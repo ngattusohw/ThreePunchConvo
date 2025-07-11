@@ -2013,7 +2013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Generate the URL - use Railway app URL or localhost for development
         const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN
-          ? `https://www.${process.env.RAILWAY_PUBLIC_DOMAIN}`
+          ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
           : `http://localhost:${process.env.PORT || 5001}`;
 
         const fileUrl = `${baseUrl}/uploads/${fileName}`;

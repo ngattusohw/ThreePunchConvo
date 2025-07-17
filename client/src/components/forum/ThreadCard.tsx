@@ -68,10 +68,11 @@ export default function ThreadCard({
 
   const isNormalUser = checkIsNormalUser(currentUser?.role);
   // Check if content should be blurred (free user viewing fighter content)
-  const shouldBlurContent = isNormalUser && (
-    isPlanLoading ||
-    ((!currentUser?.planType || currentUser?.planType === "FREE") &&
-      thread.user.role === USER_ROLES.FIGHTER));
+  const shouldBlurContent =
+    isNormalUser &&
+    (isPlanLoading ||
+      ((!currentUser?.planType || currentUser?.planType === "FREE") &&
+        thread.user.role === USER_ROLES.FIGHTER));
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -130,7 +131,7 @@ export default function ThreadCard({
       <div className={`${mainThreadMode ? "p-8" : "p-4"}`}>
         <div className='flex items-start'>
           {/* Thread Content */}
-          <div className='flex-grow'>
+          <div className='min-w-0 flex-grow'>
             {/* Thread header with user info */}
             <div className={`${mainThreadMode ? "mb-4" : "mb-2"}`}>
               <UserThreadHeader
@@ -205,9 +206,9 @@ export default function ThreadCard({
             ) : (
               // View Mode
               <>
-                <Link href={`/thread/${thread.id}`}>
+                <Link href={`/thread/${thread.id}`} className='block'>
                   <h3
-                    className={`hover:text-ufc-blue ${mainThreadMode ? "mb-4 text-3xl" : "mb-2 text-lg"} font-bold text-white transition`}
+                    className={`hover:text-ufc-blue ${mainThreadMode ? "mb-4 text-3xl" : "mb-2 text-lg"} whitespace-normal break-words font-bold text-white transition`}
                   >
                     {!shouldBlurContent && title}
                     {isEdited && editedAt && (

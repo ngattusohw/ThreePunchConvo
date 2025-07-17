@@ -52,12 +52,12 @@ export function useRegularThreads({
     staleTime: 0, // Consider data always stale to force refetch
   });
 
-  // Reset page when filter, time range, or user changes
+  // Reset page when category, filter, time range, or user changes
   useEffect(() => {
     setPage(0);
     setAllRegularThreads([]);
     setHasMore(true);
-  }, [filterOption, timeRange, userId]);
+  }, [category, filterOption, timeRange, userId]); // Add 'category' here
 
   // Update allRegularThreads when regularThreads changes
   useEffect(() => {

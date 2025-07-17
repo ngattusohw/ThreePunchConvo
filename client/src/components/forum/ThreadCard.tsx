@@ -226,7 +226,7 @@ export default function ThreadCard({
                   className={`${shouldBlurContent ? "relative" : ""} max-w-full overflow-hidden`}
                 >
                   <p
-                    className={`${mainThreadMode ? "mb-6 text-lg leading-relaxed" : "mb-4 line-clamp-3"} whitespace-pre-line break-all text-gray-300 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
+                    className={`${mainThreadMode ? "mb-6 text-lg leading-relaxed" : "mb-4 line-clamp-3"} whitespace-pre-line break-words text-gray-300 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
                   >
                     {shouldBlurContent ? "Premium Content" : content}
                   </p>

@@ -131,7 +131,7 @@ export default function ThreadCard({
       <div className={`${mainThreadMode ? "p-8" : "p-4"}`}>
         <div className='flex items-start'>
           {/* Thread Content */}
-          <div className='min-w-0 flex-grow'>
+          <div className='w-full min-w-0 max-w-full flex-grow'>
             {/* Thread header with user info */}
             <div className={`${mainThreadMode ? "mb-4" : "mb-2"}`}>
               <UserThreadHeader
@@ -222,9 +222,11 @@ export default function ThreadCard({
                 </Link>
 
                 {/* Content container with blur and overlay */}
-                <div className={shouldBlurContent ? "relative" : ""}>
+                <div
+                  className={`${shouldBlurContent ? "relative" : ""} max-w-full overflow-hidden`}
+                >
                   <p
-                    className={`${mainThreadMode ? "mb-6 text-lg leading-relaxed" : "mb-4 line-clamp-3"} whitespace-pre-line text-gray-300 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
+                    className={`${mainThreadMode ? "mb-6 text-lg leading-relaxed" : "mb-4 line-clamp-3"} whitespace-pre-line break-all text-gray-300 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
                   >
                     {shouldBlurContent ? "Premium Content" : content}
                   </p>

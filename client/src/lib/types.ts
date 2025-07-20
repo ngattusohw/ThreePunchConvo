@@ -1,3 +1,5 @@
+import { NOTIFICATION_TYPES } from './constants';
+
 // User related types
 export type UserRole =
   | "ADMIN"
@@ -119,18 +121,13 @@ export interface ThreadReply {
   hasLiked?: boolean;
 }
 
+export type NotificationType = typeof NOTIFICATION_TYPES[keyof typeof NOTIFICATION_TYPES];
+
 // Notification types
 export interface Notification {
   id: string;
   userId: string;
-  type:
-    | "REPLY"
-    | "MENTION"
-    | "LIKE"
-    | "SYSTEM"
-    | "FOLLOW"
-    | "POTD"
-    | "THREAD_PINNED";
+  type: NotificationType;
   relatedUserId?: string;
   relatedUser?: AuthUser;
   threadId?: string;

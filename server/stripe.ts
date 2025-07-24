@@ -19,89 +19,301 @@ export const registerStripeEndpoints = (app: Express) => {
     async (req: Request, res: Response) => {
       try {
         const { email, clerkUserId } = req.body;
-
-        if (!email) {
+  
+        if (!email || !clerkUserId) {
           return res.status(400).send({
-            error: { message: "Missing required parameter: email" },
+            error: { message: "Missing required parameters: email and clerkUserId" },
           });
         }
-
+  
         // First check if user has a stripeId in our database
         let customerId: string | undefined;
-
-        if (clerkUserId) {
+        let localUser;
+  
+        try {
+          // Get user from storage using external ID (Clerk ID)
+          localUser = await storage.getUserByExternalId(clerkUserId);
+  
+          // If we found a user with a stripeId, use that
+          if (localUser && localUser.stripeId) {
+            customerId = localUser.stripeId;
+          }
+        } catch (dbError) {
+          console.error("Error checking database for user:", dbError);
+          return res.status(500).send({
+            error: { message: "Database error while checking user" },
+          });
+        }
+  
+        console.log("HELLO FROM CREATE CHECKOUT SESSION: ", customerId);
+  
+        // Check if customer already has an active subscription
+        if (customerId) {
           try {
-            // Get user from storage using external ID (Clerk ID)
-            const localUser = await storage.getUserByExternalId(clerkUserId);
-
-            // If we found a user with a stripeId, use that
-            if (localUser && localUser.stripeId) {
-              customerId = localUser.stripeId;
+            const existingSubscriptions = await stripe.subscriptions.list({
+              customer: customerId,
+              status: 'active',
+              limit: 1,
+            });
+  
+            if (existingSubscriptions.data.length > 0) {
+              return res.status(400).send({
+                error: { 
+                  message: "Customer already has an active subscription",
+                  subscriptionId: existingSubscriptions.data[0].id 
+                },
+              });
             }
-          } catch (dbError) {
-            console.error("Error checking database for user:", dbError);
+  
+            // Check for pending/incomplete checkout sessions
+            const existingSessions = await stripe.checkout.sessions.list({
+              customer: customerId,
+              status: 'open',
+              limit: 1,
+            });
+  
+            if (existingSessions.data.length > 0) {
+              // Return existing session instead of creating new one
+              console.log("Returning existing checkout session:", existingSessions.data[0].id);
+              return res.send({ 
+                clientSecret: existingSessions.data[0].client_secret,
+                sessionId: existingSessions.data[0].id,
+                isExisting: true 
+              });
+            }
+          } catch (stripeError) {
+            console.error("Error checking existing subscriptions/sessions:", stripeError);
+            // Continue with session creation if we can't check existing ones
           }
         }
-
-        console.log("HELLO FROM CREATE CHECKOUT SESSION: ", customerId);
-
+  
         // If no stripeId found, create a new customer
         if (!customerId) {
-          const customer = await stripe.customers.create({
-            email,
+          // Check if customer already exists by email to prevent duplicates
+          const existingCustomers = await stripe.customers.list({
+            email: email,
+            limit: 1,
           });
-
-          customerId = customer?.id;
-
-          // Update the user with the new Stripe customer ID if we have a clerk ID
-          if (clerkUserId) {
-            try {
-              const localUser = await storage.getUserByExternalId(clerkUserId);
-
-              if (localUser) {
+  
+          if (existingCustomers.data.length > 0) {
+            customerId = existingCustomers.data[0]?.id;
+            console.log("Found existing Stripe customer by email:", customerId);
+            
+            // Update local user with existing Stripe customer ID
+            if (localUser) {
+              try {
                 await storage.updateUser(localUser.id, {
                   stripeId: customerId,
                 });
                 console.log(
-                  `Updated user ${localUser.id} with Stripe customer ID: ${customerId}`,
+                  `Updated user ${localUser.id} with existing Stripe customer ID: ${customerId}`,
                 );
+              } catch (dbError) {
+                console.error("Error updating user with existing Stripe customer ID:", dbError);
               }
-            } catch (dbError) {
-              // TODO this is an issue bc we dont want a user to then successfully checkout but not have an associated stripe id
-              console.error(
-                "Error updating user with Stripe customer ID:",
-                dbError,
-              );
+            }
+          } else {
+            // Create new customer
+            const customer = await stripe.customers.create({
+              email,
+              metadata: {
+                clerkUserId: clerkUserId,
+                userId: localUser?.id,
+              }
+            });
+  
+            customerId = customer?.id;
+            console.log("Created new Stripe customer:", customerId);
+  
+            // Update the user with the new Stripe customer ID
+            if (localUser) {
+              try {
+                await storage.updateUser(localUser.id, {
+                  stripeId: customerId,
+                });
+                console.log(
+                  `Updated user ${localUser.id} with new Stripe customer ID: ${customerId}`,
+                );
+              } catch (dbError) {
+                console.error(
+                  "Error updating user with Stripe customer ID:",
+                  dbError,
+                );
+                return res.status(500).send({
+                  error: { message: "Failed to link Stripe customer to user account" },
+                });
+              }
             }
           }
         }
-
+  
         console.log("customer id from create checkout session: ", customerId);
+        
+        // Add idempotency key to prevent duplicate sessions
+        const idempotencyKey = `checkout_${clerkUserId}_${Date.now()}`;
+        
         // Create the checkout session with the customer ID
         const session = await stripe.checkout.sessions.create({
           ui_mode: "custom",
           allow_promotion_codes: true,
           line_items: [
             {
-              // Provide the exact Price ID (e.g. price_1234) of the product you want to sell
               price: process.env.STRIPE_PRICE_ID || "",
               quantity: 1,
             },
           ],
           mode: "subscription",
           customer: customerId,
-          // customer_email: email,
-          // TODO: change to production url
+          // Add metadata for tracking
+          metadata: {
+            clerkUserId: clerkUserId,
+            userId: localUser?.id,
+          },
+          // Prevent duplicate subscriptions
+          subscription_data: {
+            metadata: {
+              clerkUserId: clerkUserId,
+              userId: localUser?.id,
+            },
+          },
           return_url: `https://www.${process.env.EXTERNAL_URL || "threepunchconvo-production.up.railway.app"}/return?session_id={CHECKOUT_SESSION_ID}`,
+        }, {
+          idempotencyKey: idempotencyKey, // Stripe's built-in idempotency protection
         });
-
-        res.send({ clientSecret: session.client_secret });
+  
+        res.send({ 
+          clientSecret: session.client_secret,
+          sessionId: session.id,
+          isExisting: false 
+        });
       } catch (error: any) {
         console.error("Error creating checkout session:", error);
         res.status(400).send({ error: { message: error.message } });
       }
     },
   );
+  
+app.get(
+  "/check-subscription-status",
+  requireAuth(),
+  async (req: Request, res: Response) => {
+    try {
+      const { clerkUserId } = req.query;
+
+      if (!clerkUserId) {
+        return res.status(400).send({
+          error: { message: "Missing required parameter: clerkUserId" },
+        });
+      }
+
+      // Get user from database
+      const localUser = await storage.getUserByExternalId(clerkUserId as string);
+      
+      if (!localUser || !localUser.stripeId) {
+        return res.send({ 
+          hasActiveSubscription: false,
+          hasStripeCustomer: false 
+        });
+      }
+
+      // Check for active subscriptions
+      const subscriptions = await stripe.subscriptions.list({
+        customer: localUser.stripeId,
+        status: 'active',
+        limit: 5,
+      });
+
+      // Check for pending checkout sessions
+      const pendingSessions = await stripe.checkout.sessions.list({
+        customer: localUser.stripeId,
+        status: 'open',
+        limit: 5,
+      });
+
+      // Get details of the most recent pending session if it exists
+      let mostRecentPendingSession = null;
+      if (pendingSessions.data.length > 0) {
+        const session = pendingSessions.data[0];
+        mostRecentPendingSession = {
+          id: session.id,
+          status: session.status,
+          created: session.created,
+          expiresAt: session.expires_at,
+          clientSecret: session.client_secret, // Include client secret for direct use
+        };
+      }
+
+      res.send({
+        hasActiveSubscription: subscriptions.data.length > 0,
+        hasStripeCustomer: true,
+        activeSubscriptions: subscriptions.data.length,
+        pendingSessions: pendingSessions.data.length,
+        mostRecentPendingSession, // Include session details
+        subscriptions: subscriptions.data.map(sub => ({
+          id: sub.id,
+          status: sub.status,
+          created: sub.created,
+        })),
+      });
+    } catch (error: any) {
+      console.error("Error checking subscription status:", error);
+      res.status(500).send({ error: { message: error.message } });
+    }
+  },
+);
+
+app.get(
+  "/get-existing-checkout-session",
+  requireAuth(),
+  async (req: Request, res: Response) => {
+    try {
+      const { clerkUserId } = req.query;
+
+      if (!clerkUserId) {
+        return res.status(400).send({
+          error: { message: "Missing required parameter: clerkUserId" },
+        });
+      }
+
+      // Get user from database
+      const localUser = await storage.getUserByExternalId(clerkUserId as string);
+      
+      if (!localUser || !localUser.stripeId) {
+        return res.status(404).send({ 
+          error: { message: "User or Stripe customer not found" }
+        });
+      }
+
+      // Get the most recent open checkout session
+      const sessions = await stripe.checkout.sessions.list({
+        customer: localUser.stripeId,
+        status: 'open',
+        limit: 1,
+      });
+
+      if (sessions.data.length === 0) {
+        return res.status(404).send({
+          error: { message: "No open checkout sessions found" }
+        });
+      }
+
+      const session = sessions.data[0];
+      
+      // Return the session details
+      res.send({
+        clientSecret: session.client_secret,
+        sessionId: session.id,
+        status: session.status,
+        created: session.created,
+        expiresAt: session.expires_at,
+      });
+      
+    } catch (error: any) {
+      console.error("Error retrieving existing checkout session:", error);
+      res.status(500).send({ error: { message: error.message } });
+    }
+  },
+);
 
   app.get("/session-status", async (req: Request, res: Response) => {
     const sessionId = req.query.session_id as string;

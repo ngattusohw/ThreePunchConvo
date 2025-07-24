@@ -87,7 +87,7 @@ export const Return = () => {
   if (status === "complete") {
     return (
       <>
-        <div className="mx-auto my-10 flex max-w-md flex-col rounded-xl border border-gray-800 bg-gradient-to-br from-gray-900 to-gray-800 p-8 shadow-2xl">
+        <div className="mx-4 sm:mx-auto my-10 flex max-w-md flex-col rounded-xl border border-gray-800 bg-gradient-to-br from-gray-900 to-gray-800 p-8 shadow-2xl">
           <div className="flex flex-col items-center">
             <CheckCircleSVG className="h-16 w-16 text-green-400 mb-4" />
             <h2 className="text-3xl font-bold text-white mb-2">Thank you for subscribing!</h2>
@@ -133,7 +133,7 @@ export const Return = () => {
           </p>
           <button
             ref={originalButtonRef}
-            className="bg-ufc-blue hover:bg-ufc-blue-dark mt-2 flex w-full items-center justify-center rounded-lg px-6 py-3 text-base font-semibold text-white shadow-md transition"
+            className="bg-ufc-blue hover:bg-ufc-blue-dark mt-2 flex w-full items-center justify-center rounded-lg px-6 py-3 text-base font-semibold text-black shadow-md transition"
             onClick={handleGoToForum}
           >
             Go to Forum
@@ -144,7 +144,7 @@ export const Return = () => {
         {showStickyButton && (
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-8">
             <button
-              className="w-full bg-ufc-blue hover:bg-ufc-blue-dark flex items-center justify-center rounded-lg px-6 py-3 text-base font-semibold text-white shadow-md transition animate-in fade-in slide-in-from-bottom-4"
+              className="w-full bg-ufc-blue hover:bg-ufc-blue-dark flex items-center justify-center rounded-lg px-6 py-3 text-base font-semibold text-black shadow-md transition animate-in fade-in slide-in-from-bottom-4"
               onClick={handleGoToForum}
             >
               Go to Forum

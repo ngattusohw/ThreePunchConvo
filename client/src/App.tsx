@@ -471,89 +471,76 @@ useEffect(() => {
                   path='/user/:username'
                   component={UserProfile}
                 />
+                <ProtectedRoute path='/return' component={Return} />
 
                 {/* Checkout Routes - Need auth AND checkout provider */}
                 {isSignedIn && clientSecret ? (
-                  <>
-                    <Route path='/checkout'>
-                      <CheckoutProvider
-                        stripe={stripePromise}
-                        options={{
-                          fetchClientSecret: () => {
-                            console.log("fetchClientSecret called", {
-                              isLoadingClientSecret,
-                              clientSecret,
-                            });
-                            return Promise.resolve(clientSecret || "");
-                          },
-                          elementsOptions: { appearance: stripeAppearance },
-                        }}
-                      >
-                        <CheckoutForm />
-                      </CheckoutProvider>
-                    </Route>
-                    <Route path='/return'>
-                      <CheckoutProvider
-                        stripe={stripePromise}
-                        options={{
-                          fetchClientSecret: () => {
-                            return Promise.resolve(clientSecret || "");
-                          },
-                          elementsOptions: { appearance: stripeAppearance },
-                        }}
-                      >
-                        <Return />
-                      </CheckoutProvider>
-                    </Route>
-                  </>
-                ) : isSignedIn && debugInfo.error ? (
-                  <>
-                    <Route path='/checkout'>
-                      <div className='container mx-auto mt-4 px-4'>
-                        <div className={`rounded-lg p-4 text-white ${
-                          debugInfo.error.includes("already have an active subscription") 
-                            ? "bg-blue-800" 
-                            : debugInfo.error.includes("pending checkout session")
-                            ? "bg-yellow-800"
-                            : "bg-red-800"
-                        }`}>
-                          <h2 className='mb-2 text-xl font-bold'>
-                            {debugInfo.error.includes("already have an active subscription") 
-                              ? "Subscription Active" 
-                              : debugInfo.error.includes("pending checkout session")
-                              ? "Checkout In Progress"
-                              : "Payment Setup Error"}
-                          </h2>
-                          <p>{debugInfo.error}</p>
-                          {debugInfo.error.includes("already have an active subscription") && (
-                            <p className="mt-2 text-sm">
-                              You can manage your subscription in your account settings.
-                            </p>
-                          )}
-                          {debugInfo.error.includes("pending checkout session") && (
-                            <div className="mt-4">
-                              <p className="text-sm mb-2">
-                                Please complete your existing checkout or wait for it to expire.
-                              </p>
-                              <button 
-                                onClick={() => {
-                                  // Reset to allow retry
-                                  clientSecretFetched.current = false;
-                                  fetchClientSecretPromise.current = null;
-                                  setDebugInfo(prev => ({ ...prev, error: null }));
-                                  setClientSecret(null);
-                                }}
-                                className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
-                              >
-                                Try Again
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </Route>
-                  </>
-                ) : null}
+  <>
+    <Route path='/checkout'>
+      <CheckoutProvider
+        stripe={stripePromise}
+        options={{
+          fetchClientSecret: () => {
+            console.log("fetchClientSecret called", {
+              isLoadingClientSecret,
+              clientSecret,
+            });
+            return Promise.resolve(clientSecret || "");
+          },
+          elementsOptions: { appearance: stripeAppearance },
+        }}
+      >
+        <CheckoutForm />
+      </CheckoutProvider>
+    </Route>
+   
+  </>
+) : isSignedIn && debugInfo.error ? (
+  <Route path='/checkout'>
+    <div className='container mx-auto mt-4 px-4'>
+      <div className={`rounded-lg p-4 text-white ${
+        debugInfo.error.includes("already have an active subscription") 
+          ? "bg-blue-800" 
+          : debugInfo.error.includes("pending checkout session")
+          ? "bg-yellow-800"
+          : "bg-red-800"
+      }`}>
+        <h2 className='mb-2 text-xl font-bold'>
+          {debugInfo.error.includes("already have an active subscription") 
+            ? "Subscription Active" 
+            : debugInfo.error.includes("pending checkout session")
+            ? "Checkout In Progress"
+            : "Payment Setup Error"}
+        </h2>
+        <p>{debugInfo.error}</p>
+        {debugInfo.error.includes("already have an active subscription") && (
+          <p className="mt-2 text-sm">
+            You can manage your subscription in your account settings.
+          </p>
+        )}
+        {debugInfo.error.includes("pending checkout session") && (
+          <div className="mt-4">
+            <p className="text-sm mb-2">
+              Please complete your existing checkout or wait for it to expire.
+            </p>
+            <button 
+              onClick={() => {
+                // Reset to allow retry
+                clientSecretFetched.current = false;
+                fetchClientSecretPromise.current = null;
+                setDebugInfo(prev => ({ ...prev, error: null }));
+                setClientSecret(null);
+              }}
+              className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  </Route>
+) : null}
 
                 {/* 404 Route */}
                 <ProtectedRoute path='*' component={NotFound} />

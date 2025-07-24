@@ -20,7 +20,6 @@ const CheckCircleSVG = ({ className = "" }) => (
 
 export const Return = () => {
   const [status, setStatus] = useState(null);
-  const [customerEmail, setCustomerEmail] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [, setLocation] = useLocation();
 
@@ -33,7 +32,6 @@ export const Return = () => {
       .then((res) => res.json())
       .then((data) => {
         setStatus(data.status);
-        setCustomerEmail(data.customer_email);
         setIsLoading(false);
       })
       .catch((err) => {

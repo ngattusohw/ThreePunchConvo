@@ -36,8 +36,6 @@ function App() {
   const [localUserChecked, setLocalUserChecked] = useState(false);
   const [isLoadingClientSecret, setIsLoadingClientSecret] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [subscriptions, setSubscriptions] = useState<any[] | null>(null);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<string>("");
   const [localUser, setLocalUser] = useState<any | null>(null);
   // Add a debug state
   const [debugInfo, setDebugInfo] = useState<{
@@ -54,6 +52,7 @@ function App() {
   const userCheckPerformed = useRef(false);
   const subscriptionCheckPerformed = useRef(false);
   const clientSecretFetched = useRef(false);
+  const fetchClientSecretPromise = useRef<Promise<void> | null>(null);
 
   // TODO test key
   const stripePromise = useMemo(
@@ -145,6 +144,7 @@ function App() {
         !localUserChecked
       ) {
         if (localUserChecked && !localUser && isUserLoaded)
+          console.log("setting initial load complete");
           setInitialLoadComplete(true);
         return;
       }
@@ -168,11 +168,8 @@ function App() {
         const data = await response.json();
         const subscriptionsData = data.subscriptions || [];
 
-        setSubscriptions(subscriptionsData);
-
         // Get subscription status using the utility function
         const status = getSubscriptionStatus(subscriptionsData);
-        setSubscriptionStatus(status);
 
         // Update the user's plan type in the database if needed
         if (user?.id && status) {
@@ -255,51 +252,128 @@ function App() {
     }
   };
 
-  // Fetch client secret only when user is loaded and signed in
-  useEffect(() => {
-    const fetchClientSecret = async () => {
-      // Skip if already performed or conditions aren't met
-      if (
-        clientSecretFetched.current ||
-        !isUserLoaded ||
-        !isSignedIn ||
-        !user?.id ||
-        !user?.emailAddress
-      ) {
-        if (isUserLoaded && !isSignedIn) {
-          setIsLoadingClientSecret(false);
-          setDebugInfo((prev) => ({ ...prev, loading: false }));
-          if (!initialLoadComplete) setInitialLoadComplete(true);
-        }
-        return;
-      }
 
+useEffect(() => {
+  const checkStatusAndFetchClientSecret = async () => {
+    // Skip if already performed, in progress, or conditions aren't met
+    if (
+      clientSecretFetched.current ||
+      fetchClientSecretPromise.current ||
+      !isUserLoaded ||
+      !isSignedIn ||
+      !user?.id ||
+      !user?.emailAddress ||
+      !localUserChecked // Wait for local user to be checked first
+    ) {
+      if (isUserLoaded && !isSignedIn) {
+        setIsLoadingClientSecret(false);
+        setDebugInfo((prev) => ({ ...prev, loading: false }));
+        if (!initialLoadComplete) setInitialLoadComplete(true);
+      }
+      return;
+    }
+
+    // Set the promise to prevent concurrent requests
+    fetchClientSecretPromise.current = (async () => {
       setIsLoadingClientSecret(true);
-      console.log("Fetching client secret");
+      console.log("Checking subscription status for user:", user.id);
 
       try {
+        // First, check subscription status
+        const statusResponse = await apiRequest(
+          "GET", 
+          `/check-subscription-status?clerkUserId=${user.id}`
+        );
+
+        if (!statusResponse.ok) {
+          throw new Error(`Status check failed: ${statusResponse.status}`);
+        }
+
+        const statusData = await statusResponse.json();
+        console.log("Subscription status check result:", statusData);
+
+        // If user already has an active subscription, don't create checkout session
+        if (statusData.hasActiveSubscription) {
+          console.log("User already has active subscription, skipping checkout session creation");
+          setDebugInfo((prev) => ({ 
+            ...prev, 
+            loading: false,
+            error: "You already have an active subscription" 
+          }));
+          clientSecretFetched.current = true;
+          if (!initialLoadComplete) setInitialLoadComplete(true);
+          return;
+        }
+
+        // If user has pending sessions, use the existing session
+        if (statusData.pendingSessions > 0 && statusData.mostRecentPendingSession?.clientSecret) {
+          console.log("User has pending checkout session, using existing session:", statusData.mostRecentPendingSession.id);
+          setClientSecret(statusData.mostRecentPendingSession.clientSecret);
+          setDebugInfo((prev) => ({ ...prev, loading: false, error: null }));
+          clientSecretFetched.current = true;
+          if (!initialLoadComplete) setInitialLoadComplete(true);
+          return;
+        } else if (statusData.pendingSessions > 0) {
+          // Fallback: if we can't get the client secret, show error
+          console.log("User has pending sessions but no client secret available");
+          setDebugInfo((prev) => ({ 
+            ...prev, 
+            loading: false,
+            error: "You have a pending checkout session. Please complete it or wait for it to expire." 
+          }));
+          clientSecretFetched.current = true;
+          if (!initialLoadComplete) setInitialLoadComplete(true);
+          return;
+        }
+
+        // Now proceed with creating checkout session
+        console.log("No active subscription found, creating checkout session for user:", user.id);
+        
         const response = await apiRequest("POST", "/create-checkout-session", {
           email: user.emailAddress,
           clerkUserId: user.id,
         });
 
         if (!response.ok) {
+          // Handle specific error cases
+          if (response.status === 400) {
+            const errorData = await response.json();
+            if (errorData.error?.message?.includes("already has an active subscription")) {
+              setDebugInfo((prev) => ({ 
+                ...prev, 
+                loading: false,
+                error: "You already have an active subscription" 
+              }));
+              clientSecretFetched.current = true;
+              if (!initialLoadComplete) setInitialLoadComplete(true);
+              return;
+            }
+          }
           throw new Error(`HTTP error ${response.status}`);
         }
 
         const data = await response.json();
-        console.log(
-          "Received client secret:",
-          data.clientSecret ? "Valid secret" : "No secret",
-        );
+        console.log("Checkout session response:", {
+          hasClientSecret: !!data.clientSecret,
+          isExisting: data.isExisting,
+          sessionId: data.sessionId
+        });
+
         if (!data.clientSecret) {
           throw new Error("No client secret received from server");
         }
+
+        // If we got an existing session, log it
+        if (data.isExisting) {
+          console.log("Received existing checkout session:", data.sessionId);
+        }
+
         setClientSecret(data.clientSecret);
-        setDebugInfo((prev) => ({ ...prev, loading: false }));
+        setDebugInfo((prev) => ({ ...prev, loading: false, error: null }));
         clientSecretFetched.current = true;
+        
       } catch (err) {
-        console.error("Error fetching client secret:", err);
+        console.error("Error in status check or checkout session creation:", err);
         setClientSecret(null);
         setDebugInfo((prev) => ({
           loading: false,
@@ -308,29 +382,31 @@ function App() {
         clientSecretFetched.current = true;
       } finally {
         setIsLoadingClientSecret(false);
-        // Ensure initial load is marked as complete after client secret is loaded (or failed)
+        fetchClientSecretPromise.current = null; // Clear the promise
         if (!initialLoadComplete) setInitialLoadComplete(true);
       }
-    };
+    })();
 
-    // Only fetch client secret if user is signed in
-    if (isUserLoaded && isSignedIn) {
-      fetchClientSecret();
-    } else if (isUserLoaded && !isSignedIn) {
-      // Reset loading state when not signed in
-      setIsLoadingClientSecret(false);
-      setDebugInfo((prev) => ({ ...prev, loading: false }));
-      // Mark initial load as complete for non-signed in users
-      if (!initialLoadComplete) setInitialLoadComplete(true);
-    }
-  }, [
-    isUserLoaded,
-    isSignedIn,
-    user?.id,
-    user?.emailAddress,
-    initialLoadComplete,
-  ]);
+    return fetchClientSecretPromise.current;
+  };
 
+  // Only fetch client secret if user is signed in AND local user check is complete
+  if (isUserLoaded && isSignedIn && localUserChecked) {
+    checkStatusAndFetchClientSecret();
+  } else if (isUserLoaded && !isSignedIn) {
+    // Reset loading state when not signed in
+    setIsLoadingClientSecret(false);
+    setDebugInfo((prev) => ({ ...prev, loading: false }));
+    if (!initialLoadComplete) setInitialLoadComplete(true);
+  }
+}, [
+  isUserLoaded,
+  isSignedIn,
+  user?.id,
+  localUserChecked, // Add this dependency
+  initialLoadComplete,
+]);
+  
   const stripeAppearance = {
     theme: "night" as const,
   };
@@ -346,6 +422,8 @@ function App() {
       !isUserLoaded ||
       !initialLoadComplete);
 
+      console.log("isSignedIn: ", isSignedIn);
+      console.log("debugInfo: ", debugInfo);
   return (
     <div>
       <div className='bg-ufc-black text-light-gray flex min-h-screen flex-col'>
@@ -389,53 +467,76 @@ function App() {
                   path='/user/:username'
                   component={UserProfile}
                 />
+                <ProtectedRoute path='/return' component={Return} />
 
                 {/* Checkout Routes - Need auth AND checkout provider */}
                 {isSignedIn && clientSecret ? (
-                  <>
-                    <Route path='/checkout'>
-                      <CheckoutProvider
-                        stripe={stripePromise}
-                        options={{
-                          fetchClientSecret: () => {
-                            console.log("fetchClientSecret called", {
-                              isLoadingClientSecret,
-                              clientSecret,
-                            });
-                            return Promise.resolve(clientSecret || "");
-                          },
-                          elementsOptions: { appearance: stripeAppearance },
-                        }}
-                      >
-                        <CheckoutForm />
-                      </CheckoutProvider>
-                    </Route>
-                    <Route path='/return'>
-                      <CheckoutProvider
-                        stripe={stripePromise}
-                        options={{
-                          fetchClientSecret: () => {
-                            return Promise.resolve(clientSecret || "");
-                          },
-                          elementsOptions: { appearance: stripeAppearance },
-                        }}
-                      >
-                        <Return />
-                      </CheckoutProvider>
-                    </Route>
-                  </>
-                ) : isSignedIn && debugInfo.error ? (
-                  <Route path='/checkout'>
-                    <div className='container mx-auto mt-4 px-4'>
-                      <div className='rounded-lg bg-red-800 p-4 text-white'>
-                        <h2 className='mb-2 text-xl font-bold'>
-                          Payment Setup Error
-                        </h2>
-                        <p>{debugInfo.error}</p>
-                      </div>
-                    </div>
-                  </Route>
-                ) : null}
+  <>
+    <Route path='/checkout'>
+      <CheckoutProvider
+        stripe={stripePromise}
+        options={{
+          fetchClientSecret: () => {
+            console.log("fetchClientSecret called", {
+              isLoadingClientSecret,
+              clientSecret,
+            });
+            return Promise.resolve(clientSecret || "");
+          },
+          elementsOptions: { appearance: stripeAppearance },
+        }}
+      >
+        <CheckoutForm />
+      </CheckoutProvider>
+    </Route>
+   
+  </>
+) : isSignedIn && debugInfo.error ? (
+  <Route path='/checkout'>
+    <div className='container mx-auto mt-4 px-4'>
+      <div className={`rounded-lg p-4 text-white ${
+        debugInfo.error.includes("already have an active subscription") 
+          ? "bg-blue-800" 
+          : debugInfo.error.includes("pending checkout session")
+          ? "bg-yellow-800"
+          : "bg-red-800"
+      }`}>
+        <h2 className='mb-2 text-xl font-bold'>
+          {debugInfo.error.includes("already have an active subscription") 
+            ? "Subscription Active" 
+            : debugInfo.error.includes("pending checkout session")
+            ? "Checkout In Progress"
+            : "Payment Setup Error"}
+        </h2>
+        <p>{debugInfo.error}</p>
+        {debugInfo.error.includes("already have an active subscription") && (
+          <p className="mt-2 text-sm">
+            You can manage your subscription in your account settings.
+          </p>
+        )}
+        {debugInfo.error.includes("pending checkout session") && (
+          <div className="mt-4">
+            <p className="text-sm mb-2">
+              Please complete your existing checkout or wait for it to expire.
+            </p>
+            <button 
+              onClick={() => {
+                // Reset to allow retry
+                clientSecretFetched.current = false;
+                fetchClientSecretPromise.current = null;
+                setDebugInfo(prev => ({ ...prev, error: null }));
+                setClientSecret(null);
+              }}
+              className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  </Route>
+) : null}
 
                 {/* 404 Route */}
                 <ProtectedRoute path='*' component={NotFound} />

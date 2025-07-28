@@ -138,10 +138,6 @@ function App() {
   useEffect(() => {
     const checkUserSubscriptions = async () => {
       // Skip if already performed or conditions aren't met
-      console.log("subscriptionCheckPerformed:, ", subscriptionCheckPerformed.current);
-      console.log("localUser?.stripeId:, ", localUser?.stripeId);
-      console.log("localUserChecked:, ", localUserChecked);
-      console.log("isUserLoaded:, ", isUserLoaded);
       if (
         subscriptionCheckPerformed.current ||
         !localUser?.stripeId ||

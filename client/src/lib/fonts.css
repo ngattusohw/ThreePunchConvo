@@ -82,6 +82,10 @@
   color: var(--ufc-gold);
 }
 
+.text-ufc-red {
+  color: var(--ufc-red);
+}
+
 .border-ufc-blue {
   border-color: var(--ufc-blue);
 }

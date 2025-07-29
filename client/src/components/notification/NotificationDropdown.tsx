@@ -252,8 +252,8 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
         )}
 
         {(notification.type === NOTIFICATION_TYPES.FIGHTER_POST || notification.type === NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST) && notification.relatedUser && (
-          <p className='text-gray-300'>
-            <span className='font-medium text-white'>{notification.relatedUser.username}</span> just posted! Check out their latest thread.
+          <p className='text-ufc-red'>
+            {notification.relatedUser.username}<span className='font-medium text-white'> just posted </span> "{notification.threadTitle}"
           </p>
         )}
 

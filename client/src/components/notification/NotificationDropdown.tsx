@@ -137,9 +137,12 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
     markAsRead(notification.id);
   };
 
+
+  const isProfessionalPost = notification.type === NOTIFICATION_TYPES.FIGHTER_POST || notification.type === NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST;
+
   return (
     <li
-      className={`flex items-start p-3 ${notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} cursor-pointer rounded-lg transition-all hover:bg-opacity-70`}
+      className={`flex items-start p-3 ${notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} ${isProfessionalPost ? "border-2 border-ufc-red " : ""}cursor-pointer rounded-lg transition-all hover:bg-opacity-70`}
       onClick={onClick}
     >
       {notification.type === NOTIFICATION_TYPES.SYSTEM ? (
@@ -252,8 +255,8 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
         )}
 
         {(notification.type === NOTIFICATION_TYPES.FIGHTER_POST || notification.type === NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST) && notification.relatedUser && (
-          <p className='text-ufc-red'>
-            {notification.relatedUser.username}<span className='font-medium text-white'> just posted </span> "{notification.threadTitle}"
+          <p className='text-white'>
+            <span className='font-large font-bold text-white'>{notification.relatedUser.username}</span> just posted <span className='text-ufc-red'>"{notification.threadTitle}"</span>
           </p>
         )}
 

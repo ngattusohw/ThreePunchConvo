@@ -236,6 +236,11 @@ export class DatabaseStorage implements IStorage {
         .from(users)
         .where(sql`${users.id} = ${id}`);
 
+      // const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+      // const customer = await stripe.customers.retrieve(user.stripeId);
+      // user.stripeCustomerId = customer.id;
+      // user.stripeSubscriptionId = customer.subscriptions.data[0].id;
+
       return user;
     } catch (error) {
       console.error("Error getting user:", error);
@@ -2561,14 +2566,14 @@ export class DatabaseStorage implements IStorage {
           UNION ALL
 
           -- Replies
-          SELECT 
+          SELECT
             COALESCE(pr.user_id, t.user_id) AS user_id,
             r.user_id AS actor_id,
             'REPLY' AS interaction_type,
             DATE_TRUNC('day', r.created_at) AS interaction_day,
             r.created_at AS interaction_timestamp
           FROM threads t
-          JOIN replies r ON r.thread_id = t.id 
+          JOIN replies r ON r.thread_id = t.id
           LEFT JOIN replies pr ON r.parent_reply_id = pr.id
           WHERE r.user_id IS DISTINCT FROM COALESCE(pr.user_id, t.user_id)
 
@@ -2594,7 +2599,7 @@ export class DatabaseStorage implements IStorage {
             ai.interaction_type,
             COALESCE(w.weight, 0) AS weight
           FROM all_interactions ai
-          LEFT JOIN users u ON ai.user_id = u.id 
+          LEFT JOIN users u ON ai.user_id = u.id
           LEFT JOIN reaction_weights w
             ON w.reaction_type = ai.interaction_type
                AND w.role = u.role

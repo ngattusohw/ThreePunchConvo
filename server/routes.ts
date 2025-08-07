@@ -7,7 +7,6 @@ import express, {
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { fetchUpcomingEvents } from "./espn-api";
-import { z } from "zod";
 import { ZodError } from "zod";
 import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
@@ -16,11 +15,6 @@ import fs from "fs";
 import {
   insertThreadSchema,
   insertReplySchema,
-  insertUserSchema,
-  insertPollSchema,
-  insertMediaSchema,
-  insertNotificationSchema,
-  PollOption,
   Thread,
 } from "@shared/schema";
 import { requireAuth, clerkClient } from "@clerk/express";
@@ -243,6 +237,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+
+   // Get users for admin view to be able to change role
+   app.get("/api/users",
+    requireAuth(),
+    ensureLocalUser,
+    async (req: Request, res: Response) => {
+      try {
+
+        if (!req.localUser || !req.localUser.id) {
+          return res.status(400).json({ message: "User ID is required" });
+        }
+        // Only admins can view all users
+        if (
+          req.localUser?.role !== "ADMIN"
+        ) {
+          return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        try {
+          const users = await storage.getAllUsers();
+
+          if (!users || users.length === 0) {
+            return res.json([]); // Return empty array if no users found
+          }
+
+          // only return users names, email, role, status, and id
+          const result = users.map((user) => {
+            console.log(user);
+            return {
+              id: user?.id,
+              username: user?.username,
+              email: user?.email,
+              firstName: user?.firstName,
+              lastName: user?.lastName,
+              role: user?.role,
+              status: user?.status,
+              isOnline: user?.isOnline,
+              lastActive: user?.lastActive,
+              points: user?.points,
+              rank: user?.rank,
+              createdAt: user?.createdAt,
+            };
+          });
+
+          res.json(result);
+        } catch (storageError) {
+          console.error("Storage error fetching all users for admin view:", storageError);
+          // In development, don't let this break the UI
+          return res.json([]);
+        }
+      } catch (error) {
+        console.error("Error fetching all users for admin view:", error);
+        // Return empty array instead of error to avoid breaking the UI
+        return res.json([]);
+      }
+  });
 
   // Get top users based on daily fighter cred for the current day
   app.get("/api/users/top", async (req: Request, res: Response) => {

@@ -1,3 +1,6 @@
+import { useUserProfile } from "@/api/hooks/useUserProfile";
+import { useMemoizedUser } from "@/hooks/useMemoizedUser";
+import { USER_ROLES } from "@/lib/constants";
 import { Link, useLocation } from "wouter";
 
 interface MobileNavigationProps {
@@ -6,7 +9,8 @@ interface MobileNavigationProps {
 
 export default function MobileNavigation({ onClose }: MobileNavigationProps) {
   const [location] = useLocation();
-
+  const { user } = useMemoizedUser();
+  const { user: userInfo } = useUserProfile(user?.username || "");
   return (
     <div className='bg-dark-gray border-b border-gray-800 md:hidden'>
       <nav className='container mx-auto px-4 py-3'>
@@ -32,6 +36,11 @@ export default function MobileNavigation({ onClose }: MobileNavigationProps) {
           >
             RANKINGS
           </Link>
+          {userInfo?.role === USER_ROLES.ADMIN && (
+            <Link href='/admin' className={`font-heading font-medium ${location === "/admin" ? "text-white" : "text-gray-400 hover:text-white"} transition`}>
+              ADMIN
+            </Link>
+          )}
         </div>
       </nav>
     </div>

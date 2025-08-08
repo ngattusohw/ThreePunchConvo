@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAdminView } from "@/api/hooks/useAdminView";
 import {
   Table,
@@ -9,10 +9,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import RoleBadge from "../ui/RoleBadge";
+import EditUserModal from "./EditUserModal";
 
 export default function EditUsers() {
   const { users, isLoading, error } = useAdminView();
-
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   if (isLoading) return <div className="text-white">Loading...</div>;
   if (error) return <div className="text-red-400">Error loading users</div>;
 
@@ -84,7 +87,12 @@ export default function EditUsers() {
                   {formatDate(user.createdAt)}
                 </TableCell>
                 <TableCell className="w-16">
-                  <button className="text-black hover:bg-gray-100 text-md font-medium bg-white rounded-lg px-3 py-1">
+                  <button className="text-black hover:bg-gray-100 text-md font-medium bg-white rounded-lg px-3 py-1"
+                    onClick={() => {
+                      setSelectedUser(user);
+                      setIsModalOpen(true);
+                    }}
+                  >
                     Edit
                   </button>
                 </TableCell>
@@ -93,6 +101,11 @@ export default function EditUsers() {
           </TableBody>
         </Table>
       </div>
+      <EditUserModal
+        user={selectedUser || null}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 }

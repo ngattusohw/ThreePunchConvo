@@ -2051,5 +2051,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user profile endpoint
+  app.patch(
+    "/api/users/:userId/profile",
+    requireAuth(),
+    ensureLocalUser,
+    async (req: Request, res: Response) => {
+      try {
+        const userId = req.params.userId;
+        const { bio, socialLinks, coverPhotoUrl } = req.body;
+
+        // Verify the user is updating their own profile
+        if (req.localUser?.id !== userId) {
+          return res
+            .status(403)
+            .json({ message: "You can only update your own profile" });
+        }
+
+        // Update user profile
+        const updatedUser = await storage.updateUser(userId, {
+          bio,
+          socialLinks,
+          coverPhoto: coverPhotoUrl,
+        });
+
+        if (!updatedUser) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        // Don't return password in response
+        const { password, ...userWithoutPassword } = updatedUser;
+
+        res.json(userWithoutPassword);
+      } catch (error) {
+        console.error("Error updating user profile:", error);
+        res.status(500).json({ message: "Failed to update profile" });
+      }
+    },
+  );
+
   return httpServer;
 }

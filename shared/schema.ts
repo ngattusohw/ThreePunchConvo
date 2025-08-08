@@ -318,24 +318,85 @@ export const fights = pgTable("fights", {
 });
 
 // Insert schemas
-export const insertUserSchema = createInsertSchema(users);
+export const insertUserSchema = createInsertSchema(users, {
+  id: z.string().optional(), // Changed to string
+  username: z.string().min(3).max(30),
+  password: z.string().min(6).optional(), // Now optional for Clerk users
+  email: z.string().email().nullable().optional(),
+  externalId: z.string().optional(), // Add externalId field
+  stripeId: z.string().optional(), // Add stripeId field
+  planType: z.string().optional(), // Add planType field
+  avatar: z.string().nullable().optional(),
+  firstName: z.string().nullable().optional(),
+  lastName: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
+  profileImageUrl: z.string().nullable().optional(),
+  role: z.string().optional(),
+  status: z.string().optional(),
+  isOnline: z.boolean().optional(),
+  lastActive: z.date().optional(),
+  points: z.number().optional(),
+  rank: z.number().optional(),
+  postsCount: z.number().optional(),
+  likesCount: z.number().optional(),
+  pinnedByUserCount: z.number().optional(),
+  pinnedCount: z.number().optional(),
+  potdCount: z.number().optional(),
+  repliesCount: z.number().optional(),
+  followersCount: z.number().optional(),
+  followingCount: z.number().optional(),
+  socialLinks: z.record(z.string()).optional(),
+}).omit({
+  createdAt: true,
+  updatedAt: true,
+});
 
 export const upsertUserSchema = createInsertSchema(users);
 
 export const insertThreadSchema = createInsertSchema(threads, {
   userId: z.string(),
   categoryId: z.string(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastActivityAt: true,
+  viewCount: true,
+  likesCount: true,
+  dislikesCount: true,
+  repliesCount: true,
+  potdCount: true,
 });
 
-export const insertReplySchema = createInsertSchema(replies);
+export const insertReplySchema = createInsertSchema(replies).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  likesCount: true,
+  dislikesCount: true,
+});
 
-export const insertPollSchema = createInsertSchema(polls);
+export const insertPollSchema = createInsertSchema(polls).omit({
+  id: true,
+  createdAt: true,
+  votesCount: true,
+});
 
-export const insertPollOptionSchema = createInsertSchema(pollOptions);
+export const insertPollOptionSchema = createInsertSchema(pollOptions).omit({
+  id: true,
+  votesCount: true,
+});
 
-export const insertMediaSchema = createInsertSchema(threadMedia);
+export const insertMediaSchema = createInsertSchema(threadMedia).omit({
+  id: true,
+  createdAt: true,
+});
 
-export const insertNotificationSchema = createInsertSchema(notifications);
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+  isRead: true,
+});
 
 // Types
 export type User = typeof users.$inferSelect;

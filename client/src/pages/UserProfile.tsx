@@ -17,6 +17,8 @@ export default function UserProfile() {
   const { user: currentUser } = useMemoizedUser();
   const [activeTab, setActiveTab] = useState<"posts" | "about">("posts");
   const [showEditModal, setShowEditModal] = useState(false);
+  const [coverPhotoLoading, setCoverPhotoLoading] = useState(true);
+  const [coverPhotoError, setCoverPhotoError] = useState(false);
   const queryClient = useQueryClient();
 
   const {
@@ -50,6 +52,17 @@ export default function UserProfile() {
     setShowEditModal(false);
   };
 
+  const handleCoverPhotoLoad = () => {
+    setCoverPhotoLoading(false);
+    setCoverPhotoError(false);
+  };
+
+  const handleCoverPhotoError = () => {
+    setCoverPhotoLoading(false);
+    setCoverPhotoError(true);
+    console.error("Failed to load cover photo:", user?.coverPhoto);
+  };
+
   // Loading state
   if (isUserLoading) {
     return (
@@ -76,13 +89,40 @@ export default function UserProfile() {
     <div className='container mx-auto px-4 py-6'>
       <div className='bg-dark-gray overflow-hidden rounded-lg shadow-lg'>
         {/* Banner and Avatar */}
-        <div className='from-ufc-black to-ufc-blue relative h-16 bg-gradient-to-r md:h-16'>
+        <div className='from-ufc-black to-ufc-blue relative aspect-[4/1] bg-gradient-to-r'>
           {user?.coverPhoto && (
             <div className='absolute inset-0'>
+              {coverPhotoLoading && (
+                <div className='absolute inset-0 z-10 flex items-center justify-center'>
+                  <div className='h-6 w-6 animate-spin rounded-full border-b-2 border-blue-500'></div>
+                </div>
+              )}
+              {coverPhotoError && (
+                <div className='absolute inset-0 z-10 flex items-center justify-center bg-gray-800'>
+                  <div className='text-center text-gray-400'>
+                    <svg
+                      className='mx-auto mb-1 h-6 w-6'
+                      fill='none'
+                      viewBox='0 0 24 24'
+                      stroke='currentColor'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z'
+                      />
+                    </svg>
+                    <p className='text-xs'>Failed to load cover</p>
+                  </div>
+                </div>
+              )}
               <img
                 src={user.coverPhoto}
                 alt='Cover photo'
-                className='h-full w-full object-cover'
+                className={`h-full w-full object-cover ${coverPhotoLoading ? "opacity-0" : "opacity-100"} ${coverPhotoError ? "hidden" : ""}`}
+                onLoad={handleCoverPhotoLoad}
+                onError={handleCoverPhotoError}
               />
               <div className='absolute inset-0 bg-black bg-opacity-30'></div>
             </div>
@@ -314,7 +354,7 @@ export default function UserProfile() {
                     d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
                   />
                 </svg>
-                Edit Profile
+                Edit Bio
               </button>
             )}
           </div>

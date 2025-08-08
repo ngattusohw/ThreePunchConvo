@@ -36,10 +36,9 @@ interface EditUserModalProps {
   user: any;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (userData: EditUserFormData) => void;
 }
 
-export default function EditUserModal({ user, isOpen, onClose, onSave }: EditUserModalProps) {
+export default function EditUserModal({ user, isOpen, onClose }: EditUserModalProps) {
   const form = useForm<EditUserFormData>({
     defaultValues: {
       role: user?.role || "USER",

@@ -84,7 +84,7 @@ export default function EditUsers() {
                   {formatDate(user.createdAt)}
                 </TableCell>
                 <TableCell className="w-16">
-                  <button className="text-blue-400 hover:text-blue-300 text-xs font-medium">
+                  <button className="text-black hover:bg-gray-100 text-md font-medium bg-white rounded-lg px-3 py-1">
                     Edit
                   </button>
                 </TableCell>

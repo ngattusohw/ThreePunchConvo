@@ -89,7 +89,9 @@ export default function UserProfile() {
     <div className='container mx-auto px-4 py-6'>
       <div className='bg-dark-gray overflow-hidden rounded-lg shadow-lg'>
         {/* Banner and Avatar */}
-        <div className='from-ufc-black to-ufc-blue relative aspect-[4/1] bg-gradient-to-r'>
+        <div
+          className={`from-ufc-black to-ufc-blue relative bg-gradient-to-r ${user?.coverPhoto ? "aspect-[4/1]" : "h-24"}`}
+        >
           {user?.coverPhoto && (
             <div className='absolute inset-0'>
               {coverPhotoLoading && (

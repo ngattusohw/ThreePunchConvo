@@ -1,4 +1,4 @@
-import EditUsers from "@/components/admin/editUser";
+import EditUsers from "@/components/admin/EditUserTable";
 
 export default function Admin() {
   return (

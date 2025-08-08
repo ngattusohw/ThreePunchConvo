@@ -3,6 +3,8 @@ import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { Poll } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useCheckPollVote, usePollVote } from "@/api/hooks/usePoll";
+import { TitleContent } from "@/components/ui/text-content";
+import { processTextContent } from "@/lib/link-utils";
 
 interface ThreadPollProps {
   threadId: string;
@@ -73,7 +75,11 @@ function ThreadPoll({ threadId, poll }: ThreadPollProps) {
 
   return (
     <div className='mb-6 rounded-lg bg-gray-800 p-4'>
-      <h3 className='mb-4 font-medium text-white'>{poll.question}</h3>
+      <TitleContent
+        content={poll.question}
+        className='mb-4 font-medium text-white'
+        as='h3'
+      />
       <div className='space-y-3'>
         {poll.options.map((option) => {
           const percentage = poll.votesCount
@@ -86,7 +92,12 @@ function ThreadPoll({ threadId, poll }: ThreadPollProps) {
                 // Show results view
                 <div className='mb-3'>
                   <div className='mb-1 flex items-center justify-between'>
-                    <span className='text-sm text-gray-300'>{option.text}</span>
+                    <span
+                      className='text-sm text-gray-300'
+                      dangerouslySetInnerHTML={{
+                        __html: processTextContent(option.text),
+                      }}
+                    />
                     <span className='text-sm text-gray-300'>{percentage}%</span>
                   </div>
                   <div className='flex h-2 overflow-hidden rounded bg-gray-700 text-xs'>
@@ -113,9 +124,10 @@ function ThreadPoll({ threadId, poll }: ThreadPollProps) {
                     "transition-colors duration-200",
                     "disabled:cursor-not-allowed disabled:opacity-50",
                   )}
-                >
-                  {option.text}
-                </button>
+                  dangerouslySetInnerHTML={{
+                    __html: processTextContent(option.text),
+                  }}
+                />
               )}
             </div>
           );

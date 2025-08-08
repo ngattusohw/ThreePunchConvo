@@ -4,6 +4,7 @@ import { ThreadReply } from "@/lib/types";
 import UserThreadHeader from "../ui/user-thread-header";
 import { useState } from "react";
 import { checkIsNormalUser } from "@/lib/utils";
+import TextContent from "@/components/ui/text-content";
 
 interface ReplyCardProps {
   reply: ThreadReply & {
@@ -109,11 +110,13 @@ function ReplyCard({
 
             {/* Content container with blur and overlay */}
             <div className={shouldBlurContent ? "relative" : ""}>
-              <div
-                className={`mb-4 whitespace-pre-line text-gray-300 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
-              >
-                {shouldBlurContent ? "Premium Content" : reply.content}
-              </div>
+              {shouldBlurContent ? (
+                <div className='mb-4 select-none whitespace-pre-line text-gray-300 blur-sm'>
+                  Premium Content
+                </div>
+              ) : (
+                <TextContent content={reply.content} className='mb-4' />
+              )}
 
               {/* Reply Media */}
               {reply.media && reply.media.length > 0 && (

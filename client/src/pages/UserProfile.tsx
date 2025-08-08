@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams } from "wouter";
+import { Edit } from "lucide-react";
 import UserAvatar from "@/components/ui/user-avatar";
 import StatusBadge from "@/components/ui/status-badge";
 import FCBadge from "@/components/ui/fc-badge";
@@ -11,6 +12,11 @@ import { checkIsNormalUser } from "@/lib/utils";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import ProfileEditModal from "@/components/user/ProfileEditModal";
 import { useQueryClient } from "@tanstack/react-query";
+
+// Helper function to limit consecutive line breaks
+const formatBioText = (text: string) => {
+  return text.replace(/\n{2,}/g, "\n");
+};
 
 export default function UserProfile() {
   const { username } = useParams<{ username: string }>();
@@ -135,7 +141,17 @@ export default function UserProfile() {
         </div>
 
         {/* User Info and Actions */}
-        <div className='flex flex-col px-4 pb-6 pt-16 md:flex-row md:items-center md:justify-between md:px-8'>
+        <div className='relative flex flex-col px-4 pb-6 pt-16 md:flex-row md:items-center md:justify-between md:px-8'>
+          {/* Edit Profile - floated to top */}
+          {currentUser && currentUser.id === user.externalId && (
+            <button
+              onClick={handleEditProfile}
+              className='absolute right-4 top-4 flex flex-shrink-0 items-center justify-center rounded-lg border border-gray-600 p-2 text-white transition hover:bg-gray-800 md:right-8'
+            >
+              <Edit className='h-4 w-4' />
+            </button>
+          )}
+
           <div>
             <div className='mb-1 flex flex-wrap items-center gap-2'>
               <h1 className='text-xl font-bold text-white md:text-2xl'>
@@ -163,7 +179,8 @@ export default function UserProfile() {
             {user.bio && (
               <div className='mb-3 max-w-2xl'>
                 <p className='mt-4 whitespace-pre-wrap text-lg italic text-gray-300'>
-                  <span className='font-bold'>Bio:</span> {user.bio}
+                  <span className='font-bold'>Bio:</span>{" "}
+                  {formatBioText(user.bio)}
                 </p>
               </div>
             )}
@@ -333,32 +350,6 @@ export default function UserProfile() {
                 {user.repliesCount} REPLIES
               </div>
             </div>
-          </div>
-
-          <div className='mt-4 flex space-x-3 md:mt-0'>
-            {/* Edit Profile */}
-            {currentUser && currentUser.id === user.externalId && (
-              <button
-                onClick={handleEditProfile}
-                className='flex flex-shrink-0 items-center whitespace-nowrap rounded-lg border border-gray-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800'
-              >
-                <svg
-                  xmlns='http://www.w3.org/2000/svg'
-                  className='mr-1 h-4 w-4'
-                  fill='none'
-                  viewBox='0 0 24 24'
-                  stroke='currentColor'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
-                  />
-                </svg>
-                Edit Bio
-              </button>
-            )}
           </div>
         </div>
       </div>

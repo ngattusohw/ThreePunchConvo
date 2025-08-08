@@ -2061,11 +2061,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.params.userId;
         const { bio, socialLinks, coverPhotoUrl } = req.body;
 
-        // Verify the user is updating their own profile
-        if (req.localUser?.id !== userId) {
-          return res
-            .status(403)
-            .json({ message: "You can only update your own profile" });
+        // Check if user is updating their own profile or if they're an admin
+        const isOwnProfile = req.localUser?.id === userId;
+        const isAdmin = req.localUser?.role === "ADMIN";
+
+        if (!isOwnProfile && !isAdmin) {
+          return res.status(401).json({
+            message: "Unauthorized: You can only update your own profile",
+          });
         }
 
         // Update user profile

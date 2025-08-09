@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronUpIcon, ChevronDownIcon } from "lucide-react";
 import RoleBadge from "../ui/RoleBadge";
 import EditUserModal from "./EditUserModal";
+import { cn } from "@/lib/utils";
 
 export default function EditUsers() {
   const { 
@@ -98,7 +99,10 @@ export default function EditUsers() {
           <PaginationItem>
             <PaginationPrevious 
               onClick={() => pagination.hasPrevious && goToPage(currentPage - 1)}
-              className={!pagination.hasPrevious ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+              className={cn(
+                "text-white hover:bg-gray-700 hover:text-white border-gray-600",
+                !pagination.hasPrevious ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+              )}
             />
           </PaginationItem>
           
@@ -107,7 +111,12 @@ export default function EditUsers() {
               <PaginationLink
                 onClick={() => goToPage(page)}
                 isActive={page === currentPage}
-                className="cursor-pointer"
+                className={cn(
+                  "cursor-pointer text-white hover:bg-gray-700 hover:text-white border-gray-600",
+                  page === currentPage 
+                    ? "bg-gray-700 text-white border-gray-500" 
+                    : "hover:bg-gray-700"
+                )}
               >
                 {page}
               </PaginationLink>
@@ -117,7 +126,10 @@ export default function EditUsers() {
           <PaginationItem>
             <PaginationNext 
               onClick={() => pagination.hasNext && goToPage(currentPage + 1)}
-              className={!pagination.hasNext ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+              className={cn(
+                "text-white hover:bg-gray-700 hover:text-white border-gray-600",
+                !pagination.hasNext ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+              )}
             />
           </PaginationItem>
         </PaginationContent>

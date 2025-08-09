@@ -244,53 +244,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ensureLocalUser,
     async (req: Request, res: Response) => {
       try {
-
         if (!req.localUser || !req.localUser.id) {
           return res.status(400).json({ message: "User ID is required" });
         }
+        
         // Only admins can view all users
-        if (
-          req.localUser?.role !== "ADMIN"
-        ) {
+        if (req.localUser?.role !== "ADMIN") {
           return res.status(403).json({ message: "Unauthorized" });
         }
 
+        // Parse pagination parameters
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const search = req.query.search as string || '';
+        const sortBy = req.query.sortBy as string || 'createdAt';
+        const sortOrder = req.query.sortOrder as string || 'desc';
+
         try {
-          const users = await storage.getAllUsers();
-
-          if (!users || users.length === 0) {
-            return res.json([]); // Return empty array if no users found
-          }
-
-          // only return users names, email, role, status, and id
-          const result = users.map((user) => {
-            console.log(user);
-            return {
-              id: user?.id,
-              username: user?.username,
-              email: user?.email,
-              firstName: user?.firstName,
-              lastName: user?.lastName,
-              role: user?.role,
-              status: user?.status,
-              isOnline: user?.isOnline,
-              lastActive: user?.lastActive,
-              points: user?.points,
-              rank: user?.rank,
-              createdAt: user?.createdAt,
-            };
+          const result = await storage.getAllUsers({
+            page,
+            limit,
+            search,
+            sortBy,
+            sortOrder
           });
 
-          res.json(result);
+          if (!result.users || result.users.length === 0) {
+            return res.json({
+              users: [],
+              pagination: {
+                currentPage: page,
+                totalPages: 0,
+                totalUsers: 0,
+                hasNext: false,
+                hasPrevious: false
+              }
+            });
+          }
+
+          // Only return users names, email, role, status, and id
+          const users = result.users.map((user) => ({
+            id: user?.id,
+            username: user?.username,
+            email: user?.email,
+            firstName: user?.firstName,
+            lastName: user?.lastName,
+            role: user?.role,
+            status: user?.status,
+            isOnline: user?.isOnline,
+            lastActive: user?.lastActive,
+            points: user?.points,
+            rank: user?.rank,
+            createdAt: user?.createdAt,
+          }));
+
+          res.json({
+            users,
+            pagination: result.pagination
+          });
         } catch (storageError) {
           console.error("Storage error fetching all users for admin view:", storageError);
-          // In development, don't let this break the UI
-          return res.json([]);
+          return res.json({ users: [], pagination: { currentPage: 1, totalPages: 0, totalUsers: 0, hasNext: false, hasPrevious: false } });
         }
       } catch (error) {
         console.error("Error fetching all users for admin view:", error);
-        // Return empty array instead of error to avoid breaking the UI
-        return res.json([]);
+        return res.json({ users: [], pagination: { currentPage: 1, totalPages: 0, totalUsers: 0, hasNext: false, hasPrevious: false } });
       }
   });
 

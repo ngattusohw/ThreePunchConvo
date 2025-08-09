@@ -210,3 +210,22 @@ export interface AdminViewUser {
   rank: number;
   createdAt: Date;
 }
+
+export interface AdminUsersResponse {
+  users: AdminViewUser[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalUsers: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
+}
+
+export interface AdminUsersFilters {
+  page: number;
+  limit: number;
+  search: string;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+}

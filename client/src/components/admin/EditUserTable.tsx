@@ -29,8 +29,6 @@ export default function EditUsers() {
 
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-2xl font-bold mb-6 text-white">Edit Users</h1>
-      
       <div className="bg-gray-800 rounded-lg overflow-hidden">
         <Table>
           <TableHeader>

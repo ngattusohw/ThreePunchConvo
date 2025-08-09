@@ -23,11 +23,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import RoleBadge from "../ui/RoleBadge";
 import { USER_ROLES as USER_ROLE_OPTIONS } from "@/lib/constants";
+import { updateUserRole } from "@/api/queries/admin";
 
 // Define the form data type
 type EditUserFormData = {
@@ -52,12 +50,9 @@ export default function EditUserModal({ user, isOpen, onClose, onSave }: EditUse
     try {
       // TODO: Implement API call to update user
       console.log("Updating user:", user.id, userData);
+      updateUserRole(user.id, userData.role);
       
-      // For now, just log the data
-      // In a real implementation, you'd call an API endpoint like:
-      // await updateUser(selectedUser.id, userData);
-      
-      alert("User updated successfully!");
+      alert("User updated successfully! Reload the page to see the changes.");
     } catch (error) {
       console.error("Error updating user:", error);
       alert("Failed to update user");
@@ -80,7 +75,7 @@ export default function EditUserModal({ user, isOpen, onClose, onSave }: EditUse
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md bg-gray-800 border-gray-600">
+      <DialogContent className="max-w-md bg-gray-800 border-gray-600 [&>button]:text-white [&>button]:hover:bg-gray-700 [&>button]:hover:text-white">
         <DialogHeader>
           <DialogTitle className="text-white">
             Edit User <span className="text-ufc-red font-bold">{user?.username}</span>

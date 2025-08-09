@@ -10,3 +10,13 @@ export const fetchUsers = async ():Promise<AdminViewUser[]> => {
 
   return response.json() as Promise<AdminViewUser[]>;
 };
+
+export const updateUserRole = async (userId: string, role: string): Promise<void> => {
+  const response = await apiRequest("PUT", `/api/users/${userId}/role`, {
+    role,
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to update user role");
+  }
+};

@@ -3,17 +3,21 @@ import { Link, useLocation } from "wouter";
 import { dark } from "@clerk/themes";
 import MobileNavigation from "@/components/layout/MobileNavigation";
 import logoImage from "@/assets/3PC-Logo-FullColor-RGB.png";
-import { SignInButton, useClerk } from "@clerk/clerk-react";
+import { SignInButton } from "@clerk/clerk-react";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { UserMenu } from "@/components/ui/user-menu";
 import { toast } from "@/hooks/use-toast";
 import { deleteAccount } from "@/api/queries/user";
 import NotificationBell from "../ui/notification-bell";
 import { formatUsername } from "@/lib/utils";
+import { USER_ROLES } from "@/lib/constants";
+import { useUserProfile } from "@/api/hooks/useUserProfile";
 
 export default function Header() {
   const [location, setLocation] = useLocation();
   const { user, isSignedIn, isLoaded } = useMemoizedUser();
+  const { user: userInfo } = useUserProfile(user?.username || "");
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleDeleteAccount = async () => {
@@ -94,6 +98,11 @@ export default function Header() {
                 >
                   RANKINGS
                 </Link>
+                {userInfo?.role === USER_ROLES.ADMIN && (
+                  <Link href='/admin' className={`font-heading font-medium ${location === "/admin" ? "text-white" : "text-gray-400 hover:text-white"} transition`}>
+                    ADMIN
+                  </Link>
+                )}
               </nav>
             )}
           </div>

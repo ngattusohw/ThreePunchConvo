@@ -160,7 +160,7 @@ export default function ProfileEditModal({
           <div>
             <h3 className='mb-3 text-lg font-medium text-white'>Cover Photo</h3>
             <div className='mb-2 text-sm text-gray-400'>
-              Recommended size: 1200x300 pixels. Max file size: 5MB.
+              Recommended size: 1200x300 pixels. Max file size: 50MB.
             </div>
             <div className='relative h-32 w-full overflow-hidden rounded-lg bg-gray-800'>
               {editForm.coverPhoto ? (

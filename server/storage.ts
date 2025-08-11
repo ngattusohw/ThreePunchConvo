@@ -293,9 +293,14 @@ export class DatabaseStorage implements IStorage {
           disabled: users.disabled,
           disabledAt: users.disabledAt,
           metadata: users.metadata,
+          coverPhoto: users.coverPhoto,
+          potdCount: users.potdCount,
+          repliesCount: users.repliesCount,
         })
         .from(users)
-        .where(eq(users.externalId, externalId));
+        .where(
+          and(eq(users.externalId, externalId), eq(users.disabled, false)),
+        );
 
       return user;
     } catch (error) {
@@ -339,6 +344,9 @@ export class DatabaseStorage implements IStorage {
           disabled: users.disabled,
           disabledAt: users.disabledAt,
           metadata: users.metadata,
+          coverPhoto: users.coverPhoto,
+          potdCount: users.potdCount,
+          repliesCount: users.repliesCount,
         })
         .from(users)
         .where(eq(users.stripeId, stripeId));
@@ -404,6 +412,9 @@ export class DatabaseStorage implements IStorage {
         disabled: userData.disabled || false,
         disabledAt: userData.disabledAt || null,
         metadata: userData.metadata || {},
+        coverPhoto: userData.coverPhoto || null,
+        potdCount: userData.potdCount || 0,
+        repliesCount: userData.repliesCount || 0,
       };
 
       const [user] = await db.insert(users).values(userValues).returning();

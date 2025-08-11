@@ -13,7 +13,7 @@ export function useUploadBanner(options: UseUploadBannerOptions = {}) {
 
   const uploadBannerMutation = useMutation({
     mutationFn: async (file: File) => {
-      // Validate file size (5MB limit)
+      // Validate file size (50MB limit)
       if (file.size > 50 * 1024 * 1024) {
         throw new Error("File size must be less than 50MB");
       }

@@ -3,6 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@clerk/clerk-react";
 
 interface UpdateProfileData {
+  reqUserId: string;
   userId: string;
   bio?: string;
   socialLinks?: {
@@ -26,7 +27,7 @@ export function useUpdateProfile(options: UseUpdateProfileOptions = {}) {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (profileData: UpdateProfileData) => {
-      if (!profileData.userId) {
+      if (!profileData.reqUserId) {
         throw new Error("You must be logged in to update your profile");
       }
 

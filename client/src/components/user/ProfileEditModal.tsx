@@ -13,6 +13,7 @@ interface ProfileEditModalProps {
   onSave?: (formData: any) => void;
   onSuccess?: () => void;
   user: any;
+  currentUserId: string;
 }
 
 interface EditFormData {
@@ -32,6 +33,7 @@ export default function ProfileEditModal({
   onClose,
   onSuccess,
   user,
+  currentUserId,
 }: ProfileEditModalProps) {
   const { updateProfile, isUpdating } = useUpdateProfile({
     onSuccess: () => {
@@ -110,6 +112,7 @@ export default function ProfileEditModal({
         bio: editForm.bio,
         socialLinks: editForm.socialLinks,
         coverPhotoUrl,
+        reqUserId: currentUserId,
       };
 
       await updateProfile(formDataToSave);

@@ -2059,10 +2059,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: Request, res: Response) => {
       try {
         const userId = req.params.userId;
-        const { bio, socialLinks, coverPhotoUrl } = req.body;
+        const { bio, socialLinks, coverPhotoUrl, reqUserId } = req.body;
 
         // Check if user is updating their own profile or if they're an admin
-        const isOwnProfile = req.localUser?.id === userId;
+
+        const currentUser = await storage.getUserByExternalId(reqUserId);
+
+        const isOwnProfile = currentUser?.id === userId;
         const isAdmin = req.localUser?.role === "ADMIN";
 
         if (!isOwnProfile && !isAdmin) {

@@ -12,10 +12,12 @@ import { checkIsNormalUser } from "@/lib/utils";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import ProfileEditModal from "@/components/user/ProfileEditModal";
 import { useQueryClient } from "@tanstack/react-query";
+import { processLinksInText } from "@/lib/link-utils";
 
-// Helper function to limit consecutive line breaks
+// Helper function to limit consecutive line breaks and process links
 const formatBioText = (text: string) => {
-  return text.replace(/\n{2,}/g, "\n");
+  // Only process links, don't convert newlines to <br> since CSS whitespace-pre-wrap handles them
+  return processLinksInText(text.replace(/\n{2,}/g, "\n"));
 };
 
 export default function UserProfile() {
@@ -180,7 +182,11 @@ export default function UserProfile() {
               <div className='mb-3 max-w-2xl'>
                 <p className='mt-4 whitespace-pre-wrap text-lg italic text-gray-300'>
                   <span className='font-bold'>Bio:</span>{" "}
-                  {formatBioText(user.bio)}
+                  <span
+                    dangerouslySetInnerHTML={{
+                      __html: formatBioText(user.bio),
+                    }}
+                  />
                 </p>
               </div>
             )}
@@ -499,6 +505,7 @@ export default function UserProfile() {
           onClose={() => setShowEditModal(false)}
           onSuccess={handleProfileUpdateSuccess}
           user={user}
+          currentUserId={currentUser.id}
         />
       )}
     </div>

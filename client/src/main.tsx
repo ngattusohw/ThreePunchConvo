@@ -9,9 +9,18 @@ import "./lib/fonts.css";
 import { PostHogProvider } from "posthog-js/react";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const POSTHOG_KEY = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
+const POSTHOG_HOST = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
 
 if (!PUBLISHABLE_KEY) {
   throw new Error("Missing Publishable Key");
+}
+
+if (!POSTHOG_KEY || !POSTHOG_HOST) {
+  console.error("Missing PostHog Key or Host", {
+    POSTHOG_KEY,
+    POSTHOG_HOST,
+  });
 }
 
 createRoot(document.getElementById("root")!).render(
@@ -24,9 +33,9 @@ createRoot(document.getElementById("root")!).render(
   >
     <QueryClientProvider client={queryClient}>
       <PostHogProvider
-        apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY}
+        apiKey={POSTHOG_KEY}
         options={{
-          api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
+          api_host: POSTHOG_HOST,
           capture_exceptions: true,
           debug: import.meta.env.MODE === "development",
           enable_recording_console_log: true,

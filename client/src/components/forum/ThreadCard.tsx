@@ -127,7 +127,21 @@ export default function ThreadCard({
 
   return (
     <div
-      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} relative rounded-lg ${mainThreadMode ? "mb-6" : "mb-4"} shadow-lg transition hover:shadow-xl`}
+      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} relative rounded-lg ${mainThreadMode ? "mb-6" : "mb-4"} shadow-lg transition hover:cursor-pointer hover:shadow-xl`}
+      onClick={(e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest("a, button, input, textarea")) {
+          return;
+        }
+
+        if (shouldBlurContent) {
+          handleUpgrade();
+        } else {
+          if (!mainThreadMode) {
+            window.location.href = `/thread/${thread.id}`;
+          }
+        }
+      }}
     >
       <div className={`${mainThreadMode ? "p-8" : "p-4"}`}>
         <div className='flex items-start'>
@@ -207,21 +221,19 @@ export default function ThreadCard({
             ) : (
               // View Mode
               <>
-                <Link href={`/thread/${thread.id}`} className='block'>
-                  {!shouldBlurContent && (
-                    <TitleContent
-                      content={title}
-                      className={`hover:text-ufc-blue ${mainThreadMode ? "mb-4 text-3xl" : "mb-2 text-lg"} whitespace-normal break-words font-bold text-white transition`}
-                    />
-                  )}
-                  {isEdited && editedAt && (
-                    <span
-                      className={`ml-2 ${mainThreadMode ? "text-lg" : "text-sm"} font-normal text-gray-400`}
-                    >
-                      (edited {formatEditedDate(editedAt)})
-                    </span>
-                  )}
-                </Link>
+                {!shouldBlurContent && (
+                  <TitleContent
+                    content={title}
+                    className={`hover:text-ufc-blue ${mainThreadMode ? "mb-4 text-3xl" : "mb-2 text-lg"} whitespace-normal break-words font-bold text-white transition`}
+                  />
+                )}
+                {isEdited && editedAt && (
+                  <span
+                    className={`ml-2 ${mainThreadMode ? "text-lg" : "text-sm"} font-normal text-gray-400`}
+                  >
+                    (edited {formatEditedDate(editedAt)})
+                  </span>
+                )}
 
                 {/* Content container with blur and overlay */}
                 <div

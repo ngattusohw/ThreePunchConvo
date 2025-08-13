@@ -1,4 +1,4 @@
-import { NOTIFICATION_TYPES } from './constants';
+import { NOTIFICATION_TYPES } from "./constants";
 
 // User related types
 export type UserRole =
@@ -26,19 +26,24 @@ export interface AuthUser {
   avatar?: string;
   firstName?: string | null;
   lastName?: string | null;
+  bio?: string | null;
   status: UserStatus;
   isOnline: boolean;
   postsCount: number;
   likesCount: number;
   planType: string;
   pinnedByUserCount: number;
+  potdCount: number;
+  repliesCount: number;
   pinnedCount: number;
+  points: number;
   rank: number;
   followersCount: number;
   followingCount: number;
   role: UserRole;
   socialLinks?: SocialLinks;
   stripeId?: string;
+  coverPhoto?: string;
 }
 
 export interface SocialLinks {
@@ -121,7 +126,8 @@ export interface ThreadReply {
   hasLiked?: boolean;
 }
 
-export type NotificationType = typeof NOTIFICATION_TYPES[keyof typeof NOTIFICATION_TYPES];
+export type NotificationType =
+  (typeof NOTIFICATION_TYPES)[keyof typeof NOTIFICATION_TYPES];
 
 // Notification types
 export interface Notification {

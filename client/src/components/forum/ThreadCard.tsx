@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { useUserProfile } from "@/api/hooks/useUserProfile";
 import { USER_ROLES } from "@/lib/constants";
+import TextContent, { TitleContent } from "@/components/ui/text-content";
 
 interface ThreadCardProps {
   thread: ForumThread;
@@ -207,38 +208,49 @@ export default function ThreadCard({
               // View Mode
               <>
                 <Link href={`/thread/${thread.id}`} className='block'>
-                  <h3
-                    className={`hover:text-ufc-blue ${mainThreadMode ? "mb-4 text-3xl" : "mb-2 text-lg"} whitespace-normal break-words font-bold text-white transition`}
-                  >
-                    {!shouldBlurContent && title}
-                    {isEdited && editedAt && (
-                      <span
-                        className={`ml-2 ${mainThreadMode ? "text-lg" : "text-sm"} font-normal text-gray-400`}
-                      >
-                        (edited {formatEditedDate(editedAt)})
-                      </span>
-                    )}
-                  </h3>
+                  {!shouldBlurContent && (
+                    <TitleContent
+                      content={title}
+                      className={`hover:text-ufc-blue ${mainThreadMode ? "mb-4 text-3xl" : "mb-2 text-lg"} whitespace-normal break-words font-bold text-white transition`}
+                    />
+                  )}
+                  {isEdited && editedAt && (
+                    <span
+                      className={`ml-2 ${mainThreadMode ? "text-lg" : "text-sm"} font-normal text-gray-400`}
+                    >
+                      (edited {formatEditedDate(editedAt)})
+                    </span>
+                  )}
                 </Link>
 
                 {/* Content container with blur and overlay */}
                 <div
                   className={`${shouldBlurContent ? "relative" : ""} max-w-full overflow-hidden`}
                 >
-                  <p
-                    className={`${mainThreadMode ? "mb-6 text-lg leading-relaxed" : "mb-4 line-clamp-3"} whitespace-pre-line break-words text-gray-300 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
-                  >
-                    {shouldBlurContent ? "Premium Content" : content}
-                  </p>
+                  {shouldBlurContent ? (
+                    <p
+                      className={`${mainThreadMode ? "mb-6 text-lg leading-relaxed" : "mb-4 line-clamp-3"} select-none whitespace-pre-line break-words text-gray-300 blur-sm`}
+                    >
+                      Premium Content
+                    </p>
+                  ) : (
+                    <TextContent
+                      content={content}
+                      className={`${mainThreadMode ? "mb-6 text-lg leading-relaxed" : "mb-4"}`}
+                      maxLines={mainThreadMode ? undefined : 3}
+                    />
+                  )}
 
                   {/* Thread Poll Preview - only show in view mode */}
                   {thread.poll && !mainThreadMode && (
                     <div
                       className={`mb-4 rounded-lg bg-gray-800 p-3 ${shouldBlurContent ? "select-none blur-sm" : ""}`}
                     >
-                      <p className={"mb-2 font-medium text-white"}>
-                        {thread.poll.question}
-                      </p>
+                      <TitleContent
+                        content={thread.poll.question}
+                        className='mb-2 font-medium text-white'
+                        as='p'
+                      />
                       <div className={"space-y-2"}>
                         {thread.poll.options.slice(0, 4).map((option) => {
                           const percentage = thread.poll?.votesCount

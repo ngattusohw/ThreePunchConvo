@@ -34,7 +34,11 @@ import connectPg from "connect-pg-simple";
 import { pool, db } from "./db";
 import { eq, and, sql, desc, inArray, not, notInArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
-import { USER_ROLES, NOTIFICATION_EXCLUDED_ROLES, NOTIFICATION_TYPES } from "@shared/constants";
+import {
+  USER_ROLES,
+  NOTIFICATION_EXCLUDED_ROLES,
+  NOTIFICATION_TYPES,
+} from "@shared/constants";
 
 export interface IStorage {
   // Session store
@@ -289,9 +293,14 @@ export class DatabaseStorage implements IStorage {
           disabled: users.disabled,
           disabledAt: users.disabledAt,
           metadata: users.metadata,
+          coverPhoto: users.coverPhoto,
+          potdCount: users.potdCount,
+          repliesCount: users.repliesCount,
         })
         .from(users)
-        .where(eq(users.externalId, externalId));
+        .where(
+          and(eq(users.externalId, externalId), eq(users.disabled, false)),
+        );
 
       return user;
     } catch (error) {
@@ -335,6 +344,9 @@ export class DatabaseStorage implements IStorage {
           disabled: users.disabled,
           disabledAt: users.disabledAt,
           metadata: users.metadata,
+          coverPhoto: users.coverPhoto,
+          potdCount: users.potdCount,
+          repliesCount: users.repliesCount,
         })
         .from(users)
         .where(eq(users.stripeId, stripeId));
@@ -400,6 +412,9 @@ export class DatabaseStorage implements IStorage {
         disabled: userData.disabled || false,
         disabledAt: userData.disabledAt || null,
         metadata: userData.metadata || {},
+        coverPhoto: userData.coverPhoto || null,
+        potdCount: userData.potdCount || 0,
+        repliesCount: userData.repliesCount || 0,
       };
 
       const [user] = await db.insert(users).values(userValues).returning();
@@ -440,12 +455,14 @@ export class DatabaseStorage implements IStorage {
     userData: Partial<User>,
   ): Promise<User | undefined> {
     try {
+      console.log("Updating user:", id, userData);
+
       const [updatedUser] = await db
         .update(users)
         .set({
           ...userData,
         })
-        .where(sql`${users.id} = ${id}`)
+        .where(eq(users.id, id))
         .returning();
 
       return updatedUser;
@@ -880,9 +897,15 @@ export class DatabaseStorage implements IStorage {
 
         // check if user is fighter or mma industry role
         const user = await this.getUser(thread.userId);
-        if (user?.role === USER_ROLES.FIGHTER || user?.role === USER_ROLES.INDUSTRY_PROFESSIONAL) {
+        if (
+          user?.role === USER_ROLES.FIGHTER ||
+          user?.role === USER_ROLES.INDUSTRY_PROFESSIONAL
+        ) {
           // add notification for all users (excluding other fighters and MMA industry users)
-          const postType = user.role === USER_ROLES.FIGHTER ? NOTIFICATION_TYPES.FIGHTER_POST : NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST;
+          const postType =
+            user.role === USER_ROLES.FIGHTER
+              ? NOTIFICATION_TYPES.FIGHTER_POST
+              : NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST;
           await this.createNotificationForAllNormalUsers(
             {
               type: postType,
@@ -891,7 +914,7 @@ export class DatabaseStorage implements IStorage {
               message: `${user.username} just posted! Check out their latest thread.`,
             },
             undefined, // excludeUserId
-            tx // Pass the transaction context
+            tx, // Pass the transaction context
           );
         }
 
@@ -2917,29 +2940,29 @@ export class DatabaseStorage implements IStorage {
 
   // Helper function to create notifications for all users when a fighter/MMA person posts
   async createNotificationForAllNormalUsers(
-    notificationData: Omit<InsertNotification, 'userId'>,
+    notificationData: Omit<InsertNotification, "userId">,
     excludeUserId?: string,
-    transaction?: any // Add transaction parameter
+    transaction?: any, // Add transaction parameter
   ): Promise<void> {
     try {
       // Use transaction if provided, otherwise use global db
       const dbInstance = transaction || db;
-      
+
       // Get all users except fighters and MMA industry users (and the excluded user if provided)
       const allUsers = await dbInstance
         .select({ id: users.id })
         .from(users)
         .where(
-          excludeUserId 
+          excludeUserId
             ? and(
                 eq(users.disabled, false),
                 notInArray(users.role, NOTIFICATION_EXCLUDED_ROLES),
-                not(eq(users.id, excludeUserId))
+                not(eq(users.id, excludeUserId)),
               )
             : and(
                 eq(users.disabled, false),
-                notInArray(users.role, NOTIFICATION_EXCLUDED_ROLES)
-              )
+                notInArray(users.role, NOTIFICATION_EXCLUDED_ROLES),
+              ),
         );
 
       if (allUsers.length === 0) {
@@ -2951,8 +2974,8 @@ export class DatabaseStorage implements IStorage {
       const batchSize = 50;
       for (let i = 0; i < allUsers.length; i += batchSize) {
         const batch = allUsers.slice(i, i + batchSize);
-        
-        const notificationsToInsert = batch.map(user => ({
+
+        const notificationsToInsert = batch.map((user) => ({
           id: uuidv4(),
           userId: user.id,
           type: notificationData.type,

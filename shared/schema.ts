@@ -39,6 +39,7 @@ export const users = pgTable("users", {
   firstName: text("first_name"),
   lastName: text("last_name"),
   bio: text("bio"),
+  coverPhoto: text("cover_photo"), // New field for user banner/cover photo
   profileImageUrl: text("profile_image_url"),
   updatedAt: timestamp("updated_at").defaultNow(),
   role: text("role").notNull().default("USER"), // USER, MODERATOR, ADMIN, FIGHTER, PREMIUM_USER, INDUSTRY_PROFESSIONAL

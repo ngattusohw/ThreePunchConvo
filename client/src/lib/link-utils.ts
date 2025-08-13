@@ -70,8 +70,8 @@ export function processTextContent(text: string): string {
   if (!text) return "";
 
   // First process newlines, then links
-  const withNewlines = processNewlines(text);
-  const withLinks = processLinksInText(withNewlines);
+  // const withNewlines = processNewlines(text);
+  const withLinks = processLinksInText(text);
 
   return withLinks;
 }

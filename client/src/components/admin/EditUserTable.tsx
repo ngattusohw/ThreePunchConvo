@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronUpIcon, ChevronDownIcon } from "lucide-react";
 import RoleBadge from "../ui/RoleBadge";
 import EditUserModal from "./EditUserModal";
+import MessageUserModal from "./MessageUserModal";
 import { cn } from "@/lib/utils";
 
 export default function EditUsers() {
@@ -38,6 +39,8 @@ export default function EditUsers() {
   
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+  const [messageUser, setMessageUser] = useState<any>(null);
   const [searchInput, setSearchInput] = useState('');
   
   if (isLoading) return <div className="text-white">Loading...</div>;
@@ -241,7 +244,7 @@ export default function EditUsers() {
                   Created {getSortIcon('createdAt')}
                 </div>
               </TableHead>
-              <TableHead className="text-gray-200 font-semibold w-16">Actions</TableHead>
+              <TableHead className="text-gray-200 font-semibold w-32">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -282,15 +285,27 @@ export default function EditUsers() {
                 <TableCell className="text-gray-300 text-xs w-24">
                   {formatDate(user.createdAt)}
                 </TableCell>
-                <TableCell className="w-16">
-                  <button className="text-black hover:bg-gray-100 text-md font-medium bg-white rounded-lg px-3 py-1"
-                    onClick={() => {
-                      setSelectedUser(user);
-                      setIsModalOpen(true);
-                    }}
-                  >
-                    Edit
-                  </button>
+                <TableCell className="w-32">
+                  <div className="flex gap-2">
+                    <button 
+                      className="text-black hover:bg-gray-100 text-sm font-medium bg-white rounded-lg px-2 py-1"
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setIsModalOpen(true);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      className="text-white hover:bg-blue-600 text-sm font-medium bg-blue-500 rounded-lg px-2 py-1"
+                      onClick={() => {
+                        setMessageUser(user);
+                        setIsMessageModalOpen(true);
+                      }}
+                    >
+                      Message
+                    </button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -305,6 +320,12 @@ export default function EditUsers() {
         user={selectedUser || null}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+      />
+
+      <MessageUserModal
+        user={messageUser || null}
+        isOpen={isMessageModalOpen}
+        onClose={() => setIsMessageModalOpen(false)}
       />
     </div>
   );

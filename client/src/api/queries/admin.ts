@@ -28,3 +28,14 @@ export const updateUserRole = async (userId: string, role: string): Promise<void
     throw new Error("Failed to update user role");
   }
 };
+
+export const sendMessageToUser = async (userId: string, message: string): Promise<void> => {
+  const response = await apiRequest("POST", "/api/admin/message-user", {
+    targetUserId: userId,
+    message,
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to send message to user");
+  }
+};

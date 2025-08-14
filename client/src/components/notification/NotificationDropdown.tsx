@@ -5,6 +5,7 @@ import { Notification } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import UserAvatar from "@/components/ui/user-avatar";
 import { NOTIFICATION_TYPES } from "@/lib/constants";
+import OctagonBlack from "@/assets/3PC-Octagon-Black-RGB.png";
 
 interface NotificationDropdownProps {
   onClose: () => void;
@@ -149,6 +150,10 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
         <div className='bg-ufc-blue mr-3 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-bold text-black'>
           3PC
         </div>
+      ) : notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? (
+        <div className='mr-3 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full overflow-hidden bg-white'>
+          <img src={OctagonBlack} alt='Admin' className='h-10 w-10 object-contain' />
+        </div>
       ) : notification.relatedUser ? (
         <UserAvatar
           user={notification.relatedUser}
@@ -236,6 +241,13 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
               {notification.relatedUser.username}
             </span>{" "}
             started following you
+          </p>
+        )}
+
+        {notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE && notification.message && (
+          <p className='text-gray-300'>
+            <span className='font-medium text-white'>Admin</span>{" "}
+            {notification.message}
           </p>
         )}
 

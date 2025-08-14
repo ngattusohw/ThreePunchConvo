@@ -736,6 +736,26 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getUsersByRole(role: string): Promise<User[]> {
+    try {
+      const result = await db.select().from(users).where(eq(users.role, role));
+      return result;
+    } catch (error) {
+      console.error("Error getting users by role:", error);
+      return [];
+    }
+  }
+
+  async getAllUsersList(): Promise<User[]> {
+    try {
+      const result = await db.select().from(users);
+      return result;
+    } catch (error) {
+      console.error("Error getting all users list:", error);
+      return [];
+    }
+  }
+
   // Placeholder implementations for other methods
   // These will be implemented as needed
 

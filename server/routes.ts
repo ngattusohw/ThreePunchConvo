@@ -312,6 +312,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
   });
 
+  // Admin message user endpoint
+  app.post(
+    "/api/admin/message-user",
+    requireAuth(),
+    ensureLocalUser,
+    async (req: any, res: Response) => {
+      try {
+        const { targetUserId, message } = req.body;
+
+        if (!targetUserId || !message) {
+          return res.status(400).json({ 
+            message: "Target user ID and message are required" 
+          });
+        }
+
+        // Check if the authenticated user is an admin
+        const authenticatedUser = req.localUser;
+        if (!authenticatedUser) {
+          return res.status(401).json({ message: "Authentication required" });
+        }
+
+        if (authenticatedUser.role !== "ADMIN") {
+          return res.status(403).json({ 
+            message: "Only administrators can send messages to users" 
+          });
+        }
+
+        // Verify target user exists
+        const targetUser = await storage.getUser(targetUserId);
+        if (!targetUser) {
+          return res.status(404).json({ message: "Target user not found" });
+        }
+
+        // Create notification for the target user
+        const notification = await storage.createNotification({
+          userId: targetUserId,
+          type: "ADMIN_MESSAGE",
+          relatedUserId: authenticatedUser.id,
+          message: message,
+        });
+
+        res.json({ 
+          message: "Message sent successfully",
+          notification 
+        });
+      } catch (error) {
+        console.error("Error sending admin message:", error);
+        res.status(500).json({ message: "Failed to send message" });
+      }
+    },
+  );
+
   // Get top users based on daily fighter cred for the current day
   app.get("/api/users/top", async (req: Request, res: Response) => {
     try {

@@ -143,7 +143,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
 
   return (
     <li
-      className={`flex items-start gap-3 p-3 ${notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} ${isProfessionalPost ? "border-2 border-ufc-red " : ""}cursor-pointer rounded-lg transition-all hover:bg-opacity-70 overflow-hidden`}
+      className={`flex items-start gap-3 p-3 ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "bg-[#FAE1BE] text-black" : notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} ${isProfessionalPost ? "border-2 border-ufc-red " : ""} cursor-pointer rounded-lg transition-all ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "hover:bg-opacity-70"} overflow-hidden`}
       onClick={onClick}
     >
       {notification.type === NOTIFICATION_TYPES.SYSTEM ? (
@@ -244,9 +244,9 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
           </p>
         )}
 
-        {notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE && notification.message && (
-          <p className='text-gray-300 break-words whitespace-pre-wrap'>
-            <span className='font-medium text-white'>Admin</span>{" "}
+{notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE && notification.message && (
+          <p className='text-black break-words whitespace-pre-wrap'>
+            <span className='font-medium text-black'>Admin</span>{" "}
             {notification.message}
           </p>
         )}

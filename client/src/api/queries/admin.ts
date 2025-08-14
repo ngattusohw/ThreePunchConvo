@@ -39,3 +39,16 @@ export const sendMessageToUser = async (userId: string, message: string): Promis
     throw new Error("Failed to send message to user");
   }
 };
+
+export const sendMessageToUsers = async (targetRole: string | null, message: string): Promise<{ count: number }> => {
+  const response = await apiRequest("POST", "/api/admin/message-users", {
+    targetRole,
+    message,
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to send messages to users");
+  }
+
+  return response.json();
+};

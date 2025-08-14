@@ -22,6 +22,7 @@ import { ChevronUpIcon, ChevronDownIcon } from "lucide-react";
 import RoleBadge from "../ui/RoleBadge";
 import EditUserModal from "./EditUserModal";
 import MessageUserModal from "./MessageUserModal";
+import MessageUsersModal from "./MessageUsersModal";
 import { cn } from "@/lib/utils";
 
 export default function EditUsers() {
@@ -41,6 +42,7 @@ export default function EditUsers() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const [messageUser, setMessageUser] = useState<any>(null);
+  const [isBulkMessageOpen, setIsBulkMessageOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   
   if (isLoading) return <div className="text-white">Loading...</div>;
@@ -143,7 +145,7 @@ export default function EditUsers() {
   return (
     <div className="container mx-auto py-6">
       {/* Search and Filter Controls */}
-      <div className="mb-6 flex gap-4 items-center">
+      <div className="mb-6 flex gap-4 items-center justify-between">
         <div className="flex gap-2">
           <Input
             placeholder="Search users..."
@@ -157,18 +159,23 @@ export default function EditUsers() {
           </Button>
         </div>
         
-        <div className="flex gap-2 items-center">
-          <span className="text-sm text-gray-400">Per page:</span>
-          <select
-            value={filters.limit}
-            onChange={(e) => updateFilters({ limit: parseInt(e.target.value), page: 1 })}
-            className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white"
-          >
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-2 items-center">
+            <span className="text-sm text-gray-400">Per page:</span>
+            <select
+              value={filters.limit}
+              onChange={(e) => updateFilters({ limit: parseInt(e.target.value), page: 1 })}
+              className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+          <Button onClick={() => setIsBulkMessageOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+            Message Users
+          </Button>
         </div>
       </div>
 
@@ -326,6 +333,11 @@ export default function EditUsers() {
         user={messageUser || null}
         isOpen={isMessageModalOpen}
         onClose={() => setIsMessageModalOpen(false)}
+      />
+
+      <MessageUsersModal
+        isOpen={isBulkMessageOpen}
+        onClose={() => setIsBulkMessageOpen(false)}
       />
     </div>
   );

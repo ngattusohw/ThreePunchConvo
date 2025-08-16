@@ -201,3 +201,18 @@ export interface RankedUser {
   };
   rank: number;
 }
+
+export interface AdminViewUser {
+  id: string;
+  username: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: UserRole;
+  status: UserStatus;
+  isOnline: boolean;
+  lastActive: Date;
+  points: number;
+  rank: number;
+  createdAt: Date;
+}

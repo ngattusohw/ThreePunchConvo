@@ -350,7 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: targetUserId,
           type: "ADMIN_MESSAGE",
           relatedUserId: authenticatedUser.id,
-          message: message,
+          message: message.trim(),
         });
 
         res.json({ 

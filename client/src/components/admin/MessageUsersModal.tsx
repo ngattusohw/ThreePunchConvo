@@ -104,7 +104,7 @@ export default function MessageUsersModal({ isOpen, onClose }: MessageUsersModal
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={ALL_VALUE}>All Users</SelectItem>
-                        {Object.values(USER_ROLE_OPTIONS).map((role) => (
+                        {Object.values(USER_ROLE_OPTIONS).filter((role) => role !== "MODERATOR").map((role) => (
                           <SelectItem key={role} value={role}>{role.replace("_", " ")}</SelectItem>
                         ))}
                       </SelectContent>

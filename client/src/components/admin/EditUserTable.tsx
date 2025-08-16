@@ -52,10 +52,6 @@ export default function EditUsers() {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
   const handleSort = (column: string) => {
     const newOrder = filters.sortBy === column && filters.sortOrder === 'asc' ? 'desc' : 'asc';
     updateSort(column, newOrder);
@@ -224,23 +220,7 @@ export default function EditUsers() {
                 onClick={() => handleSort('points')}
               >
                 <div className="flex items-center">
-                  Points {getSortIcon('points')}
-                </div>
-              </TableHead>
-              <TableHead 
-                className="text-gray-200 font-semibold w-12 cursor-pointer hover:bg-gray-700"
-                onClick={() => handleSort('rank')}
-              >
-                <div className="flex items-center">
-                  Rank {getSortIcon('rank')}
-                </div>
-              </TableHead>
-              <TableHead 
-                className="text-gray-200 font-semibold w-32 cursor-pointer hover:bg-gray-700"
-                onClick={() => handleSort('lastActive')}
-              >
-                <div className="flex items-center">
-                  Last Active {getSortIcon('lastActive')}
+                  FC {getSortIcon('points')}
                 </div>
               </TableHead>
               <TableHead 
@@ -282,12 +262,6 @@ export default function EditUsers() {
                 </TableCell>
                 <TableCell className="text-gray-300 font-mono text-xs w-16">
                   {user.points.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-gray-300 font-mono text-xs w-12">
-                  #{user.rank}
-                </TableCell>
-                <TableCell className="text-gray-300 text-xs w-32">
-                  {formatDateTime(user.lastActive)}
                 </TableCell>
                 <TableCell className="text-gray-300 text-xs w-24">
                   {formatDate(user.createdAt)}

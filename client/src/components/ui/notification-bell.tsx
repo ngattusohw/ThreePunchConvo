@@ -1,14 +1,20 @@
 import { useState, useRef, useEffect } from "react";
 import { useNotifications } from "@/api/hooks/useNotifications";
 import NotificationDropdown from "@/components/notification/NotificationDropdown";
+import { NOTIFICATION_TYPES } from "@/lib/constants";
 
 export default function NotificationBell() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { allNotifications } = useNotifications();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Count unread notifications
-  const unreadCount = allNotifications.filter((n) => !n.isRead).length;
+  // Separate unread counts
+  const adminUnreadCount = allNotifications.filter(
+    (n) => !n.isRead && n.type === NOTIFICATION_TYPES.ADMIN_MESSAGE
+  ).length;
+  const regularUnreadCount = allNotifications.filter(
+    (n) => !n.isRead && n.type !== NOTIFICATION_TYPES.ADMIN_MESSAGE
+  ).length;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -35,6 +41,9 @@ export default function NotificationBell() {
     setIsDropdownOpen(false);
   };
 
+  const showRegular = regularUnreadCount > 0;
+  const showAdmin = adminUnreadCount > 0;
+
   return (
     <div className='relative' ref={dropdownRef}>
       <button
@@ -57,9 +66,14 @@ export default function NotificationBell() {
           />
         </svg>
 
-        {unreadCount > 0 && (
+        {showRegular && (
           <span className='absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-medium text-white'>
-            {unreadCount > 99 ? "99+" : unreadCount}
+            {regularUnreadCount > 99 ? "99+" : regularUnreadCount}
+          </span>
+        )}
+        {showAdmin && (
+          <span className='absolute -left-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-ufc-blue text-xs font-medium text-white'>
+            {adminUnreadCount > 99 ? "99+" : adminUnreadCount}
           </span>
         )}
       </button>

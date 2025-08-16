@@ -267,13 +267,8 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
         )}
 
         {(notification.type === NOTIFICATION_TYPES.FIGHTER_POST || notification.type === NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST) && notification.relatedUser && (
-<<<<<<< HEAD
-          <p className='text-white'>
+          <p className='text-white break-words whitespace-pre-wrap'>
             <span className='font-large font-bold text-white'>{notification.relatedUser.username}</span> just posted <span className='text-ufc-red'>"{notification.threadTitle}"</span>
-=======
-          <p className='text-gray-300 break-words whitespace-pre-wrap'>
-            <span className='font-medium text-white'>{notification.relatedUser.username}</span> just posted! Check out their latest thread.
->>>>>>> c3a9fb4 (adding message all types of users)
           </p>
         )}
 

@@ -7,7 +7,6 @@ import express, {
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { fetchUpcomingEvents } from "./espn-api";
-import { z } from "zod";
 import { ZodError } from "zod";
 import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
@@ -16,11 +15,6 @@ import fs from "fs";
 import {
   insertThreadSchema,
   insertReplySchema,
-  insertUserSchema,
-  insertPollSchema,
-  insertMediaSchema,
-  insertNotificationSchema,
-  PollOption,
   Thread,
 } from "@shared/schema";
 import { requireAuth, clerkClient } from "@clerk/express";
@@ -243,6 +237,186 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+
+   // Get users for admin view to be able to change role
+   app.get("/api/users",
+    requireAuth(),
+    ensureLocalUser,
+    async (req: Request, res: Response) => {
+      try {
+        if (!req.localUser || !req.localUser.id) {
+          return res.status(400).json({ message: "User ID is required" });
+        }
+        
+        // Only admins can view all users
+        if (req.localUser?.role !== "ADMIN") {
+          return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        // Parse pagination parameters
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const search = req.query.search as string || '';
+        const sortBy = req.query.sortBy as string || 'createdAt';
+        const sortOrder = req.query.sortOrder as string || 'desc';
+
+        try {
+          const result = await storage.getAllUsers({
+            page,
+            limit,
+            search,
+            sortBy,
+            sortOrder
+          });
+
+          if (!result.users || result.users.length === 0) {
+            return res.json({
+              users: [],
+              pagination: {
+                currentPage: page,
+                totalPages: 0,
+                totalUsers: 0,
+                hasNext: false,
+                hasPrevious: false
+              }
+            });
+          }
+
+          // Only return users names, email, role, status, and id
+          const users = result.users.map((user) => ({
+            id: user?.id,
+            username: user?.username,
+            email: user?.email,
+            firstName: user?.firstName,
+            lastName: user?.lastName,
+            role: user?.role,
+            status: user?.status,
+            isOnline: user?.isOnline,
+            lastActive: user?.lastActive,
+            points: user?.points,
+            rank: user?.rank,
+            createdAt: user?.createdAt,
+          }));
+
+          res.json({
+            users,
+            pagination: result.pagination
+          });
+        } catch (storageError) {
+          console.error("Storage error fetching all users for admin view:", storageError);
+          return res.json({ users: [], pagination: { currentPage: 1, totalPages: 0, totalUsers: 0, hasNext: false, hasPrevious: false } });
+        }
+      } catch (error) {
+        console.error("Error fetching all users for admin view:", error);
+        return res.json({ users: [], pagination: { currentPage: 1, totalPages: 0, totalUsers: 0, hasNext: false, hasPrevious: false } });
+      }
+  });
+
+  // Admin message user endpoint
+  app.post(
+    "/api/admin/message-user",
+    requireAuth(),
+    ensureLocalUser,
+    async (req: any, res: Response) => {
+      try {
+        const { targetUserId, message } = req.body;
+
+        if (!targetUserId || !message) {
+          return res.status(400).json({ 
+            message: "Target user ID and message are required" 
+          });
+        }
+
+        // Check if the authenticated user is an admin
+        const authenticatedUser = req.localUser;
+        if (!authenticatedUser) {
+          return res.status(401).json({ message: "Authentication required" });
+        }
+
+        if (authenticatedUser.role !== "ADMIN") {
+          return res.status(403).json({ 
+            message: "Only administrators can send messages to users" 
+          });
+        }
+
+        // Verify target user exists
+        const targetUser = await storage.getUser(targetUserId);
+        if (!targetUser) {
+          return res.status(404).json({ message: "Target user not found" });
+        }
+
+        // Create notification for the target user
+        const notification = await storage.createNotification({
+          userId: targetUserId,
+          type: "ADMIN_MESSAGE",
+          relatedUserId: authenticatedUser.id,
+          message: message,
+        });
+
+        res.json({ 
+          message: "Message sent successfully",
+          notification 
+        });
+      } catch (error) {
+        console.error("Error sending admin message:", error);
+        res.status(500).json({ message: "Failed to send message" });
+      }
+    },
+  );
+
+  // Admin bulk message users endpoint
+  app.post(
+    "/api/admin/message-users",
+    requireAuth(),
+    ensureLocalUser,
+    async (req: any, res: Response) => {
+      try {
+        const { targetRole, message } = req.body as { targetRole?: string | null; message?: string };
+
+        if (!message || !message.trim()) {
+          return res.status(400).json({ message: "Message is required" });
+        }
+
+        // Check if the authenticated user is an admin
+        const authenticatedUser = req.localUser;
+        if (!authenticatedUser) {
+          return res.status(401).json({ message: "Authentication required" });
+        }
+
+        if (authenticatedUser.role !== "ADMIN") {
+          return res.status(403).json({ message: "Only administrators can send messages to users" });
+        }
+
+        let targets;
+        if (targetRole && targetRole !== "ALL") {
+          targets = await storage.getUsersByRole(targetRole);
+        } else {
+          targets = await storage.getAllUsersList();
+        }
+
+        if (!targets || targets.length === 0) {
+          return res.json({ message: "No users matched the selection", count: 0 });
+        }
+
+        await Promise.all(
+          targets.map((u: any) =>
+            storage.createNotification({
+              userId: u.id,
+              type: "ADMIN_MESSAGE",
+              relatedUserId: authenticatedUser.id,
+              message: message.trim(),
+            })
+          )
+        );
+
+        res.json({ message: "Messages sent successfully", count: targets.length });
+      } catch (error) {
+        console.error("Error sending bulk admin messages:", error);
+        res.status(500).json({ message: "Failed to send messages" });
+      }
+    },
+  );
+
 
   // Get top users based on daily fighter cred for the current day
   app.get("/api/users/top", async (req: Request, res: Response) => {
@@ -1619,14 +1793,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .json({ message: "Failed to update user role" });
         }
 
-        // Don't return password in response
-        const { password, ...userWithoutPassword } = updatedUser;
-
         res.json({
           message: "User role updated successfully",
           previousRole: userToUpdate.role,
           newRole: role,
-          user: userWithoutPassword,
+          user: updatedUser,
         });
       } catch (error) {
         console.error("Error updating user role:", error);

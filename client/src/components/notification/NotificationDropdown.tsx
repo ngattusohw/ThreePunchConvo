@@ -5,6 +5,7 @@ import { Notification } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import UserAvatar from "@/components/ui/user-avatar";
 import { NOTIFICATION_TYPES } from "@/lib/constants";
+import OctagonBlack from "@/assets/3PC-Octagon-Black-RGB.png";
 
 interface NotificationDropdownProps {
   onClose: () => void;
@@ -78,7 +79,7 @@ export default function NotificationDropdown({
         </button>
       </div>
 
-      <div className='max-h-96 overflow-y-auto p-4'>
+      <div className='max-h-96 overflow-y-auto overflow-x-hidden p-4'>
         {isLoading ? (
           <div className='py-8 text-center'>
             <div className='border-ufc-blue mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-t-2'></div>
@@ -142,30 +143,34 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
 
   return (
     <li
-      className={`flex items-start p-3 ${notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} ${isProfessionalPost ? "border-2 border-ufc-red " : ""}cursor-pointer rounded-lg transition-all hover:bg-opacity-70`}
+      className={`flex items-start gap-3 p-3 ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "bg-[#FAE1BE] text-black" : notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} ${isProfessionalPost ? "border-2 border-ufc-red " : ""} cursor-pointer rounded-lg transition-all ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "hover:bg-opacity-70"} overflow-hidden`}
       onClick={onClick}
     >
       {notification.type === NOTIFICATION_TYPES.SYSTEM ? (
-        <div className='bg-ufc-blue mr-3 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-bold text-black'>
+        <div className='bg-ufc-blue mr-0 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-bold text-black'>
           3PC
+        </div>
+      ) : notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? (
+        <div className='mr-0 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full overflow-hidden bg-white'>
+          <img src={OctagonBlack} alt='Admin' className='h-10 w-10 object-contain' />
         </div>
       ) : notification.relatedUser ? (
         <UserAvatar
           user={notification.relatedUser}
           size='md'
-          className='mr-3 flex-shrink-0'
+          className='mr-0 flex-shrink-0'
         />
       ) : (
-        <div className='mr-3 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-700 font-bold text-white'>
+        <div className='mr-0 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-700 font-bold text-white'>
           ?
         </div>
       )}
 
-      <div className='flex-1'>
+      <div className='flex-1 min-w-0'>
         {notification.type === NOTIFICATION_TYPES.REPLY &&
           notification.relatedUser &&
           notification.threadTitle && (
-            <p className='text-gray-300'>
+            <p className='text-gray-300 break-words whitespace-pre-wrap'>
               <span className='font-medium text-white'>
                 {notification.relatedUser.username}
               </span>{" "}
@@ -179,7 +184,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
         {notification.type === NOTIFICATION_TYPES.MENTION &&
           notification.relatedUser &&
           notification.threadTitle && (
-            <p className='text-gray-300'>
+            <p className='text-gray-300 break-words whitespace-pre-wrap'>
               <span className='font-medium text-white'>
                 {notification.relatedUser.username}
               </span>{" "}
@@ -193,7 +198,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
         {notification.type === NOTIFICATION_TYPES.LIKE &&
           notification.relatedUser &&
           notification.threadTitle && (
-            <p className='text-gray-300'>
+            <p className='text-gray-300 break-words whitespace-pre-wrap'>
               <span className='font-medium text-white'>
                 {notification.relatedUser.username}
               </span>{" "}
@@ -218,7 +223,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
         {notification.type === NOTIFICATION_TYPES.POTD &&
           notification.relatedUser &&
           notification.threadTitle && (
-            <p className='text-gray-300'>
+            <p className='text-gray-300 break-words whitespace-pre-wrap'>
               <span className='font-medium text-white'>
                 {notification.relatedUser.username}
               </span>{" "}
@@ -231,7 +236,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
           )}
 
         {notification.type === NOTIFICATION_TYPES.FOLLOW && notification.relatedUser && (
-          <p className='text-gray-300'>
+          <p className='text-gray-300 break-words whitespace-pre-wrap'>
             <span className='font-medium text-white'>
               {notification.relatedUser.username}
             </span>{" "}
@@ -239,15 +244,22 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
           </p>
         )}
 
+{notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE && notification.message && (
+          <p className='text-black break-words whitespace-pre-wrap'>
+            <span className='font-medium text-black'>Admin</span>{" "}
+            {notification.message}
+          </p>
+        )}
+
         {notification.type === NOTIFICATION_TYPES.SYSTEM && notification.message && (
-          <p className='text-gray-300'>
+          <p className='text-gray-300 break-words whitespace-pre-wrap'>
             <span className='font-medium text-white'>System</span>{" "}
             {notification.message}
           </p>
         )}
 
         {notification.type === NOTIFICATION_TYPES.THREAD_PINNED && notification.threadTitle && (
-          <p className='text-gray-300'>
+          <p className='text-gray-300 break-words whitespace-pre-wrap'>
             <span className='font-medium text-white'>System</span> Your post{" "}
             <span className='text-ufc-blue'>"{notification.threadTitle}"</span>{" "}
             has been pinned by a moderator
@@ -255,13 +267,13 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
         )}
 
         {(notification.type === NOTIFICATION_TYPES.FIGHTER_POST || notification.type === NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST) && notification.relatedUser && (
-          <p className='text-white'>
+          <p className='text-white break-words whitespace-pre-wrap'>
             <span className='font-large font-bold text-white'>{notification.relatedUser.username}</span> just posted <span className='text-ufc-red'>"{notification.threadTitle}"</span>
           </p>
         )}
 
         {notification.replyPreview && !notification.replyId && (
-          <p className='mt-1 text-sm text-gray-400'>
+          <p className='mt-1 text-sm text-gray-400 break-words whitespace-pre-wrap'>
             {notification.replyPreview}
           </p>
         )}

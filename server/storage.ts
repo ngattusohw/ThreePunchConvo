@@ -32,7 +32,7 @@ import {
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool, db } from "./db";
-import { eq, and, sql, desc, inArray, not, notInArray } from "drizzle-orm";
+import { eq, and, sql, desc, inArray, not, notInArray, or, ilike, asc, count } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import {
   USER_ROLES,
@@ -56,7 +56,22 @@ export interface IStorage {
   deleteUser(id: string): Promise<boolean>;
   getTopUsers(limit: number): Promise<User[]>;
   getTopUsersFromDailyCred(limit: number): Promise<User[]>;
-  getAllUsers(): Promise<User[]>;
+  getAllUsers(options?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  }): Promise<{
+    users: User[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalUsers: number;
+      hasNext: boolean;
+      hasPrevious: boolean;
+    };
+  }>;
 
   // Thread management
   getThread(
@@ -625,44 +640,118 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getAllUsers(): Promise<User[]> {
+  async getAllUsers(options?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  }): Promise<{
+    users: User[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalUsers: number;
+      hasNext: boolean;
+      hasPrevious: boolean;
+    };
+  }> {
     try {
-      return await db
-        .select({
-          id: users.id,
-          username: users.username,
-          email: users.email,
-          password: users.password,
-          externalId: users.externalId,
-          stripeId: users.stripeId,
-          planType: users.planType,
-          avatar: users.avatar,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          bio: users.bio,
-          profileImageUrl: users.profileImageUrl,
-          role: users.role,
-          status: users.status,
-          isOnline: users.isOnline,
-          lastActive: users.lastActive,
-          points: users.points,
-          rank: users.rank,
-          createdAt: users.createdAt,
-          updatedAt: users.updatedAt,
-          postsCount: users.postsCount,
-          likesCount: users.likesCount,
-          pinnedByUserCount: users.pinnedByUserCount,
-          pinnedCount: users.pinnedCount,
-          followersCount: users.followersCount,
-          followingCount: users.followingCount,
-          socialLinks: users.socialLinks,
-          disabled: users.disabled,
-          disabledAt: users.disabledAt,
-          metadata: users.metadata,
-        })
-        .from(users);
+      const {
+        page = 1,
+        limit = 10,
+        search = '',
+        sortBy = 'createdAt',
+        sortOrder = 'desc'
+      } = options || {};
+
+      const offset = (page - 1) * limit;
+
+      // Build the query with search and sorting
+      let query = db.select().from(users);
+
+      // Add search functionality
+      if (search) {
+        query = query.where(
+          or(
+            ilike(users.username, `%${search}%`),
+            ilike(users.email, `%${search}%`),
+            ilike(users.firstName, `%${search}%`),
+            ilike(users.lastName, `%${search}%`)
+          )
+        );
+      }
+
+      // Add sorting
+      const orderColumn = users[sortBy as keyof typeof users] || users.createdAt;
+      if (sortOrder === 'asc') {
+        query = query.orderBy(asc(orderColumn));
+      } else {
+        query = query.orderBy(desc(orderColumn));
+      }
+
+      // Get total count for pagination
+      const countQuery = db.select({ count: count() }).from(users);
+      if (search) {
+        countQuery.where(
+          or(
+            ilike(users.username, `%${search}%`),
+            ilike(users.email, `%${search}%`),
+            ilike(users.firstName, `%${search}%`),
+            ilike(users.lastName, `%${search}%`)
+          )
+        );
+      }
+
+      const [usersResult, countResult] = await Promise.all([
+        query.limit(limit).offset(offset),
+        countQuery
+      ]);
+
+      const totalUsers = countResult[0]?.count || 0;
+      const totalPages = Math.ceil(totalUsers / limit);
+
+      return {
+        users: usersResult,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalUsers,
+          hasNext: page < totalPages,
+          hasPrevious: page > 1
+        }
+      };
     } catch (error) {
       console.error("Error getting all users:", error);
+      return {
+        users: [],
+        pagination: {
+          currentPage: 1,
+          totalPages: 0,
+          totalUsers: 0,
+          hasNext: false,
+          hasPrevious: false
+        }
+      };
+    }
+  }
+
+  async getUsersByRole(role: string): Promise<User[]> {
+    try {
+      const result = await db.select().from(users).where(eq(users.role, role));
+      return result;
+    } catch (error) {
+      console.error("Error getting users by role:", error);
+      return [];
+    }
+  }
+
+  async getAllUsersList(): Promise<User[]> {
+    try {
+      const result = await db.select().from(users);
+      return result;
+    } catch (error) {
+      console.error("Error getting all users list:", error);
       return [];
     }
   }

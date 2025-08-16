@@ -201,3 +201,37 @@ export interface RankedUser {
   };
   rank: number;
 }
+
+export interface AdminViewUser {
+  id: string;
+  username: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: UserRole;
+  status: UserStatus;
+  isOnline: boolean;
+  lastActive: Date;
+  points: number;
+  rank: number;
+  createdAt: Date;
+}
+
+export interface AdminUsersResponse {
+  users: AdminViewUser[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalUsers: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
+}
+
+export interface AdminUsersFilters {
+  page: number;
+  limit: number;
+  search: string;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+}

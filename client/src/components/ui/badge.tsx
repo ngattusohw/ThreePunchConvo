@@ -3,7 +3,7 @@ import react, { ReactNode } from "react";
 export function Badge({
   text,
   color = "",
-  icon,
+  icon = null,
   textColor = "text-white",
   className = "",
 }: {

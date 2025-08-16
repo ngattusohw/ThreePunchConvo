@@ -104,7 +104,7 @@ export default function EditUserModal({ user, isOpen, onClose }: EditUserModalPr
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-gray-700 border-gray-600">
-                        {Object.values(USER_ROLE_OPTIONS).map((role) => (
+                        {Object.values(USER_ROLE_OPTIONS).filter((role) => role !== "MODERATOR" && role !== "ADMIN").map((role) => (
                           <SelectItem
                             key={role}
                             value={role}

@@ -246,7 +246,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
 
 {notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE && notification.message && (
           <p className='text-black break-words whitespace-pre-wrap'>
-            <span className='font-medium text-black'>Admin</span>{" "}
+            <span className='font-medium text-black'>Admin <span className='text-ufc-red'>{notification.relatedUser?.username}</span>{" just sent you a message: "}</span>
             {notification.message}
           </p>
         )}

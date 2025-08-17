@@ -117,7 +117,6 @@ export default function AuthPage() {
               <div className='mb-8 lg:hidden'>
                 <div className='mx-auto w-full max-w-md'>
                   <SignIn
-                    forceRedirectUrl='/'
                     appearance={{
                       baseTheme: dark,
                       elements: {
@@ -227,7 +226,6 @@ export default function AuthPage() {
             <div className='hidden h-full w-full items-center justify-center lg:flex'>
               <div className='w-full max-w-md'>
                 <SignIn
-                  forceRedirectUrl='/'
                   appearance={{
                     baseTheme: dark,
                     elements: {

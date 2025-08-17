@@ -24,6 +24,7 @@ import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { useAuth } from "@clerk/clerk-react";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import SignUp from "./pages/SignUp";
 
 function App() {
   const { getToken } = useAuth();
@@ -452,7 +453,6 @@ useEffect(() => {
             ) : (
               <Switch>
                 {/* Public Routes - Always accessible */}
-                <ProtectedRoute path='/signUp' component={Forum} />
                 <Route path='/auth' component={AuthPage} />
                 <Route path='/login' component={AuthPage} />
                 <Route path='/register' component={AuthPage} />
@@ -469,6 +469,7 @@ useEffect(() => {
                   component={UserProfile}
                 />
                 <ProtectedRoute path='/return' component={Return} />
+                <ProtectedRoute path='/signUp' component={Forum} />
 
                 {/* Admin Routes - Need auth and admin role */}
                 <AdminRoute path='/admin' component={Admin} />

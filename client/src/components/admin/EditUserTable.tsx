@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAdminView } from "@/api/hooks/useAdminView";
 import {
   Table,
@@ -43,9 +43,25 @@ export default function EditUsers() {
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const [messageUser, setMessageUser] = useState<any>(null);
   const [isBulkMessageOpen, setIsBulkMessageOpen] = useState(false);
-  const [searchInput, setSearchInput] = useState('');
+  const [searchInput, setSearchInput] = useState(filters.search || '');
   
-  if (isLoading) return <div className="text-white">Loading...</div>;
+  // Debounced search effect - only search when the term actually changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      // Only update search if the search term has actually changed
+      if (searchInput !== filters.search) {
+        updateSearch(searchInput);
+      }
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(timeoutId);
+  }, [searchInput, updateSearch, filters.search]);
+
+  // Sync searchInput with filters.search when filters change externally
+  useEffect(() => {
+    setSearchInput(filters.search || '');
+  }, [filters.search]);
+
   if (error) return <div className="text-red-400">Error loading users</div>;
 
   const formatDate = (dateString: string) => {
@@ -57,16 +73,6 @@ export default function EditUsers() {
     updateSort(column, newOrder);
   };
 
-  const handleSearch = () => {
-    updateSearch(searchInput);
-  };
-
-  const handleSearchKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-
   const getSortIcon = (column: string) => {
     if (filters.sortBy !== column) return null;
     return filters.sortOrder === 'asc' ? 
@@ -75,7 +81,8 @@ export default function EditUsers() {
   };
 
   const renderPagination = () => {
-    if (!pagination || pagination.totalPages <= 1) return null;
+    // Don't show pagination while loading or if no pagination data
+    if (isLoading || !pagination || pagination.totalPages <= 1) return null;
 
     const pages = [];
     const maxVisiblePages = 5;
@@ -99,10 +106,10 @@ export default function EditUsers() {
         <PaginationContent>
           <PaginationItem>
             <PaginationPrevious 
-              onClick={() => pagination.hasPrevious && goToPage(currentPage - 1)}
+              onClick={() => !isLoading && pagination.hasPrevious && goToPage(currentPage - 1)}
               className={cn(
                 "text-white hover:bg-gray-700 hover:text-white border-gray-600",
-                !pagination.hasPrevious ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                !pagination.hasPrevious || isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
               )}
             />
           </PaginationItem>
@@ -110,10 +117,11 @@ export default function EditUsers() {
           {pages.map((page) => (
             <PaginationItem key={page}>
               <PaginationLink
-                onClick={() => goToPage(page)}
+                onClick={() => !isLoading && goToPage(page)}
                 isActive={page === currentPage}
                 className={cn(
-                  "cursor-pointer text-white hover:bg-gray-700 hover:text-white border-gray-600",
+                  "text-white hover:bg-gray-700 hover:text-white border-gray-600",
+                  isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
                   page === currentPage 
                     ? "bg-gray-700 text-white border-gray-500" 
                     : "hover:bg-gray-700"
@@ -126,10 +134,10 @@ export default function EditUsers() {
           
           <PaginationItem>
             <PaginationNext 
-              onClick={() => pagination.hasNext && goToPage(currentPage + 1)}
+              onClick={() => !isLoading && pagination.hasNext && goToPage(currentPage + 1)}
               className={cn(
                 "text-white hover:bg-gray-700 hover:text-white border-gray-600",
-                !pagination.hasNext ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                !pagination.hasNext || isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
               )}
             />
           </PaginationItem>
@@ -147,12 +155,8 @@ export default function EditUsers() {
             placeholder="Search users..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            onKeyPress={handleSearchKeyPress}
             className="w-64"
           />
-          <Button onClick={handleSearch} variant="outline">
-            Search
-          </Button>
         </div>
         
         <div className="flex items-center gap-3">
@@ -176,7 +180,7 @@ export default function EditUsers() {
       </div>
 
       {/* Results Info */}
-      {pagination && (
+      {!isLoading && pagination && (
         <div className="mb-4 text-sm text-gray-400">
           Showing {((pagination.currentPage - 1) * filters.limit) + 1} to{' '}
           {Math.min(pagination.currentPage * filters.limit, pagination.totalUsers)} of{' '}
@@ -235,61 +239,69 @@ export default function EditUsers() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users?.map((user) => (
-              <TableRow key={user.id} className="border-gray-600 hover:bg-gray-700">
-                <TableCell className="font-mono text-xs text-gray-300 w-24 max-w-24 overflow-hidden">
-                  {user.id}
-                </TableCell>
-                <TableCell className="font-medium text-white w-12 max-w-24 break-words">
-                  {user.username}
-                </TableCell>
-                <TableCell className="text-gray-300 text-xs w-32 break-words">
-                  {user.email}
-                </TableCell>
-                <TableCell className="text-gray-300 text-xs w-24 break-words">
-                  {user.firstName || user.lastName 
-                    ? `${user.firstName || ''} ${user.lastName || ''}`.trim() 
-                    : 'N/A'
-                  }
-                </TableCell>
-                <TableCell className="w-12 max-w-24 break-words">
-                    <RoleBadge role={user.role} />
-                </TableCell>
-                <TableCell className="w-24">
-                  <span className="inline-flex items-center rounded-md bg-green-600 px-1 py-0.5 text-xs font-medium text-white ring-1 ring-inset ring-green-500">
-                    {user.status}
-                  </span>
-                </TableCell>
-                <TableCell className="text-gray-300 font-mono text-xs w-16">
-                  {user.points.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-gray-300 text-xs w-24">
-                  {formatDate(user.createdAt)}
-                </TableCell>
-                <TableCell className="w-32">
-                  <div className="flex gap-2">
-                    <button 
-                      className="text-black hover:bg-gray-100 text-sm font-medium bg-white rounded-lg px-2 py-1"
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setIsModalOpen(true);
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      className="text-white hover:bg-blue-600 text-sm font-medium bg-blue-500 rounded-lg px-2 py-1"
-                      onClick={() => {
-                        setMessageUser(user);
-                        setIsMessageModalOpen(true);
-                      }}
-                    >
-                      Message
-                    </button>
-                  </div>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center text-white py-8">
+                  Loading...
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              users?.map((user) => (
+                <TableRow key={user.id} className="border-gray-600 hover:bg-gray-700">
+                  <TableCell className="font-mono text-xs text-gray-300 w-24 max-w-24 overflow-hidden">
+                    {user.id}
+                  </TableCell>
+                  <TableCell className="font-medium text-white w-12 max-w-24 break-words">
+                    {user.username}
+                  </TableCell>
+                  <TableCell className="text-gray-300 text-xs w-32 break-words">
+                    {user.email}
+                  </TableCell>
+                  <TableCell className="text-gray-300 text-xs w-24 break-words">
+                    {user.firstName || user.lastName 
+                      ? `${user.firstName || ''} ${user.lastName || ''}`.trim() 
+                      : 'N/A'
+                    }
+                  </TableCell>
+                  <TableCell className="w-12 max-w-24 break-words">
+                      <RoleBadge role={user.role} />
+                  </TableCell>
+                  <TableCell className="w-24">
+                    <span className="inline-flex items-center rounded-md bg-green-600 px-1 py-0.5 text-xs font-medium text-white ring-1 ring-inset ring-green-500">
+                      {user.status}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-gray-300 font-mono text-xs w-16">
+                    {user.points.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-gray-300 text-xs w-24">
+                    {formatDate(user.createdAt)}
+                  </TableCell>
+                  <TableCell className="w-32">
+                    <div className="flex gap-2">
+                      <button 
+                        className="text-black hover:bg-gray-100 text-sm font-medium bg-white rounded-lg px-2 py-1"
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setIsModalOpen(true);
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        className="text-white hover:bg-blue-600 text-sm font-medium bg-blue-500 rounded-lg px-2 py-1"
+                        onClick={() => {
+                          setMessageUser(user);
+                          setIsMessageModalOpen(true);
+                        }}
+                      >
+                        Message
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

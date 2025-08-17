@@ -24,6 +24,11 @@ export default function NotificationDropdown({
   } = useNotifications();
   const [, setLocation] = useLocation();
 
+  // Filter out admin notifications for UI logic
+  const nonAdminNotifications = notifications.filter(
+    (notification) => notification.type !== NOTIFICATION_TYPES.ADMIN_MESSAGE
+  );
+
   // Auto-close dropdown when all notifications are cleared
   useEffect(() => {
     if (notifications.length === 0 && !isLoading) {
@@ -110,7 +115,7 @@ export default function NotificationDropdown({
         )}
       </div>
 
-      {notifications.length > 0 && (
+      {nonAdminNotifications.length > 0 && (
         <div className='bg-ufc-black border-t border-gray-800 p-4'>
           <button
             onClick={handleClearAll}

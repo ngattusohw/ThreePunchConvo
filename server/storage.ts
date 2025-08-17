@@ -2422,7 +2422,12 @@ export class DatabaseStorage implements IStorage {
       await db
         .update(notifications)
         .set({ isRead: true })
-        .where(eq(notifications.userId, userId));
+        .where(
+          and(
+            eq(notifications.userId, userId),
+            not(eq(notifications.type, NOTIFICATION_TYPES.ADMIN_MESSAGE))
+          )
+        );
 
       return true;
     } catch (error) {

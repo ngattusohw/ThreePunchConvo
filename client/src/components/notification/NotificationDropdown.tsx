@@ -138,13 +138,17 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
     markAsRead(notification.id);
   };
 
+  // Create conditional click handler - admin messages should not be clickable
+  const handleCardClick = notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE 
+    ? undefined 
+    : onClick;
 
   const isProfessionalPost = notification.type === NOTIFICATION_TYPES.FIGHTER_POST || notification.type === NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST;
 
   return (
     <li
-      className={`flex items-start gap-3 p-3 ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "bg-[#FAE1BE] text-black" : notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} ${isProfessionalPost ? "border-2 border-ufc-red " : ""} cursor-pointer rounded-lg transition-all ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "hover:bg-opacity-70"} overflow-hidden`}
-      onClick={onClick}
+      className={`flex items-start gap-3 p-3 ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "bg-[#FAE1BE] text-black" : notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} ${isProfessionalPost ? "border-2 border-ufc-red " : ""} ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "cursor-pointer"} rounded-lg transition-all ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "hover:bg-opacity-70"} overflow-hidden`}
+      onClick={handleCardClick}
     >
       {notification.type === NOTIFICATION_TYPES.SYSTEM ? (
         <div className='bg-ufc-blue mr-0 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-bold text-black'>

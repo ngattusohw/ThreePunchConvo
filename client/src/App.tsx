@@ -452,7 +452,7 @@ useEffect(() => {
             ) : (
               <Switch>
                 {/* Public Routes - Always accessible */}
-
+                <ProtectedRoute path='/signUp' component={Forum} />
                 <Route path='/auth' component={AuthPage} />
                 <Route path='/login' component={AuthPage} />
                 <Route path='/register' component={AuthPage} />

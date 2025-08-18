@@ -15,7 +15,7 @@ export default function NotificationDropdown({
   onClose,
 }: NotificationDropdownProps) {
   const {
-    notifications,
+    notifications: rawNotifications,
     isLoading,
     error,
     markAllAsRead,
@@ -23,6 +23,37 @@ export default function NotificationDropdown({
     isMarking,
   } = useNotifications();
   const [, setLocation] = useLocation();
+
+  // Helper function to check if a notification has sufficient data to display
+  const isNotificationComplete = (notification: Notification): boolean => {
+    switch (notification.type) {
+      case NOTIFICATION_TYPES.REPLY:
+      case NOTIFICATION_TYPES.MENTION:
+      case NOTIFICATION_TYPES.LIKE:
+      case NOTIFICATION_TYPES.POTD:
+        return !!(notification.relatedUser && notification.threadTitle);
+      
+      case NOTIFICATION_TYPES.FOLLOW:
+        return !!notification.relatedUser;
+      
+      case NOTIFICATION_TYPES.ADMIN_MESSAGE:
+      case NOTIFICATION_TYPES.SYSTEM:
+        return !!notification.message;
+      
+      case NOTIFICATION_TYPES.THREAD_PINNED:
+        return !!notification.threadTitle;
+      
+      case NOTIFICATION_TYPES.FIGHTER_POST:
+      case NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST:
+        return !!(notification.relatedUser && notification.threadTitle);
+      
+      default:
+        return false; // Unknown notification types won't be displayed
+    }
+  };
+
+  // Filter out incomplete notifications
+  const notifications = rawNotifications.filter(isNotificationComplete);
 
   // Filter out admin notifications for UI logic
   const nonAdminNotifications = notifications.filter(

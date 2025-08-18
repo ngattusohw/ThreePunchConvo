@@ -15,7 +15,7 @@ export default function NotificationDropdown({
   onClose,
 }: NotificationDropdownProps) {
   const {
-    notifications,
+    notifications: rawNotifications,
     isLoading,
     error,
     markAllAsRead,
@@ -23,6 +23,42 @@ export default function NotificationDropdown({
     isMarking,
   } = useNotifications();
   const [, setLocation] = useLocation();
+
+  // Helper function to check if a notification has sufficient data to display
+  const isNotificationComplete = (notification: Notification): boolean => {
+    switch (notification.type) {
+      case NOTIFICATION_TYPES.REPLY:
+      case NOTIFICATION_TYPES.MENTION:
+      case NOTIFICATION_TYPES.LIKE:
+      case NOTIFICATION_TYPES.POTD:
+        return !!(notification.relatedUser && notification.threadTitle);
+      
+      case NOTIFICATION_TYPES.FOLLOW:
+        return !!notification.relatedUser;
+      
+      case NOTIFICATION_TYPES.ADMIN_MESSAGE:
+      case NOTIFICATION_TYPES.SYSTEM:
+        return !!notification.message;
+      
+      case NOTIFICATION_TYPES.THREAD_PINNED:
+        return !!notification.threadTitle;
+      
+      case NOTIFICATION_TYPES.FIGHTER_POST:
+      case NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST:
+        return !!(notification.relatedUser && notification.threadTitle);
+      
+      default:
+        return false; // Unknown notification types won't be displayed
+    }
+  };
+
+  // Filter out incomplete notifications
+  const notifications = rawNotifications.filter(isNotificationComplete);
+
+  // Filter out admin notifications for UI logic
+  const nonAdminNotifications = notifications.filter(
+    (notification) => notification.type !== NOTIFICATION_TYPES.ADMIN_MESSAGE
+  );
 
   // Auto-close dropdown when all notifications are cleared
   useEffect(() => {
@@ -110,7 +146,7 @@ export default function NotificationDropdown({
         )}
       </div>
 
-      {notifications.length > 0 && (
+      {nonAdminNotifications.length > 0 && (
         <div className='bg-ufc-black border-t border-gray-800 p-4'>
           <button
             onClick={handleClearAll}
@@ -138,13 +174,17 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
     markAsRead(notification.id);
   };
 
+  // Create conditional click handler - admin messages should not be clickable
+  const handleCardClick = notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE 
+    ? undefined 
+    : onClick;
 
   const isProfessionalPost = notification.type === NOTIFICATION_TYPES.FIGHTER_POST || notification.type === NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST;
 
   return (
     <li
-      className={`flex items-start gap-3 p-3 ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "bg-[#FAE1BE] text-black" : notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} ${isProfessionalPost ? "border-2 border-ufc-red " : ""} cursor-pointer rounded-lg transition-all ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "hover:bg-opacity-70"} overflow-hidden`}
-      onClick={onClick}
+      className={`flex items-start gap-3 p-3 ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "bg-[#FAE1BE] text-black" : notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} ${isProfessionalPost ? "border-2 border-ufc-red " : ""} ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "cursor-pointer"} rounded-lg transition-all ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "hover:bg-opacity-70"} overflow-hidden`}
+      onClick={handleCardClick}
     >
       {notification.type === NOTIFICATION_TYPES.SYSTEM ? (
         <div className='bg-ufc-blue mr-0 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-bold text-black'>

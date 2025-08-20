@@ -82,21 +82,23 @@ export const registerStripeEndpoints = (app: Express) => {
               });
             }
   
-            // Check for pending/incomplete checkout sessions
+            // Check for pending/incomplete checkout sessions and expire them
             const existingSessions = await stripe.checkout.sessions.list({
               customer: customerId,
               status: 'open',
-              limit: 1,
+              limit: 10,
             });
-  
+
             if (existingSessions.data.length > 0) {
-              // Return existing session instead of creating new one
-              console.log("Returning existing checkout session:", existingSessions.data[0].id);
-              return res.send({ 
-                clientSecret: existingSessions.data[0].client_secret,
-                sessionId: existingSessions.data[0].id,
-                isExisting: true 
-              });
+              console.log(`Found ${existingSessions.data.length} existing open sessions, expiring them`);
+              for (const session of existingSessions.data) {
+                try {
+                  await stripe.checkout.sessions.expire(session.id);
+                  console.log("Expired existing session:", session.id);
+                } catch (expireError) {
+                  console.warn("Could not expire session:", session.id, expireError);
+                }
+              }
             }
           } catch (stripeError) {
             console.error("Error checking existing subscriptions/sessions:", stripeError);

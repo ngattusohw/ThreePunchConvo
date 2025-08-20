@@ -312,6 +312,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
   });
 
+  // Admin message user endpoint
+  app.post(
+    "/api/admin/message-user",
+    requireAuth(),
+    ensureLocalUser,
+    async (req: any, res: Response) => {
+      try {
+        const { targetUserId, message } = req.body;
+
+        if (!targetUserId || !message) {
+          return res.status(400).json({ 
+            message: "Target user ID and message are required" 
+          });
+        }
+
+        // Check if the authenticated user is an admin
+        const authenticatedUser = req.localUser;
+        if (!authenticatedUser) {
+          return res.status(401).json({ message: "Authentication required" });
+        }
+
+        if (authenticatedUser.role !== "ADMIN") {
+          return res.status(403).json({ 
+            message: "Only administrators can send messages to users" 
+          });
+        }
+
+        // Verify target user exists
+        const targetUser = await storage.getUser(targetUserId);
+        if (!targetUser) {
+          return res.status(404).json({ message: "Target user not found" });
+        }
+
+        // Create notification for the target user
+        const notification = await storage.createNotification({
+          userId: targetUserId,
+          type: "ADMIN_MESSAGE",
+          relatedUserId: authenticatedUser.id,
+          message: message.trim(),
+        });
+
+        res.json({ 
+          message: "Message sent successfully",
+          notification 
+        });
+      } catch (error) {
+        console.error("Error sending admin message:", error);
+        res.status(500).json({ message: "Failed to send message" });
+      }
+    },
+  );
+
+  // Admin bulk message users endpoint
+  app.post(
+    "/api/admin/message-users",
+    requireAuth(),
+    ensureLocalUser,
+    async (req: any, res: Response) => {
+      try {
+        const { targetRole, message } = req.body as { targetRole?: string | null; message?: string };
+
+        if (!message || !message.trim()) {
+          return res.status(400).json({ message: "Message is required" });
+        }
+
+        // Check if the authenticated user is an admin
+        const authenticatedUser = req.localUser;
+        if (!authenticatedUser) {
+          return res.status(401).json({ message: "Authentication required" });
+        }
+
+        if (authenticatedUser.role !== "ADMIN") {
+          return res.status(403).json({ message: "Only administrators can send messages to users" });
+        }
+
+        let targets;
+        if (targetRole && targetRole !== "ALL") {
+          targets = await storage.getUsersByRole(targetRole);
+        } else {
+          targets = await storage.getAllUsersList();
+        }
+
+        if (!targets || targets.length === 0) {
+          return res.json({ message: "No users matched the selection", count: 0 });
+        }
+
+        await Promise.all(
+          targets.map((u: any) =>
+            storage.createNotification({
+              userId: u.id,
+              type: "ADMIN_MESSAGE",
+              relatedUserId: authenticatedUser.id,
+              message: message.trim(),
+            })
+          )
+        );
+
+        res.json({ message: "Messages sent successfully", count: targets.length });
+      } catch (error) {
+        console.error("Error sending bulk admin messages:", error);
+        res.status(500).json({ message: "Failed to send messages" });
+      }
+    },
+  );
+
+
   // Get top users based on daily fighter cred for the current day
   app.get("/api/users/top", async (req: Request, res: Response) => {
     try {

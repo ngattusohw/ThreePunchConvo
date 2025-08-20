@@ -36,10 +36,9 @@ interface EditUserModalProps {
   user: any;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (userData: EditUserFormData) => void;
 }
 
-export default function EditUserModal({ user, isOpen, onClose, onSave }: EditUserModalProps) {
+export default function EditUserModal({ user, isOpen, onClose }: EditUserModalProps) {
   const form = useForm<EditUserFormData>({
     defaultValues: {
       role: user?.role || "USER",
@@ -105,7 +104,7 @@ export default function EditUserModal({ user, isOpen, onClose, onSave }: EditUse
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-gray-700 border-gray-600">
-                        {Object.values(USER_ROLE_OPTIONS).map((role) => (
+                        {Object.values(USER_ROLE_OPTIONS).filter((role) => role !== "MODERATOR" && role !== "ADMIN").map((role) => (
                           <SelectItem
                             key={role}
                             value={role}

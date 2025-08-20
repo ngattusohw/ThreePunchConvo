@@ -152,7 +152,49 @@ const CheckoutForm = () => {
   };
 
   return (
-    <div className='mx-auto my-5 flex max-w-md flex-col rounded-xl border border-gray-800 bg-gray-900 p-8 shadow-2xl'>
+    <div className='mx-auto my-5 flex max-w-md flex-col rounded-xl border border-gray-800 bg-gray-900 p-8 shadow-2xl relative'>
+      {/* Custom Loading Overlay */}
+      {isLoading && (
+        <div className='absolute inset-0 bg-gray-900/95 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center z-50'>
+          <div className='text-center'>
+            
+            {/* Loading Text */}
+            <h3 className='text-xl font-bold text-white mb-2'>Processing Your Subscription</h3>
+            <p className='text-gray-300 text-sm mb-4'>
+              Securing your payment and setting up your account...
+            </p>
+            
+            {/* Progress Dots */}
+            <div className='flex justify-center space-x-2'>
+              <div className='w-2 h-2 bg-ufc-blue rounded-full animate-bounce'></div>
+              <div className='w-2 h-2 bg-ufc-blue rounded-full animate-bounce' style={{animationDelay: '0.1s'}}></div>
+              <div className='w-2 h-2 bg-ufc-blue rounded-full animate-bounce' style={{animationDelay: '0.2s'}}></div>
+            </div>
+            
+            {/* Additional Info */}
+            <div className='mt-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700'>
+              <div className='flex items-center justify-center text-sm text-gray-400'>
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  className='h-4 w-4 mr-2 text-green-400'
+                  fill='none'
+                  viewBox='0 0 24 24'
+                  stroke='currentColor'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
+                  />
+                </svg>
+                <span>Your payment is secure and encrypted</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
         <h4 className='mb-6 text-2xl font-bold text-white'>
           Complete Your Subscription
@@ -170,6 +212,7 @@ const CheckoutForm = () => {
                   ? 'bg-ufc-blue text-black font-medium'
                   : 'border border-gray-600 text-white hover:bg-gray-700'
               }`}
+              disabled={isLoading}
             >
               <div className='text-center'>
                 <div className='font-medium'>Monthly</div>
@@ -184,6 +227,7 @@ const CheckoutForm = () => {
                   ? 'bg-ufc-blue text-black font-medium'
                   : 'border border-gray-600 text-white hover:bg-gray-700'
               }`}
+              disabled={isLoading}
             >
               <div className='text-center'>
                 <div className='font-medium'>Yearly</div>
@@ -306,6 +350,7 @@ const CheckoutForm = () => {
                   type='button'
                   onClick={handleRemovePromoCode}
                   className='text-sm font-medium text-red-400 hover:text-red-300'
+                  disabled={isLoading}
                 >
                   Remove
                 </button>
@@ -340,12 +385,12 @@ const CheckoutForm = () => {
                 onChange={(e) => setPromoCode(e.target.value)}
                 placeholder='Enter promo code'
                 className='focus:border-ufc-blue focus:ring-ufc-blue flex-1 rounded-lg border border-gray-600 bg-gray-700 px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-1'
-                disabled={isApplyingPromo}
+                disabled={isApplyingPromo || isLoading}
               />
               <button
                 type='button'
                 onClick={handleApplyPromoCode}
-                disabled={isApplyingPromo || !promoCode.trim()}
+                disabled={isApplyingPromo || !promoCode.trim() || isLoading}
                 className='bg-ufc-blue hover:bg-ufc-blue/90 rounded-lg px-4 py-3 text-sm font-medium text-white transition duration-200 disabled:cursor-not-allowed disabled:bg-gray-600'
               >
                 {isApplyingPromo ? (
@@ -387,16 +432,17 @@ const CheckoutForm = () => {
         <button
           disabled={isLoading}
           id='submit'
-          className='bg-ufc-blue hover:bg-ufc-blue/90 flex w-full items-center justify-center rounded-lg px-6 py-3 text-base font-semibold text-white shadow-md transition duration-200 hover:shadow-lg'
+          className='bg-ufc-blue hover:bg-ufc-blue/90 flex w-full items-center justify-center rounded-lg px-6 py-3 text-base font-semibold text-white shadow-md transition duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed'
         >
           {isLoading ? (
-            <div className='mr-2 h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent'></div>
-          ) : (
             <>
-              <span>
-                Start Subscription • {planDetails.price}
-              </span>
+              <div className='mr-3 h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent'></div>
+              <span>Processing...</span>
             </>
+          ) : (
+            <span>
+              Start Subscription • {planDetails.price}
+            </span>
           )}
         </button>
 

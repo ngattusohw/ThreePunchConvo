@@ -165,7 +165,7 @@ const SignUp = () => {
             All plans include access to the 3PunchConvo community forum
           </p>
           <p className="text-slate-400 text-sm mt-2">
-            Cancel anytime • No hidden fees • 7-day money back guarantee
+            Cancel anytime • No hidden fees
           </p>
         </div>
       </div>

@@ -18,11 +18,28 @@ export const registerStripeEndpoints = (app: Express) => {
     requireAuth(),
     async (req: Request, res: Response) => {
       try {
-        const { email, clerkUserId } = req.body;
+        const { email, clerkUserId, plan } = req.body; // Add plan to destructuring
   
         if (!email || !clerkUserId) {
           return res.status(400).send({
             error: { message: "Missing required parameters: email and clerkUserId" },
+          });
+        }
+
+        console.log("plan from create checkout session: ", plan);
+  
+        // Determine which price ID to use based on plan
+        let priceId: string;
+        if (plan === 'yearly') {
+          priceId = process.env.STRIPE_PRICE_ID_YEARLY || "";
+        } else {
+          priceId = process.env.STRIPE_PRICE_ID_MONTHLY || "";
+        }
+  
+        // Validate that we have the price ID
+        if (!priceId) {
+          return res.status(500).send({
+            error: { message: `Missing Stripe price ID for ${plan} plan` },
           });
         }
   
@@ -148,7 +165,7 @@ export const registerStripeEndpoints = (app: Express) => {
         }
   
         console.log("customer id from create checkout session: ", customerId);
-        
+        console.log("price id from create checkout session: ", priceId);
         // Add idempotency key to prevent duplicate sessions
         const idempotencyKey = `checkout_${clerkUserId}_${Date.now()}`;
         
@@ -158,7 +175,7 @@ export const registerStripeEndpoints = (app: Express) => {
           allow_promotion_codes: true,
           line_items: [
             {
-              price: process.env.STRIPE_PRICE_ID || "",
+              price: priceId, // Use the determined price ID
               quantity: 1,
             },
           ],
@@ -168,12 +185,14 @@ export const registerStripeEndpoints = (app: Express) => {
           metadata: {
             clerkUserId: clerkUserId,
             userId: localUser?.id,
+            plan: plan, // Add plan to metadata
           },
           // Prevent duplicate subscriptions
           subscription_data: {
             metadata: {
               clerkUserId: clerkUserId,
               userId: localUser?.id,
+              plan: plan, // Add plan to subscription metadata
             },
           },
           return_url: `https://www.${process.env.EXTERNAL_URL || "threepunchconvo-production.up.railway.app"}/return?session_id={CHECKOUT_SESSION_ID}`,
@@ -590,14 +609,12 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     // Get the first subscription item's price ID (assuming one product per subscription)
     const priceId = subscription.items.data[0]?.price.id;
 
-    // Map price IDs to plan types
-    // Update these price IDs to match your actual Stripe product price IDs
+    // Map price IDs to plan types - check all possible price IDs
     switch (priceId) {
-      case process.env.STRIPE_PRICE_ID: // Example - replace with your actual price ID
+      case process.env.STRIPE_PRICE_ID: // Legacy/existing price ID
+      case process.env.STRIPE_PRICE_ID_MONTHLY: // New monthly price ID
+      case process.env.STRIPE_PRICE_ID_YEARLY: // New yearly price ID
         planType = "BASIC";
-        break;
-      case "price_premium": // Example - replace with your actual price ID
-        planType = "PRO";
         break;
       default:
         // Check subscription status
@@ -610,7 +627,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     await storage.updateUser(user.id, { planType });
 
     console.log(
-      `Updated user ${user.id} plan to ${planType} based on subscription ${subscription.id}`,
+      `Updated user ${user.id} plan to ${planType} based on subscription ${subscription.id} with price ID ${priceId}`,
     );
   } catch (error) {
     console.error("Error handling subscription change:", error);

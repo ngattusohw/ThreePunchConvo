@@ -469,7 +469,7 @@ useEffect(() => {
                   component={UserProfile}
                 />
                 <ProtectedRoute path='/return' component={Return} />
-                <ProtectedRoute path='/signUp' component={Forum} />
+                <ProtectedRoute path='/signup' component={SignUp} />
 
                 {/* Admin Routes - Need auth and admin role */}
                 <AdminRoute path='/admin' component={Admin} />

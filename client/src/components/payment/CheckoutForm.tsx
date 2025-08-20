@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { PaymentElement, useCheckout } from "@stripe/react-stripe-js";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@clerk/clerk-react";
@@ -12,6 +12,42 @@ const CheckoutForm = () => {
   const [promoCode, setPromoCode] = useState("");
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const [appliedPromoCode, setAppliedPromoCode] = useState("");
+  const [subscriptionType, setSubscriptionType] = useState<'monthly' | 'yearly'>('monthly');
+
+  // Get subscription type from URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const plan = urlParams.get('plan');
+    if (plan === 'yearly' || plan === 'monthly') {
+      setSubscriptionType(plan);
+    }
+  }, []);
+
+  const handlePlanChange = (newPlan: 'monthly' | 'yearly') => {
+    // Update URL and reload to get new checkout session
+    const url = new URL(window.location.href);
+    url.searchParams.set('plan', newPlan);
+    window.location.href = url.toString();
+  };
+
+  const getPlanDetails = () => {
+    if (subscriptionType === 'yearly') {
+      return {
+        name: 'Yearly Subscription',
+        price: '$49.99/year',
+        savings: 'Save $10 compared to monthly!',
+        billing: 'Billed annually'
+      };
+    }
+    return {
+      name: 'Monthly Subscription',
+      price: '$4.99/month',
+      savings: null,
+      billing: 'Billed monthly'
+    };
+  };
+
+  const planDetails = getPlanDetails();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -122,16 +158,60 @@ const CheckoutForm = () => {
           Complete Your Subscription
         </h4>
 
+        {/* Plan Selection Switcher */}
+        <div className='mb-6 rounded-xl border border-gray-700 bg-gray-800/30 p-6'>
+          <h5 className='mb-4 font-medium text-white'>Subscription Plan</h5>
+          <div className='grid grid-cols-2 gap-3'>
+            <button
+              type='button'
+              onClick={() => handlePlanChange('monthly')}
+              className={`rounded-lg p-3 text-sm transition ${
+                subscriptionType === 'monthly'
+                  ? 'bg-ufc-blue text-black font-medium'
+                  : 'border border-gray-600 text-white hover:bg-gray-700'
+              }`}
+            >
+              <div className='text-center'>
+                <div className='font-medium'>Monthly</div>
+                <div className='text-xs opacity-80'>$4.99/month</div>
+              </div>
+            </button>
+            <button
+              type='button'
+              onClick={() => handlePlanChange('yearly')}
+              className={`rounded-lg p-3 text-sm transition relative ${
+                subscriptionType === 'yearly'
+                  ? 'bg-ufc-blue text-black font-medium'
+                  : 'border border-gray-600 text-white hover:bg-gray-700'
+              }`}
+            >
+              <div className='text-center'>
+                <div className='font-medium'>Yearly</div>
+                <div className='text-xs opacity-80'>$49.99/year</div>
+              </div>
+              <div className='absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full'>
+                Save $10
+              </div>
+            </button>
+          </div>
+        </div>
+
         {/* Subscription Details */}
         <div className='mb-8 rounded-xl border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900 p-6 shadow-md'>
           <div className='mb-4 flex items-center justify-between'>
             <h5 className='text-xl font-bold text-white'>
-              3 Punch Subscription
+              {planDetails.name}
             </h5>
             <span className='bg-ufc-blue/20 text-ufc-blue rounded-full px-3 py-1 text-sm font-medium'>
-              Monthly
+              {subscriptionType === 'yearly' ? 'Yearly' : 'Monthly'}
             </span>
           </div>
+
+          {planDetails.savings && (
+            <div className='mb-4 rounded-lg bg-green-900/20 border border-green-700 p-3'>
+              <p className='text-green-400 text-sm font-medium'>{planDetails.savings}</p>
+            </div>
+          )}
 
           <div className='mb-5 space-y-4'>
             <div className='flex items-start'>
@@ -190,9 +270,9 @@ const CheckoutForm = () => {
           </div>
 
           <div className='flex items-center justify-between border-t border-gray-700 pt-4'>
-            <span className='text-sm text-gray-400'>Billed monthly</span>
+            <span className='text-sm text-gray-400'>{planDetails.billing}</span>
             <span className='text-xl font-bold text-white'>
-              {checkout?.total?.total?.amount}/mo
+              {planDetails.price}
             </span>
           </div>
         </div>
@@ -246,7 +326,7 @@ const CheckoutForm = () => {
                   </svg>
                   <span className='text-sm font-bold text-amber-300'>
                     Valid for a whole FREE YEAR. Your card will only start being
-                    charged $5/month after the end of the free period. You can
+                    charged $4.99/month after the end of the free period. You can
                     cancel at any time.
                   </span>
                 </div>
@@ -314,7 +394,7 @@ const CheckoutForm = () => {
           ) : (
             <>
               <span>
-                Start Subscription • {checkout?.total?.total?.amount}/month
+                Start Subscription • {planDetails.price}
               </span>
             </>
           )}

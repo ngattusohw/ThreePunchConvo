@@ -498,18 +498,9 @@ const CheckoutForm = () => {
           return;
         }
 
-        // If user has pending sessions, use the existing session
-        if (statusData.pendingSessions > 0 && statusData.mostRecentPendingSession?.clientSecret) {
-          console.log("User has pending checkout session, using existing session:", statusData.mostRecentPendingSession.id);
-          setClientSecret(statusData.mostRecentPendingSession.clientSecret);
-          setIsCreatingSession(false);
-          return;
-        } else if (statusData.pendingSessions > 0) {
-          setSessionError("You have a pending checkout session. Please complete it or wait for it to expire.");
-          setIsCreatingSession(false);
-          return;
-        }
-
+        // REMOVE THE EXISTING SESSION REUSE LOGIC - Always create a new session
+        // The server will handle expiring old sessions and creating new ones
+        
         // Create new checkout session
         console.log("Creating new checkout session for plan:", subscriptionType);
 

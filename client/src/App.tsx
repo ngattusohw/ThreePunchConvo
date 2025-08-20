@@ -25,6 +25,7 @@ import { useAuth } from "@clerk/clerk-react";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import SignUp from "./pages/SignUp";
+import { CheckoutSkeleton } from "./components/skeletons/CheckoutSkeleton";
 
 function App() {
   const { getToken } = useAuth();
@@ -331,10 +332,15 @@ useEffect(() => {
 
         // Now proceed with creating checkout session
         console.log("No active subscription found, creating checkout session for user:", user.id);
-        
+
+        // Get the plan parameter from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const plan = urlParams.get('plan') || 'monthly'; // Default to monthly
+
         const response = await apiRequest("POST", "/create-checkout-session", {
           email: user.emailAddress,
           clerkUserId: user.id,
+          plan: plan, // Add this line
         });
 
         if (!response.ok) {
@@ -449,7 +455,8 @@ useEffect(() => {
             }
           >
             {isLoadingApp || isCheckoutLoading ? (
-              <ForumSkeleton />
+              // Show checkout-specific skeleton for checkout page, otherwise show forum skeleton
+              location === '/checkout' || location === '/return' ? <CheckoutSkeleton /> : <ForumSkeleton />
             ) : (
               <Switch>
                 {/* Public Routes - Always accessible */}

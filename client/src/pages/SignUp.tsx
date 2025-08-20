@@ -24,6 +24,7 @@ const SignUp = () => {
       ],
       buttonText: "Start Free",
       buttonVariant: "outline" as const,
+      buttonUrl: "/forum",  
     },
     {
       name: "Premium Monthly",
@@ -42,6 +43,7 @@ const SignUp = () => {
       ],
       buttonText: "Choose Monthly",
       buttonVariant: "primary" as const,
+      buttonUrl: "/checkout?plan=monthly",
     },
     {
       name: "Premium Yearly",
@@ -60,6 +62,7 @@ const SignUp = () => {
       ],
       buttonText: "Choose Yearly",
       buttonVariant: "primary" as const,
+      buttonUrl: "/checkout?plan=yearly",
     },
   ];
 
@@ -129,7 +132,7 @@ const SignUp = () => {
                 {/* Action Button */}
                 <div className="mt-auto">
                   {isSignedIn ? (
-                    <Link href="/checkout">
+                    <Link href={tier.buttonUrl}>
                       <button
                         className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors ${
                           tier.buttonVariant === "primary"

@@ -5,6 +5,9 @@ import { Express, Request, Response } from "express";
 import { storage } from "./storage";
 import { requireAuth } from "@clerk/express";
 
+// Add this near the top of the file to track in-progress customer creation
+const customerCreationLocks = new Map<string, Promise<string>>();
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2025-03-31.basil" as Stripe.LatestApiVersion,
 });
@@ -108,61 +111,81 @@ export const registerStripeEndpoints = (app: Express) => {
   
         // If no stripeId found, create a new customer
         if (!customerId) {
-          // Check if customer already exists by email to prevent duplicates
-          const existingCustomers = await stripe.customers.list({
-            email: email,
-            limit: 1,
-          });
-  
-          if (existingCustomers.data.length > 0) {
-            customerId = existingCustomers.data[0]?.id;
-            console.log("Found existing Stripe customer by email:", customerId);
-            
-            // Update local user with existing Stripe customer ID
-            if (localUser) {
-              try {
-                await storage.updateUser(localUser.id, {
-                  stripeId: customerId,
-                });
-                console.log(
-                  `Updated user ${localUser.id} with existing Stripe customer ID: ${customerId}`,
-                );
-              } catch (dbError) {
-                console.error("Error updating user with existing Stripe customer ID:", dbError);
-              }
-            }
+          // Use clerkUserId as the lock key to prevent concurrent customer creation
+          const lockKey = clerkUserId;
+          
+          // Check if customer creation is already in progress for this user
+          if (customerCreationLocks.has(lockKey)) {
+            console.log("Customer creation already in progress, waiting...");
+            customerId = await customerCreationLocks.get(lockKey);
           } else {
-            // Create new customer
-            const customer = await stripe.customers.create({
-              email,
-              metadata: {
-                clerkUserId: clerkUserId,
-                userId: localUser?.id,
-              }
-            });
-  
-            customerId = customer?.id;
-            console.log("Created new Stripe customer:", customerId);
-  
-            // Update the user with the new Stripe customer ID
-            if (localUser) {
+            // Create a promise for customer creation and store it
+            const customerCreationPromise = (async () => {
               try {
-                await storage.updateUser(localUser.id, {
-                  stripeId: customerId,
+                // Check if customer already exists by email to prevent duplicates
+                const existingCustomers = await stripe.customers.list({
+                  email: email,
+                  limit: 1,
                 });
-                console.log(
-                  `Updated user ${localUser.id} with new Stripe customer ID: ${customerId}`,
-                );
-              } catch (dbError) {
-                console.error(
-                  "Error updating user with Stripe customer ID:",
-                  dbError,
-                );
-                return res.status(500).send({
-                  error: { message: "Failed to link Stripe customer to user account" },
-                });
+
+                if (existingCustomers.data.length > 0) {
+                  const existingCustomerId = existingCustomers.data[0]?.id;
+                  console.log("Found existing Stripe customer by email:", existingCustomerId);
+                  
+                  // Update local user with existing Stripe customer ID
+                  if (localUser) {
+                    try {
+                      await storage.updateUser(localUser.id, {
+                        stripeId: existingCustomerId,
+                      });
+                      console.log(
+                        `Updated user ${localUser.id} with existing Stripe customer ID: ${existingCustomerId}`,
+                      );
+                    } catch (dbError) {
+                      console.error("Error updating user with existing Stripe customer ID:", dbError);
+                    }
+                  }
+                  return existingCustomerId;
+                } else {
+                  // Create new customer
+                  console.log("Creating new Stripe customer for:", email);
+                  const customer = await stripe.customers.create({
+                    email,
+                    metadata: {
+                      clerkUserId: clerkUserId,
+                      userId: localUser?.id,
+                    }
+                  });
+
+                  const newCustomerId = customer?.id;
+                  console.log("Created new Stripe customer:", newCustomerId);
+
+                  // Update the user with the new Stripe customer ID
+                  if (localUser) {
+                    try {
+                      await storage.updateUser(localUser.id, {
+                        stripeId: newCustomerId,
+                      });
+                      console.log(
+                        `Updated user ${localUser.id} with new Stripe customer ID: ${newCustomerId}`,
+                      );
+                    } catch (dbError) {
+                      console.error("Error updating user with new Stripe customer ID:", dbError);
+                    }
+                  }
+                  return newCustomerId;
+                }
+              } finally {
+                // Always clean up the lock
+                customerCreationLocks.delete(lockKey);
               }
-            }
+            })();
+            
+            // Store the promise
+            customerCreationLocks.set(lockKey, customerCreationPromise);
+            
+            // Wait for completion
+            customerId = await customerCreationPromise;
           }
         }
   
@@ -449,33 +472,64 @@ app.get(
     }
   });
 
-  app.get("/get-subscriptions", async (req: Request, res: Response) => {
-    try {
-      const { customerId, status } = req.query;
+app.get("/get-subscriptions", async (req: Request, res: Response) => {
+  try {
+    const { customerId, status } = req.query;
 
-      if (!customerId) {
-        return res.status(400).send({
-          error: { message: "Missing required parameter: customerId" },
-        });
-      }
-
-      const params: Stripe.SubscriptionListParams = {
-        customer: customerId as string,
-        limit: 10,
-      };
-
-      if (status) {
-        params.status = status as Stripe.SubscriptionListParams["status"];
-      }
-
-      const subscriptions = await stripe.subscriptions.list(params);
-
-      // Return in the format expected by the frontend
-      res.json({ subscriptions: subscriptions.data });
-    } catch (error: any) {
-      res.status(400).send({ error: { message: error.message } });
+    if (!customerId) {
+      return res.status(400).send({
+        error: { message: "Missing required parameter: customerId" },
+      });
     }
-  });
+
+    const params: Stripe.SubscriptionListParams = {
+      customer: customerId as string,
+      limit: 10,
+    };
+
+    if (status) {
+      params.status = status as Stripe.SubscriptionListParams["status"];
+    }
+
+    const subscriptions = await stripe.subscriptions.list(params);
+
+    // Add billing info to each subscription based on price ID
+    const subscriptionsWithBilling = subscriptions.data.map(subscription => {
+      const priceId = subscription.items.data[0]?.price.id;
+      
+      let billingCycle = "Monthly";
+      let billingPrice = "$4.99";
+      let billingInterval = "month";
+      
+      // Map the 3 known price IDs to their billing info
+      if (priceId === process.env.STRIPE_PRICE_ID) {
+        billingCycle = "Monthly";
+        billingPrice = "$5.00";
+        billingInterval = "month";
+      } else if (priceId === process.env.STRIPE_PRICE_ID_MONTHLY) {
+        billingCycle = "Monthly";
+        billingPrice = "$4.99";
+        billingInterval = "month";
+      } else if (priceId === process.env.STRIPE_PRICE_ID_YEARLY) {
+        billingCycle = "Yearly";
+        billingPrice = "$49.99";
+        billingInterval = "year";
+      }
+      
+      return {
+        ...subscription,
+        billingCycle,
+        billingPrice,
+        billingInterval,
+      };
+    });
+
+    // Return in the format expected by the frontend
+    res.json({ subscriptions: subscriptionsWithBilling });
+  } catch (error: any) {
+    res.status(400).send({ error: { message: error.message } });
+  }
+});
 
   // Get available subscription plans/products from Stripe
   app.get("/get-plans", async (req: Request, res: Response) => {

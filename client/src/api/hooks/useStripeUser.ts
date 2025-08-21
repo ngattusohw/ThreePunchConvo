@@ -23,6 +23,9 @@ export interface StripeSubscription {
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
   discounts: string[];
+  billingCycle?: string;
+  billingPrice?: string;
+  billingInterval?: string;
 }
 
 export interface StripeSubscriptionsResponse {

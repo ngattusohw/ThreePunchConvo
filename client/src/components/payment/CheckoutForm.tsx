@@ -450,6 +450,9 @@ const CheckoutForm = () => {
   const [isCreatingSession, setIsCreatingSession] = useState(true);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  
+  // Add ref to prevent concurrent requests
+  const createSessionPromise = useRef<Promise<void> | null>(null);
 
   // Get subscription type from URL parameters on initial load
   useEffect(() => {
@@ -463,6 +466,13 @@ const CheckoutForm = () => {
   // Create checkout session when component mounts or plan changes
   useEffect(() => {
     const createCheckoutSession = async () => {
+      // Prevent concurrent requests
+      if (createSessionPromise.current) {
+        console.log("🔄 Session creation already in progress, waiting...");
+        await createSessionPromise.current;
+        return;
+      }
+
       if (!isUserLoaded || !isSignedIn || !user?.id || !user?.emailAddresses?.[0]?.emailAddress) {
         if (isUserLoaded && !isSignedIn) {
           setSessionError("Please sign in to access checkout");
@@ -474,92 +484,109 @@ const CheckoutForm = () => {
       setIsCreatingSession(true);
       setSessionError(null);
 
-      try {
-        console.log("Creating checkout session for user:", user.id, "plan:", subscriptionType);
+      // Create and store the promise
+      createSessionPromise.current = (async () => {
+        try {
+          console.log("🚀 Creating checkout session for user:", user.id, "plan:", subscriptionType);
 
-        // First, check subscription status
-        const statusResponse = await apiRequest(
-          "GET", 
-          `/check-subscription-status?clerkUserId=${user.id}`
-        );
+          // First, check subscription status
+          const statusResponse = await apiRequest(
+            "GET", 
+            `/check-subscription-status?clerkUserId=${user.id}`
+          );
 
-        if (!statusResponse.ok) {
-          throw new Error(`Status check failed: ${statusResponse.status}`);
-        }
-
-        const statusData = await statusResponse.json();
-        console.log("Subscription status check result:", statusData);
-
-        // If user already has an active subscription, show message
-        if (statusData.hasActiveSubscription) {
-          console.log("User already has active subscription");
-          setSessionError("You already have an active subscription");
-          setIsCreatingSession(false);
-          return;
-        }
-
-        // If user has pending sessions, use the existing session
-        if (statusData.pendingSessions > 0 && statusData.mostRecentPendingSession?.clientSecret) {
-          console.log("User has pending checkout session, using existing session:", statusData.mostRecentPendingSession.id);
-          setClientSecret(statusData.mostRecentPendingSession.clientSecret);
-          setIsCreatingSession(false);
-          return;
-        } else if (statusData.pendingSessions > 0) {
-          setSessionError("You have a pending checkout session. Please complete it or wait for it to expire.");
-          setIsCreatingSession(false);
-          return;
-        }
-
-        // Create new checkout session
-        console.log("Creating new checkout session for plan:", subscriptionType);
-
-        const response = await apiRequest("POST", "/create-checkout-session", {
-          email: user.emailAddresses[0].emailAddress,
-          clerkUserId: user.id,
-          plan: subscriptionType,
-        });
-
-        if (!response.ok) {
-          if (response.status === 400) {
-            const errorData = await response.json();
-            if (errorData.error?.message?.includes("already has an active subscription")) {
-              setSessionError("You already have an active subscription");
-              setIsCreatingSession(false);
-              return;
-            }
+          if (!statusResponse.ok) {
+            throw new Error(`Status check failed: ${statusResponse.status}`);
           }
-          throw new Error(`HTTP error ${response.status}`);
+
+          const statusData = await statusResponse.json();
+          console.log("📊 Subscription status check result:", statusData);
+
+          // If user already has an active subscription, show message
+          if (statusData.hasActiveSubscription) {
+            console.log("✅ User already has active subscription");
+            setSessionError("You already have an active subscription");
+            setIsCreatingSession(false);
+            return;
+          }
+
+          // Create new checkout session
+          console.log("🆕 Creating NEW checkout session for plan:", subscriptionType);
+          
+          const requestBody = {
+            email: user.emailAddresses[0].emailAddress,
+            clerkUserId: user.id,
+            plan: subscriptionType,
+          };
+          
+          console.log("📤 Sending request body:", requestBody);
+
+          const response = await apiRequest("POST", "/create-checkout-session", requestBody);
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error("❌ Checkout session creation failed:", errorData);
+            
+            if (response.status === 400) {
+              if (errorData.error?.message?.includes("already has an active subscription")) {
+                setSessionError("You already have an active subscription");
+                setIsCreatingSession(false);
+                return;
+              }
+            }
+            throw new Error(`HTTP error ${response.status}: ${JSON.stringify(errorData)}`);
+          }
+
+          const data = await response.json();
+          console.log("✅ Checkout session created successfully:", {
+            hasClientSecret: !!data.clientSecret,
+            isExisting: data.isExisting,
+            sessionId: data.sessionId,
+            plan: subscriptionType
+          });
+
+          if (!data.clientSecret) {
+            throw new Error("No client secret received from server");
+          }
+
+          setClientSecret(data.clientSecret);
+          setIsCreatingSession(false);
+
+        } catch (err) {
+          console.error("💥 Error creating checkout session:", err);
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          setSessionError(errorMessage);
+          setIsCreatingSession(false);
         }
+      })();
 
-        const data = await response.json();
-        console.log("Checkout session created:", {
-          hasClientSecret: !!data.clientSecret,
-          isExisting: data.isExisting,
-          sessionId: data.sessionId
-        });
-
-        if (!data.clientSecret) {
-          throw new Error("No client secret received from server");
-        }
-
-        setClientSecret(data.clientSecret);
-        setIsCreatingSession(false);
-
-      } catch (err) {
-        console.error("Error creating checkout session:", err);
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        setSessionError(errorMessage);
-        setIsCreatingSession(false);
-      }
+      await createSessionPromise.current;
+      createSessionPromise.current = null; // Clear the promise
     };
 
     createCheckoutSession();
-  }, [isUserLoaded, isSignedIn, user?.id, user?.emailAddresses, subscriptionType]);
+  }, [
+    isUserLoaded, 
+    isSignedIn, 
+    user?.id, 
+    subscriptionType // Remove user?.emailAddresses from dependencies
+  ]);
 
   const handlePlanChange = (newPlan: 'monthly' | 'yearly') => {
-    console.log("Plan changed to:", newPlan);
+    console.log("🔄 Plan change requested:", subscriptionType, "→", newPlan);
+    
+    if (newPlan === subscriptionType) {
+      console.log("⏭️ Same plan selected, ignoring");
+      return;
+    }
+    
+    // Clear the existing client secret to force a new session
+    setClientSecret(null);
+    setSessionError(null);
+    setIsCreatingSession(true);
+    
     setSubscriptionType(newPlan);
-    // This will trigger the useEffect to create a new session
+    console.log("✅ Plan changed to:", newPlan);
   };
 
   // Show loading state while creating session

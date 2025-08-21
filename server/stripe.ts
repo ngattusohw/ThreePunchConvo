@@ -472,33 +472,64 @@ app.get(
     }
   });
 
-  app.get("/get-subscriptions", async (req: Request, res: Response) => {
-    try {
-      const { customerId, status } = req.query;
+app.get("/get-subscriptions", async (req: Request, res: Response) => {
+  try {
+    const { customerId, status } = req.query;
 
-      if (!customerId) {
-        return res.status(400).send({
-          error: { message: "Missing required parameter: customerId" },
-        });
-      }
-
-      const params: Stripe.SubscriptionListParams = {
-        customer: customerId as string,
-        limit: 10,
-      };
-
-      if (status) {
-        params.status = status as Stripe.SubscriptionListParams["status"];
-      }
-
-      const subscriptions = await stripe.subscriptions.list(params);
-
-      // Return in the format expected by the frontend
-      res.json({ subscriptions: subscriptions.data });
-    } catch (error: any) {
-      res.status(400).send({ error: { message: error.message } });
+    if (!customerId) {
+      return res.status(400).send({
+        error: { message: "Missing required parameter: customerId" },
+      });
     }
-  });
+
+    const params: Stripe.SubscriptionListParams = {
+      customer: customerId as string,
+      limit: 10,
+    };
+
+    if (status) {
+      params.status = status as Stripe.SubscriptionListParams["status"];
+    }
+
+    const subscriptions = await stripe.subscriptions.list(params);
+
+    // Add billing info to each subscription based on price ID
+    const subscriptionsWithBilling = subscriptions.data.map(subscription => {
+      const priceId = subscription.items.data[0]?.price.id;
+      
+      let billingCycle = "Monthly";
+      let billingPrice = "$4.99";
+      let billingInterval = "month";
+      
+      // Map the 3 known price IDs to their billing info
+      if (priceId === process.env.STRIPE_PRICE_ID) {
+        billingCycle = "Monthly";
+        billingPrice = "$5.00";
+        billingInterval = "month";
+      } else if (priceId === process.env.STRIPE_PRICE_ID_MONTHLY) {
+        billingCycle = "Monthly";
+        billingPrice = "$4.99";
+        billingInterval = "month";
+      } else if (priceId === process.env.STRIPE_PRICE_ID_YEARLY) {
+        billingCycle = "Yearly";
+        billingPrice = "$49.99";
+        billingInterval = "year";
+      }
+      
+      return {
+        ...subscription,
+        billingCycle,
+        billingPrice,
+        billingInterval,
+      };
+    });
+
+    // Return in the format expected by the frontend
+    res.json({ subscriptions: subscriptionsWithBilling });
+  } catch (error: any) {
+    res.status(400).send({ error: { message: error.message } });
+  }
+});
 
   // Get available subscription plans/products from Stripe
   app.get("/get-plans", async (req: Request, res: Response) => {

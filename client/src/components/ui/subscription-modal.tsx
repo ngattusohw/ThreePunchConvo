@@ -30,10 +30,10 @@ export function SubscriptionModal({
 
   const currentPlan = currentUser?.planType || "FREE";
   const hasSubscription = currentPlan !== "FREE";
-  const currentPlanPrice = plans.find((plan) =>
-    plan.name.toUpperCase().includes(currentUser?.planType || "FREE"),
-  )?.price;
-
+  
+  // Get the current active subscription
+  const activeSubscription = subscriptions.find(sub => sub.status === "active");
+  
   // @TODO: make this more dynamic for other discounts
   const hasDiscount = subscriptions.some(
     (subscription) => subscription.discounts.length > 0,
@@ -127,26 +127,27 @@ export function SubscriptionModal({
 
                   <div className='flex items-center justify-between'>
                     <span className='text-gray-400'>Billing Cycle:</span>
-                    <span className='text-white'>Monthly</span>
+                    <span className='text-white'>
+                      {activeSubscription?.billingCycle || "Monthly"}
+                    </span>
                   </div>
 
-                  {currentPlanPrice && (
-                    <div className='flex items-center justify-between'>
-                      <span className='text-gray-400'>Price:</span>
-                      <span className='text-white'>
-                        {hasDiscount ? (
-                          <>
-                            <span className='text-gray-500 line-through'>
-                              ${currentPlanPrice / 100}
-                            </span>
-                            <span className='text-white'> $0.00</span>
-                          </>
-                        ) : (
-                          `$${currentPlanPrice / 100}`
-                        )}
-                      </span>
-                    </div>
-                  )}
+                  <div className='flex items-center justify-between'>
+                    <span className='text-gray-400'>Price:</span>
+                    <span className='text-white'>
+                      {hasDiscount ? (
+                        <>
+                          <span className='text-gray-500 line-through'>
+                            {activeSubscription?.billingPrice || "$4.99"}
+                          </span>
+                          <span className='text-white'> $0.00</span>
+                        </>
+                      ) : (
+                        `${activeSubscription?.billingPrice || "$4.99"}/${activeSubscription?.billingInterval || "month"}`
+                      )}
+                    </span>
+                  </div>
+                  
                   {hasDiscount && (
                     <div className='flex items-center justify-between'>
                       <span className='text-gray-400'>

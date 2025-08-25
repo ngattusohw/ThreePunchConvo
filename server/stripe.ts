@@ -5,6 +5,9 @@ import { Express, Request, Response } from "express";
 import { storage } from "./storage";
 import { requireAuth } from "@clerk/express";
 
+// Add this near the top of the file to track in-progress customer creation
+const customerCreationLocks = new Map<string, Promise<string>>();
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2025-03-31.basil" as Stripe.LatestApiVersion,
 });
@@ -18,11 +21,28 @@ export const registerStripeEndpoints = (app: Express) => {
     requireAuth(),
     async (req: Request, res: Response) => {
       try {
-        const { email, clerkUserId } = req.body;
+        const { email, clerkUserId, plan } = req.body; // Add plan to destructuring
   
         if (!email || !clerkUserId) {
           return res.status(400).send({
             error: { message: "Missing required parameters: email and clerkUserId" },
+          });
+        }
+
+        console.log("plan from create checkout session: ", plan);
+  
+        // Determine which price ID to use based on plan
+        let priceId: string;
+        if (plan === 'yearly') {
+          priceId = process.env.STRIPE_PRICE_ID_YEARLY || "";
+        } else {
+          priceId = process.env.STRIPE_PRICE_ID_MONTHLY || "";
+        }
+  
+        // Validate that we have the price ID
+        if (!priceId) {
+          return res.status(500).send({
+            error: { message: `Missing Stripe price ID for ${plan} plan` },
           });
         }
   
@@ -65,21 +85,23 @@ export const registerStripeEndpoints = (app: Express) => {
               });
             }
   
-            // Check for pending/incomplete checkout sessions
+            // Check for pending/incomplete checkout sessions and expire them
             const existingSessions = await stripe.checkout.sessions.list({
               customer: customerId,
               status: 'open',
-              limit: 1,
+              limit: 10,
             });
-  
+
             if (existingSessions.data.length > 0) {
-              // Return existing session instead of creating new one
-              console.log("Returning existing checkout session:", existingSessions.data[0].id);
-              return res.send({ 
-                clientSecret: existingSessions.data[0].client_secret,
-                sessionId: existingSessions.data[0].id,
-                isExisting: true 
-              });
+              console.log(`Found ${existingSessions.data.length} existing open sessions, expiring them`);
+              for (const session of existingSessions.data) {
+                try {
+                  await stripe.checkout.sessions.expire(session.id);
+                  console.log("Expired existing session:", session.id);
+                } catch (expireError) {
+                  console.warn("Could not expire session:", session.id, expireError);
+                }
+              }
             }
           } catch (stripeError) {
             console.error("Error checking existing subscriptions/sessions:", stripeError);
@@ -89,66 +111,86 @@ export const registerStripeEndpoints = (app: Express) => {
   
         // If no stripeId found, create a new customer
         if (!customerId) {
-          // Check if customer already exists by email to prevent duplicates
-          const existingCustomers = await stripe.customers.list({
-            email: email,
-            limit: 1,
-          });
-  
-          if (existingCustomers.data.length > 0) {
-            customerId = existingCustomers.data[0]?.id;
-            console.log("Found existing Stripe customer by email:", customerId);
-            
-            // Update local user with existing Stripe customer ID
-            if (localUser) {
-              try {
-                await storage.updateUser(localUser.id, {
-                  stripeId: customerId,
-                });
-                console.log(
-                  `Updated user ${localUser.id} with existing Stripe customer ID: ${customerId}`,
-                );
-              } catch (dbError) {
-                console.error("Error updating user with existing Stripe customer ID:", dbError);
-              }
-            }
+          // Use clerkUserId as the lock key to prevent concurrent customer creation
+          const lockKey = clerkUserId;
+          
+          // Check if customer creation is already in progress for this user
+          if (customerCreationLocks.has(lockKey)) {
+            console.log("Customer creation already in progress, waiting...");
+            customerId = await customerCreationLocks.get(lockKey);
           } else {
-            // Create new customer
-            const customer = await stripe.customers.create({
-              email,
-              metadata: {
-                clerkUserId: clerkUserId,
-                userId: localUser?.id,
-              }
-            });
-  
-            customerId = customer?.id;
-            console.log("Created new Stripe customer:", customerId);
-  
-            // Update the user with the new Stripe customer ID
-            if (localUser) {
+            // Create a promise for customer creation and store it
+            const customerCreationPromise = (async () => {
               try {
-                await storage.updateUser(localUser.id, {
-                  stripeId: customerId,
+                // Check if customer already exists by email to prevent duplicates
+                const existingCustomers = await stripe.customers.list({
+                  email: email,
+                  limit: 1,
                 });
-                console.log(
-                  `Updated user ${localUser.id} with new Stripe customer ID: ${customerId}`,
-                );
-              } catch (dbError) {
-                console.error(
-                  "Error updating user with Stripe customer ID:",
-                  dbError,
-                );
-                return res.status(500).send({
-                  error: { message: "Failed to link Stripe customer to user account" },
-                });
+
+                if (existingCustomers.data.length > 0) {
+                  const existingCustomerId = existingCustomers.data[0]?.id;
+                  console.log("Found existing Stripe customer by email:", existingCustomerId);
+                  
+                  // Update local user with existing Stripe customer ID
+                  if (localUser) {
+                    try {
+                      await storage.updateUser(localUser.id, {
+                        stripeId: existingCustomerId,
+                      });
+                      console.log(
+                        `Updated user ${localUser.id} with existing Stripe customer ID: ${existingCustomerId}`,
+                      );
+                    } catch (dbError) {
+                      console.error("Error updating user with existing Stripe customer ID:", dbError);
+                    }
+                  }
+                  return existingCustomerId;
+                } else {
+                  // Create new customer
+                  console.log("Creating new Stripe customer for:", email);
+                  const customer = await stripe.customers.create({
+                    email,
+                    metadata: {
+                      clerkUserId: clerkUserId,
+                      userId: localUser?.id,
+                    }
+                  });
+
+                  const newCustomerId = customer?.id;
+                  console.log("Created new Stripe customer:", newCustomerId);
+
+                  // Update the user with the new Stripe customer ID
+                  if (localUser) {
+                    try {
+                      await storage.updateUser(localUser.id, {
+                        stripeId: newCustomerId,
+                      });
+                      console.log(
+                        `Updated user ${localUser.id} with new Stripe customer ID: ${newCustomerId}`,
+                      );
+                    } catch (dbError) {
+                      console.error("Error updating user with new Stripe customer ID:", dbError);
+                    }
+                  }
+                  return newCustomerId;
+                }
+              } finally {
+                // Always clean up the lock
+                customerCreationLocks.delete(lockKey);
               }
-            }
+            })();
+            
+            // Store the promise
+            customerCreationLocks.set(lockKey, customerCreationPromise);
+            
+            // Wait for completion
+            customerId = await customerCreationPromise;
           }
         }
   
         console.log("customer id from create checkout session: ", customerId);
-        
+        console.log("price id from create checkout session: ", priceId);
         // Add idempotency key to prevent duplicate sessions
         const idempotencyKey = `checkout_${clerkUserId}_${Date.now()}`;
         
@@ -158,7 +200,7 @@ export const registerStripeEndpoints = (app: Express) => {
           allow_promotion_codes: true,
           line_items: [
             {
-              price: process.env.STRIPE_PRICE_ID || "",
+              price: priceId, // Use the determined price ID
               quantity: 1,
             },
           ],
@@ -168,12 +210,14 @@ export const registerStripeEndpoints = (app: Express) => {
           metadata: {
             clerkUserId: clerkUserId,
             userId: localUser?.id,
+            plan: plan, // Add plan to metadata
           },
           // Prevent duplicate subscriptions
           subscription_data: {
             metadata: {
               clerkUserId: clerkUserId,
               userId: localUser?.id,
+              plan: plan, // Add plan to subscription metadata
             },
           },
           return_url: `https://www.${process.env.EXTERNAL_URL || "threepunchconvo-production.up.railway.app"}/return?session_id={CHECKOUT_SESSION_ID}`,
@@ -428,33 +472,64 @@ app.get(
     }
   });
 
-  app.get("/get-subscriptions", async (req: Request, res: Response) => {
-    try {
-      const { customerId, status } = req.query;
+app.get("/get-subscriptions", async (req: Request, res: Response) => {
+  try {
+    const { customerId, status } = req.query;
 
-      if (!customerId) {
-        return res.status(400).send({
-          error: { message: "Missing required parameter: customerId" },
-        });
-      }
-
-      const params: Stripe.SubscriptionListParams = {
-        customer: customerId as string,
-        limit: 10,
-      };
-
-      if (status) {
-        params.status = status as Stripe.SubscriptionListParams["status"];
-      }
-
-      const subscriptions = await stripe.subscriptions.list(params);
-
-      // Return in the format expected by the frontend
-      res.json({ subscriptions: subscriptions.data });
-    } catch (error: any) {
-      res.status(400).send({ error: { message: error.message } });
+    if (!customerId) {
+      return res.status(400).send({
+        error: { message: "Missing required parameter: customerId" },
+      });
     }
-  });
+
+    const params: Stripe.SubscriptionListParams = {
+      customer: customerId as string,
+      limit: 10,
+    };
+
+    if (status) {
+      params.status = status as Stripe.SubscriptionListParams["status"];
+    }
+
+    const subscriptions = await stripe.subscriptions.list(params);
+
+    // Add billing info to each subscription based on price ID
+    const subscriptionsWithBilling = subscriptions.data.map(subscription => {
+      const priceId = subscription.items.data[0]?.price.id;
+      
+      let billingCycle = "Monthly";
+      let billingPrice = "$4.99";
+      let billingInterval = "month";
+      
+      // Map the 3 known price IDs to their billing info
+      if (priceId === process.env.STRIPE_PRICE_ID) {
+        billingCycle = "Monthly";
+        billingPrice = "$5.00";
+        billingInterval = "month";
+      } else if (priceId === process.env.STRIPE_PRICE_ID_MONTHLY) {
+        billingCycle = "Monthly";
+        billingPrice = "$4.99";
+        billingInterval = "month";
+      } else if (priceId === process.env.STRIPE_PRICE_ID_YEARLY) {
+        billingCycle = "Yearly";
+        billingPrice = "$49.99";
+        billingInterval = "year";
+      }
+      
+      return {
+        ...subscription,
+        billingCycle,
+        billingPrice,
+        billingInterval,
+      };
+    });
+
+    // Return in the format expected by the frontend
+    res.json({ subscriptions: subscriptionsWithBilling });
+  } catch (error: any) {
+    res.status(400).send({ error: { message: error.message } });
+  }
+});
 
   // Get available subscription plans/products from Stripe
   app.get("/get-plans", async (req: Request, res: Response) => {
@@ -590,14 +665,12 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     // Get the first subscription item's price ID (assuming one product per subscription)
     const priceId = subscription.items.data[0]?.price.id;
 
-    // Map price IDs to plan types
-    // Update these price IDs to match your actual Stripe product price IDs
+    // Map price IDs to plan types - check all possible price IDs
     switch (priceId) {
-      case process.env.STRIPE_PRICE_ID: // Example - replace with your actual price ID
+      case process.env.STRIPE_PRICE_ID: // Legacy/existing price ID
+      case process.env.STRIPE_PRICE_ID_MONTHLY: // New monthly price ID
+      case process.env.STRIPE_PRICE_ID_YEARLY: // New yearly price ID
         planType = "BASIC";
-        break;
-      case "price_premium": // Example - replace with your actual price ID
-        planType = "PRO";
         break;
       default:
         // Check subscription status
@@ -610,7 +683,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     await storage.updateUser(user.id, { planType });
 
     console.log(
-      `Updated user ${user.id} plan to ${planType} based on subscription ${subscription.id}`,
+      `Updated user ${user.id} plan to ${planType} based on subscription ${subscription.id} with price ID ${priceId}`,
     );
   } catch (error) {
     console.error("Error handling subscription change:", error);

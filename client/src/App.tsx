@@ -1,7 +1,5 @@
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Switch, Route, useLocation } from "wouter";
-import { loadStripe } from "@stripe/stripe-js";
-import { CheckoutProvider } from "@stripe/react-stripe-js";
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import Forum from "@/pages/Forum";
@@ -24,6 +22,7 @@ import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { useAuth } from "@clerk/clerk-react";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import SignUp from "./pages/SignUp";
 
 function App() {
   const { getToken } = useAuth();
@@ -36,32 +35,13 @@ function App() {
     userId,
   } = useMemoizedUser();
   const [localUserChecked, setLocalUserChecked] = useState(false);
-  const [isLoadingClientSecret, setIsLoadingClientSecret] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [localUser, setLocalUser] = useState<any | null>(null);
-  // Add a debug state
-  const [debugInfo, setDebugInfo] = useState<{
-    loading: boolean;
-    error: string | null;
-  }>({
-    loading: true,
-    error: null,
-  });
   // Add an initialLoadComplete state to track when the app is ready to render
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // Add refs to track if operations have been performed
   const userCheckPerformed = useRef(false);
   const subscriptionCheckPerformed = useRef(false);
-  const clientSecretFetched = useRef(false);
-  const fetchClientSecretPromise = useRef<Promise<void> | null>(null);
-
-  // TODO test key
-  const stripePromise = useMemo(
-    // @ts-ignore - ignoring the env property error
-    () => loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ""),
-    [], // Only create once
-  );
 
   useEffect(() => {
     getToken();
@@ -136,18 +116,30 @@ function App() {
     user?.username,
   ]);
 
-  // Check for user subscriptions
+  // Check for user subscriptions - KEEP THIS LOGIC BUT FIX THE CONDITIONS
   useEffect(() => {
     const checkUserSubscriptions = async () => {
       // Skip if already performed or conditions aren't met
       if (
         subscriptionCheckPerformed.current ||
-        !localUser?.stripeId ||
         !localUserChecked
       ) {
-        if (localUserChecked && !localUser && isUserLoaded)
-          console.log("setting initial load complete");
-          setInitialLoadComplete(true);
+        return;
+      }
+
+      // If no local user (shouldn't happen but handle it)
+      if (!localUser) {
+        console.log("No local user, setting initial load complete");
+        setInitialLoadComplete(true);
+        subscriptionCheckPerformed.current = true;
+        return;
+      }
+
+      // If user doesn't have a Stripe ID yet (new user), skip subscription check but mark as complete
+      if (!localUser.stripeId) {
+        console.log("New user without Stripe ID, setting initial load complete");
+        setInitialLoadComplete(true);
+        subscriptionCheckPerformed.current = true;
         return;
       }
 
@@ -202,11 +194,9 @@ function App() {
       }
     };
 
-    if (localUserChecked && localUser) {
+    // Run the subscription check if local user check is complete
+    if (localUserChecked) {
       checkUserSubscriptions();
-    } else if (localUserChecked && !localUser && isUserLoaded) {
-      // If local user check is complete but no local user and user is loaded, we can consider initial load complete
-      if (!initialLoadComplete) setInitialLoadComplete(true);
     }
   }, [
     localUser,
@@ -254,178 +244,14 @@ function App() {
     }
   };
 
+  // Simplified loading logic - we only wait for initial user/subscription checks
+  const isLoadingApp = !initialLoadComplete;
 
-useEffect(() => {
-  const checkStatusAndFetchClientSecret = async () => {
-    // Skip if already performed, in progress, or conditions aren't met
-    if (
-      clientSecretFetched.current ||
-      fetchClientSecretPromise.current ||
-      !isUserLoaded ||
-      !isSignedIn ||
-      !user?.id ||
-      !user?.emailAddress ||
-      !localUserChecked // Wait for local user to be checked first
-    ) {
-      if (isUserLoaded && !isSignedIn) {
-        setIsLoadingClientSecret(false);
-        setDebugInfo((prev) => ({ ...prev, loading: false }));
-        if (!initialLoadComplete) setInitialLoadComplete(true);
-      }
-      return;
-    }
-
-    // Set the promise to prevent concurrent requests
-    fetchClientSecretPromise.current = (async () => {
-      setIsLoadingClientSecret(true);
-      console.log("Checking subscription status for user:", user.id);
-
-      try {
-        // First, check subscription status
-        const statusResponse = await apiRequest(
-          "GET", 
-          `/check-subscription-status?clerkUserId=${user.id}`
-        );
-
-        if (!statusResponse.ok) {
-          throw new Error(`Status check failed: ${statusResponse.status}`);
-        }
-
-        const statusData = await statusResponse.json();
-        console.log("Subscription status check result:", statusData);
-
-        // If user already has an active subscription, don't create checkout session
-        if (statusData.hasActiveSubscription) {
-          console.log("User already has active subscription, skipping checkout session creation");
-          setDebugInfo((prev) => ({ 
-            ...prev, 
-            loading: false,
-            error: "You already have an active subscription" 
-          }));
-          clientSecretFetched.current = true;
-          if (!initialLoadComplete) setInitialLoadComplete(true);
-          return;
-        }
-
-        // If user has pending sessions, use the existing session
-        if (statusData.pendingSessions > 0 && statusData.mostRecentPendingSession?.clientSecret) {
-          console.log("User has pending checkout session, using existing session:", statusData.mostRecentPendingSession.id);
-          setClientSecret(statusData.mostRecentPendingSession.clientSecret);
-          setDebugInfo((prev) => ({ ...prev, loading: false, error: null }));
-          clientSecretFetched.current = true;
-          if (!initialLoadComplete) setInitialLoadComplete(true);
-          return;
-        } else if (statusData.pendingSessions > 0) {
-          // Fallback: if we can't get the client secret, show error
-          console.log("User has pending sessions but no client secret available");
-          setDebugInfo((prev) => ({ 
-            ...prev, 
-            loading: false,
-            error: "You have a pending checkout session. Please complete it or wait for it to expire." 
-          }));
-          clientSecretFetched.current = true;
-          if (!initialLoadComplete) setInitialLoadComplete(true);
-          return;
-        }
-
-        // Now proceed with creating checkout session
-        console.log("No active subscription found, creating checkout session for user:", user.id);
-        
-        const response = await apiRequest("POST", "/create-checkout-session", {
-          email: user.emailAddress,
-          clerkUserId: user.id,
-        });
-
-        if (!response.ok) {
-          // Handle specific error cases
-          if (response.status === 400) {
-            const errorData = await response.json();
-            if (errorData.error?.message?.includes("already has an active subscription")) {
-              setDebugInfo((prev) => ({ 
-                ...prev, 
-                loading: false,
-                error: "You already have an active subscription" 
-              }));
-              clientSecretFetched.current = true;
-              if (!initialLoadComplete) setInitialLoadComplete(true);
-              return;
-            }
-          }
-          throw new Error(`HTTP error ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("Checkout session response:", {
-          hasClientSecret: !!data.clientSecret,
-          isExisting: data.isExisting,
-          sessionId: data.sessionId
-        });
-
-        if (!data.clientSecret) {
-          throw new Error("No client secret received from server");
-        }
-
-        // If we got an existing session, log it
-        if (data.isExisting) {
-          console.log("Received existing checkout session:", data.sessionId);
-        }
-
-        setClientSecret(data.clientSecret);
-        setDebugInfo((prev) => ({ ...prev, loading: false, error: null }));
-        clientSecretFetched.current = true;
-        
-      } catch (err) {
-        console.error("Error in status check or checkout session creation:", err);
-        setClientSecret(null);
-        setDebugInfo((prev) => ({
-          loading: false,
-          error: err instanceof Error ? err.message : String(err),
-        }));
-        clientSecretFetched.current = true;
-      } finally {
-        setIsLoadingClientSecret(false);
-        fetchClientSecretPromise.current = null; // Clear the promise
-        if (!initialLoadComplete) setInitialLoadComplete(true);
-      }
-    })();
-
-    return fetchClientSecretPromise.current;
-  };
-
-  // Only fetch client secret if user is signed in AND local user check is complete
-  if (isUserLoaded && isSignedIn && localUserChecked) {
-    checkStatusAndFetchClientSecret();
-  } else if (isUserLoaded && !isSignedIn) {
-    // Reset loading state when not signed in
-    setIsLoadingClientSecret(false);
-    setDebugInfo((prev) => ({ ...prev, loading: false }));
-    if (!initialLoadComplete) setInitialLoadComplete(true);
-  }
-}, [
-  isUserLoaded,
-  isSignedIn,
-  user?.id,
-  localUserChecked, // Add this dependency
-  initialLoadComplete,
-]);
+  console.log("isSignedIn: ", isSignedIn);
+  console.log("initialLoadComplete: ", initialLoadComplete);
+  console.log("localUserChecked: ", localUserChecked);
+  console.log("localUser: ", localUser);
   
-  const stripeAppearance = {
-    theme: "night" as const,
-  };
-
-  // Determine if we should show loading state - now we use the initialLoadComplete flag
-  const isLoadingApp =
-    !initialLoadComplete || (isLoadingClientSecret && isSignedIn);
-
-  // If we're going to checkout but clientSecret is still loading, show skeleton
-  const isCheckoutLoading =
-    window.location.pathname === "/checkout" &&
-    ((isSignedIn && (!clientSecret || isLoadingClientSecret)) ||
-      !isUserLoaded ||
-      !initialLoadComplete);
-
-      console.log("isSignedIn: ", isSignedIn);
-      console.log("debugInfo: ", debugInfo);
   return (
     <div>
       <div className='bg-ufc-black text-light-gray flex min-h-screen flex-col'>
@@ -438,26 +264,20 @@ useEffect(() => {
               <div className='m-4 bg-red-800 p-4 text-white'>
                 <h2 className='text-xl font-bold'>Rendering Error</h2>
                 <p>There was an error rendering the components</p>
-                <p className='mt-2 text-sm'>
-                  Client Secret: {clientSecret ? "Available" : "Not available"}
-                </p>
-                <p className='text-sm'>
-                  Loading: {isLoadingClientSecret ? "Yes" : "No"}
-                </p>
               </div>
             }
           >
-            {isLoadingApp || isCheckoutLoading ? (
+            {isLoadingApp ? (
               <ForumSkeleton />
             ) : (
               <Switch>
                 {/* Public Routes - Always accessible */}
-
                 <Route path='/auth' component={AuthPage} />
                 <Route path='/login' component={AuthPage} />
                 <Route path='/register' component={AuthPage} />
                 <Route path='/privacy' component={PrivacyPolicy} />
                 <Route path='/terms' component={TermsOfService} />
+                
                 {/* Protected Routes - Need auth but not checkout */}
                 <ProtectedRoute path='/rankings' component={Rankings} />
                 <ProtectedRoute path='/' component={Forum} />
@@ -469,92 +289,17 @@ useEffect(() => {
                   component={UserProfile}
                 />
                 <ProtectedRoute path='/return' component={Return} />
+                <ProtectedRoute path='/signup' component={SignUp} />
 
                 {/* Admin Routes - Need auth and admin role */}
                 <AdminRoute path='/admin' component={Admin} />
 
-                {/* Checkout Routes - Need auth AND checkout provider */}
-                {isSignedIn && clientSecret ? (
-                  <>
-                    <Route path='/checkout'>
-                      <CheckoutProvider
-                        stripe={stripePromise}
-                        options={{
-                          fetchClientSecret: () => {
-                            console.log("fetchClientSecret called", {
-                              isLoadingClientSecret,
-                              clientSecret,
-                            });
-                            return Promise.resolve(clientSecret || "");
-                          },
-                          elementsOptions: { appearance: stripeAppearance },
-                        }}
-                      >
-                        <CheckoutForm />
-                      </CheckoutProvider>
-                    </Route>
-                  
-                  </>
-                ) : isSignedIn && debugInfo.error ? (
-                  <Route path='/checkout'>
-                    <div className='container mx-auto mt-4 px-4'>
-                      <div className={`rounded-lg p-4 text-white ${
-                        debugInfo.error.includes("already have an active subscription") 
-                          ? "bg-blue-800" 
-                          : debugInfo.error.includes("pending checkout session")
-                          ? "bg-yellow-800"
-                          : "bg-red-800"
-                      }`}>
-                        <h2 className='mb-2 text-xl font-bold'>
-                          {debugInfo.error.includes("already have an active subscription") 
-                            ? "Subscription Active" 
-                            : debugInfo.error.includes("pending checkout session")
-                            ? "Checkout In Progress"
-                            : "Payment Setup Error"}
-                        </h2>
-                        <p>{debugInfo.error}</p>
-                        {debugInfo.error.includes("already have an active subscription") && (
-                          <p className="mt-2 text-sm">
-                            You can manage your subscription in your account settings.
-                          </p>
-                        )}
-                        {debugInfo.error.includes("pending checkout session") && (
-                          <div className="mt-4">
-                            <p className="text-sm mb-2">
-                              Please complete your existing checkout or wait for it to expire.
-                            </p>
-                            <button 
-                              onClick={() => {
-                                // Reset to allow retry
-                                clientSecretFetched.current = false;
-                                fetchClientSecretPromise.current = null;
-                                setDebugInfo(prev => ({ ...prev, error: null }));
-                                setClientSecret(null);
-                              }}
-                              className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm"
-                            >
-                              Try Again
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </Route>
-                ) : null}
+                {/* Checkout Routes - Now simplified with dynamic session creation */}
+                <ProtectedRoute path='/checkout' component={CheckoutForm} />
 
                 {/* 404 Route */}
                 <ProtectedRoute path='*' component={NotFound} />
               </Switch>
-            )}
-            {!isLoadingApp && debugInfo.error && !isSignedIn && (
-              <div className='container mx-auto mt-4 px-4'>
-                <div className='rounded-lg bg-yellow-800 p-4 text-white'>
-                  <h2 className='mb-2 text-xl font-bold'>
-                    Payment Features Unavailable
-                  </h2>
-                  <p>Please sign in to access checkout features.</p>
-                </div>
-              </div>
             )}
           </ErrorBoundary>
         </main>

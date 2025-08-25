@@ -15,11 +15,14 @@ export const fetchUserByUsername = async (username: string) => {
   try {
     const response = await apiRequest("GET", `/api/users/username/${username}`);
 
-    if (response instanceof Response) {
-      return (await response.json()) as AuthUser;
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("User not found");
+      }
+      throw new Error(`Failed to fetch user: ${response.statusText}`);
     }
 
-    return response as AuthUser;
+    return (await response.json()) as AuthUser;
   } catch (error) {
     console.error("Error fetching user:", error);
     throw error;

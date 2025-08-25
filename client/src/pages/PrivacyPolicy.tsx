@@ -1,35 +1,4 @@
-import { useEffect, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import {
-  Users,
-  MessageSquare,
-  Trophy,
-  Target,
-  Zap,
-  Shield,
-  Quote,
-  Check,
-  X,
-} from "lucide-react";
-import logoImage from "@/assets/3PC-Logo-FullColor-RGB.png";
-import { SignIn, useAuth } from "@clerk/clerk-react";
-import { Link, useLocation } from "wouter";
-import { dark } from "@clerk/themes";
+import React from "react";
 
 export default function PrivacyPolicy() {
   return (

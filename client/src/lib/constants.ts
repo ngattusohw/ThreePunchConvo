@@ -84,8 +84,8 @@ export const FORUM_CATEGORIES = [
   },
   {
     id: "mma_takes_podcast_companion",
-    name: "MMA Takes Podcast Companion",
-    description: "Discussion about the MMA Takes Podcast",
+    name: "The Capper’s Cave by MMA Takes Podcast",
+    description: "Discussion about MMA gambling",
     count: 2,
   },
   {

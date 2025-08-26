@@ -180,10 +180,11 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
     : onClick;
 
   const isProfessionalPost = notification.type === NOTIFICATION_TYPES.FIGHTER_POST || notification.type === NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST;
+  const isAdminMessage = notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE;
 
   return (
     <li
-      className={`flex items-start gap-3 p-3 ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "bg-[#FAE1BE] text-black" : notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} ${isProfessionalPost ? "border-2 border-ufc-red " : ""} ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "cursor-pointer"} rounded-lg transition-all ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "hover:bg-opacity-70"} overflow-hidden`}
+      className={`flex items-start gap-3 p-3 ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? (notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50") : notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} ${isProfessionalPost ? "border-2 border-ufc-red " : ""} ${isAdminMessage ? "border-2 border-[#FAE1BE] " : ""} ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "cursor-pointer"} rounded-lg transition-all ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "hover:bg-opacity-70"} overflow-hidden`}
       onClick={handleCardClick}
     >
       {notification.type === NOTIFICATION_TYPES.SYSTEM ? (
@@ -285,9 +286,9 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
         )}
 
 {notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE && notification.message && (
-          <p className='text-black break-words whitespace-pre-wrap'>
-            <span className='font-medium text-black'>Admin <span className='text-ufc-red'>{notification.relatedUser?.username}</span>{" just sent you a message: "}</span>
-            {notification.message}
+          <p className='text-gray-300 break-words whitespace-pre-wrap'>
+            <span className='font-medium text-white'>Admin <span className='font-bold text-white'>{notification.relatedUser?.username}</span>{" just sent you a message: "}</span>
+            <span className='text-[#FAE1BE]'>{notification.message}</span>
           </p>
         )}
 

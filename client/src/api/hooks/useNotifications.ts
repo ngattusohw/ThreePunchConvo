@@ -3,7 +3,6 @@ import {
   fetchNotifications,
   markAllNotificationsAsRead,
   markNotificationAsRead,
-  generateMockNotifications,
 } from "../queries/notification";
 import { Notification } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";

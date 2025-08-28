@@ -38,7 +38,11 @@ interface EditUserModalProps {
   onClose: () => void;
 }
 
-export default function EditUserModal({ user, isOpen, onClose }: EditUserModalProps) {
+export default function EditUserModal({
+  user,
+  isOpen,
+  onClose,
+}: EditUserModalProps) {
   const form = useForm<EditUserFormData>({
     defaultValues: {
       role: user?.role || "USER",
@@ -48,9 +52,8 @@ export default function EditUserModal({ user, isOpen, onClose }: EditUserModalPr
   const handleSaveUser = async (userData: EditUserFormData) => {
     try {
       // TODO: Implement API call to update user
-      console.log("Updating user:", user.id, userData);
       updateUserRole(user.id, userData.role);
-      
+
       alert("User updated successfully! Reload the page to see the changes.");
     } catch (error) {
       console.error("Error updating user:", error);
@@ -74,64 +77,74 @@ export default function EditUserModal({ user, isOpen, onClose }: EditUserModalPr
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md bg-gray-800 border-gray-600 [&>button]:text-white [&>button]:hover:bg-gray-700 [&>button]:hover:text-white">
+      <DialogContent className='max-w-md border-gray-600 bg-gray-800 [&>button]:text-white [&>button]:hover:bg-gray-700 [&>button]:hover:text-white'>
         <DialogHeader>
-          <DialogTitle className="text-white">
-            Edit User <span className="text-ufc-red font-bold">{user?.username}</span>
+          <DialogTitle className='text-white'>
+            Edit User{" "}
+            <span className='text-ufc-red font-bold'>{user?.username}</span>
           </DialogTitle>
-          <DialogDescription className="text-gray-200">
-            Name: {user?.firstName || user?.lastName 
-                    ? `${user?.firstName || ''} ${user?.lastName || ''}`.trim() 
-                    : 'N/A'
-                  }
-        </DialogDescription>
+          <DialogDescription className='text-gray-200'>
+            Name:{" "}
+            {user?.firstName || user?.lastName
+              ? `${user?.firstName || ""} ${user?.lastName || ""}`.trim()
+              : "N/A"}
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-
-            <div className="grid grid-cols-2 gap-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className='space-y-4'
+          >
+            <div className='grid grid-cols-2 gap-4'>
               <FormField
                 control={form.control}
-                name="role"
+                name='role'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-200">Role</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormLabel className='text-gray-200'>Role</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
-                        <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                          <SelectValue placeholder="Select role" />
+                        <SelectTrigger className='border-gray-600 bg-gray-700 text-white'>
+                          <SelectValue placeholder='Select role' />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-gray-700 border-gray-600">
-                        {Object.values(USER_ROLE_OPTIONS).filter((role) => role !== "MODERATOR" && role !== "ADMIN").map((role) => (
-                          <SelectItem
-                            key={role}
-                            value={role}
-                            className="text-white hover:bg-gray-600"
-                          >
-                            {role}
-                          </SelectItem>
-                        ))}
+                      <SelectContent className='border-gray-600 bg-gray-700'>
+                        {Object.values(USER_ROLE_OPTIONS)
+                          .filter(
+                            (role) => role !== "MODERATOR" && role !== "ADMIN",
+                          )
+                          .map((role) => (
+                            <SelectItem
+                              key={role}
+                              value={role}
+                              className='text-white hover:bg-gray-600'
+                            >
+                              {role}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-        </div>
-            <DialogFooter className="gap-2">
+            </div>
+            <DialogFooter className='gap-2'>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={onClose}
-                className="border-gray-600 text-black hover:bg-gray-300"
+                className='border-gray-600 text-black hover:bg-gray-300'
               >
                 Cancel
               </Button>
               <Button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                type='submit'
+                className='bg-blue-600 text-white hover:bg-blue-700'
               >
                 Save Changes
               </Button>

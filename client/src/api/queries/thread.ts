@@ -126,7 +126,6 @@ export const fetchThreadById = async (threadId: string, userId?: string) => {
     throw new Error(`Failed to fetch thread: ${response.statusText}`);
   }
   const threadData = await response.json();
-  console.log("API thread response:", threadData);
   return threadData as ForumThread;
 };
 

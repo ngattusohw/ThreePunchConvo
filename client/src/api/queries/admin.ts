@@ -1,7 +1,9 @@
-import { AdminViewUser, AdminUsersResponse, AdminUsersFilters } from "@/lib/types";
+import { AdminUsersResponse, AdminUsersFilters } from "@/lib/types";
 import { apiRequest } from "@/lib/queryClient";
 
-export const fetchUsers = async (filters: AdminUsersFilters): Promise<AdminUsersResponse> => {
+export const fetchUsers = async (
+  filters: AdminUsersFilters,
+): Promise<AdminUsersResponse> => {
   const params = new URLSearchParams({
     page: filters.page.toString(),
     limit: filters.limit.toString(),
@@ -19,7 +21,10 @@ export const fetchUsers = async (filters: AdminUsersFilters): Promise<AdminUsers
   return response.json() as Promise<AdminUsersResponse>;
 };
 
-export const updateUserRole = async (userId: string, role: string): Promise<void> => {
+export const updateUserRole = async (
+  userId: string,
+  role: string,
+): Promise<void> => {
   const response = await apiRequest("PUT", `/api/users/${userId}/role`, {
     role,
   });
@@ -29,7 +34,10 @@ export const updateUserRole = async (userId: string, role: string): Promise<void
   }
 };
 
-export const sendMessageToUser = async (userId: string, message: string): Promise<void> => {
+export const sendMessageToUser = async (
+  userId: string,
+  message: string,
+): Promise<void> => {
   const response = await apiRequest("POST", "/api/admin/message-user", {
     targetUserId: userId,
     message,
@@ -40,7 +48,10 @@ export const sendMessageToUser = async (userId: string, message: string): Promis
   }
 };
 
-export const sendMessageToUsers = async (targetRole: string | null, message: string): Promise<{ count: number }> => {
+export const sendMessageToUsers = async (
+  targetRole: string | null,
+  message: string,
+): Promise<{ count: number }> => {
   const response = await apiRequest("POST", "/api/admin/message-users", {
     targetRole,
     message,

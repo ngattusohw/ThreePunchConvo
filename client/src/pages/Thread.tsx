@@ -1,12 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet";
-import { checkIsNormalUser, formatDate } from "@/lib/utils";
-import { useThreadData, useThreadReplies } from "@/api/hooks/threads";
+import { formatDate } from "@/lib/utils";
+import { useThreadData } from "@/api/hooks/threads";
 import UserAvatar from "@/components/ui/user-avatar";
-import { FORUM_CATEGORIES, USER_ROLES } from "@/lib/constants";
-import UserThreadHeader from "@/components/ui/user-thread-header";
-import ReplyForm from "@/components/thread/ReplyForm";
+import { FORUM_CATEGORIES } from "@/lib/constants";
 import { useMemoizedUser } from "@/hooks/useMemoizedUser";
 import { useToast } from "@/hooks/use-toast";
 import ThreadCard from "@/components/forum/ThreadCard";
@@ -21,9 +19,6 @@ function ThreadMetadata({ thread }: { thread: any }) {
     : imageUrl
       ? `https://www.3punchconvo.com${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`
       : undefined;
-
-  // Debug logging
-  console.log("Image URL:", fullImageUrl);
 
   // Ensure we have a valid URL
   const currentUrl =

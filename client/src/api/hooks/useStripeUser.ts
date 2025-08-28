@@ -36,7 +36,6 @@ const fetchStripeSubscriptions = async (
   customerId: string,
   status: string = "active",
 ): Promise<StripeSubscriptionsResponse> => {
-  console.log("fetching subscriptions", customerId, status);
   const response = await apiRequest(
     "GET",
     `/get-subscriptions?customerId=${customerId}&status=${status}`,

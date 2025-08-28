@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { Link } from "wouter";
 import { ForumThread } from "@/lib/types";
-import { checkIsNormalUser, truncateText } from "@/lib/utils";
+import { checkIsNormalUser } from "@/lib/utils";
 import ThreadPoll from "@/components/thread/poll";
 import MediaPreview from "@/components/ui/media-preview";
 import UserThreadHeader from "@/components/ui/user-thread-header";
@@ -127,7 +126,7 @@ export default function ThreadCard({
 
   return (
     <div
-      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} relative rounded-lg ${mainThreadMode ? "mb-6" : "mb-4"} shadow-lg transition hover:cursor-pointer hover:shadow-xl`}
+      className={`bg-dark-gray ${borderColor ? `border-l-4 ${borderColor}` : ""} relative rounded-lg ${mainThreadMode ? "mb-6" : "mb-4"} shadow-lg transition ${!mainThreadMode ? "hover:cursor-pointer" : ""} hover:shadow-xl`}
       onClick={(e) => {
         const target = e.target as HTMLElement;
         if (target.closest("a, button, input, textarea")) {

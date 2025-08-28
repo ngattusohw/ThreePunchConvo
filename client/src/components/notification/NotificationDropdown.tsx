@@ -32,21 +32,21 @@ export default function NotificationDropdown({
       case NOTIFICATION_TYPES.LIKE:
       case NOTIFICATION_TYPES.POTD:
         return !!(notification.relatedUser && notification.threadTitle);
-      
+
       case NOTIFICATION_TYPES.FOLLOW:
         return !!notification.relatedUser;
-      
+
       case NOTIFICATION_TYPES.ADMIN_MESSAGE:
       case NOTIFICATION_TYPES.SYSTEM:
         return !!notification.message;
-      
+
       case NOTIFICATION_TYPES.THREAD_PINNED:
         return !!notification.threadTitle;
-      
+
       case NOTIFICATION_TYPES.FIGHTER_POST:
       case NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST:
         return !!(notification.relatedUser && notification.threadTitle);
-      
+
       default:
         return false; // Unknown notification types won't be displayed
     }
@@ -57,7 +57,11 @@ export default function NotificationDropdown({
 
   // Filter out admin notifications for UI logic
   const nonAdminNotifications = notifications.filter(
-    (notification) => notification.type !== NOTIFICATION_TYPES.ADMIN_MESSAGE
+    (notification) => notification.type !== NOTIFICATION_TYPES.ADMIN_MESSAGE,
+  );
+
+  const adminNotifications = notifications.filter(
+    (notification) => notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE,
   );
 
   // Auto-close dropdown when all notifications are cleared
@@ -134,14 +138,29 @@ export default function NotificationDropdown({
             </p>
           </div>
         ) : (
-          <ul className='space-y-4'>
-            {notifications.map((notification) => (
-              <NotificationItem
-                key={notification.id}
-                notification={notification}
-                onClick={() => handleNotificationClick(notification)}
-              />
-            ))}
+          <ul className='space-y-8'>
+            <ul className='space-y-4'>
+              {adminNotifications.map((notification) => (
+                <NotificationItem
+                  key={notification.id}
+                  notification={notification}
+                  onClick={() => handleNotificationClick(notification)}
+                />
+              ))}
+            </ul>
+            {adminNotifications.length > 0 &&
+              nonAdminNotifications.length > 0 && (
+                <hr className='border-gray-500' />
+              )}
+            <ul className='space-y-4'>
+              {nonAdminNotifications.map((notification) => (
+                <NotificationItem
+                  key={notification.id}
+                  notification={notification}
+                  onClick={() => handleNotificationClick(notification)}
+                />
+              ))}
+            </ul>
           </ul>
         )}
       </div>
@@ -175,16 +194,19 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
   };
 
   // Create conditional click handler - admin messages should not be clickable
-  const handleCardClick = notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE 
-    ? undefined 
-    : onClick;
+  const handleCardClick =
+    notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE
+      ? undefined
+      : onClick;
 
-  const isProfessionalPost = notification.type === NOTIFICATION_TYPES.FIGHTER_POST || notification.type === NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST;
+  const isProfessionalPost =
+    notification.type === NOTIFICATION_TYPES.FIGHTER_POST ||
+    notification.type === NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST;
   const isAdminMessage = notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE;
 
   return (
     <li
-      className={`flex items-start gap-3 p-3 ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? (notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50") : notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} ${isProfessionalPost ? "border-2 border-ufc-red " : ""} ${isAdminMessage ? "border-2 border-[#FAE1BE] " : ""} ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "cursor-pointer"} rounded-lg transition-all ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "hover:bg-opacity-70"} overflow-hidden`}
+      className={`flex items-start gap-3 p-3 ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? (notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50") : notification.isRead ? "bg-gray-800 bg-opacity-30" : "bg-gray-800 bg-opacity-50"} ${isProfessionalPost ? "border-ufc-red border-2" : ""} ${isAdminMessage ? "border-2 border-[#FAE1BE]" : ""} ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "cursor-pointer"} rounded-lg transition-all ${notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? "" : "hover:bg-opacity-70"} overflow-hidden`}
       onClick={handleCardClick}
     >
       {notification.type === NOTIFICATION_TYPES.SYSTEM ? (
@@ -192,8 +214,12 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
           3PC
         </div>
       ) : notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE ? (
-        <div className='mr-0 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full overflow-hidden bg-white'>
-          <img src={OctagonBlack} alt='Admin' className='h-10 w-10 object-contain' />
+        <div className='mr-0 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-white'>
+          <img
+            src={OctagonBlack}
+            alt='Admin'
+            className='h-10 w-10 object-contain'
+          />
         </div>
       ) : notification.relatedUser ? (
         <UserAvatar
@@ -207,11 +233,11 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
         </div>
       )}
 
-      <div className='flex-1 min-w-0'>
+      <div className='min-w-0 flex-1'>
         {notification.type === NOTIFICATION_TYPES.REPLY &&
           notification.relatedUser &&
           notification.threadTitle && (
-            <p className='text-gray-300 break-words whitespace-pre-wrap'>
+            <p className='whitespace-pre-wrap break-words text-gray-300'>
               <span className='font-medium text-white'>
                 {notification.relatedUser.username}
               </span>{" "}
@@ -225,7 +251,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
         {notification.type === NOTIFICATION_TYPES.MENTION &&
           notification.relatedUser &&
           notification.threadTitle && (
-            <p className='text-gray-300 break-words whitespace-pre-wrap'>
+            <p className='whitespace-pre-wrap break-words text-gray-300'>
               <span className='font-medium text-white'>
                 {notification.relatedUser.username}
               </span>{" "}
@@ -239,7 +265,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
         {notification.type === NOTIFICATION_TYPES.LIKE &&
           notification.relatedUser &&
           notification.threadTitle && (
-            <p className='text-gray-300 break-words whitespace-pre-wrap'>
+            <p className='whitespace-pre-wrap break-words text-gray-300'>
               <span className='font-medium text-white'>
                 {notification.relatedUser.username}
               </span>{" "}
@@ -264,7 +290,7 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
         {notification.type === NOTIFICATION_TYPES.POTD &&
           notification.relatedUser &&
           notification.threadTitle && (
-            <p className='text-gray-300 break-words whitespace-pre-wrap'>
+            <p className='whitespace-pre-wrap break-words text-gray-300'>
               <span className='font-medium text-white'>
                 {notification.relatedUser.username}
               </span>{" "}
@@ -276,45 +302,64 @@ function NotificationItem({ notification, onClick }: NotificationItemProps) {
             </p>
           )}
 
-        {notification.type === NOTIFICATION_TYPES.FOLLOW && notification.relatedUser && (
-          <p className='text-gray-300 break-words whitespace-pre-wrap'>
-            <span className='font-medium text-white'>
-              {notification.relatedUser.username}
-            </span>{" "}
-            started following you
-          </p>
-        )}
+        {notification.type === NOTIFICATION_TYPES.FOLLOW &&
+          notification.relatedUser && (
+            <p className='whitespace-pre-wrap break-words text-gray-300'>
+              <span className='font-medium text-white'>
+                {notification.relatedUser.username}
+              </span>{" "}
+              started following you
+            </p>
+          )}
 
-{notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE && notification.message && (
-          <p className='text-gray-300 break-words whitespace-pre-wrap'>
-            <span className='font-medium text-white'>Admin <span className='font-bold text-white'>{notification.relatedUser?.username}</span>{" just sent you a message: "}</span>
-            <span className='text-[#FAE1BE]'>{notification.message}</span>
-          </p>
-        )}
+        {notification.type === NOTIFICATION_TYPES.ADMIN_MESSAGE &&
+          notification.message && (
+            <p className='whitespace-pre-wrap break-words text-gray-300'>
+              <span className='font-medium text-white'>
+                Admin{" "}
+                <span className='font-bold text-white'>
+                  {notification.relatedUser?.username}
+                </span>
+                {" just sent you a message: "}
+              </span>
+              <span className='text-[#FAE1BE]'>{notification.message}</span>
+            </p>
+          )}
 
-        {notification.type === NOTIFICATION_TYPES.SYSTEM && notification.message && (
-          <p className='text-gray-300 break-words whitespace-pre-wrap'>
-            <span className='font-medium text-white'>System</span>{" "}
-            {notification.message}
-          </p>
-        )}
+        {notification.type === NOTIFICATION_TYPES.SYSTEM &&
+          notification.message && (
+            <p className='whitespace-pre-wrap break-words text-gray-300'>
+              <span className='font-medium text-white'>System</span>{" "}
+              {notification.message}
+            </p>
+          )}
 
-        {notification.type === NOTIFICATION_TYPES.THREAD_PINNED && notification.threadTitle && (
-          <p className='text-gray-300 break-words whitespace-pre-wrap'>
-            <span className='font-medium text-white'>System</span> Your post{" "}
-            <span className='text-ufc-blue'>"{notification.threadTitle}"</span>{" "}
-            has been pinned by a moderator
-          </p>
-        )}
+        {notification.type === NOTIFICATION_TYPES.THREAD_PINNED &&
+          notification.threadTitle && (
+            <p className='whitespace-pre-wrap break-words text-gray-300'>
+              <span className='font-medium text-white'>System</span> Your post{" "}
+              <span className='text-ufc-blue'>
+                "{notification.threadTitle}"
+              </span>{" "}
+              has been pinned by a moderator
+            </p>
+          )}
 
-        {(notification.type === NOTIFICATION_TYPES.FIGHTER_POST || notification.type === NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST) && notification.relatedUser && (
-          <p className='text-white break-words whitespace-pre-wrap'>
-            <span className='font-large font-bold text-white'>{notification.relatedUser.username}</span> just posted <span className='text-ufc-red'>"{notification.threadTitle}"</span>
-          </p>
-        )}
+        {(notification.type === NOTIFICATION_TYPES.FIGHTER_POST ||
+          notification.type ===
+            NOTIFICATION_TYPES.INDUSTRY_PROFESSIONAL_POST) &&
+          notification.relatedUser && (
+            <p className='whitespace-pre-wrap break-words text-white'>
+              <span className='font-large font-bold text-white'>
+                {notification.relatedUser.username}
+              </span>{" "}
+              just posted{" "}
+              <span className='text-ufc-red'>"{notification.threadTitle}"</span>
+            </p>
+          )}
 
         {notification.replyPreview && !notification.replyId && (
-          <p className='mt-1 text-sm text-gray-400 break-words whitespace-pre-wrap'>
+          <p className='mt-1 whitespace-pre-wrap break-words text-sm text-gray-400'>
             {notification.replyPreview}
           </p>
         )}

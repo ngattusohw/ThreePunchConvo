@@ -138,7 +138,7 @@ export default function NotificationDropdown({
             </p>
           </div>
         ) : (
-          <ul className='space-y-8'>
+          <div className='space-y-8'>
             <ul className='space-y-4'>
               {adminNotifications.map((notification) => (
                 <NotificationItem
@@ -161,7 +161,7 @@ export default function NotificationDropdown({
                 />
               ))}
             </ul>
-          </ul>
+          </div>
         )}
       </div>
 

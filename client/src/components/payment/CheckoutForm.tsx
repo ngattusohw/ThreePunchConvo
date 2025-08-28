@@ -429,7 +429,7 @@ const CheckoutFormInner = ({ subscriptionType, onPlanChange }: {
             </>
           ) : (
             <span>
-              Start Subscription • {checkout?.total?.total?.amount}/month
+              Start Subscription • {checkout?.total?.total?.amount}
             </span>
           )}
         </button>

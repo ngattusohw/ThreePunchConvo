@@ -359,7 +359,7 @@ const CheckoutFormInner = ({ subscriptionType, onPlanChange }: {
                   </svg>
                   <span className='text-sm font-bold text-amber-300'>
                     Valid for a whole FREE YEAR. Your card will only start being
-                    charged $4.99/month after the end of the free period. You can
+                    charged after the end of the free period. You can
                     cancel at any time.
                   </span>
                 </div>
@@ -429,7 +429,7 @@ const CheckoutFormInner = ({ subscriptionType, onPlanChange }: {
             </>
           ) : (
             <span>
-              Start Subscription • {planDetails.price}
+              Start Subscription • {checkout?.total?.total?.amount}/month
             </span>
           )}
         </button>
@@ -446,22 +446,23 @@ const CheckoutFormInner = ({ subscriptionType, onPlanChange }: {
 const CheckoutForm = () => {
   const { user, isLoaded: isUserLoaded, isSignedIn } = useUser();
 
-  const [subscriptionType, setSubscriptionType] = useState<'monthly' | 'yearly'>('monthly');
+  const getInitialSubscriptionType = (): 'monthly' | 'yearly' => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const plan = urlParams.get('plan');
+    if (plan === 'yearly' || plan === 'monthly') {
+      console.log("SET SUBSCRIPTION plan: ", plan);
+      return plan;
+    }
+    return 'monthly';
+  };
+
+  const [subscriptionType, setSubscriptionType] = useState<'monthly' | 'yearly'>(getInitialSubscriptionType());
   const [isCreatingSession, setIsCreatingSession] = useState(true);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
   
   // Add ref to prevent concurrent requests
   const createSessionPromise = useRef<Promise<void> | null>(null);
-
-  // Get subscription type from URL parameters on initial load
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const plan = urlParams.get('plan');
-    if (plan === 'yearly' || plan === 'monthly') {
-      setSubscriptionType(plan);
-    }
-  }, []);
 
   // Create checkout session when component mounts or plan changes
   useEffect(() => {
@@ -569,7 +570,7 @@ const CheckoutForm = () => {
     isUserLoaded, 
     isSignedIn, 
     user?.id, 
-    subscriptionType // Remove user?.emailAddresses from dependencies
+    subscriptionType
   ]);
 
   const handlePlanChange = (newPlan: 'monthly' | 'yearly') => {

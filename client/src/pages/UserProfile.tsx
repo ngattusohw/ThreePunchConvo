@@ -82,12 +82,39 @@ export default function UserProfile() {
 
   // Error state
   if (userError) {
+    const isUserNotFound = userError.message?.includes("User not found");
+    
     return (
       <div className='container mx-auto px-4 py-8'>
-        <div className='rounded-lg border border-red-500 bg-red-900 bg-opacity-20 p-4 text-center'>
-          <p className='text-red-500'>
-            Error loading user profile. Please try again later.
+        <div className={`rounded-lg border p-6 text-center ${
+          isUserNotFound 
+            ? 'border-yellow-500 bg-yellow-900 bg-opacity-20' 
+            : 'border-red-500 bg-red-900 bg-opacity-20'
+        }`}>
+          <h2 className={`text-xl font-bold mb-2 ${
+            isUserNotFound ? 'text-yellow-400' : 'text-red-400'
+          }`}>
+            {isUserNotFound ? 'User Not Found' : 'Error Loading Profile'}
+          </h2>
+          <p className={`mb-4 ${
+            isUserNotFound ? 'text-yellow-300' : 'text-red-300'
+          }`}>
+            {isUserNotFound 
+              ? `The user "${username}" doesn't exist or hasn't finished setting up their profile yet.`
+              : 'There was an error loading this user profile. Please try again later.'
+            }
           </p>
+          {isUserNotFound && (
+            <div className="text-sm text-yellow-200">
+              <p>If this is your profile, please wait a moment for your account to be fully set up.</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="mt-2 bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-white transition-colors"
+              >
+                Refresh Page
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );

@@ -178,7 +178,7 @@ const MediaPreview = ({ media, threadTitle }: MediaPreviewProps) => {
           !hasError &&
           (naturalDimensions.width > 1920 ||
             naturalDimensions.height > 1080) && (
-            <div className='absolute bottom-2 right-2 rounded bg-black bg-opacity-75 px-2 py-1 text-xs text-white'>
+            <div className='absolute bottom-2 right-2 hidden rounded bg-black bg-opacity-75 px-2 py-1 text-xs text-white md:block'>
               {naturalDimensions.width} × {naturalDimensions.height}
             </div>
           )}

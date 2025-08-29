@@ -1,5 +1,4 @@
 import React from "react";
-import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { SignUp } from "@clerk/clerk-react";
 import { dark } from "@clerk/themes";
@@ -9,18 +8,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Star, Users, Zap } from "lucide-react";
 
 export default function FighterSignup() {
-  const [location] = useLocation();
-  const urlParams = new URLSearchParams(location.split('?')[1] || '');
-  const token = urlParams.get('token');
-  
-  const { data: invitation, isLoading, error } = useQuery({
-    queryKey: ['fighter-invitation', token],
-    queryFn: () => fetchFighterInvitation(token!),
-    enabled: !!token,
-    retry: false, // Don't retry on invalid tokens
-  });
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    const { data: invitation, isLoading, error } = useQuery({
+      queryKey: ['fighter-invitation', token],
+      queryFn: () => fetchFighterInvitation(token!),
+      enabled: !!token,
+      retry: false, // Don't retry on invalid tokens
+    });
 
   if (!token) {
+    console.log("❌ ERROR: No token found");
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <Card className="bg-slate-800 border-slate-700 text-white max-w-md w-full">
@@ -56,6 +55,7 @@ export default function FighterSignup() {
   }
 
   if (error) {
+    console.log("❌ ERROR fetching fighter invitation:", error);
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <Card className="bg-slate-800 border-slate-700 text-white max-w-md w-full">
@@ -166,6 +166,10 @@ export default function FighterSignup() {
           <div className="flex justify-center">
             <div className="w-full max-w-md">
               <SignUp
+                initialValues={{
+                  emailAddress: invitation?.email || '',
+                  firstName: invitation?.fighterName,
+                }}
                 appearance={{
                   baseTheme: dark,
                   variables: {

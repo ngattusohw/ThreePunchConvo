@@ -1,4 +1,4 @@
-import emailjs from '@emailjs/browser';
+import emailjs from '@emailjs/nodejs';
 import { EmailTemplateParams, EmailResponse } from '../../shared/types';
 
 const sendEmail = async (templateParams: EmailTemplateParams): Promise<EmailResponse> => {
@@ -9,6 +9,7 @@ const sendEmail = async (templateParams: EmailTemplateParams): Promise<EmailResp
       templateParams, 
       {
         publicKey: process.env.EMAILJS_PUBLIC_KEY,
+        privateKey: process.env.EMAILJS_PRIVATE_KEY,
       }
     );
     

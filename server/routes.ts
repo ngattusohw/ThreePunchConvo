@@ -5,6 +5,7 @@ import express, {
   Request,
 } from "express";
 import { createServer, type Server } from "http";
+import crypto from "crypto";
 import { storage } from "./storage";
 import { fetchUpcomingEvents } from "./espn-api";
 import { ZodError } from "zod";
@@ -2272,45 +2273,76 @@ app.post("/api/admin/invite-fighter",
   ensureLocalUser,
   async (req: any, res: Response) => {
     try {
+      console.log("🔥 Fighter invitation request received:", req.body);
       const { email, fighterName, message } = req.body;
       const adminUser = req.localUser;
+      console.log("🔥 Admin user:", adminUser?.username, adminUser?.role);
 
       if (adminUser.role !== "ADMIN") {
+        console.log("❌ Access denied - not admin");
         return res.status(403).json({ message: "Admin access required" });
       }
 
+      console.log("🔥 Checking if user exists with email:", email);
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
+        console.log("❌ User already exists");
         return res.status(400).json({ message: "User with this email already exists" });
       }
 
+      console.log("🔥 Checking existing invitations");
       // Check if invitation already exists
       const existingInvitation = await storage.getFighterInvitationByEmail(email);
-      if (existingInvitation && existingInvitation.status === 'PENDING') {
-        return res.status(400).json({ message: "Active invitation already exists for this email" });
+      let invitation;
+      let token;
+      let isResend = false;
+
+      if (existingInvitation && existingInvitation.status === 'PENDING' && new Date(existingInvitation.expiresAt) > new Date()) {
+        // Active invitation exists - resend it
+        console.log(`Resending existing invitation for ${email}`);
+        invitation = existingInvitation;
+        token = existingInvitation.invitationToken;
+        isResend = true;
+        
+        // No need to update anything - just resend the email with existing token
+      } else {
+        // Create new invitation (either no invitation exists, or it's expired/used)
+        console.log(`Creating new invitation for ${email}`);
+        token = crypto.randomUUID();
+        invitation = await storage.createFighterInvitation({
+          email,
+          invitedByAdminId: adminUser.id,
+          invitationToken: token,
+          fighterName,
+          message,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        });
       }
 
-      // Create invitation
-      const token = crypto.randomUUID();
-      const invitation = await storage.createFighterInvitation({
-        email,
-        invitedByAdminId: adminUser.id,
-        invitationToken: token,
-        fighterName,
-        message,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-      });
-      const url = `${process.env.FRONTEND_URL}/fighter-signup?token=${token}`;
+      const url = `http://${process.env.EXTERNAL_URL}/fighter-signup?token=${token}`;
+      console.log("🔥 Sending email to:", email, "with URL:", url);
+      
       // Send email
-      await sendEmail({email, link:url, name: fighterName});
+      await sendEmail({
+        email, 
+        link: url, 
+        name: fighterName || 'Fighter'
+      });
 
       res.json({ 
-        message: "Fighter invitation sent successfully",
-        invitation: { id: invitation.id, email, fighterName }
+        message: isResend 
+          ? "Fighter invitation resent successfully" 
+          : "Fighter invitation sent successfully",
+        invitation: { 
+          id: invitation.id, 
+          email, 
+          fighterName: fighterName || invitation.fighterName,
+          isResend 
+        }
       });
     } catch (error) {
-      console.error("Error sending fighter invitation:", error);
+      console.error("❌ ERROR sending fighter invitation:", error);
       res.status(500).json({ message: "Failed to send invitation" });
     }
   }

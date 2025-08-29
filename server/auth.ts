@@ -186,8 +186,10 @@ export const registerAuthEndpoints = (app: Express) => {
           username || `user_${clerkId.substring(clerkId.lastIndexOf("_") + 1)}`;
 
         try {
-          // Check if this user is signing up with a fighter invitation
-          const fighterToken = req.body.fighterInvitationToken;
+          // Check for fighter token in request body OR Clerk metadata
+          const fighterToken = req.body.fighterInvitationToken || 
+                              req.body.unsafeMetadata?.fighterInvitationToken;
+
           let defaultRole = "USER";
           let invitationUsed = false;
 
@@ -297,6 +299,44 @@ export const registerAuthEndpoints = (app: Express) => {
           } catch (updateError) {
             console.error("Error updating user profile:", updateError);
             // Continue with existing user data even if update fails
+          }
+        }
+        // ✅ ADD THIS: Check for fighter invitation token even for existing users
+        const fighterToken = req.body.fighterInvitationToken;
+        if (fighterToken && user.role !== "FIGHTER") {
+          try {
+            console.log(`Checking fighter invitation token for existing user: ${fighterToken}`);
+            const invitation = await storage.getFighterInvitationByToken(fighterToken);
+            
+            if (invitation && 
+                invitation.status === 'PENDING' && 
+                new Date(invitation.expiresAt) > new Date()) {
+              
+              // Verify the email matches
+              if (invitation.email === email || invitation.email === user.email) {
+                console.log("🔥 Email matches invitation email, updating user role to FIGHTER");
+                // Update user role to FIGHTER
+                const updatedUser = await storage.updateUser(user.id, { role: "FIGHTER" });
+                if (updatedUser) {
+                  user = updatedUser;
+                  console.log(`Updated existing user ${user.id} role to FIGHTER`);
+                  
+                  // Mark invitation as used
+                  await storage.updateFighterInvitationStatus(
+                    invitation.id, 
+                    'ACCEPTED', 
+                    user.id
+                  );
+                  console.log(`Marked fighter invitation ${invitation.id} as ACCEPTED`);
+                }
+              } else {
+                console.log(`Email mismatch: invitation for ${invitation.email}, user email ${user.email || email}`);
+              }
+            } else {
+              console.log(`Invalid or expired fighter invitation token: ${fighterToken}`);
+            }
+          } catch (invitationError) {
+            console.error("Error checking fighter invitation for existing user:", invitationError);
           }
         }
       }

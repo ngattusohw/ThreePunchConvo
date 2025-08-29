@@ -7,7 +7,7 @@ import { Check, Shield, Star } from "lucide-react";
 
 export default function CompleteFighterSignup() {
   const [location, setLocation] = useLocation();
-  const urlParams = new URLSearchParams(location.split('?')[1] || '');
+  const urlParams = new URLSearchParams(window.location.search);
   const token = urlParams.get('token');
   const { user, isSignedIn, isLoaded } = useMemoizedUser();
   const [isProcessing, setIsProcessing] = useState(true);
@@ -23,6 +23,10 @@ export default function CompleteFighterSignup() {
       }
 
       try {
+        console.log('🔥 CompleteFighterSignup - sending token:', token);
+        console.log('🔥 User ID:', user.id);
+        console.log('🔥 Email:', user.primaryEmailAddress?.emailAddress);
+        
         // Send the fighter invitation token to complete the signup process
         const response = await fetch(`/api/users/clerk/${user.id}`, {
           method: 'POST',
@@ -39,12 +43,13 @@ export default function CompleteFighterSignup() {
           }),
         });
 
+        console.log('🔥 Response status:', response.status);
+        const responseData = await response.json();
+        console.log('🔥 Response data:', responseData);
+        
         if (!response.ok) {
           throw new Error('Failed to complete fighter signup');
         }
-
-        const data = await response.json();
-        console.log('Fighter signup completed:', data);
         
         // Small delay to ensure everything is processed
         setTimeout(() => {
@@ -59,7 +64,7 @@ export default function CompleteFighterSignup() {
     };
 
     processSignup();
-  }, [isLoaded, isSignedIn, user, token, setLocation]);
+  }, [isLoaded, isSignedIn, user, token]);
 
   if (!isLoaded || isProcessing) {
     return (
@@ -141,9 +146,9 @@ export default function CompleteFighterSignup() {
                 Enter the Forum
               </Button>
               <Button 
-                onClick={() => setLocation(`/profile/${user?.username}`)}
+                onClick={() => setLocation(`/user/${user?.username}`)}
                 variant="outline"
-                className="border-slate-600 text-white hover:bg-slate-700"
+                className="border-slate-600 text-black hover:bg-slate-200"
               >
                 View My Profile
               </Button>

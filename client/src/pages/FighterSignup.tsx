@@ -170,6 +170,9 @@ export default function FighterSignup() {
                   emailAddress: invitation?.email || '',
                   firstName: invitation?.fighterName,
                 }}
+                unsafeMetadata={{
+                  fighterInvitationToken: token, // Pass the token in metadata
+                }}
                 appearance={{
                   baseTheme: dark,
                   variables: {

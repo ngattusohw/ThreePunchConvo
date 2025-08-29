@@ -2353,6 +2353,7 @@ app.get("/api/fighter-invitation/:token", async (req: Request, res: Response) =>
   try {
     const { token } = req.params;
     const invitation = await storage.getFighterInvitationByToken(token);
+    console.log("🔥 Invitation:", invitation);
 
     if (!invitation || invitation.status !== 'PENDING' || invitation.expiresAt < new Date()) {
       return res.status(404).json({ message: "Invalid or expired invitation" });

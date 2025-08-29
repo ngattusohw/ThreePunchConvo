@@ -47,13 +47,13 @@ export default function InviteFighterModal({ isOpen, onClose }: InviteFighterMod
       onClose();
     },
     onError: (error) => {
-      toast({ 
-        title: "Error", 
-        description: "Failed to send invitation. Please try again.", 
-        variant: "destructive" 
-      });
-      console.error("Error sending fighter invitation:", error);
-    },
+        toast({ 
+          title: "Error", 
+          description: error.message || "Failed to send invitation. Please try again.", 
+          variant: "destructive" 
+        });
+        console.error("Error sending fighter invitation:", error);
+      },
   });
 
   const handleSubmit = (data: FighterInvitationFormData) => {

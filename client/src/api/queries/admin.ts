@@ -74,7 +74,8 @@ export const inviteFighter = async (
   const response = await apiRequest("POST", "/api/admin/invite-fighter", data);
 
   if (!response.ok) {
-    throw new Error("Failed to send fighter invitation");
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "Failed to send fighter invitation");
   }
 
   return response.json();

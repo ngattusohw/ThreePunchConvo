@@ -3107,13 +3107,13 @@ export class DatabaseStorage implements IStorage {
     try {
       const invitationValues = {
         id: uuidv4(),
-        email: data.email,
-        invitedByAdminId: data.invitedByAdminId,
-        invitationToken: uuidv4(),
-        fighterName: data.fighterName,
-        message: data.message,
+        email: data?.email,
+        invitedByAdminId: data?.invitedByAdminId,
+        invitationToken: data?.invitationToken, // Use the passed token instead of generating new one
+        fighterName: data?.fighterName,
+        message: data?.message,
         status: "PENDING",
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        expiresAt: data?.expiresAt, // Also use the passed expiration date
         usedAt: null,
         usedByUserId: null,
         createdAt: new Date(),

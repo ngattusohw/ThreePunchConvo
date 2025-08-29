@@ -20,8 +20,8 @@ import {
 import { requireAuth, clerkClient } from "@clerk/express";
 import { ensureLocalUser, requirePaidPlan } from "./auth";
 import { handleUserDeleted } from "./stripe";
+import sendEmail from "./helper/emailjs";
 
-// Extend Express Request type to include Clerk auth property
 declare global {
   namespace Express {
     interface Request {
@@ -2266,6 +2266,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+
+app.post("/api/admin/invite-fighter", 
+  requireAuth(),
+  ensureLocalUser,
+  async (req: any, res: Response) => {
+    try {
+      const { email, fighterName, message } = req.body;
+      const adminUser = req.localUser;
+
+      if (adminUser.role !== "ADMIN") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+
+      // Check if invitation already exists
+      const existingInvitation = await storage.getFighterInvitationByEmail(email);
+      if (existingInvitation && existingInvitation.status === 'PENDING') {
+        return res.status(400).json({ message: "Active invitation already exists for this email" });
+      }
+
+      // Create invitation
+      const token = crypto.randomUUID();
+      const invitation = await storage.createFighterInvitation({
+        email,
+        invitedByAdminId: adminUser.id,
+        invitationToken: token,
+        fighterName,
+        message,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      });
+      const url = `${process.env.FRONTEND_URL}/signup?token=${token}`;
+
+      // Send email
+      await sendEmail({email, link:url, name: fighterName});
+
+      res.json({ 
+        message: "Fighter invitation sent successfully",
+        invitation: { id: invitation.id, email, fighterName }
+      });
+    } catch (error) {
+      console.error("Error sending fighter invitation:", error);
+      res.status(500).json({ message: "Failed to send invitation" });
+    }
+  }
+);
+
+// Get fighter invitation by token (for signup page)
+app.get("/api/fighter-invitation/:token", async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    const invitation = await storage.getFighterInvitationByToken(token);
+
+    if (!invitation || invitation.status !== 'PENDING' || invitation.expiresAt < new Date()) {
+      return res.status(404).json({ message: "Invalid or expired invitation" });
+    }
+
+    res.json({
+      email: invitation.email,
+      fighterName: invitation.fighterName,
+      message: invitation.message,
+    });
+  } catch (error) {
+    console.error("Error fetching fighter invitation:", error);
+    res.status(500).json({ message: "Failed to fetch invitation" });
+  }
+});
 
   return httpServer;
 }

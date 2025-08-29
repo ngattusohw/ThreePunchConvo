@@ -235,3 +235,30 @@ export interface AdminUsersFilters {
   sortBy: string;
   sortOrder: 'asc' | 'desc';
 }
+
+// Fighter invitation types
+export interface FighterInvitationFormData {
+  email: string;
+  fighterName: string;
+}
+
+export interface FighterInvitation {
+  id: string;
+  email: string;
+  invitedByAdminId: string;
+  invitationToken: string;
+  fighterName?: string;
+  message?: string;
+  status: 'PENDING' | 'ACCEPTED' | 'EXPIRED';
+  expiresAt: Date;
+  usedAt?: Date;
+  usedByUserId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateFighterInvitationData {
+  email: string;
+  fighterName?: string;
+  message?: string;
+}

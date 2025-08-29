@@ -23,6 +23,7 @@ import { useAuth } from "@clerk/clerk-react";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import SignUp from "./pages/SignUp";
+import FighterSignup from "@/pages/FighterSignup";
 
 function App() {
   const { getToken } = useAuth();
@@ -290,6 +291,7 @@ function App() {
                 />
                 <ProtectedRoute path='/return' component={Return} />
                 <ProtectedRoute path='/signup' component={SignUp} />
+                <Route path="/fighter-signup" component={FighterSignup} />
 
                 {/* Admin Routes - Need auth and admin role */}
                 <AdminRoute path='/admin' component={Admin} />

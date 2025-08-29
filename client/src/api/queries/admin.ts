@@ -1,5 +1,6 @@
 import { AdminUsersResponse, AdminUsersFilters } from "@/lib/types";
 import { apiRequest } from "@/lib/queryClient";
+import { CreateFighterInvitationData, FighterInvitation } from "@/lib/types";
 
 export const fetchUsers = async (
   filters: AdminUsersFilters,
@@ -59,6 +60,46 @@ export const sendMessageToUsers = async (
 
   if (!response.ok) {
     throw new Error("Failed to send messages to users");
+  }
+
+  return response.json();
+};
+
+export const inviteFighter = async (
+  data: CreateFighterInvitationData,
+): Promise<{ 
+  message: string; 
+  invitation: { id: string; email: string; fighterName?: string } 
+}> => {
+  const response = await apiRequest("POST", "/api/admin/invite-fighter", data);
+
+  if (!response.ok) {
+    throw new Error("Failed to send fighter invitation");
+  }
+
+  return response.json();
+};
+
+export const getAllFighterInvitations = async (): Promise<FighterInvitation[]> => {
+  const response = await apiRequest("GET", "/api/admin/fighter-invitations");
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch fighter invitations");
+  }
+
+  return response.json();
+};
+
+export const fetchFighterInvitation = async (
+  token: string,
+): Promise<{
+  email: string;
+  fighterName?: string;
+}> => {
+  const response = await apiRequest("GET", `/api/fighter-invitation/${token}`);
+
+  if (!response.ok) {
+    throw new Error("Invalid or expired invitation");
   }
 
   return response.json();

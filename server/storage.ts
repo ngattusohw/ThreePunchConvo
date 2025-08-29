@@ -13,6 +13,9 @@ import {
   InsertMedia,
   Notification,
   InsertNotification,
+  FighterInvitation,
+  InsertFighterInvitation,
+  CreateFighterInvitationData,
   MMAEvent,
   Fighter,
   Fight,
@@ -28,6 +31,7 @@ import {
   replyReactions,
   dailyFighterCred,
   statusConfig,
+  fighterInvitations,
 } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -175,6 +179,13 @@ export interface IStorage {
   ): Promise<boolean>;
   getUserFighterCred(userId: string): Promise<number>;
   updateAllUsersFighterCred(): Promise<boolean>;
+
+  // Fighter invitation management
+  createFighterInvitation(data: CreateFighterInvitationData): Promise<FighterInvitation>;
+  getFighterInvitationByToken(token: string): Promise<FighterInvitation | null>;
+  getFighterInvitationByEmail(email: string): Promise<FighterInvitation | null>;
+  updateFighterInvitationStatus(id: string, status: string, usedByUserId?: string): Promise<void>;
+  getAllFighterInvitations(): Promise<FighterInvitation[]>;
 }
 
 // Extended Thread type that includes associated data
@@ -3088,6 +3099,92 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error creating notifications for all users:", error);
       // Don't throw error to avoid breaking the main operation
+    }
+  }
+
+  // Fighter invitation management
+  async createFighterInvitation(data: CreateFighterInvitationData): Promise<FighterInvitation> {
+    try {
+      const invitationValues = {
+        id: uuidv4(),
+        email: data.email,
+        invitedByAdminId: data.invitedByAdminId,
+        invitationToken: uuidv4(),
+        fighterName: data.fighterName,
+        message: data.message,
+        status: "PENDING",
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        usedAt: null,
+        usedByUserId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const [invitation] = await db.insert(fighterInvitations).values(invitationValues).returning();
+      return invitation;
+    } catch (error) {
+      console.error("Error creating fighter invitation:", error);
+      throw error;
+    }
+  }
+
+  async getFighterInvitationByToken(token: string): Promise<FighterInvitation | null> {
+    try {
+      const [invitation] = await db
+        .select()
+        .from(fighterInvitations)
+        .where(eq(fighterInvitations.invitationToken, token))
+        .limit(1);
+      return invitation || null;
+    } catch (error) {
+      console.error("Error fetching fighter invitation by token:", error);
+      throw error;
+    }
+  }
+
+  async getFighterInvitationByEmail(email: string): Promise<FighterInvitation | null> {
+    try {
+      const [invitation] = await db
+        .select()
+        .from(fighterInvitations)
+        .where(eq(fighterInvitations.email, email))
+        .limit(1);
+      return invitation || null;
+    } catch (error) {
+      console.error("Error fetching fighter invitation by email:", error);
+      throw error;
+    }
+  }
+
+  async updateFighterInvitationStatus(id: string, status: string, usedByUserId?: string): Promise<void> {
+    try {
+      const updateData = {
+        status,
+        usedAt: status === "ACCEPTED" ? new Date() : null,
+        usedByUserId,
+        updatedAt: new Date(),
+      };
+
+      await db
+        .update(fighterInvitations)
+        .set(updateData)
+        .where(eq(fighterInvitations.id, id));
+    } catch (error) {
+      console.error("Error updating fighter invitation status:", error);
+      throw error;
+    }
+  }
+
+  async getAllFighterInvitations(): Promise<FighterInvitation[]> {
+    try {
+      const invitations = await db
+        .select()
+        .from(fighterInvitations)
+        .orderBy(desc(fighterInvitations.createdAt));
+      return invitations;
+    } catch (error) {
+      console.error("Error fetching all fighter invitations:", error);
+      throw error;
     }
   }
 }

@@ -186,6 +186,37 @@ export const registerAuthEndpoints = (app: Express) => {
           username || `user_${clerkId.substring(clerkId.lastIndexOf("_") + 1)}`;
 
         try {
+          // Check if this user is signing up with a fighter invitation
+          const fighterToken = req.body.fighterInvitationToken;
+          let defaultRole = "USER";
+          let invitationUsed = false;
+
+          if (fighterToken) {
+            try {
+              console.log(`Checking fighter invitation token: ${fighterToken}`);
+              const invitation = await storage.getFighterInvitationByToken(fighterToken);
+              
+              if (invitation && 
+                  invitation.status === 'PENDING' && 
+                  new Date(invitation.expiresAt) > new Date()) {
+                
+                // Verify the email matches
+                if (invitation.email === email) {
+                  defaultRole = "FIGHTER";
+                  console.log(`Valid fighter invitation found for ${email}, setting role to FIGHTER`);
+                  invitationUsed = true;
+                } else {
+                  console.log(`Email mismatch: invitation for ${invitation.email}, signup for ${email}`);
+                }
+              } else {
+                console.log(`Invalid or expired fighter invitation token: ${fighterToken}`);
+              }
+            } catch (invitationError) {
+              console.error("Error checking fighter invitation:", invitationError);
+              // Continue with regular user creation if invitation check fails
+            }
+          }
+
           // Create user in our database with Clerk profile data
           const newUser = await storage.createUser({
             username: finalUsername,
@@ -194,12 +225,31 @@ export const registerAuthEndpoints = (app: Express) => {
             lastName,
             email,
             profileImageUrl,
+            role: defaultRole, // Will be "FIGHTER" if invitation is valid, otherwise "USER"
           });
-          console.log("auth profile: ", profileImageUrl);
 
+          console.log("auth profile: ", profileImageUrl);
           console.log(
-            `Created new local user for Clerk ID ${clerkId}, local ID: ${newUser.id}`,
+            `Created new local user for Clerk ID ${clerkId}, local ID: ${newUser.id}, role: ${defaultRole}`,
           );
+
+          // Mark invitation as used if it was a fighter signup
+          if (invitationUsed && fighterToken) {
+            try {
+              const invitation = await storage.getFighterInvitationByToken(fighterToken);
+              if (invitation) {
+                await storage.updateFighterInvitationStatus(
+                  invitation.id, 
+                  'ACCEPTED', 
+                  newUser.id
+                );
+                console.log(`Marked fighter invitation ${invitation.id} as ACCEPTED`);
+              }
+            } catch (invitationUpdateError) {
+              console.error("Error updating fighter invitation status:", invitationUpdateError);
+              // Don't fail user creation if invitation update fails
+            }
+          }
 
           // Get the created user to return
           user = await storage.getUserByExternalId(clerkId);

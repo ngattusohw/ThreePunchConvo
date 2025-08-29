@@ -2301,8 +2301,7 @@ app.post("/api/admin/invite-fighter",
         message,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       });
-      const url = `${process.env.FRONTEND_URL}/signup?token=${token}`;
-
+      const url = `${process.env.FRONTEND_URL}/fighter-signup?token=${token}`;
       // Send email
       await sendEmail({email, link:url, name: fighterName});
 
@@ -2317,7 +2316,7 @@ app.post("/api/admin/invite-fighter",
   }
 );
 
-// Get fighter invitation by token (for signup page)
+// Get fighter invitation by token (for signup page validation)
 app.get("/api/fighter-invitation/:token", async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
@@ -2330,7 +2329,6 @@ app.get("/api/fighter-invitation/:token", async (req: Request, res: Response) =>
     res.json({
       email: invitation.email,
       fighterName: invitation.fighterName,
-      message: invitation.message,
     });
   } catch (error) {
     console.error("Error fetching fighter invitation:", error);

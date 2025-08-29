@@ -63,14 +63,6 @@ export interface EmailTemplateParams {
   [key: string]: unknown;
 }
 
-export interface FighterInvitationTemplateParams extends EmailTemplateParams {
-  fighterName?: string;
-  adminName?: string;
-  message?: string;
-  platformName?: string;
-  expirationDays?: number;
-}
-
 export interface EmailResponse {
   status: number;
   text: string;

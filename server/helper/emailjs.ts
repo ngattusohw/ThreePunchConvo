@@ -1,5 +1,5 @@
 import emailjs from '@emailjs/browser';
-import { EmailTemplateParams, FighterInvitationTemplateParams, EmailResponse } from '../../shared/types';
+import { EmailTemplateParams, EmailResponse } from '../../shared/types';
 
 const sendEmail = async (templateParams: EmailTemplateParams): Promise<EmailResponse> => {
   try {
@@ -18,19 +18,6 @@ const sendEmail = async (templateParams: EmailTemplateParams): Promise<EmailResp
     console.log('FAILED...', err);
     throw err;
   }
-};
-
-// Specific function for fighter invitations
-export const sendFighterInvitationEmail = async (
-  params: FighterInvitationTemplateParams
-): Promise<EmailResponse> => {
-  const templateParams: EmailTemplateParams = {
-    name: params.fighterName || 'Fighter',
-    email: params.email,
-    link: params.link,
-  };
-
-  return sendEmail(templateParams);
 };
 
 export default sendEmail;

@@ -19,7 +19,6 @@ export default function FighterSignup() {
     });
 
   if (!token) {
-    console.log("❌ ERROR: No token found");
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <Card className="bg-slate-800 border-slate-700 text-white max-w-md w-full">
@@ -55,7 +54,6 @@ export default function FighterSignup() {
   }
 
   if (error) {
-    console.log("❌ ERROR fetching fighter invitation:", error);
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <Card className="bg-slate-800 border-slate-700 text-white max-w-md w-full">

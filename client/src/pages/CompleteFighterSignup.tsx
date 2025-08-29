@@ -23,10 +23,6 @@ export default function CompleteFighterSignup() {
       }
 
       try {
-        console.log('🔥 CompleteFighterSignup - sending token:', token);
-        console.log('🔥 User ID:', user.id);
-        console.log('🔥 Email:', user.primaryEmailAddress?.emailAddress);
-        
         // Send the fighter invitation token to complete the signup process
         const response = await fetch(`/api/users/clerk/${user.id}`, {
           method: 'POST',
@@ -43,9 +39,7 @@ export default function CompleteFighterSignup() {
           }),
         });
 
-        console.log('🔥 Response status:', response.status);
         const responseData = await response.json();
-        console.log('🔥 Response data:', responseData);
         
         if (!response.ok) {
           throw new Error('Failed to complete fighter signup');

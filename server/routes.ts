@@ -2273,25 +2273,19 @@ app.post("/api/admin/invite-fighter",
   ensureLocalUser,
   async (req: any, res: Response) => {
     try {
-      console.log("🔥 Fighter invitation request received:", req.body);
       const { email, fighterName, message } = req.body;
       const adminUser = req.localUser;
-      console.log("🔥 Admin user:", adminUser?.username, adminUser?.role);
 
       if (adminUser.role !== "ADMIN") {
-        console.log("❌ Access denied - not admin");
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      console.log("🔥 Checking if user exists with email:", email);
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
-        console.log("❌ User already exists");
         return res.status(400).json({ message: "User with this email already exists" });
       }
 
-      console.log("🔥 Checking existing invitations");
       // Check if invitation already exists
       const existingInvitation = await storage.getFighterInvitationByEmail(email);
       let invitation;
@@ -2300,7 +2294,6 @@ app.post("/api/admin/invite-fighter",
 
       if (existingInvitation && existingInvitation.status === 'PENDING' && new Date(existingInvitation.expiresAt) > new Date()) {
         // Active invitation exists - resend it
-        console.log(`Resending existing invitation for ${email}`);
         invitation = existingInvitation;
         token = existingInvitation.invitationToken;
         isResend = true;
@@ -2308,7 +2301,6 @@ app.post("/api/admin/invite-fighter",
         // No need to update anything - just resend the email with existing token
       } else {
         // Create new invitation (either no invitation exists, or it's expired/used)
-        console.log(`Creating new invitation for ${email}`);
         token = crypto.randomUUID();
         invitation = await storage.createFighterInvitation({
           email,
@@ -2321,7 +2313,6 @@ app.post("/api/admin/invite-fighter",
       }
 
       const url = `http://${process.env.EXTERNAL_URL}/fighter-signup?token=${token}`;
-      console.log("🔥 Sending email to:", email, "with URL:", url);
       
       // Send email
       await sendEmail({
@@ -2353,7 +2344,6 @@ app.get("/api/fighter-invitation/:token", async (req: Request, res: Response) =>
   try {
     const { token } = req.params;
     const invitation = await storage.getFighterInvitationByToken(token);
-    console.log("🔥 Invitation:", invitation);
 
     if (!invitation || invitation.status !== 'PENDING' || invitation.expiresAt < new Date()) {
       return res.status(404).json({ message: "Invalid or expired invitation" });

@@ -17,6 +17,16 @@ export default [
           jsx: true,
         },
       },
+      globals: {
+        console: "readonly",
+        navigator: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+        window: "readonly",
+        document: "readonly",
+      },
     },
     plugins: {
       "@typescript-eslint": tseslint,

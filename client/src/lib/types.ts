@@ -269,6 +269,7 @@ export interface AdminFighterInvitation {
   email: string;
   fighterName?: string;
   status: "PENDING" | "ACCEPTED" | "EXPIRED";
+  invitationToken: string;
   invitedByAdmin?: { username: string };
   createdAt: Date;
   expiresAt: Date;

@@ -383,6 +383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             email: invitation?.email,
             fighterName: invitation?.fighterName,
             status: invitation?.status,
+            invitationToken: invitation?.invitationToken,
             invitedByAdmin: invitation?.invitedByAdmin,
             createdAt: invitation?.createdAt,
             expiresAt: invitation?.expiresAt,
@@ -2451,7 +2452,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        const url = `http://${process.env.EXTERNAL_URL}/fighter-signup?token=${token}`;
+        // Use the request's host and protocol to match what the client would generate
+        const protocol =
+          req.secure || req.headers["x-forwarded-proto"] === "https"
+            ? "https"
+            : "http";
+        const host = req.headers.host || process.env.EXTERNAL_URL;
+        const url = `${protocol}://${host}/fighter-signup?token=${token}`;
 
         // Send email
         await sendEmail({
@@ -2529,7 +2536,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        const url = `http://${process.env.EXTERNAL_URL}/fighter-signup?token=${token}`;
+        // Use the request's host and protocol to match what the client would generate
+        const protocol =
+          req.secure || req.headers["x-forwarded-proto"] === "https"
+            ? "https"
+            : "http";
+        const host = req.headers.host || process.env.EXTERNAL_URL;
+        const url = `${protocol}://${host}/fighter-signup?token=${token}`;
 
         res.json({
           message: isExisting

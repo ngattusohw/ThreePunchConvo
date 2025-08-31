@@ -17,8 +17,9 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Input } from "@/components/ui/input";
-import { ChevronUpIcon, ChevronDownIcon } from "lucide-react";
+import { ChevronUpIcon, ChevronDownIcon, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -67,6 +68,7 @@ export default function FighterInvitationsTable() {
   } = useAdminFighterInvitations();
 
   const [searchInput, setSearchInput] = useState(filters.search || "");
+  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
 
   // Debounced search effect - only search when the term actually changes
   useEffect(() => {
@@ -92,6 +94,31 @@ export default function FighterInvitationsTable() {
 
   const formatDate = (dateString: string | Date) => {
     return new Date(dateString).toLocaleDateString();
+  };
+
+  const copyInviteLink = async (
+    invitationToken: string,
+    invitationId: string,
+  ) => {
+    try {
+      const inviteLink = `${window.location.origin}/fighter-signup?token=${invitationToken}`;
+      await navigator.clipboard.writeText(inviteLink);
+
+      setCopiedInviteId(invitationId);
+      setTimeout(() => setCopiedInviteId(null), 2000);
+
+      toast({
+        title: "Success",
+        description: "Invitation link copied to clipboard!",
+      });
+    } catch (error) {
+      console.error("Failed to copy invitation link:", error);
+      toast({
+        title: "Error",
+        description: "Failed to copy invitation link. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSort = (column: string) => {
@@ -282,7 +309,7 @@ export default function FighterInvitationsTable() {
                 {getSortIcon("expiresAt")}
               </TableHead>
               <TableHead className='font-semibold text-gray-200'>
-                Actions
+                Invite Link
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -338,18 +365,30 @@ export default function FighterInvitationsTable() {
                   <TableCell className='w-32'>
                     <div className='flex gap-2'>
                       <button
-                        className='rounded-lg bg-white px-2 py-1 text-sm font-medium text-black hover:bg-gray-100'
-                        onClick={() => {
-                          // TODO: Implement view invitation details
-                          console.log("View invitation:", invitation.id);
-                        }}
+                        className='flex items-center gap-1 rounded-lg bg-blue-600 px-2 py-1 text-sm font-medium text-white hover:bg-blue-700'
+                        onClick={() =>
+                          copyInviteLink(
+                            invitation.invitationToken,
+                            invitation.id,
+                          )
+                        }
                       >
-                        View
+                        {copiedInviteId === invitation.id ? (
+                          <>
+                            <Check className='h-3 w-3' />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className='h-3 w-3' />
+                            Copy Link
+                          </>
+                        )}
                       </button>
                       {invitation.status === "PENDING" &&
                         !isExpired(invitation.expiresAt) && (
                           <button
-                            className='rounded-lg bg-blue-600 px-2 py-1 text-sm font-medium text-white hover:bg-blue-700'
+                            className='rounded-lg bg-green-600 px-2 py-1 text-sm font-medium text-white hover:bg-green-700'
                             onClick={() => {
                               // TODO: Implement resend invitation
                               console.log("Resend invitation:", invitation.id);

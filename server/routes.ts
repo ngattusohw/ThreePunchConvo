@@ -2339,6 +2339,70 @@ app.post("/api/admin/invite-fighter",
   }
 );
 
+// Generate fighter invitation link (without sending email)
+app.post("/api/admin/generate-fighter-link", 
+  requireAuth(),
+  ensureLocalUser,
+  async (req: any, res: Response) => {
+    try {
+      const { email, fighterName, message } = req.body;
+      const adminUser = req.localUser;
+
+      if (adminUser.role !== "ADMIN") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+
+      // Check if invitation already exists
+      const existingInvitation = await storage.getFighterInvitationByEmail(email);
+      let invitation;
+      let token;
+      let isExisting = false;
+
+      if (existingInvitation && existingInvitation.status === 'PENDING' && new Date(existingInvitation.expiresAt) > new Date()) {
+        // Active invitation exists - return existing link
+        invitation = existingInvitation;
+        token = existingInvitation.invitationToken;
+        isExisting = true;
+      } else {
+        // Create new invitation (either no invitation exists, or it's expired/used)
+        token = crypto.randomUUID();
+        invitation = await storage.createFighterInvitation({
+          email,
+          invitedByAdminId: adminUser.id,
+          invitationToken: token,
+          fighterName,
+          message,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        });
+      }
+
+      const url = `http://${process.env.EXTERNAL_URL}/fighter-signup?token=${token}`;
+
+      res.json({ 
+        message: isExisting 
+          ? "Retrieved existing fighter invitation link" 
+          : "Fighter invitation link generated successfully",
+        url,
+        invitation: { 
+          id: invitation.id, 
+          email, 
+          fighterName: fighterName || invitation.fighterName,
+          isExisting 
+        }
+      });
+    } catch (error) {
+      console.error("❌ ERROR generating fighter invitation link:", error);
+      res.status(500).json({ message: "Failed to generate invitation link" });
+    }
+  }
+);
+
 // Get fighter invitation by token (for signup page validation)
 app.get("/api/fighter-invitation/:token", async (req: Request, res: Response) => {
   try {

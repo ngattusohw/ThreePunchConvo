@@ -105,3 +105,20 @@ export const fetchFighterInvitation = async (
 
   return response.json();
 };
+
+export const generateFighterInviteLink = async (
+  data: CreateFighterInvitationData,
+): Promise<{ 
+  message: string; 
+  url: string;
+  invitation: { id: string; email: string; fighterName?: string; isExisting: boolean } 
+}> => {
+  const response = await apiRequest("POST", "/api/admin/generate-fighter-link", data);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "Failed to generate fighter invitation link");
+  }
+
+  return response.json();
+};

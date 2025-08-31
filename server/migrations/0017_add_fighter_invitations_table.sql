@@ -1,3 +1,5 @@
+ALTER TABLE users ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
 -- New migration: add_fighter_invitations_table.sql
 CREATE TABLE fighter_invitations (
   id TEXT PRIMARY KEY,

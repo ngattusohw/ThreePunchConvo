@@ -20,6 +20,8 @@ import { Input } from "@/components/ui/input";
 import { ChevronUpIcon, ChevronDownIcon, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { inviteFighter } from "@/api/queries/admin";
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -69,6 +71,46 @@ export default function FighterInvitationsTable() {
 
   const [searchInput, setSearchInput] = useState(filters.search || "");
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
+  const [resendingInviteId, setResendingInviteId] = useState<string | null>(
+    null,
+  );
+
+  const queryClient = useQueryClient();
+
+  const { mutate: resendInvitation } = useMutation({
+    mutationFn: inviteFighter,
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: `Fighter invitation resent to ${data.invitation.email}!`,
+      });
+      setResendingInviteId(null);
+      // Refresh the table data
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "fighter-invitations"],
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description:
+          error.message || "Failed to resend invitation. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Error resending fighter invitation:", error);
+      setResendingInviteId(null);
+    },
+  });
+
+  const handleResend = (invitation: any) => {
+    setResendingInviteId(invitation.id);
+    resendInvitation({
+      email: invitation.email,
+      fighterName: invitation.fighterName || undefined,
+      // Note: We don't have access to the original message, but that's okay
+      // The API will handle resending with the existing invitation data
+    });
+  };
 
   // Debounced search effect - only search when the term actually changes
   useEffect(() => {
@@ -388,13 +430,13 @@ export default function FighterInvitationsTable() {
                       {invitation.status === "PENDING" &&
                         !isExpired(invitation.expiresAt) && (
                           <button
-                            className='rounded-lg bg-green-600 px-2 py-1 text-sm font-medium text-white hover:bg-green-700'
-                            onClick={() => {
-                              // TODO: Implement resend invitation
-                              console.log("Resend invitation:", invitation.id);
-                            }}
+                            className='rounded-lg bg-green-600 px-2 py-1 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50'
+                            onClick={() => handleResend(invitation)}
+                            disabled={resendingInviteId === invitation.id}
                           >
-                            Resend
+                            {resendingInviteId === invitation.id
+                              ? "Sending..."
+                              : "Resend"}
                           </button>
                         )}
                     </div>

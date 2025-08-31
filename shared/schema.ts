@@ -317,6 +317,24 @@ export const fights = pgTable("fights", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Fighter invitations table
+export const fighterInvitations = pgTable("fighter_invitations", {
+  id: text("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  invitedByAdminId: text("invited_by_admin_id")
+    .notNull()
+    .references(() => users.id),
+  invitationToken: text("invitation_token").notNull().unique(),
+  fighterName: text("fighter_name"),
+  message: text("message"),
+  status: text("status").notNull().default("PENDING"), // PENDING, ACCEPTED, EXPIRED
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  usedByUserId: text("used_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users, {
   id: z.string().optional(), // Changed to string
@@ -398,6 +416,22 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   isRead: true,
 });
 
+export const insertFighterInvitationSchema = createInsertSchema(fighterInvitations, {
+  email: z.string().email(),
+  invitedByAdminId: z.string(),
+  invitationToken: z.string(),
+  fighterName: z.string().optional(),
+  message: z.string().optional(),
+  status: z.string().optional(),
+  expiresAt: z.date(),
+  usedAt: z.date().optional(),
+  usedByUserId: z.string().optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -430,3 +464,7 @@ export type StatusConfig = typeof statusConfig.$inferSelect;
 export type MMAEvent = typeof mmaEvents.$inferSelect;
 export type Fighter = typeof fighters.$inferSelect;
 export type Fight = typeof fights.$inferSelect;
+
+export type FighterInvitation = typeof fighterInvitations.$inferSelect;
+export type InsertFighterInvitation = z.infer<typeof insertFighterInvitationSchema>;
+export type CreateFighterInvitationData = Omit<InsertFighterInvitation, 'id' | 'createdAt' | 'updatedAt'>;

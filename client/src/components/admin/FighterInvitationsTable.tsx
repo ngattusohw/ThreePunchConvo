@@ -406,39 +406,40 @@ export default function FighterInvitationsTable() {
                   </TableCell>
                   <TableCell className='w-32'>
                     <div className='flex gap-2'>
-                      <button
-                        className='flex items-center gap-1 rounded-lg bg-blue-600 px-2 py-1 text-sm font-medium text-white hover:bg-blue-700'
-                        onClick={() =>
-                          copyInviteLink(
-                            invitation.invitationToken,
-                            invitation.id,
-                          )
-                        }
-                      >
-                        {copiedInviteId === invitation.id ? (
-                          <>
-                            <Check className='h-3 w-3' />
-                            Copied
-                          </>
-                        ) : (
-                          <>
-                            <Copy className='h-3 w-3' />
-                            Copy Link
-                          </>
-                        )}
-                      </button>
-                      {invitation.status === "PENDING" &&
-                        !isExpired(invitation.expiresAt) && (
-                          <button
-                            className='rounded-lg bg-green-600 px-2 py-1 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50'
-                            onClick={() => handleResend(invitation)}
-                            disabled={resendingInviteId === invitation.id}
-                          >
-                            {resendingInviteId === invitation.id
-                              ? "Sending..."
-                              : "Resend"}
-                          </button>
-                        )}
+                      {invitation.status !== "ACCEPTED" && (
+                        <button
+                          className='flex items-center gap-1 rounded-lg bg-blue-600 px-2 py-1 text-sm font-medium text-white hover:bg-blue-700'
+                          onClick={() =>
+                            copyInviteLink(
+                              invitation.invitationToken,
+                              invitation.id,
+                            )
+                          }
+                        >
+                          {copiedInviteId === invitation.id ? (
+                            <>
+                              <Check className='h-3 w-3' />
+                              Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className='h-3 w-3' />
+                              Copy Link
+                            </>
+                          )}
+                        </button>
+                      )}
+                      {invitation.status === "PENDING" && (
+                        <button
+                          className='rounded-lg bg-green-600 px-2 py-1 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50'
+                          onClick={() => handleResend(invitation)}
+                          disabled={resendingInviteId === invitation.id}
+                        >
+                          {resendingInviteId === invitation.id
+                            ? "Sending..."
+                            : "Resend"}
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

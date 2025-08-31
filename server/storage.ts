@@ -36,7 +36,19 @@ import {
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool, db } from "./db";
-import { eq, and, sql, desc, inArray, not, notInArray, or, ilike, asc, count } from "drizzle-orm";
+import {
+  eq,
+  and,
+  sql,
+  desc,
+  inArray,
+  not,
+  notInArray,
+  or,
+  ilike,
+  asc,
+  count,
+} from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import {
   USER_ROLES,
@@ -181,11 +193,29 @@ export interface IStorage {
   updateAllUsersFighterCred(): Promise<boolean>;
 
   // Fighter invitation management
-  createFighterInvitation(data: CreateFighterInvitationData): Promise<FighterInvitation>;
+  createFighterInvitation(
+    data: CreateFighterInvitationData,
+  ): Promise<FighterInvitation>;
   getFighterInvitationByToken(token: string): Promise<FighterInvitation | null>;
   getFighterInvitationByEmail(email: string): Promise<FighterInvitation | null>;
-  updateFighterInvitationStatus(id: string, status: string, usedByUserId?: string): Promise<void>;
+  updateFighterInvitationStatus(
+    id: string,
+    status: string,
+    usedByUserId?: string,
+  ): Promise<void>;
   getAllFighterInvitations(): Promise<FighterInvitation[]>;
+  getFighterInvitationsWithFilters(filters: {
+    page: number;
+    limit: number;
+    search: string;
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }): Promise<{
+    invitations: (FighterInvitation & {
+      invitedByAdmin?: { username: string };
+    })[];
+    pagination: { total: number; totalPages: number; currentPage: number };
+  }>;
 }
 
 // Extended Thread type that includes associated data
@@ -671,9 +701,9 @@ export class DatabaseStorage implements IStorage {
       const {
         page = 1,
         limit = 10,
-        search = '',
-        sortBy = 'createdAt',
-        sortOrder = 'desc'
+        search = "",
+        sortBy = "createdAt",
+        sortOrder = "desc",
       } = options || {};
 
       const offset = (page - 1) * limit;
@@ -688,14 +718,15 @@ export class DatabaseStorage implements IStorage {
             ilike(users.username, `%${search}%`),
             ilike(users.email, `%${search}%`),
             ilike(users.firstName, `%${search}%`),
-            ilike(users.lastName, `%${search}%`)
-          )
+            ilike(users.lastName, `%${search}%`),
+          ),
         );
       }
 
       // Add sorting
-      const orderColumn = users[sortBy as keyof typeof users] || users.createdAt;
-      if (sortOrder === 'asc') {
+      const orderColumn =
+        users[sortBy as keyof typeof users] || users.createdAt;
+      if (sortOrder === "asc") {
         query = query.orderBy(asc(orderColumn));
       } else {
         query = query.orderBy(desc(orderColumn));
@@ -709,14 +740,14 @@ export class DatabaseStorage implements IStorage {
             ilike(users.username, `%${search}%`),
             ilike(users.email, `%${search}%`),
             ilike(users.firstName, `%${search}%`),
-            ilike(users.lastName, `%${search}%`)
-          )
+            ilike(users.lastName, `%${search}%`),
+          ),
         );
       }
 
       const [usersResult, countResult] = await Promise.all([
         query.limit(limit).offset(offset),
-        countQuery
+        countQuery,
       ]);
 
       const totalUsers = countResult[0]?.count || 0;
@@ -729,8 +760,8 @@ export class DatabaseStorage implements IStorage {
           totalPages,
           totalUsers,
           hasNext: page < totalPages,
-          hasPrevious: page > 1
-        }
+          hasPrevious: page > 1,
+        },
       };
     } catch (error) {
       console.error("Error getting all users:", error);
@@ -741,8 +772,8 @@ export class DatabaseStorage implements IStorage {
           totalPages: 0,
           totalUsers: 0,
           hasNext: false,
-          hasPrevious: false
-        }
+          hasPrevious: false,
+        },
       };
     }
   }
@@ -2436,8 +2467,8 @@ export class DatabaseStorage implements IStorage {
         .where(
           and(
             eq(notifications.userId, userId),
-            not(eq(notifications.type, NOTIFICATION_TYPES.ADMIN_MESSAGE))
-          )
+            not(eq(notifications.type, NOTIFICATION_TYPES.ADMIN_MESSAGE)),
+          ),
         );
 
       return true;
@@ -2701,14 +2732,14 @@ export class DatabaseStorage implements IStorage {
           UNION ALL
 
           -- Replies
-          SELECT 
+          SELECT
             COALESCE(pr.user_id, t.user_id) AS user_id,
             r.user_id AS actor_id,
             'REPLY' AS interaction_type,
             DATE_TRUNC('day', r.created_at) AS interaction_day,
             r.created_at AS interaction_timestamp
           FROM threads t
-          JOIN replies r ON r.thread_id = t.id 
+          JOIN replies r ON r.thread_id = t.id
           LEFT JOIN replies pr ON r.parent_reply_id = pr.id
           WHERE r.user_id IS DISTINCT FROM COALESCE(pr.user_id, t.user_id)
 
@@ -2734,7 +2765,7 @@ export class DatabaseStorage implements IStorage {
             ai.interaction_type,
             COALESCE(w.weight, 0) AS weight
           FROM all_interactions ai
-          LEFT JOIN users u ON ai.user_id = u.id 
+          LEFT JOIN users u ON ai.user_id = u.id
           LEFT JOIN reaction_weights w
             ON w.reaction_type = ai.interaction_type
                AND w.role = u.role
@@ -3103,7 +3134,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Fighter invitation management
-  async createFighterInvitation(data: CreateFighterInvitationData): Promise<FighterInvitation> {
+  async createFighterInvitation(
+    data: CreateFighterInvitationData,
+  ): Promise<FighterInvitation> {
     try {
       const invitationValues = {
         id: uuidv4(),
@@ -3120,7 +3153,10 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date(),
       };
 
-      const [invitation] = await db.insert(fighterInvitations).values(invitationValues).returning();
+      const [invitation] = await db
+        .insert(fighterInvitations)
+        .values(invitationValues)
+        .returning();
       return invitation;
     } catch (error) {
       console.error("Error creating fighter invitation:", error);
@@ -3128,7 +3164,9 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getFighterInvitationByToken(token: string): Promise<FighterInvitation | null> {
+  async getFighterInvitationByToken(
+    token: string,
+  ): Promise<FighterInvitation | null> {
     try {
       const [invitation] = await db
         .select()
@@ -3142,7 +3180,9 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getFighterInvitationByEmail(email: string): Promise<FighterInvitation | null> {
+  async getFighterInvitationByEmail(
+    email: string,
+  ): Promise<FighterInvitation | null> {
     try {
       const [invitation] = await db
         .select()
@@ -3156,7 +3196,11 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateFighterInvitationStatus(id: string, status: string, usedByUserId?: string): Promise<void> {
+  async updateFighterInvitationStatus(
+    id: string,
+    status: string,
+    usedByUserId?: string,
+  ): Promise<void> {
     try {
       const updateData = {
         status,
@@ -3184,6 +3228,91 @@ export class DatabaseStorage implements IStorage {
       return invitations;
     } catch (error) {
       console.error("Error fetching all fighter invitations:", error);
+      throw error;
+    }
+  }
+
+  async getFighterInvitationsWithFilters(filters: {
+    page: number;
+    limit: number;
+    search: string;
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+  }): Promise<{
+    invitations: (FighterInvitation & {
+      invitedByAdmin?: { username: string };
+    })[];
+    pagination: { total: number; totalPages: number; currentPage: number };
+  }> {
+    try {
+      const { page, limit, search, sortBy, sortOrder } = filters;
+      const offset = (page - 1) * limit;
+
+      // Build the base query with join to get admin username
+      let query = db
+        .select({
+          ...fighterInvitations,
+          invitedByAdmin: {
+            username: users.username,
+          },
+        })
+        .from(fighterInvitations)
+        .leftJoin(users, eq(fighterInvitations.invitedByAdminId, users.id));
+
+      // Add search filter if provided
+      if (search.trim()) {
+        query = query.where(
+          or(
+            ilike(fighterInvitations.email, `%${search}%`),
+            ilike(fighterInvitations.fighterName, `%${search}%`),
+            ilike(fighterInvitations.status, `%${search}%`),
+          ),
+        );
+      }
+
+      // Add sorting
+      const sortColumn =
+        fighterInvitations[sortBy as keyof typeof fighterInvitations] ||
+        fighterInvitations.createdAt;
+      if (sortOrder === "asc") {
+        query = query.orderBy(asc(sortColumn));
+      } else {
+        query = query.orderBy(desc(sortColumn));
+      }
+
+      // Get total count for pagination
+      const countQuery = db
+        .select({ count: sql<number>`count(*)` })
+        .from(fighterInvitations);
+
+      if (search.trim()) {
+        countQuery.where(
+          or(
+            ilike(fighterInvitations.email, `%${search}%`),
+            ilike(fighterInvitations.fighterName, `%${search}%`),
+            ilike(fighterInvitations.status, `%${search}%`),
+          ),
+        );
+      }
+
+      const [invitations, countResult] = await Promise.all([
+        query.limit(limit).offset(offset),
+        countQuery,
+      ]);
+
+      const total = countResult[0]?.count || 0;
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        invitations,
+        pagination: {
+          total,
+          totalPages,
+          currentPage: page,
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching fighter invitations with filters:", error);
       throw error;
     }
   }

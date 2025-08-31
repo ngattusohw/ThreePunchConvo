@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import InviteFighterModal from "./InviteFighterModal";
+import FighterInvitationsTable from "./FighterInvitationsTable";
 
 export default function FighterInviteManagement() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -21,12 +22,8 @@ export default function FighterInviteManagement() {
         </Button>
       </div>
 
-      {/* Future content will go here - pending invites, accepted invites, etc. */}
-      <div className='rounded-lg bg-gray-800 p-6'>
-        <p className='text-center text-gray-400'>
-          Pending invitations and management features coming soon...
-        </p>
-      </div>
+      {/* Fighter Invitations Table */}
+      <FighterInvitationsTable />
 
       <InviteFighterModal
         isOpen={isInviteModalOpen}

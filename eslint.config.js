@@ -26,6 +26,7 @@ export default [
         clearInterval: "readonly",
         window: "readonly",
         document: "readonly",
+        URLSearchParams: "readonly",
       },
     },
     plugins: {

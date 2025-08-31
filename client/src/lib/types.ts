@@ -233,7 +233,7 @@ export interface AdminUsersFilters {
   limit: number;
   search: string;
   sortBy: string;
-  sortOrder: 'asc' | 'desc';
+  sortOrder: "asc" | "desc";
 }
 
 // Fighter invitation types
@@ -249,7 +249,7 @@ export interface FighterInvitation {
   invitationToken: string;
   fighterName?: string;
   message?: string;
-  status: 'PENDING' | 'ACCEPTED' | 'EXPIRED';
+  status: "PENDING" | "ACCEPTED" | "EXPIRED";
   expiresAt: Date;
   usedAt?: Date;
   usedByUserId?: string;
@@ -261,4 +261,36 @@ export interface CreateFighterInvitationData {
   email: string;
   fighterName?: string;
   message?: string;
+}
+
+// Admin fighter invitations view types
+export interface AdminFighterInvitation {
+  id: string;
+  email: string;
+  fighterName?: string;
+  status: "PENDING" | "ACCEPTED" | "EXPIRED";
+  invitedByAdmin?: { username: string };
+  createdAt: Date;
+  expiresAt: Date;
+  usedAt?: Date;
+  usedByUserId?: string;
+}
+
+export interface AdminFighterInvitationsResponse {
+  invitations: AdminFighterInvitation[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    total: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
+}
+
+export interface AdminFighterInvitationsFilters {
+  page: number;
+  limit: number;
+  search: string;
+  sortBy: string;
+  sortOrder: "asc" | "desc";
 }

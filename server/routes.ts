@@ -13,11 +13,7 @@ import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import fs from "fs";
-import {
-  insertThreadSchema,
-  insertReplySchema,
-  Thread,
-} from "@shared/schema";
+import { insertThreadSchema, insertReplySchema, Thread } from "@shared/schema";
 import { requireAuth, clerkClient } from "@clerk/express";
 import { ensureLocalUser, requirePaidPlan } from "./auth";
 import { handleUserDeleted } from "./stripe";
@@ -239,8 +235,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-   // Get users for admin view to be able to change role
-   app.get("/api/users",
+  // Get users for admin view to be able to change role
+  app.get(
+    "/api/users",
     requireAuth(),
     ensureLocalUser,
     async (req: Request, res: Response) => {
@@ -248,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!req.localUser || !req.localUser.id) {
           return res.status(400).json({ message: "User ID is required" });
         }
-        
+
         // Only admins can view all users
         if (req.localUser?.role !== "ADMIN") {
           return res.status(403).json({ message: "Unauthorized" });
@@ -257,9 +254,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Parse pagination parameters
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
-        const search = req.query.search as string || '';
-        const sortBy = req.query.sortBy as string || 'createdAt';
-        const sortOrder = req.query.sortOrder as string || 'desc';
+        const search = (req.query.search as string) || "";
+        const sortBy = (req.query.sortBy as string) || "createdAt";
+        const sortOrder = (req.query.sortOrder as string) || "desc";
 
         try {
           const result = await storage.getAllUsers({
@@ -267,7 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             limit,
             search,
             sortBy,
-            sortOrder
+            sortOrder,
           });
 
           if (!result.users || result.users.length === 0) {
@@ -278,8 +275,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 totalPages: 0,
                 totalUsers: 0,
                 hasNext: false,
-                hasPrevious: false
-              }
+                hasPrevious: false,
+              },
             });
           }
 
@@ -301,17 +298,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           res.json({
             users,
-            pagination: result.pagination
+            pagination: result.pagination,
           });
         } catch (storageError) {
-          console.error("Storage error fetching all users for admin view:", storageError);
-          return res.json({ users: [], pagination: { currentPage: 1, totalPages: 0, totalUsers: 0, hasNext: false, hasPrevious: false } });
+          console.error(
+            "Storage error fetching all users for admin view:",
+            storageError,
+          );
+          return res.json({
+            users: [],
+            pagination: {
+              currentPage: 1,
+              totalPages: 0,
+              totalUsers: 0,
+              hasNext: false,
+              hasPrevious: false,
+            },
+          });
         }
       } catch (error) {
         console.error("Error fetching all users for admin view:", error);
-        return res.json({ users: [], pagination: { currentPage: 1, totalPages: 0, totalUsers: 0, hasNext: false, hasPrevious: false } });
+        return res.json({
+          users: [],
+          pagination: {
+            currentPage: 1,
+            totalPages: 0,
+            totalUsers: 0,
+            hasNext: false,
+            hasPrevious: false,
+          },
+        });
       }
-  });
+    },
+  );
+
+  // Get fighter invitations for admin view
+  app.get(
+    "/api/admin/fighter-invitations",
+    requireAuth(),
+    ensureLocalUser,
+    async (req: Request, res: Response) => {
+      try {
+        if (!req.localUser || !req.localUser.id) {
+          return res.status(400).json({ message: "User ID is required" });
+        }
+
+        // Only admins can view fighter invitations
+        if (req.localUser?.role !== "ADMIN") {
+          return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        // Parse pagination parameters
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const search = (req.query.search as string) || "";
+        const sortBy = (req.query.sortBy as string) || "createdAt";
+        const sortOrder = (req.query.sortOrder as string) || "desc";
+
+        try {
+          const result = await storage.getFighterInvitationsWithFilters({
+            page,
+            limit,
+            search,
+            sortBy,
+            sortOrder,
+          });
+
+          if (!result.invitations || result.invitations.length === 0) {
+            return res.json({
+              invitations: [],
+              pagination: {
+                currentPage: page,
+                totalPages: 0,
+                total: 0,
+                hasNext: false,
+                hasPrevious: false,
+              },
+            });
+          }
+
+          // Return fighter invitations with clean data structure
+          const invitations = result.invitations.map((invitation) => ({
+            id: invitation?.id,
+            email: invitation?.email,
+            fighterName: invitation?.fighterName,
+            status: invitation?.status,
+            invitedByAdmin: invitation?.invitedByAdmin,
+            createdAt: invitation?.createdAt,
+            expiresAt: invitation?.expiresAt,
+            usedAt: invitation?.usedAt,
+            usedByUserId: invitation?.usedByUserId,
+          }));
+
+          res.json({
+            invitations,
+            pagination: {
+              ...result.pagination,
+              hasNext:
+                result.pagination.currentPage < result.pagination.totalPages,
+              hasPrevious: result.pagination.currentPage > 1,
+            },
+          });
+        } catch (storageError) {
+          console.error(
+            "Storage error fetching fighter invitations for admin view:",
+            storageError,
+          );
+          return res.json({
+            invitations: [],
+            pagination: {
+              currentPage: 1,
+              totalPages: 0,
+              total: 0,
+              hasNext: false,
+              hasPrevious: false,
+            },
+          });
+        }
+      } catch (error) {
+        console.error(
+          "Error fetching fighter invitations for admin view:",
+          error,
+        );
+        return res.json({
+          invitations: [],
+          pagination: {
+            currentPage: 1,
+            totalPages: 0,
+            total: 0,
+            hasNext: false,
+            hasPrevious: false,
+          },
+        });
+      }
+    },
+  );
 
   // Admin message user endpoint
   app.post(
@@ -323,8 +444,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { targetUserId, message } = req.body;
 
         if (!targetUserId || !message) {
-          return res.status(400).json({ 
-            message: "Target user ID and message are required" 
+          return res.status(400).json({
+            message: "Target user ID and message are required",
           });
         }
 
@@ -335,8 +456,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         if (authenticatedUser.role !== "ADMIN") {
-          return res.status(403).json({ 
-            message: "Only administrators can send messages to users" 
+          return res.status(403).json({
+            message: "Only administrators can send messages to users",
           });
         }
 
@@ -354,9 +475,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: message.trim(),
         });
 
-        res.json({ 
+        res.json({
           message: "Message sent successfully",
-          notification 
+          notification,
         });
       } catch (error) {
         console.error("Error sending admin message:", error);
@@ -372,7 +493,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ensureLocalUser,
     async (req: any, res: Response) => {
       try {
-        const { targetRole, message } = req.body as { targetRole?: string | null; message?: string };
+        const { targetRole, message } = req.body as {
+          targetRole?: string | null;
+          message?: string;
+        };
 
         if (!message || !message.trim()) {
           return res.status(400).json({ message: "Message is required" });
@@ -385,7 +509,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         if (authenticatedUser.role !== "ADMIN") {
-          return res.status(403).json({ message: "Only administrators can send messages to users" });
+          return res.status(403).json({
+            message: "Only administrators can send messages to users",
+          });
         }
 
         let targets;
@@ -396,7 +522,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         if (!targets || targets.length === 0) {
-          return res.json({ message: "No users matched the selection", count: 0 });
+          return res.json({
+            message: "No users matched the selection",
+            count: 0,
+          });
         }
 
         await Promise.all(
@@ -406,18 +535,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: "ADMIN_MESSAGE",
               relatedUserId: authenticatedUser.id,
               message: message.trim(),
-            })
-          )
+            }),
+          ),
         );
 
-        res.json({ message: "Messages sent successfully", count: targets.length });
+        res.json({
+          message: "Messages sent successfully",
+          count: targets.length,
+        });
       } catch (error) {
         console.error("Error sending bulk admin messages:", error);
         res.status(500).json({ message: "Failed to send messages" });
       }
     },
   );
-
 
   // Get top users based on daily fighter cred for the current day
   app.get("/api/users/top", async (req: Request, res: Response) => {
@@ -2268,160 +2399,185 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-app.post("/api/admin/invite-fighter", 
-  requireAuth(),
-  ensureLocalUser,
-  async (req: any, res: Response) => {
-    try {
-      const { email, fighterName, message } = req.body;
-      const adminUser = req.localUser;
+  app.post(
+    "/api/admin/invite-fighter",
+    requireAuth(),
+    ensureLocalUser,
+    async (req: any, res: Response) => {
+      try {
+        const { email, fighterName, message } = req.body;
+        const adminUser = req.localUser;
 
-      if (adminUser.role !== "ADMIN") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({ message: "User with this email already exists" });
-      }
-
-      // Check if invitation already exists
-      const existingInvitation = await storage.getFighterInvitationByEmail(email);
-      let invitation;
-      let token;
-      let isResend = false;
-
-      if (existingInvitation && existingInvitation.status === 'PENDING' && new Date(existingInvitation.expiresAt) > new Date()) {
-        // Active invitation exists - resend it
-        invitation = existingInvitation;
-        token = existingInvitation.invitationToken;
-        isResend = true;
-        
-        // No need to update anything - just resend the email with existing token
-      } else {
-        // Create new invitation (either no invitation exists, or it's expired/used)
-        token = crypto.randomUUID();
-        invitation = await storage.createFighterInvitation({
-          email,
-          invitedByAdminId: adminUser.id,
-          invitationToken: token,
-          fighterName,
-          message,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-        });
-      }
-
-      const url = `http://${process.env.EXTERNAL_URL}/fighter-signup?token=${token}`;
-      
-      // Send email
-      await sendEmail({
-        email, 
-        link: url, 
-        name: fighterName || 'Fighter'
-      });
-
-      res.json({ 
-        message: isResend 
-          ? "Fighter invitation resent successfully" 
-          : "Fighter invitation sent successfully",
-        invitation: { 
-          id: invitation.id, 
-          email, 
-          fighterName: fighterName || invitation.fighterName,
-          isResend 
+        if (adminUser.role !== "ADMIN") {
+          return res.status(403).json({ message: "Admin access required" });
         }
-      });
-    } catch (error) {
-      console.error("❌ ERROR sending fighter invitation:", error);
-      res.status(500).json({ message: "Failed to send invitation" });
-    }
-  }
-);
 
-// Generate fighter invitation link (without sending email)
-app.post("/api/admin/generate-fighter-link", 
-  requireAuth(),
-  ensureLocalUser,
-  async (req: any, res: Response) => {
-    try {
-      const { email, fighterName, message } = req.body;
-      const adminUser = req.localUser;
-
-      if (adminUser.role !== "ADMIN") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({ message: "User with this email already exists" });
-      }
-
-      // Check if invitation already exists
-      const existingInvitation = await storage.getFighterInvitationByEmail(email);
-      let invitation;
-      let token;
-      let isExisting = false;
-
-      if (existingInvitation && existingInvitation.status === 'PENDING' && new Date(existingInvitation.expiresAt) > new Date()) {
-        // Active invitation exists - return existing link
-        invitation = existingInvitation;
-        token = existingInvitation.invitationToken;
-        isExisting = true;
-      } else {
-        // Create new invitation (either no invitation exists, or it's expired/used)
-        token = crypto.randomUUID();
-        invitation = await storage.createFighterInvitation({
-          email,
-          invitedByAdminId: adminUser.id,
-          invitationToken: token,
-          fighterName,
-          message,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-        });
-      }
-
-      const url = `http://${process.env.EXTERNAL_URL}/fighter-signup?token=${token}`;
-
-      res.json({ 
-        message: isExisting 
-          ? "Retrieved existing fighter invitation link" 
-          : "Fighter invitation link generated successfully",
-        url,
-        invitation: { 
-          id: invitation.id, 
-          email, 
-          fighterName: fighterName || invitation.fighterName,
-          isExisting 
+        // Check if user already exists
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser) {
+          return res
+            .status(400)
+            .json({ message: "User with this email already exists" });
         }
-      });
-    } catch (error) {
-      console.error("❌ ERROR generating fighter invitation link:", error);
-      res.status(500).json({ message: "Failed to generate invitation link" });
-    }
-  }
-);
 
-// Get fighter invitation by token (for signup page validation)
-app.get("/api/fighter-invitation/:token", async (req: Request, res: Response) => {
-  try {
-    const { token } = req.params;
-    const invitation = await storage.getFighterInvitationByToken(token);
+        // Check if invitation already exists
+        const existingInvitation =
+          await storage.getFighterInvitationByEmail(email);
+        let invitation;
+        let token;
+        let isResend = false;
 
-    if (!invitation || invitation.status !== 'PENDING' || invitation.expiresAt < new Date()) {
-      return res.status(404).json({ message: "Invalid or expired invitation" });
-    }
+        if (
+          existingInvitation &&
+          existingInvitation.status === "PENDING" &&
+          new Date(existingInvitation.expiresAt) > new Date()
+        ) {
+          // Active invitation exists - resend it
+          invitation = existingInvitation;
+          token = existingInvitation.invitationToken;
+          isResend = true;
 
-    res.json({
-      email: invitation.email,
-      fighterName: invitation.fighterName,
-    });
-  } catch (error) {
-    console.error("Error fetching fighter invitation:", error);
-    res.status(500).json({ message: "Failed to fetch invitation" });
-  }
-});
+          // No need to update anything - just resend the email with existing token
+        } else {
+          // Create new invitation (either no invitation exists, or it's expired/used)
+          token = crypto.randomUUID();
+          invitation = await storage.createFighterInvitation({
+            email,
+            invitedByAdminId: adminUser.id,
+            invitationToken: token,
+            fighterName,
+            message,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+          });
+        }
+
+        const url = `http://${process.env.EXTERNAL_URL}/fighter-signup?token=${token}`;
+
+        // Send email
+        await sendEmail({
+          email,
+          link: url,
+          name: fighterName || "Fighter",
+        });
+
+        res.json({
+          message: isResend
+            ? "Fighter invitation resent successfully"
+            : "Fighter invitation sent successfully",
+          invitation: {
+            id: invitation.id,
+            email,
+            fighterName: fighterName || invitation.fighterName,
+            isResend,
+          },
+        });
+      } catch (error) {
+        console.error("❌ ERROR sending fighter invitation:", error);
+        res.status(500).json({ message: "Failed to send invitation" });
+      }
+    },
+  );
+
+  // Generate fighter invitation link (without sending email)
+  app.post(
+    "/api/admin/generate-fighter-link",
+    requireAuth(),
+    ensureLocalUser,
+    async (req: any, res: Response) => {
+      try {
+        const { email, fighterName, message } = req.body;
+        const adminUser = req.localUser;
+
+        if (adminUser.role !== "ADMIN") {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+
+        // Check if user already exists
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser) {
+          return res
+            .status(400)
+            .json({ message: "User with this email already exists" });
+        }
+
+        // Check if invitation already exists
+        const existingInvitation =
+          await storage.getFighterInvitationByEmail(email);
+        let invitation;
+        let token;
+        let isExisting = false;
+
+        if (
+          existingInvitation &&
+          existingInvitation.status === "PENDING" &&
+          new Date(existingInvitation.expiresAt) > new Date()
+        ) {
+          // Active invitation exists - return existing link
+          invitation = existingInvitation;
+          token = existingInvitation.invitationToken;
+          isExisting = true;
+        } else {
+          // Create new invitation (either no invitation exists, or it's expired/used)
+          token = crypto.randomUUID();
+          invitation = await storage.createFighterInvitation({
+            email,
+            invitedByAdminId: adminUser.id,
+            invitationToken: token,
+            fighterName,
+            message,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+          });
+        }
+
+        const url = `http://${process.env.EXTERNAL_URL}/fighter-signup?token=${token}`;
+
+        res.json({
+          message: isExisting
+            ? "Retrieved existing fighter invitation link"
+            : "Fighter invitation link generated successfully",
+          url,
+          invitation: {
+            id: invitation.id,
+            email,
+            fighterName: fighterName || invitation.fighterName,
+            isExisting,
+          },
+        });
+      } catch (error) {
+        console.error("❌ ERROR generating fighter invitation link:", error);
+        res.status(500).json({ message: "Failed to generate invitation link" });
+      }
+    },
+  );
+
+  // Get fighter invitation by token (for signup page validation)
+  app.get(
+    "/api/fighter-invitation/:token",
+    async (req: Request, res: Response) => {
+      try {
+        const { token } = req.params;
+        const invitation = await storage.getFighterInvitationByToken(token);
+
+        if (
+          !invitation ||
+          invitation.status !== "PENDING" ||
+          invitation.expiresAt < new Date()
+        ) {
+          return res
+            .status(404)
+            .json({ message: "Invalid or expired invitation" });
+        }
+
+        res.json({
+          email: invitation.email,
+          fighterName: invitation.fighterName,
+        });
+      } catch (error) {
+        console.error("Error fetching fighter invitation:", error);
+        res.status(500).json({ message: "Failed to fetch invitation" });
+      }
+    },
+  );
 
   return httpServer;
 }

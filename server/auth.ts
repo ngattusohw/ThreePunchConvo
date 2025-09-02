@@ -51,8 +51,6 @@ export const ensureLocalUser = async (
   next: NextFunction,
 ) => {
   try {
-    console.log("Authorization header:", req.headers.authorization);
-
     // Extract user ID from bearer token if req.auth doesn't have it
     let userId = req.auth?.userId;
 
@@ -65,7 +63,6 @@ export const ensureLocalUser = async (
           Buffer.from(base64Payload, "base64").toString(),
         );
         userId = payload.sub;
-        console.log("Extracted userId from JWT:", userId);
       } catch (error) {
         console.error("Error extracting userId from JWT:", error);
       }
@@ -92,9 +89,6 @@ export const ensureLocalUser = async (
 
     // Attach the local user to the request
     req.localUser = localUser;
-    console.log(
-      `ensureLocalUser: Found local user ${localUser.id} for Clerk ID ${userId}`,
-    );
 
     next();
   } catch (error) {
@@ -117,7 +111,6 @@ export const requirePaidPlan = async (
 
     // Check if user has a special role that bypasses paid plan requirement
     const userRole = req.localUser.role || "USER";
-    console.log("User role:", userRole);
     const bypassRoles = [
       "ADMIN",
       "MODERATOR",
@@ -127,9 +120,6 @@ export const requirePaidPlan = async (
 
     if (bypassRoles.includes(userRole)) {
       // User has a special role, allow access without checking plan
-      console.log(
-        `User ${req.localUser.id} (${userRole}) bypassed paid plan requirement`,
-      );
       return next();
     }
 
@@ -167,7 +157,6 @@ export const registerAuthEndpoints = (app: Express) => {
         return res.status(400).json({ message: "Clerk ID is required" });
       }
 
-      console.log(`Checking if user with Clerk ID ${clerkId} exists`);
       let user = await storage.getUserByExternalId(clerkId);
       let userCreated = false;
 
@@ -177,15 +166,38 @@ export const registerAuthEndpoints = (app: Express) => {
 
       // If user doesn't exist, create a new one
       if (!user) {
-        console.log(
-          `User with Clerk ID ${clerkId} doesn't exist, creating new user`,
-        );
-
         // Use provided username or generate one based on Clerk ID
         const finalUsername =
           username || `user_${clerkId.substring(clerkId.lastIndexOf("_") + 1)}`;
 
         try {
+          // Check for fighter token in request body OR Clerk metadata
+          const fighterToken = req.body.fighterInvitationToken || 
+                              req.body.unsafeMetadata?.fighterInvitationToken;
+
+          let defaultRole = "USER";
+          let invitationUsed = false;
+
+          if (fighterToken) {
+            try {
+              const invitation = await storage.getFighterInvitationByToken(fighterToken);
+              
+              if (invitation && 
+                  invitation.status === 'PENDING' && 
+                  new Date(invitation.expiresAt) > new Date()) {
+                
+                // Verify the email matches
+                if (invitation.email === email) {
+                  defaultRole = "FIGHTER";
+                  invitationUsed = true;
+                }
+              }
+            } catch (invitationError) {
+              console.error("Error checking fighter invitation:", invitationError);
+              // Continue with regular user creation if invitation check fails
+            }
+          }
+
           // Create user in our database with Clerk profile data
           const newUser = await storage.createUser({
             username: finalUsername,
@@ -194,12 +206,25 @@ export const registerAuthEndpoints = (app: Express) => {
             lastName,
             email,
             profileImageUrl,
+            role: defaultRole, // Will be "FIGHTER" if invitation is valid, otherwise "USER"
           });
-          console.log("auth profile: ", profileImageUrl);
 
-          console.log(
-            `Created new local user for Clerk ID ${clerkId}, local ID: ${newUser.id}`,
-          );
+          // Mark invitation as used if it was a fighter signup
+          if (invitationUsed && fighterToken) {
+            try {
+              const invitation = await storage.getFighterInvitationByToken(fighterToken);
+              if (invitation) {
+                await storage.updateFighterInvitationStatus(
+                  invitation.id, 
+                  'ACCEPTED', 
+                  newUser.id
+                );
+              }
+            } catch (invitationUpdateError) {
+              console.error("Error updating fighter invitation status:", invitationUpdateError);
+              // Don't fail user creation if invitation update fails
+            }
+          }
 
           // Get the created user to return
           user = await storage.getUserByExternalId(clerkId);
@@ -217,7 +242,6 @@ export const registerAuthEndpoints = (app: Express) => {
           // Try one more time to check if user exists (might have been created in a race condition)
           const retryUser = await storage.getUserByExternalId(clerkId);
           if (retryUser) {
-            console.log(`Found user on retry for Clerk ID: ${clerkId}`);
             user = retryUser;
           } else {
             return res.status(500).json({ message: "Failed to create user" });
@@ -239,14 +263,41 @@ export const registerAuthEndpoints = (app: Express) => {
               const updatedUser = await storage.updateUser(user.id, updates);
               if (updatedUser) {
                 user = updatedUser;
-                console.log(
-                  `Updated user ${user.id} with latest Clerk profile data`,
-                );
               }
             }
           } catch (updateError) {
             console.error("Error updating user profile:", updateError);
             // Continue with existing user data even if update fails
+          }
+        }
+        // ✅ ADD THIS: Check for fighter invitation token even for existing users
+        const fighterToken = req.body.fighterInvitationToken;
+        if (fighterToken && user.role !== "FIGHTER") {
+          try {
+            const invitation = await storage.getFighterInvitationByToken(fighterToken);
+            
+            if (invitation && 
+                invitation.status === 'PENDING' && 
+                new Date(invitation.expiresAt) > new Date()) {
+              
+              // Verify the email matches
+              if (invitation.email === email || invitation.email === user.email) {
+                // Update user role to FIGHTER
+                const updatedUser = await storage.updateUser(user.id, { role: "FIGHTER" });
+                if (updatedUser) {
+                  user = updatedUser;
+                  
+                  // Mark invitation as used
+                  await storage.updateFighterInvitationStatus(
+                    invitation.id, 
+                    'ACCEPTED', 
+                    user.id
+                  );
+                }
+              }
+            }
+          } catch (invitationError) {
+            console.error("Error checking fighter invitation for existing user:", invitationError);
           }
         }
       }

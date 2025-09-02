@@ -23,6 +23,8 @@ import { useAuth } from "@clerk/clerk-react";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import SignUp from "./pages/SignUp";
+import FighterSignup from "@/pages/FighterSignup";
+import CompleteFighterSignup from "@/pages/CompleteFighterSignup";
 
 function App() {
   const { getToken } = useAuth();
@@ -49,7 +51,12 @@ function App() {
 
   // Clear React Query cache when auth state changes (on logout)
   useEffect(() => {
-    if (isUserLoaded && !isSignedIn && !userId) {
+    if (
+      isUserLoaded &&
+      !isSignedIn &&
+      !userId &&
+      window.location.pathname !== "/fighter-signup"
+    ) {
       // User has logged out, clear all queries from cache
       queryClient.clear();
       console.log("Auth state changed: user logged out, cleared query cache");
@@ -120,10 +127,7 @@ function App() {
   useEffect(() => {
     const checkUserSubscriptions = async () => {
       // Skip if already performed or conditions aren't met
-      if (
-        subscriptionCheckPerformed.current ||
-        !localUserChecked
-      ) {
+      if (subscriptionCheckPerformed.current || !localUserChecked) {
         return;
       }
 
@@ -137,7 +141,9 @@ function App() {
 
       // If user doesn't have a Stripe ID yet (new user), skip subscription check but mark as complete
       if (!localUser.stripeId) {
-        console.log("New user without Stripe ID, setting initial load complete");
+        console.log(
+          "New user without Stripe ID, setting initial load complete",
+        );
         setInitialLoadComplete(true);
         subscriptionCheckPerformed.current = true;
         return;
@@ -251,7 +257,7 @@ function App() {
   console.log("initialLoadComplete: ", initialLoadComplete);
   console.log("localUserChecked: ", localUserChecked);
   console.log("localUser: ", localUser);
-  
+
   return (
     <div>
       <div className='bg-ufc-black text-light-gray flex min-h-screen flex-col'>
@@ -277,7 +283,7 @@ function App() {
                 <Route path='/register' component={AuthPage} />
                 <Route path='/privacy' component={PrivacyPolicy} />
                 <Route path='/terms' component={TermsOfService} />
-                
+
                 {/* Protected Routes - Need auth but not checkout */}
                 <ProtectedRoute path='/rankings' component={Rankings} />
                 <ProtectedRoute path='/' component={Forum} />
@@ -290,6 +296,11 @@ function App() {
                 />
                 <ProtectedRoute path='/return' component={Return} />
                 <ProtectedRoute path='/signup' component={SignUp} />
+                <Route path='/fighter-signup' component={FighterSignup} />
+                <Route
+                  path='/complete-fighter-signup'
+                  component={CompleteFighterSignup}
+                />
 
                 {/* Admin Routes - Need auth and admin role */}
                 <AdminRoute path='/admin' component={Admin} />

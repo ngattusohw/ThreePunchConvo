@@ -54,3 +54,16 @@ declare global {
     }
   }
 }
+
+// Add these email-related types
+export interface EmailTemplateParams {
+  name: string;
+  email: string;
+  link: string;
+  [key: string]: unknown;
+}
+
+export interface EmailResponse {
+  status: number;
+  text: string;
+}

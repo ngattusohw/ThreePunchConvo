@@ -233,5 +233,65 @@ export interface AdminUsersFilters {
   limit: number;
   search: string;
   sortBy: string;
-  sortOrder: 'asc' | 'desc';
+  sortOrder: "asc" | "desc";
+}
+
+// Fighter invitation types
+export interface FighterInvitationFormData {
+  email: string;
+  fighterName: string;
+}
+
+export interface FighterInvitation {
+  id: string;
+  email: string;
+  invitedByAdminId: string;
+  invitationToken: string;
+  fighterName?: string;
+  message?: string;
+  status: "PENDING" | "ACCEPTED" | "EXPIRED";
+  expiresAt: Date;
+  usedAt?: Date;
+  usedByUserId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateFighterInvitationData {
+  email: string;
+  fighterName?: string;
+  message?: string;
+}
+
+// Admin fighter invitations view types
+export interface AdminFighterInvitation {
+  id: string;
+  email: string;
+  fighterName?: string;
+  status: "PENDING" | "ACCEPTED" | "EXPIRED";
+  invitationToken: string;
+  invitedByAdmin?: { username: string };
+  createdAt: Date;
+  expiresAt: Date;
+  usedAt?: Date;
+  usedByUserId?: string;
+}
+
+export interface AdminFighterInvitationsResponse {
+  invitations: AdminFighterInvitation[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    total: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
+}
+
+export interface AdminFighterInvitationsFilters {
+  page: number;
+  limit: number;
+  search: string;
+  sortBy: string;
+  sortOrder: "asc" | "desc";
 }
